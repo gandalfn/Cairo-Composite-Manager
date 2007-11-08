@@ -1,0 +1,6 @@
+[CCMPlugin]
+Plugin=ccm-shadow
+_Name=Shadow
+_Description=Window Shadow
+Backends=xrender;glitz
+Depends=

@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<gconfschemafile>
+   <schemalist>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/general/backend</key>
+         <applyto>/apps/cairo-compmgr/general/backend</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+         <default>xrender</default>
+         <locale name="C">
+            <short>Cairo Composite Manager backend</short>
+            <long>Cairo Composite Manager backend (xrender (2D), glitz (OpenGL)) need a restart of cairo-compmgr</long>
+         </locale>
+      </schema>
+	  <schema>
+         <key>/schemas/apps/cairo-compmgr/general/use_xshm</key>
+         <applyto>/apps/cairo-compmgr/general/use_xshm</applyto>
+         <owner>gnome</owner>
+         <type>bool</type>
+         <default>true</default>
+         <locale name="C">
+            <short>Use xshm</short>
+            <long>Use xshm</long>
+         </locale>
+      </schema>
+	  <schema>
+         <key>/schemas/apps/cairo-compmgr/general/unmanaged_screen</key>
+         <applyto>/apps/cairo-compmgr/general/unmanaged_screen</applyto>
+         <owner>gnome</owner>
+         <type>list</type>
+		 <list_type>int</list_type>
+         <default>[]</default>
+         <locale name="C">
+            <short>List of unmanaged screen</short>
+            <long>List of unmanaged screen</long>
+         </locale>
+      </schema>
+	  <schema>
+         <key>/schemas/apps/cairo-compmgr/default/screen/plugins</key>
+         <applyto>/apps/cairo-compmgr/default/screen/plugins</applyto>
+         <owner>gnome</owner>
+         <type>list</type>
+		 <list_type>string</list_type>
+         <default>[shadow,opacity]</default>
+         <locale name="C">
+            <short>List of active plugins</short>
+            <long>List of active plugins</long>
+         </locale>
+      </schema>
+	  <schema>
+         <key>/schemas/apps/cairo-compmgr/default/screen/refresh_rate</key>
+         <applyto>/apps/cairo-compmgr/default/screen/refresh_rate</applyto>
+         <owner>gnome</owner>
+         <type>int</type>
+		 <default>60</default>
+         <locale name="C">
+            <short>Refresh rate in Hz</short>
+            <long>Refresh rate in Hz</long>
+         </locale>
+      </schema>
+	  <schema>
+         <key>/schemas/apps/cairo-compmgr/default/screen/sync_with_vblank</key>
+         <applyto>/apps/cairo-compmgr/default/screen/sync_with_vblank</applyto>
+         <owner>gnome</owner>
+         <type>bool</type>
+		 <default>false</default>
+         <locale name="C">
+            <short>Sync redraw with vblank</short>
+            <long>Sync redraw with vblank</long>
+         </locale>
+      </schema>
+   </schemalist>
+</gconfschemafile>

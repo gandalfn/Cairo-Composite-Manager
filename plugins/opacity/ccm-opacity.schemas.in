@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<gconfschemafile>
+   <schemalist>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/opacity/opacity</key>
+         <applyto>/apps/cairo-compmgr/default/opacity/opacity</applyto>
+         <owner>gnome</owner>
+         <type>float</type>
+		 <default>0.9</default>
+         <locale name="C">
+            <short>Opacity of menu</short>
+            <long>Opacity of menu</long>
+         </locale>
+      </schema>
+   </schemalist>
+</gconfschemafile>
