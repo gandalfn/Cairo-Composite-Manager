@@ -462,22 +462,26 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 							
 							translucent  = ccm_region_copy(win_geometry);
 							ccm_region_subtract(translucent, opaque);
-							ccm_region_intersect(d, translucent);
-							ccm_region_destroy(translucent);
 							
-							if (!ccm_region_empty(d))
+							if (!ccm_region_empty (translucent))
 							{
-								if (obscured) ccm_region_subtract(d, obscured);
-							
-								g_signal_handlers_block_by_func(item->data, 
-															on_window_damaged, 
-															self);
-								ccm_drawable_damage_region(CCM_DRAWABLE(item->data), 
-														   d);
-								g_signal_handlers_unblock_by_func(item->data, 
-																  on_window_damaged, 
-																  self);
+								ccm_region_intersect(d, translucent);
+								
+								if (!ccm_region_empty(d))
+								{
+									if (obscured) ccm_region_subtract(d, obscured);
+								
+									g_signal_handlers_block_by_func(item->data, 
+																on_window_damaged, 
+																self);
+									ccm_drawable_damage_region(CCM_DRAWABLE(item->data), 
+															   d);
+									g_signal_handlers_unblock_by_func(item->data, 
+																	  on_window_damaged, 
+																	  self);
+								}
 							}
+							ccm_region_destroy(translucent);
 						}
 						ccm_region_destroy(d);
 						
@@ -494,6 +498,7 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 							obscured = ccm_region_copy(opaque);
 							ccm_region_intersect(obscured, geometry);
 						}
+						
 						if (!ccm_region_empty(damaged))
 						{
 							g_signal_handlers_block_by_func(item->data, 
@@ -520,7 +525,7 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 						ccm_region_destroy(d);
 					}
 				}
-				else 
+				else
 				{
 					g_signal_handlers_block_by_func(item->data, 
 													on_window_damaged, 

@@ -195,23 +195,18 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 		 type == CCM_WINDOW_TYPE_MENU))
 	{
 		CCMShadow* self = CCM_SHADOW(plugin);
-		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 		CCMRegion* shadow_geometry = ccm_region_copy(geometry);
-		
-		ccm_region_get_clipbox(geometry, &area);
-		if (area.width < CCM_SCREEN_XSCREEN(screen)->width ||
-			area.height < CCM_SCREEN_XSCREEN(screen)->height)
-		{
-			int border = 
+		int border = 
 				ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 	
-			area.width += border;
-			area.height += border;
-			create_shadow(self, area.width, area.height);
-			ccm_region_resize(shadow_geometry, area.width, area.height);
-			ccm_region_subtract(shadow_geometry, geometry);
-			ccm_region_union(geometry, shadow_geometry);
-		}
+		ccm_region_get_clipbox(geometry, &area);
+		
+		area.width += border;
+		area.height += border;
+		create_shadow(self, area.width, area.height);
+		ccm_region_resize(shadow_geometry, area.width, area.height);
+		ccm_region_subtract(shadow_geometry, geometry);
+		ccm_region_union(geometry, shadow_geometry);
 		ccm_region_destroy(shadow_geometry);
 	}	
 	return geometry;
