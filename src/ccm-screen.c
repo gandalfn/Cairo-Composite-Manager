@@ -277,6 +277,10 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 	
 	if (!above)
 	{
+		GList* below_link = g_list_find(self->priv->windows, below);
+		if (below_link) 
+			self->priv->windows = g_list_remove_link (self->priv->windows,
+													  below_link);
 		self->priv->windows = g_list_prepend(self->priv->windows, below);
 		ccm_drawable_damage(CCM_DRAWABLE(below));
 		return;
@@ -284,6 +288,10 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 		
 	if (!below)
 	{
+		GList* above_link = g_list_find(self->priv->windows, above);
+		if (above_link) 
+			self->priv->windows = g_list_remove_link (self->priv->windows,
+													  above_link);
 		self->priv->windows = g_list_append(self->priv->windows, above);
 		ccm_drawable_damage(CCM_DRAWABLE(above));
 		return;
@@ -442,7 +450,7 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 			CCMRegion* opaque = ccm_window_get_opaque_region(window);
 			ccm_region_subtract(damaged, opaque);
 		}
-		
+				
 		for (item = g_list_last(self->priv->windows); item; item = item->prev)
 		{
 			if (ccm_window_is_viewable(item->data) && item->data != window)

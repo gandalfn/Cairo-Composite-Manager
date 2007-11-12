@@ -70,6 +70,7 @@ struct _CCMWindowPrivate
 	gboolean			is_viewable;
 	gboolean			is_shaped;
 	gboolean			is_shaded;
+	gboolean			is_fullscreen;
 	gboolean			has_format;
 	cairo_format_t		format;
 	gboolean			override_redirect;
@@ -97,6 +98,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->is_viewable = FALSE;
 	self->priv->is_shaped = FALSE;
 	self->priv->is_shaded = FALSE;
+	self->priv->is_fullscreen = FALSE;
 	self->priv->has_format = FALSE;
 	self->priv->format = CAIRO_FORMAT_ARGB32;
 	self->priv->override_redirect = FALSE;
@@ -226,6 +228,10 @@ create_atoms(CCMWindow* self)
 		klass->state_shade_atom        = XInternAtom (
 											CCM_DISPLAY_XDISPLAY(display),
 											"_NET_WM_STATE_SHADED", 
+											False);
+		klass->state_fullscreen_atom   = XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_NET_WM_STATE_FULLSCREEN", 
 											False);
 	}
 }
@@ -531,6 +537,13 @@ ccm_window_query_state(CCMWindow* self)
 		{
 			if (atom[cpt] == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 				self->priv->is_shaded = TRUE;
+			else if (atom[cpt] == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
+				self->priv->is_fullscreen = TRUE;
+			else
+			{
+				self->priv->is_shaded = FALSE;
+				self->priv->is_fullscreen = FALSE;
+			}
 		}
 		XFree ((void *) data);
 	}
@@ -542,6 +555,14 @@ ccm_window_is_shaded(CCMWindow* self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	return self->priv->is_shaded;
+}
+
+gboolean
+ccm_window_is_fullscreen(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	return self->priv->is_fullscreen;
 }
 
 void

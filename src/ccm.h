@@ -224,6 +224,7 @@ void			ccm_window_set_opacity 				(CCMWindow* self,
 													 gfloat opacity);
 void            ccm_window_query_state              (CCMWindow* self);
 gboolean        ccm_window_is_shaded                (CCMWindow* self);
+gboolean        ccm_window_is_fullscreen            (CCMWindow* self);
 /******************************************************************************/
 
 /******************************** Config **************************************/
