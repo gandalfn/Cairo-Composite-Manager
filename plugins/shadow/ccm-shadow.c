@@ -231,21 +231,32 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		 type == CCM_WINDOW_TYPE_TOOLTIP || 
 		 type == CCM_WINDOW_TYPE_MENU))
 	{
-		cairo_rectangle_t geometry;
+		cairo_rectangle_t area;
+		CCMRegion* geometry;
 		int border = 
 				ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 		
-		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &geometry);
-		cairo_set_source_surface(context, self->priv->shadow, 
-								 geometry.x, geometry.y);
-		cairo_paint_with_alpha(context,
-							   ccm_window_get_opacity(window));
-		
-		geometry.width -= border;
-		geometry.height -= border;
-		cairo_rectangle(context, geometry.x, geometry.y, 
-						geometry.width, geometry.height);
-		cairo_clip(context);
+		if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &area))
+		{
+			cairo_rectangle_t* rects;
+			gint nb_rects, cpt;
+			cairo_set_source_surface(context, self->priv->shadow, 
+							     area.x, area.y);
+			cairo_paint_with_alpha(context,
+								   ccm_window_get_opacity(window));
+	
+			geometry = ccm_region_copy(ccm_drawable_get_geometry (CCM_DRAWABLE(window)));
+			ccm_region_resize (geometry, area.width - border, 
+							   area.height - border);
+			ccm_region_get_rectangles (geometry, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+			{
+				cairo_rectangle(context, rects[cpt].x, rects[cpt].y, 
+								rects[cpt].width, rects[cpt].height);
+			}
+			g_free(rects);
+			cairo_clip(context);
+		}
 	} 
 	
 	return ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),

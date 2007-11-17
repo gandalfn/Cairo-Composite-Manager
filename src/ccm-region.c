@@ -584,9 +584,9 @@ ccm_region_resize (CCMRegion *region,
     
     while(nbox--)
     {
-	pbox->x2 = (int)(((double)pbox->x2 - (double)pbox->x1) * scale_width) + 
+	pbox->x2 = round(((double)pbox->x2 - (double)pbox->x1) * scale_width) + 
 			    pbox->x1;
-	pbox->y2 = (int)(((double)pbox->y2 - (double)pbox->y1) * scale_height) + 
+	pbox->y2 = round(((double)pbox->y2 - (double)pbox->y1) * scale_height) + 
 			    pbox->y1;
 	pbox++;
     }
