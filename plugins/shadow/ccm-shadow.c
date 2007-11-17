@@ -255,6 +255,7 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 								rects[cpt].width, rects[cpt].height);
 			}
 			g_free(rects);
+			ccm_region_destroy (geometry);
 			cairo_clip(context);
 		}
 	} 
