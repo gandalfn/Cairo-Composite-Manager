@@ -174,6 +174,7 @@ ccm_pixmap_bind (CCMPixmap* self)
 		if (self->priv->image)
 			self->priv->image->data = malloc(self->priv->image->bytes_per_line * geometry.height);
 	}
+	if (visual) XFree(visual);
 }
 
 static void

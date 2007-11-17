@@ -132,7 +132,7 @@ ccm_window_xrender_get_visual(CCMDrawable* drawable)
 	
 	if (surface)
 	{
-		visual = cairo_xlib_surface_get_visual(surface);
+		visual = g_memdup(cairo_xlib_surface_get_visual(surface), sizeof(Visual));
 		cairo_surface_destroy(surface);
 	}
 	
