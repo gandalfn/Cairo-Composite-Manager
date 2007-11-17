@@ -450,7 +450,49 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 			CCMRegion* opaque = ccm_window_get_opaque_region(window);
 			ccm_region_subtract(damaged, opaque);
 		}
-				
+		
+		// Substract all obscured area to damaged region
+		for (item = g_list_last(self->priv->windows); item; item = item->prev)
+		{
+			if (ccm_window_is_viewable(item->data) && item->data != window)
+			{
+				if (top)
+				{
+					if (ccm_window_is_opaque(item->data))
+					{
+						CCMRegion* opaque = ccm_window_get_opaque_region(item->data);
+						
+						if (obscured)
+						{
+							CCMRegion* tmp = ccm_region_copy(geometry);
+						
+							ccm_region_intersect(tmp, opaque);
+							ccm_region_union(obscured, tmp);
+							ccm_region_destroy(tmp);
+						}
+						else
+						{
+							obscured = ccm_region_copy(opaque);
+							ccm_region_intersect(obscured, geometry);
+						}
+						
+					}
+				}
+			}
+			else if (item->data == window)
+			{
+				if (obscured)
+					ccm_drawable_undamage_region(CCM_DRAWABLE(window), 
+												 obscured);
+				break;
+			}
+		}
+		
+		// window is totaly obscured don't damage all other windows
+		if (!ccm_drawable_is_damaged (CCM_DRAWABLE(window)))
+			return;
+		
+		// damage now all concurent window
 		for (item = g_list_last(self->priv->windows); item; item = item->prev)
 		{
 			if (ccm_window_is_viewable(item->data) && item->data != window)
@@ -493,20 +535,6 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 						}
 						ccm_region_destroy(d);
 						
-						if (obscured)
-						{
-							CCMRegion* tmp = ccm_region_copy(geometry);
-						
-							ccm_region_intersect(tmp, opaque);
-							ccm_region_union(obscured, tmp);
-							ccm_region_destroy(tmp);
-						}
-						else
-						{
-							obscured = ccm_region_copy(opaque);
-							ccm_region_intersect(obscured, geometry);
-						}
-						
 						if (!ccm_region_empty(damaged))
 						{
 							g_signal_handlers_block_by_func(item->data, 
@@ -548,9 +576,6 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 			else if (item->data == window)
 			{
 				top = FALSE;
-				if (obscured)
-					ccm_drawable_undamage_region(CCM_DRAWABLE(window), 
-												 obscured);
 				if (ccm_region_empty(damaged)) break;
 			}
 		}
