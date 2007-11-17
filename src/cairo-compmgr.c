@@ -75,7 +75,6 @@ main(gint argc, gchar **argv)
 	g_signal_connect (client, "save_yourself", G_CALLBACK (gtk_true), NULL);
 	g_signal_connect (client, "die", G_CALLBACK (session_die), NULL);
 	
-	ccm_extension_loader_add_plugin_path(PACKAGE_SRC_DIR "/plugins/shadow");
 	ccm_extension_loader_add_plugin_path(PACKAGE_PLUGIN_DIR);
 	
 	display = ccm_display_new(NULL);

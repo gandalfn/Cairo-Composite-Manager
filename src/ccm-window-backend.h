@@ -25,8 +25,13 @@
 
 #include <glib.h>
 
+#ifndef DISABLE_GLITZ_BACKEND
 #include "ccm-window-glitz.h"
+#endif
+
+#ifndef DISABLE_XRENDER_BACKEND
 #include "ccm-window-xrender.h"
+#endif
 
 G_BEGIN_DECLS
 
@@ -42,14 +47,22 @@ typedef union _CCMWindowBackendClass CCMWindowBackendClass;
 
 union _CCMWindowBackendClass
 {
+#ifndef DISABLE_GLITZ_BACKEND
 	CCMWindowGlitzClass glitz_class;
+#endif
+#ifndef DISABLE_XRENDER_BACKEND
 	CCMWindowXRenderClass xrender_class;
+#endif
 }; 
 
 union _CCMWindowBackend
 {
+#ifndef DISABLE_GLITZ_BACKEND
 	CCMWindowGlitz glitz;
+#endif
+#ifndef DISABLE_XRENDER_BACKEND
 	CCMWindowXRender xrender;
+#endif
 };
 
 GType ccm_window_backend_get_type (void) G_GNUC_CONST;

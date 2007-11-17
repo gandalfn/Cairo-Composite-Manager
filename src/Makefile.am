@@ -1,14 +1,24 @@
-## Process this file with automake to produce Makefile.in
-
-## Created by Anjuta
-
 INCLUDES = \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
 	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
 	-DPACKAGE_PLUGIN_DIR=\""$(libdir)/cairo-compmgr"\" \
-	-DPACKAGE_DATA_DIR=\""$(datadir)"\" $(CAIRO_COMPMGR_CFLAGS)
+	-DPACKAGE_DATA_DIR=\""$(datadir)"\" \
+    $(CAIRO_COMPMGR_CFLAGS)
+
+if HAVE_XRENDER_BACKEND    
+INCLUDES += $(CCM_XRENDER_BACKEND_CFLAGS)
+else
+INCLUDES += -DDISABLE_XRENDER_BACKEND
+endif
+
+if HAVE_GLITZ_BACKEND
+INCLUDES += $(CCM_GLITZ_BACKEND_CFLAGS)
+else
+INCLUDES += -DDISABLE_GLITZ_BACKEND
+endif
 
 AM_CFLAGS =\
+     -g\
 	 -Wall \
 	 -fPIC
 
@@ -23,20 +33,13 @@ cairo_compmgr_SOURCES = \
 	ccm-pixmap.c \
 	ccm-window.h \
 	ccm-window.c \
-	ccm-window-glitz.h \
-	ccm-window-glitz.c \
 	cairo-compmgr.c\
 	ccm-screen.h \
 	ccm-screen.c \
 	ccm-display.h \
 	ccm-display.c \
-	ccm.h \
 	ccm-watch.c \
 	ccm-watch.h \
-	ccm-window-xrender.h \
-	ccm-window-xrender.c \
-	ccm-window-backend.h \
-	ccm-window-backend.c \
 	ccm-plugin.h \
 	ccm-plugin.c \
 	ccm-window-plugin.h \
@@ -48,9 +51,32 @@ cairo_compmgr_SOURCES = \
 	ccm-extension-loader.h \
 	ccm-extension-loader.c \
 	ccm-screen-plugin.h \
-	ccm-screen-plugin.c
-	
+	ccm-screen-plugin.c \
+	ccm-window-backend.h \
+	ccm-window-backend.c \
+	ccm.h
+
+if HAVE_XRENDER_BACKEND    
+cairo_compmgr_SOURCES += \
+	ccm-window-xrender.h \
+	ccm-window-xrender.c
+endif
+
+if HAVE_GLITZ_BACKEND    
+cairo_compmgr_SOURCES += \
+	ccm-window-glitz.h \
+	ccm-window-glitz.c
+endif
+
 cairo_compmgr_LDFLAGS = -rdynamic
 
 cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS)
+
+if HAVE_XRENDER_BACKEND    
+cairo_compmgr_LDADD += $(CCM_XRENDER_BACKEND_LIBS)
+endif
+
+if HAVE_GLITZ_BACKEND
+cairo_compmgr_LDADD += $(CCM_GLITZ_BACKEND_LIBS)
+endif
 

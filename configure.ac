@@ -1,6 +1,3 @@
-dnl Process this file with autoconf to produce a configure script.
-dnl Created by Anjuta application wizard.
-
 AC_INIT(cairo-compmgr, 0.1.0)
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
@@ -32,12 +29,46 @@ fi
 
 AM_GCONF_SOURCE_2
 
-PKG_CHECK_MODULES(CAIRO_COMPMGR, [gtk+-2.0 cairo xcomposite xrender xdamage glitz cairo-glitz glitz-glx xext libgnomeui-2.0 gconf-2.0])
+GTK_REQUIRED=2.10.0
+CAIRO_REQUIRED=1.4.10
+CAIRO_XLIB_REQUIRED=1.4.10
+CAIRO_XLIB_XRENDER_REQUIRED=1.4.10
+CAIRO_GLITZ_REQUIRED=1.4.10
+GLITZ_REQUIRED=0.5.7
+GLITZ_GLX_REQUIRED=0.5.7
+
+PKG_CHECK_MODULES(CAIRO_COMPMGR, 
+       [xcomposite,
+        xdamage,
+        xext,
+        cairo >= $CAIRO_REQUIRED,
+        gtk+-2.0 >= $GTK_REQUIRED,
+        libgnomeui-2.0,
+        gconf-2.0])
 AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 
+PKG_CHECK_MODULES(CCM_XRENDER_BACKEND,
+ 		[xrender,
+		 cairo-xlib >= $CAIRO_XLIB_REQUIRED,
+		 cairo-xlib-xrender >= $CAIRO_XLIB_XRENDER_REQUIRED],
+		 [xrenderbackend="yes"],
+		 [xrenderbackend="no"])
+AC_SUBST(CCM_XRENDER_BACKEND_CFLAGS)
+AC_SUBST(CCM_XRENDER_BACKEND_LIBS)
 
+AM_CONDITIONAL(HAVE_XRENDER_BACKEND, [test x$xrenderbackend = xyes])
 
+PKG_CHECK_MODULES(CCM_GLITZ_BACKEND,
+ 		[glitz >= $GLITZ_REQUIRED,
+		 glitz-glx >= $GLITZ_GLX_REQUIRED,
+		 cairo-glitz >= $CAIRO_GLITZ_REQUIRED],
+		 [glitzbackend="yes"],
+		 [glitzbackend="no"])
+AC_SUBST(CCM_GLITZ_BACKEND_CFLAGS)
+AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
+
+AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 
 AC_OUTPUT([
 Makefile
@@ -48,3 +79,18 @@ plugins/shadow/Makefile
 plugins/opacity/Makefile
 data/Makefile
 ])
+echo " "
+echo "-------------------------------------------------------------------"
+echo "Conditionally built backends:"
+echo "-------------------------------------------------------------------"
+if [ test x$xrenderbackend = xyes ]; then
+        echo "Building XRender backend: ...................YES"
+else
+        echo "Building XRender backend: ...................NO"
+fi
+
+if [ test x$glitzbackend = xyes ]; then
+        echo "Building Glitz backend: .....................YES"
+else
+        echo "Building Glitz backend: .....................NO"
+fi

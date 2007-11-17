@@ -27,7 +27,11 @@ GType
 ccm_window_backend_get_type(void)
 {
 	static gchar* backend = NULL;
+#ifndef DISABLE_XRENDER_BACKEND
 	GType type = ccm_window_xrender_get_type();
+#else
+	GType type = 0;
+#endif
 	
 	if (!backend)
 	{
@@ -38,8 +42,10 @@ ccm_window_backend_get_type(void)
 	
 	if (backend)
 	{
+#ifndef DISABLE_GLITZ_BACKEND
 		if (!g_ascii_strcasecmp(backend, "glitz"))
 			type = ccm_window_glitz_get_type();
+#endif
 	}
 	
 	return type;
