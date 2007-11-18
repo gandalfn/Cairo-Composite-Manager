@@ -443,7 +443,28 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 		CCMRegion* obscured = NULL;
 		CCMRegion* damaged = NULL;
 		
+		// if top window is fullscreen
 		damaged = ccm_region_rectangle(area);
+		item = g_list_last(self->priv->windows);
+		if (item && ccm_window_is_fullscreen (item->data))
+		{
+			CCMRegion* opaque = ccm_window_get_opaque_region(item->data);
+			
+			if (opaque)
+			{
+				ccm_region_subtract(damaged, opaque);
+				if (window != item->data)
+					ccm_drawable_undamage_region(CCM_DRAWABLE(window), 
+												 opaque);
+				if (ccm_region_empty (damaged))
+				{
+					ccm_region_destroy (damaged);
+					return;
+				}
+				ccm_region_get_clipbox (damaged, area);
+			}
+		}
+		
 		if (ccm_window_is_opaque(window) && 
 			ccm_window_is_viewable(window))
 		{
