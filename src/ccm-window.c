@@ -441,7 +441,8 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	
 	self->priv->unmap_pending = FALSE;
 	ccm_drawable_damage(CCM_DRAWABLE(self));
-	ccm_drawable_repair(CCM_DRAWABLE(self));
+	ccm_drawable_repair (CCM_DRAWABLE(self));
+	ccm_drawable_unset_geometry (CCM_DRAWABLE(self));
 	if (self->priv->pixmap)
 	{
 		g_object_unref(self->priv->pixmap);

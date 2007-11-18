@@ -166,6 +166,7 @@ CCMDisplay*		 ccm_drawable_get_display			(CCMDrawable* self);
 XID				 ccm_drawable_get_xid				(CCMDrawable* self);
 Visual*		     ccm_drawable_get_visual			(CCMDrawable* self);
 CCMRegion* 		 ccm_drawable_query_geometry 		(CCMDrawable* self);
+void             ccm_drawable_unset_geometry        (CCMDrawable* self);
 CCMRegion*		 ccm_drawable_get_geometry			(CCMDrawable* self);
 gboolean 		 ccm_drawable_get_geometry_clipbox	(CCMDrawable* self, 
 													 cairo_rectangle_t* area);

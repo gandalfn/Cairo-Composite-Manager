@@ -308,6 +308,24 @@ ccm_drawable_query_geometry(CCMDrawable* self)
 }
 
 /**
+ * ccm_drawable_unset_geometry:
+ * @self: #CCMDrawable
+ *
+ * Unset geometry covered by the drawable
+ **/
+void
+ccm_drawable_unset_geometry(CCMDrawable* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	if (self->priv->geometry)
+	{
+		ccm_region_destroy (self->priv->geometry);
+		self->priv->geometry = NULL;
+	}
+}
+
+/**
  * ccm_drawable_get_geometry:
  * @self: #CCMDrawable
  *
