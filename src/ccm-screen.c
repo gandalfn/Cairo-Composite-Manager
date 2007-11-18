@@ -648,17 +648,31 @@ on_event(CCMScreen* self, XEvent* event)
 		{
 			CCMWindow* window = ccm_screen_find_window(self,
 											((XReparentEvent*)event)->window);
-			if (!window && 
-				((XReparentEvent*)event)->parent == CCM_WINDOW_XWINDOW(self->priv->root))
+			if (((XReparentEvent*)event)->parent == CCM_WINDOW_XWINDOW(self->priv->root))
 			{
-				window = ccm_window_new(self, ((XReparentEvent*)event)->window);
-				if (!ccm_screen_add_window(self, window))
-					g_object_unref(window);
+				if (!window)
+				{
+					window = ccm_window_new(self, ((XReparentEvent*)event)->window);
+					if (!ccm_screen_add_window(self, window))
+						g_object_unref(window);
+				}
+				else
+					ccm_window_set_parent (window, NULL);
 			}
 			else if (window)
 			{
-				ccm_screen_remove_window(self, window);
-				g_object_unref(window);
+				CCMWindow* parent = ccm_screen_find_window(self,
+											((XReparentEvent*)event)->parent);
+				if (parent)
+				{
+					ccm_window_set_parent (window, parent);
+					ccm_window_unmap (window);
+				}
+				else
+				{
+					ccm_screen_remove_window (self, window);
+					g_object_unref(window);
+				}
 			}
 		}
 		break;
@@ -729,6 +743,27 @@ on_event(CCMScreen* self, XEvent* event)
 		case Expose:
 			g_print("Expose\n");
 			break;
+		case ClientMessage:
+		{
+			XClientMessageEvent* client_event = (XClientMessageEvent*)event;
+			
+			CCMWindow* window = ccm_screen_find_window(self,
+													   client_event->window);
+			
+			if (window)
+			{
+				if (client_event->message_type == CCM_WINDOW_GET_CLASS(window)->state_atom)
+				{
+					gint cpt;
+					
+					for (cpt = 1; cpt < 3; cpt++)
+					{
+						ccm_window_switch_state(window, client_event->data.l[cpt]);
+					}
+				}
+			}
+		}
+		break;
 		default:
 			if (event->type == 
 				ccm_display_get_shape_notify_event_type(self->priv->display))

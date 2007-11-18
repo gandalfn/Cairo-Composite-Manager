@@ -77,6 +77,7 @@ struct _CCMWindowPrivate
 	
 	gboolean			unmap_pending;
 
+	CCMWindow*			parent;
 	CCMPixmap*			pixmap;
 	CCMRegion*			opaque;
 	
@@ -419,7 +420,7 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
 	cairo_set_source_surface(context, surface, geometry.x, geometry.y); 
 	cairo_paint_with_alpha(context, self->priv->opacity);
-	
+		
 	return TRUE;
 }
 
@@ -533,21 +534,54 @@ ccm_window_query_state(CCMWindow* self)
 	if (data) 
 	{
 		Atom *atom = (Atom *) data;
-	
+		
+		self->priv->is_shaded = FALSE;
+		self->priv->is_fullscreen = FALSE;
+		
 		for (cpt = 0; cpt < n_items; cpt++)
 		{
-			if (atom[cpt] == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
-				self->priv->is_shaded = TRUE;
-			else if (atom[cpt] == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
-				self->priv->is_fullscreen = TRUE;
-			else
-			{
-				self->priv->is_shaded = FALSE;
-				self->priv->is_fullscreen = FALSE;
-			}
+			ccm_window_set_state (self, atom[cpt]);
 		}
 		XFree ((void *) data);
 	}
+}
+
+void
+ccm_window_set_state(CCMWindow* self, Atom state_atom)
+{
+	g_return_if_fail(self != NULL);
+	
+	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
+	{
+		self->priv->is_shaded = TRUE;
+	}
+	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
+	{
+		self->priv->is_fullscreen = TRUE;
+	}
+	
+	// Consider parent have same state than child
+	if (self->priv->parent)
+		ccm_window_set_state (self->priv->parent, state_atom);
+}
+
+void
+ccm_window_switch_state(CCMWindow* self, Atom state_atom)
+{
+	g_return_if_fail(self != NULL);
+	
+	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
+	{
+		self->priv->is_shaded = !self->priv->is_shaded;
+	}
+	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
+	{
+		self->priv->is_fullscreen = !self->priv->is_fullscreen;
+	}
+	
+	// Consider parent have same state than child
+	if (self->priv->parent)
+		ccm_window_switch_state (self->priv->parent, state_atom);
 }
 
 gboolean
@@ -1010,4 +1044,13 @@ ccm_window_get_opaque_region(CCMWindow* self)
 	g_return_val_if_fail(self != NULL, NULL);
 	
 	return self->priv->opaque;
+}
+
+void
+ccm_window_set_parent(CCMWindow* self, CCMWindow* parent)
+{
+	g_return_if_fail(self != NULL);
+	
+	self->priv->parent = parent;
+	
 }
