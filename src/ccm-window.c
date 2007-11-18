@@ -159,6 +159,9 @@ create_atoms(CCMWindow* self)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 		
+		klass->none_atom  = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+										 "NONE", False);
+		
 		klass->utf8_string_atom  = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 										        "UTF8_STRING", 
 											    False);
@@ -233,6 +236,10 @@ create_atoms(CCMWindow* self)
 		klass->state_fullscreen_atom   = XInternAtom (
 											CCM_DISPLAY_XDISPLAY(display),
 											"_NET_WM_STATE_FULLSCREEN", 
+											False);
+		klass->state_above_atom        = XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_NET_WM_STATE_ABOVE", 
 											False);
 	}
 }
@@ -535,9 +542,6 @@ ccm_window_query_state(CCMWindow* self)
 	{
 		Atom *atom = (Atom *) data;
 		
-		self->priv->is_shaded = FALSE;
-		self->priv->is_fullscreen = FALSE;
-		
 		for (cpt = 0; cpt < n_items; cpt++)
 		{
 			ccm_window_set_state (self, atom[cpt]);
@@ -557,12 +561,41 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	
 		self->priv->is_fullscreen = TRUE;
+		ccm_screen_damage (screen);
+	}
+	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_above_atom)
+	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	
+		ccm_screen_restack (screen, self, NULL);
 	}
 	
-	// Consider parent have same state than child
-	if (self->priv->parent)
-		ccm_window_set_state (self->priv->parent, state_atom);
+	if (self->priv->parent) 
+		ccm_window_set_state(self->priv->parent, state_atom);
+}
+
+void
+ccm_window_unset_state(CCMWindow* self, Atom state_atom)
+{
+	g_return_if_fail(self != NULL);
+	
+	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
+	{
+		self->priv->is_shaded = FALSE;
+	}
+	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
+	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	
+		self->priv->is_fullscreen = FALSE;
+		ccm_screen_damage (screen);
+	}
+	
+	if (self->priv->parent) 
+		ccm_window_unset_state(self->priv->parent, state_atom);
 }
 
 void
@@ -576,11 +609,12 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
-		self->priv->is_fullscreen = !self->priv->is_fullscreen;
-	}
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 	
-	// Consider parent have same state than child
-	if (self->priv->parent)
+		self->priv->is_fullscreen = !self->priv->is_fullscreen;
+		ccm_screen_damage (screen);
+	}
+	if (self->priv->parent) 
 		ccm_window_switch_state (self->priv->parent, state_atom);
 }
 

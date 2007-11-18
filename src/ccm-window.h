@@ -43,6 +43,7 @@ struct _CCMWindowClass
 {
 	CCMDrawableClass parent_class;
 	
+	Atom			 none_atom;
 	Atom			 utf8_string_atom;
 	Atom			 name_atom;
 	Atom			 visible_name_atom;
@@ -68,6 +69,7 @@ struct _CCMWindowClass
 	Atom			 state_atom;
 	Atom			 state_shade_atom;
 	Atom			 state_fullscreen_atom;
+	Atom			 state_above_atom;
 };
 
 typedef struct _CCMWindowPrivate CCMWindowPrivate;

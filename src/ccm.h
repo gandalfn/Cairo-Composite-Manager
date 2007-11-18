@@ -158,6 +158,11 @@ gboolean		ccm_screen_add_window			(CCMScreen* self,
 											 	 CCMWindow* window);
 void			ccm_screen_remove_window		(CCMScreen* self, 
 												 CCMWindow* window);
+void            ccm_screen_damage               (CCMScreen* self);
+void            ccm_screen_restack              (CCMScreen* self, 
+                                                 CCMWindow* above, 
+                                                 CCMWindow* below);
+
 /******************************************************************************/
 
 /****************************** Drawable **************************************/
@@ -225,6 +230,8 @@ void			ccm_window_set_opacity 				(CCMWindow* self,
 													 gfloat opacity);
 void            ccm_window_query_state              (CCMWindow* self);
 void            ccm_window_set_state                (CCMWindow* self, 
+                                                     Atom state_atom);
+void            ccm_window_unset_state              (CCMWindow* self, 
                                                      Atom state_atom);
 void            ccm_window_switch_state             (CCMWindow* self, 
                                                      Atom state_atom);
