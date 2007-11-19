@@ -184,6 +184,8 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	if (geometry && 
+		(ccm_window_is_decorated (window) ||
+		 type != CCM_WINDOW_TYPE_NORMAL) &&
 		type != CCM_WINDOW_TYPE_DESKTOP && 
 		type != CCM_WINDOW_TYPE_DOCK &&
 		type != CCM_WINDOW_TYPE_UTILITY &&
@@ -221,6 +223,8 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMWindowType type = ccm_window_get_hint_type(window);
 	
 	if (self->priv->shadow && 
+		(ccm_window_is_decorated (window) ||
+		 type != CCM_WINDOW_TYPE_NORMAL) &&
 		type != CCM_WINDOW_TYPE_DESKTOP && 
 		type != CCM_WINDOW_TYPE_DOCK &&
 		type != CCM_WINDOW_TYPE_UTILITY &&

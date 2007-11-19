@@ -71,6 +71,7 @@ struct _CCMWindowPrivate
 	gboolean			is_shaped;
 	gboolean			is_shaded;
 	gboolean			is_fullscreen;
+	gboolean			is_decorated;
 	gboolean			has_format;
 	cairo_format_t		format;
 	gboolean			override_redirect;
@@ -240,6 +241,10 @@ create_atoms(CCMWindow* self)
 		klass->state_above_atom        = XInternAtom (
 											CCM_DISPLAY_XDISPLAY(display),
 											"_NET_WM_STATE_ABOVE", 
+											False);
+		klass->mwm_hints_atom          = XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_XA_MOTIF_WM_HINTS", 
 											False);
 	}
 }
@@ -490,6 +495,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	if (!ccm_window_is_input_only(self))
 	{
 		ccm_window_query_hint_type(self);
+		ccm_window_query_mwm_hints (self);
 		
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
 					  CCM_WINDOW_XWINDOW(self),
@@ -921,6 +927,37 @@ ccm_window_query_opacity(CCMWindow* self)
 	}
 }
 
+#define MWM_HINTS_DECORATIONS (1L << 1)
+
+typedef struct {
+    unsigned long flags;
+    unsigned long functions;
+    unsigned long decorations;
+} MotifWmHints;
+
+void 
+ccm_window_query_mwm_hints(CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	guint32* data = NULL;
+	guint n_items;
+	
+	data = ccm_window_get_property(self, 
+								   CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom,
+								   sizeof (MotifWmHints) / sizeof(long), 
+								   AnyPropertyType, &n_items);
+									  
+	if (data) 
+	{
+		MotifWmHints* hints = (MotifWmHints*)data;
+		
+      	if (hints->flags & MWM_HINTS_DECORATIONS)
+			self->priv->is_decorated = hints->decorations != 0;
+	  	g_free(data);
+    }
+}
+
 void
 ccm_window_query_hint_type(CCMWindow* self)
 {
@@ -1086,5 +1123,12 @@ ccm_window_set_parent(CCMWindow* self, CCMWindow* parent)
 	g_return_if_fail(self != NULL);
 	
 	self->priv->parent = parent;
+}
+
+gboolean
+ccm_window_is_decorated(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, TRUE);
 	
+	return self->priv->is_decorated;
 }
