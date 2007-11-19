@@ -441,40 +441,47 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 		gboolean top = TRUE;
 		CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(window));
 		CCMRegion* obscured = NULL;
-		CCMRegion* damaged = NULL;
+		CCMRegion* damage_above = NULL, * damage_below = NULL;
 		
-		// if top window is fullscreen
-		damaged = ccm_region_rectangle(area);
+		damage_above = ccm_region_rectangle(area);
+		damage_below = ccm_region_rectangle(area);
+		// Substract opaque region of window to damage region below
+		if (ccm_window_is_opaque(window) && 
+			ccm_window_is_viewable(window))
+		{
+			CCMRegion* opaque = ccm_window_get_opaque_region(window);
+			ccm_region_subtract(damage_below, opaque);
+		}
+		
+		// If top window is fullscreen
 		fullscreen = g_list_last(self->priv->windows);
 		if (fullscreen && 
 			ccm_window_is_viewable (fullscreen->data) &&
 			ccm_window_is_fullscreen (fullscreen->data))
 		{
-			CCMRegion* opaque = ccm_window_get_opaque_region(fullscreen->data);
-			
-			if (opaque)
+			if (ccm_window_is_opaque(fullscreen->data))
 			{
-				ccm_region_subtract(damaged, opaque);
+				CCMRegion* opaque = ccm_window_get_opaque_region(fullscreen->data);
+				
+				// substract opaque region of fullscreen window to damage
+				ccm_region_subtract(damage_below, opaque);
+				ccm_region_subtract(damage_above, opaque);
+				// Undamage opaque region
 				if (window != fullscreen->data)
 					ccm_drawable_undamage_region(CCM_DRAWABLE(window), 
 												 opaque);
-				if (ccm_region_empty (damaged))
+				// If no below damage or window is undamaged
+				if (ccm_region_empty (damage_below) ||
+					!ccm_drawable_is_damaged (CCM_DRAWABLE(window)))
 				{
-					ccm_region_destroy (damaged);
+					ccm_region_destroy (damage_below);
+					ccm_region_destroy (damage_above);
 					return;
 				}
-				ccm_region_get_clipbox (damaged, area);
 			}
 		}
 		
-		if (ccm_window_is_opaque(window) && 
-			ccm_window_is_viewable(window))
-		{
-			CCMRegion* opaque = ccm_window_get_opaque_region(window);
-			ccm_region_subtract(damaged, opaque);
-		}
-		
-		// Substract all obscured area to damaged region
+		// Substract all obscured area to damage region
 		for (item = g_list_last(self->priv->windows); item; item = item->prev)
 		{
 			if (ccm_window_is_viewable(item->data) && item->data != window)
@@ -505,15 +512,25 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 			else if (item->data == window)
 			{
 				if (obscured)
+				{
+					ccm_region_subtract (damage_above, obscured);
+					ccm_region_subtract (damage_below, obscured);
 					ccm_drawable_undamage_region(CCM_DRAWABLE(window), 
 												 obscured);
-				break;
+					break;
+				}
 			}
 		}
 		
+		if (obscured) ccm_region_destroy (obscured);
+		
 		// window is totaly obscured don't damage all other windows
 		if (!ccm_drawable_is_damaged (CCM_DRAWABLE(window)))
+		{
+			ccm_region_destroy (damage_below);
+			ccm_region_destroy (damage_above);
 			return;
+		}
 		
 		// damage now all concurent window
 		for (item = g_list_last(self->priv->windows); item; item = item->prev)
@@ -522,66 +539,15 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 			{
 				if (top)
 				{
-					if (ccm_window_is_opaque(item->data))
+					if (!ccm_region_empty(damage_above))
 					{
-						CCMRegion* win_geometry;
-						CCMRegion* d = ccm_region_rectangle(area);
-						CCMRegion* opaque = ccm_window_get_opaque_region(item->data);
-						
-						win_geometry = ccm_drawable_get_geometry(item->data);
-						if (win_geometry)
-						{
-							CCMRegion* translucent;
-							
-							translucent  = ccm_region_copy(win_geometry);
-							ccm_region_subtract(translucent, opaque);
-							
-							if (!ccm_region_empty (translucent))
-							{
-								ccm_region_intersect(d, translucent);
-								
-								if (!ccm_region_empty(d))
-								{
-									if (obscured) ccm_region_subtract(d, obscured);
-								
-									g_signal_handlers_block_by_func(item->data, 
-																on_window_damaged, 
-																self);
-									ccm_drawable_damage_region(CCM_DRAWABLE(item->data), 
-															   d);
-									g_signal_handlers_unblock_by_func(item->data, 
-																	  on_window_damaged, 
-																	  self);
-								}
-							}
-							ccm_region_destroy(translucent);
-						}
-						ccm_region_destroy(d);
-						
-						if (!ccm_region_empty(damaged))
-						{
-							g_signal_handlers_block_by_func(item->data, 
-														on_window_damaged, 
-														self);
-							ccm_drawable_damage_region(CCM_DRAWABLE(item->data), 
-													   damaged);
-							g_signal_handlers_unblock_by_func(item->data, 
-															  on_window_damaged, 
-															  self);
-						}
-					}
-					else
-					{
-						CCMRegion* d = ccm_region_rectangle(area);
-						if (obscured) ccm_region_subtract(d, obscured);
 						g_signal_handlers_block_by_func(item->data, 
 														on_window_damaged, 
 														self);
-						ccm_drawable_damage_region(item->data, d);
+						ccm_drawable_damage_region(item->data, damage_above);
 						g_signal_handlers_unblock_by_func(item->data, 
 														  on_window_damaged, 
 														  self);
-						ccm_region_destroy(d);
 					}
 				}
 				else
@@ -590,7 +556,7 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 													on_window_damaged, 
 													self);
 					ccm_drawable_damage_region(CCM_DRAWABLE(item->data), 
-											   damaged);
+											   damage_below);
 					g_signal_handlers_unblock_by_func(item->data, 
 													  on_window_damaged, 
 													  self);
@@ -599,12 +565,12 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 			else if (item->data == window)
 			{
 				top = FALSE;
-				if (ccm_region_empty(damaged)) break;
+				if (ccm_region_empty(damage_below)) break;
 			}
 		}
 		
-		if (obscured) ccm_region_destroy(obscured);
-		if (damaged) ccm_region_destroy(damaged);
+		ccm_region_destroy(damage_above);
+		ccm_region_destroy(damage_below);
 	}
 }
 
