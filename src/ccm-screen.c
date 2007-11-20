@@ -584,18 +584,22 @@ on_event(CCMScreen* self, XEvent* event)
 	{
 		case CreateNotify:
 		{	
+			XCreateWindowEvent* create_event = ((XCreateWindowEvent*)event);
 			CCMWindow* window = ccm_screen_find_window(self,
-										((XCreateWindowEvent*)event)->window);
+													   create_event->window);
 			if (!window) 
 			{
-				CCMWindow* parent = ccm_screen_find_window(self,
-										((XCreateWindowEvent*)event)->parent);
+				CCMWindow* parent = ccm_screen_find_window(self, 
+														create_event->parent);
 				CCMWindow* root = ccm_screen_get_root_window(self);
-				if (parent || ((XCreateWindowEvent*)event)->parent == CCM_WINDOW_XWINDOW(root))
+				if (parent || create_event->parent == CCM_WINDOW_XWINDOW(root))
 				{
-					window = ccm_window_new(self, ((XCreateWindowEvent*)event)->window);
+					window = ccm_window_new(self, create_event->window);
 					if (!ccm_screen_add_window(self, window))
 						g_object_unref(window);
+					else if (create_event->parent != CCM_WINDOW_XWINDOW(root) && 
+							 parent)
+						ccm_window_set_parent (window, parent);
 				}
 			}
 			break;	
@@ -615,13 +619,7 @@ on_event(CCMScreen* self, XEvent* event)
 		{	
 			CCMWindow* window = ccm_screen_find_window(self,
 											((XMapEvent*)event)->window);
-			if (!window) 
-			{
-				window = ccm_window_new(self, ((XMapEvent*)event)->window);
-				if (!ccm_screen_add_window(self, window))
-					g_object_unref(window);
-			}
-			else
+			if (window)
 				ccm_window_map(window);
 		}
 		break;
