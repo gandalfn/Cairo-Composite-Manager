@@ -657,11 +657,11 @@ on_event(CCMScreen* self, XEvent* event)
 					ccm_window_set_parent (window, parent);
 					ccm_window_unmap (window);
 				}
-				else
+				/*else
 				{
 					ccm_screen_remove_window (self, window);
 					g_object_unref(window);
-				}
+				}*/
 			}
 		}
 		break;
