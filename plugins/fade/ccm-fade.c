@@ -101,7 +101,7 @@ ccm_fade_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "step", 
+		self->priv->options[cpt] = ccm_config_new(screen->number, "fade", 
 												  CCMFadeOptions[cpt]);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
@@ -112,8 +112,10 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
 	
-	self->priv->animation = -1;
+	self->priv->animation = 1;
 	self->priv->origin = ccm_window_get_opacity (window);
+	ccm_window_set_opacity (window, 0.0f);
+	ccm_drawable_damage (CCM_DRAWABLE(window));
 }
 
 void
@@ -121,9 +123,9 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
 	
-	self->priv->animation = 1;
+	self->priv->animation = -1;
 	self->priv->origin = ccm_window_get_opacity (window);
-	ccm_window_set_opacity (window, 0.0f);
+	ccm_drawable_damage (CCM_DRAWABLE(window));
 }
 
 gboolean
@@ -138,10 +140,10 @@ ccm_fade_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		gfloat opacity = ccm_window_get_opacity (window);
 		
 		opacity += self->priv->animation * step;
-		if (opacity >= self->priv->origin)
+		if (opacity <= 0 || opacity >= 1 || opacity >= self->priv->origin)
 		{
 			opacity = self->priv->origin;
-			if (self->priv->animation < 0)
+			if (self->priv->animation > 0)
 				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), 
 									   window);
 			else
@@ -149,6 +151,10 @@ ccm_fade_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 									     window);
 			self->priv->animation = 0;
 		}
+		else 
+			ccm_drawable_damage (CCM_DRAWABLE(window));
+		
+		g_print("opacity : 0x%x %f\n", CCM_WINDOW_XWINDOW(window), opacity);
 		ccm_window_set_opacity (window, opacity);
 	}
 	
