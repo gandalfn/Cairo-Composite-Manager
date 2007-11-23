@@ -2,11 +2,11 @@
 <gconfschemafile>
    <schemalist>
       <schema>
-         <key>/schemas/apps/cairo-compmgr/default/fade/step</key>
-         <applyto>/apps/cairo-compmgr/default/fade/step</applyto>
+         <key>/schemas/apps/cairo-compmgr/default/fade/duration</key>
+         <applyto>/apps/cairo-compmgr/default/fade/duration</applyto>
          <owner>gnome</owner>
          <type>float</type>
-		 <default>0.1</default>
+		 <default>2.5</default>
          <locale name="C">
             <short>Opacity increment</short>
             <long>Opacity increment</long>

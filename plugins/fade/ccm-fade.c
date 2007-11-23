@@ -27,12 +27,12 @@
 
 enum
 {
-	CCM_FADE_STEP,
+	CCM_FADE_DURATION,
 	CCM_FADE_OPTION_N
 };
 
 static gchar* CCMFadeOptions[CCM_FADE_OPTION_N] = {
-	"step"
+	"duration"
 };
 
 static void ccm_fade_iface_init(CCMWindowPluginClass* iface);
@@ -44,8 +44,12 @@ CCM_DEFINE_PLUGIN (CCMFade, ccm_fade, CCM_TYPE_PLUGIN,
 
 struct _CCMFadePrivate
 {	
+	CCMWindow* window;
+	
 	gint animation;
 	gfloat origin;
+	guint id_animation;
+	GTimer* timer;
 	
 	CCMConfig* options[CCM_FADE_OPTION_N];
 };
@@ -63,12 +67,20 @@ static void
 ccm_fade_init (CCMFade *self)
 {
 	self->priv = CCM_FADE_GET_PRIVATE(self);
+	self->priv->window = NULL;
 	self->priv->animation = 0;
+	self->priv->id_animation = 0;
+	self->priv->timer = g_timer_new();
 }
 
 static void
 ccm_fade_finalize (GObject *object)
 {
+	CCMFade* self = CCM_FADE(object);
+	
+	if (self->priv->id_animation) g_source_remove(self->priv->id_animation);
+	if (self->priv->timer) g_timer_destroy (self->priv->timer);
+	
 	G_OBJECT_CLASS (ccm_fade_parent_class)->finalize (object);
 }
 
@@ -87,7 +99,7 @@ ccm_fade_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	= ccm_fade_load_options;
 	iface->query_geometry 	= NULL;
-	iface->paint 			= ccm_fade_paint;
+	iface->paint 			= NULL;
 	iface->map				= ccm_fade_map;
 	iface->unmap			= ccm_fade_unmap;
 }
@@ -107,15 +119,65 @@ ccm_fade_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
+gboolean
+ccm_fade_timeout(CCMFade* self)
+{
+	gboolean ret = TRUE;
+	
+	if (self->priv->animation != 0)
+	{
+		gfloat duration = ccm_config_get_float(self->priv->options[CCM_FADE_DURATION]);
+		gfloat opacity = ccm_window_get_opacity (self->priv->window);
+		
+		
+		opacity += self->priv->animation * 
+				   (g_timer_elapsed (self->priv->timer, NULL) / duration);
+		if ((self->priv->animation == 1 && opacity >= self->priv->origin) ||
+			(self->priv->animation == -1 && opacity <= 0.0f))
+		{
+			opacity = self->priv->origin;
+			if (self->priv->animation > 0)
+			{
+				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), 
+									   self->priv->window);
+				ret = FALSE;
+			}
+			else
+			{
+				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
+									     self->priv->window);
+				ret = FALSE;
+			}
+			if (!ret)
+			{
+				self->priv->animation = 0;
+				self->priv->id_animation = 0;
+				g_timer_stop(self->priv->timer);
+			}
+		}
+		else 
+			ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+		
+		ccm_window_set_opacity (self->priv->window, opacity);
+	}
+	
+	return ret;
+}
+
 void
 ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
 	
+	self->priv->window = window;
 	self->priv->animation = 1;
 	self->priv->origin = ccm_window_get_opacity (window);
 	ccm_window_set_opacity (window, 0.0f);
-	ccm_drawable_damage (CCM_DRAWABLE(window));
+	if (!self->priv->id_animation)
+	{
+		self->priv->id_animation = g_idle_add ((GSourceFunc)ccm_fade_timeout, self);
+		g_timer_start(self->priv->timer);
+	}
 }
 
 void
@@ -123,41 +185,13 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
 	
+	self->priv->window = window;
 	self->priv->animation = -1;
 	self->priv->origin = ccm_window_get_opacity (window);
-	ccm_drawable_damage (CCM_DRAWABLE(window));
+	if (!self->priv->id_animation)
+	{
+		self->priv->id_animation = g_idle_add ((GSourceFunc)ccm_fade_timeout, self);
+		g_timer_start(self->priv->timer);
+	}
 }
 
-gboolean
-ccm_fade_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-			   cairo_t* context, cairo_surface_t* surface)
-{
-	CCMFade* self = CCM_FADE(plugin);
-	
-	if (self->priv->animation != 0)
-	{
-		gfloat step = ccm_config_get_float(self->priv->options[CCM_FADE_STEP]);
-		gfloat opacity = ccm_window_get_opacity (window);
-		
-		opacity += self->priv->animation * step;
-		if (opacity <= 0 || opacity >= 1 || opacity >= self->priv->origin)
-		{
-			opacity = self->priv->origin;
-			if (self->priv->animation > 0)
-				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), 
-									   window);
-			else
-				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), 
-									     window);
-			self->priv->animation = 0;
-		}
-		else 
-			ccm_drawable_damage (CCM_DRAWABLE(window));
-		
-		g_print("opacity : 0x%x %f\n", CCM_WINDOW_XWINDOW(window), opacity);
-		ccm_window_set_opacity (window, opacity);
-	}
-	
-	return ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
-								   window, context, surface);
-}
