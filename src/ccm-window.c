@@ -1123,6 +1123,7 @@ ccm_window_set_parent(CCMWindow* self, CCMWindow* parent)
 	g_return_if_fail(self != NULL);
 	
 	self->priv->parent = parent;
+	if (parent) self->priv->is_viewable = FALSE;
 }
 
 gboolean
