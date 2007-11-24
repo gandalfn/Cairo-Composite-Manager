@@ -155,8 +155,7 @@ ccm_fade_timeout(CCMFade* self)
 				g_timer_stop(self->priv->timer);
 			}
 		}
-		else 
-			ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 		
 		ccm_window_set_opacity (self->priv->window, opacity);
 	}
