@@ -380,10 +380,10 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format,
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	g_return_val_if_fail(property_atom != None, NULL);
-	g_return_val_if_fail (req_type != None, NULL);
-    g_return_val_if_fail (req_format == 8  || 
+	//g_return_val_if_fail (req_type != None, NULL);
+    /*g_return_val_if_fail (req_format == 8  || 
 						  req_format == 16 || 
-						  req_format == 32, NULL);
+						  req_format == 32, NULL);*/
     
     CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
     int ret;
@@ -401,17 +401,17 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format,
 							  &n_items_internal, &bytes_after,
 							  &property);
     
-    if (ret != Success || type == None)
+    if (ret != Success)// || type == None)
     {
 		if (property) XFree(property);
 		return NULL;
     }
     
-    if (format != req_format || type != req_type)
+    /*if (format != req_format || type != req_type)
     {
 		if (property) XFree(property);
 		return NULL;
-    }
+    }*/
     
     result = g_memdup (property, n_items_internal * (format / 8));
     XFree(property);
@@ -835,7 +835,7 @@ ccm_window_set_opacity (CCMWindow* self, gfloat opacity)
 	self->priv->opacity = opacity;
 	if (self->priv->opacity < 1.0f)
 		ccm_window_set_alpha(self);
-	else
+	else if (self->priv->format != CAIRO_FORMAT_ARGB32)
 		ccm_window_set_opaque(self);
 }
 
@@ -1123,6 +1123,7 @@ ccm_window_set_parent(CCMWindow* self, CCMWindow* parent)
 	g_return_if_fail(self != NULL);
 	
 	self->priv->parent = parent;
+	if (parent) self->priv->is_viewable = FALSE;
 }
 
 gboolean

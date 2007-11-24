@@ -391,9 +391,6 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		
 		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
 		
-		if (ccm_window_is_viewable(window))
-			ccm_drawable_damage(CCM_DRAWABLE(window));
-		
 		return TRUE;
 	}
 	
@@ -405,9 +402,11 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 							  CCMWindow* window)
 {
 	cairo_rectangle_t geometry;
-		
-	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &geometry))
-		ccm_drawable_damage_rectangle(CCM_DRAWABLE(self->priv->cow), &geometry);
+	
+	if (!ccm_window_is_input_only(window) &&
+		ccm_window_is_viewable (window) &&
+		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &geometry))
+		ccm_drawable_damage_rectangle(g_list_last(self->priv->windows)->data, &geometry);
 	
 	self->priv->windows = g_list_remove(self->priv->windows, window);
 }
@@ -597,8 +596,7 @@ on_event(CCMScreen* self, XEvent* event)
 					window = ccm_window_new(self, create_event->window);
 					if (!ccm_screen_add_window(self, window))
 						g_object_unref(window);
-					else if (create_event->parent != CCM_WINDOW_XWINDOW(root) && 
-							 parent)
+					else if (create_event->parent != CCM_WINDOW_XWINDOW(root))
 						ccm_window_set_parent (window, parent);
 				}
 			}
@@ -653,7 +651,7 @@ on_event(CCMScreen* self, XEvent* event)
 				if (parent)
 				{
 					ccm_window_set_parent (window, parent);
-					ccm_window_unmap (window);
+					//ccm_window_unmap (window);
 				}
 				/*else
 				{
