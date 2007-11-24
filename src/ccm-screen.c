@@ -401,12 +401,8 @@ static void
 impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 							  CCMWindow* window)
 {
-	cairo_rectangle_t geometry;
-	
-	if (!ccm_window_is_input_only(window) &&
-		ccm_window_is_viewable (window) &&
-		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &geometry))
-		ccm_drawable_damage_rectangle(g_list_last(self->priv->windows)->data, &geometry);
+	if (!ccm_window_is_input_only(window) && ccm_window_is_viewable (window))
+		ccm_screen_damage(self);
 	
 	self->priv->windows = g_list_remove(self->priv->windows, window);
 }
@@ -649,15 +645,7 @@ on_event(CCMScreen* self, XEvent* event)
 				CCMWindow* parent = ccm_screen_find_window(self,
 											((XReparentEvent*)event)->parent);
 				if (parent)
-				{
 					ccm_window_set_parent (window, parent);
-					//ccm_window_unmap (window);
-				}
-				/*else
-				{
-					ccm_screen_remove_window (self, window);
-					g_object_unref(window);
-				}*/
 			}
 		}
 		break;

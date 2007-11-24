@@ -883,9 +883,12 @@ ccm_window_map(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	self->priv->is_viewable = TRUE;
+	if (!self->priv->is_viewable)
+	{
+		self->priv->is_viewable = TRUE;
 	
-	ccm_window_plugin_map(self->priv->plugin, self);
+		ccm_window_plugin_map(self->priv->plugin, self);
+	}
 }
 
 void
@@ -893,10 +896,13 @@ ccm_window_unmap(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	self->priv->is_viewable = FALSE;
-	self->priv->unmap_pending = TRUE;
-	
-	ccm_window_plugin_unmap(self->priv->plugin, self);
+	if (self->priv->is_viewable)
+	{
+		self->priv->is_viewable = FALSE;
+		self->priv->unmap_pending = TRUE;
+		
+		ccm_window_plugin_unmap(self->priv->plugin, self);
+	}
 }
 
 void 
