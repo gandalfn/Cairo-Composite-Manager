@@ -54,6 +54,8 @@ struct _CCMWindowPluginClass
 											 CCMWindow* window);
 	void 			  (*unmap)				(CCMWindowPlugin* self, 
 											 CCMWindow* window);
+	void 			  (*query_opacity)		(CCMWindowPlugin* self, 
+											 CCMWindow* window);
 };
 
 GType ccm_window_plugin_get_type (void) G_GNUC_CONST;
@@ -69,6 +71,8 @@ gboolean 	ccm_window_plugin_paint 		(CCMWindowPlugin* self,
 void 		ccm_window_plugin_map			(CCMWindowPlugin* self, 
 											 CCMWindow* window);
 void 		ccm_window_plugin_unmap			(CCMWindowPlugin* self, 
+										     CCMWindow* window);
+void 		ccm_window_plugin_query_opacity (CCMWindowPlugin* self, 
 										     CCMWindow* window);
 
 G_END_DECLS

@@ -148,3 +148,20 @@ ccm_window_plugin_unmap(CCMWindowPlugin* self, CCMWindow* window)
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap)
   		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap(plugin, window);
 }
+
+void
+ccm_window_plugin_query_opacity(CCMWindowPlugin* self, CCMWindow* window)
+{
+  	g_return_if_fail (CCM_IS_WINDOW_PLUGIN (self));
+	g_return_if_fail (window != NULL);
+
+	CCMWindowPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin) && 
+		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity; 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
+	
+	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity)
+  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity(plugin, window);
+}

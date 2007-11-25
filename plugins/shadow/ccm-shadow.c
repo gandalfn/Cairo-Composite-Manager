@@ -97,6 +97,7 @@ ccm_shadow_iface_init(CCMWindowPluginClass* iface)
 	iface->paint 			= ccm_shadow_paint;
 	iface->map				= NULL;
 	iface->unmap			= ccm_shadow_unmap;
+	iface->query_opacity  	= NULL;
 }
 
 static void

@@ -63,8 +63,7 @@ gboolean ccm_fade_animation(CCMAnimation* animation, gfloat elapsed,
 void ccm_fade_load_options(CCMWindowPlugin* plugin, CCMWindow* window);
 void ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window);
 void ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window);
-gboolean ccm_fade_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-						cairo_t* context, cairo_surface_t* surface);
+void ccm_fade_query_opacity(CCMWindowPlugin* plugin, CCMWindow* window);
 
 static void
 ccm_fade_init (CCMFade *self)
@@ -104,6 +103,7 @@ ccm_fade_iface_init(CCMWindowPluginClass* iface)
 	iface->paint 			= NULL;
 	iface->map				= ccm_fade_map;
 	iface->unmap			= ccm_fade_unmap;
+	iface->query_opacity  	= ccm_fade_query_opacity;
 }
 
 void
@@ -147,12 +147,11 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 			}
 			else if (self->priv->way == -1)
 			{
-				ccm_window_set_opacity (self->priv->window, 0.0f);
-				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+				ccm_window_set_opacity (self->priv->window, opacity);
 				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
 									     self->priv->window);
 				self->priv->way = 0;
-				ret = FALSE;
+				return FALSE;
 			}
 		}
 		else
@@ -201,3 +200,13 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_animation_start(self->priv->animation);
 }
 
+void
+ccm_fade_query_opacity(CCMWindowPlugin* plugin, CCMWindow* window)
+{
+	CCMFade* self = CCM_FADE(plugin);
+	
+	ccm_animation_stop(self->priv->animation);
+	self->priv->way = 0;
+	
+	ccm_window_plugin_query_opacity (CCM_WINDOW_PLUGIN_PARENT(self), window);
+}

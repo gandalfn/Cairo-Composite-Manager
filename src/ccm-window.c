@@ -55,6 +55,8 @@ static void 		impl_ccm_window_map			  (CCMWindowPlugin* plugin,
 												   CCMWindow* self);
 static void 		impl_ccm_window_unmap		  (CCMWindowPlugin* plugin, 
 												   CCMWindow* self);
+static void 		impl_ccm_window_query_opacity (CCMWindowPlugin* plugin, 
+												   CCMWindow* self);
 
 G_DEFINE_TYPE_EXTENDED (CCMWindow, ccm_window, CCM_TYPE_DRAWABLE, 0,
 						G_IMPLEMENT_INTERFACE(CCM_TYPE_WINDOW_PLUGIN,
@@ -148,6 +150,7 @@ ccm_window_iface_init(CCMWindowPluginClass* iface)
 	iface->paint 			= impl_ccm_window_paint;
 	iface->map  			= impl_ccm_window_map;
 	iface->unmap  			= impl_ccm_window_unmap;
+	iface->query_opacity  	= impl_ccm_window_query_opacity;
 }
 
 static void
@@ -457,6 +460,32 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	{
 		g_object_unref(self->priv->pixmap);
 		self->priv->pixmap = NULL;
+	}
+}
+	
+static void
+impl_ccm_window_query_opacity(CCMWindowPlugin* plugin, CCMWindow* self)
+{
+	guint32* data = NULL;
+	guint n_items;
+	
+	data = ccm_window_get_property(self, 
+								   CCM_WINDOW_GET_CLASS(self)->opacity_atom,
+								   32, XA_CARDINAL, &n_items);
+									  
+	if (data) 
+	{
+		self->priv->opacity = (double)*data / (double)0xffffffff;
+		g_free(data);
+		
+		if (self->priv->opacity == 1.0f && 
+			ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 &&
+			!ccm_window_is_opaque(self))
+			ccm_window_set_opaque(self);
+		else
+			ccm_window_set_alpha(self);
+		
+		ccm_drawable_damage(CCM_DRAWABLE(self));
 	}
 }
 
@@ -911,27 +940,7 @@ ccm_window_query_opacity(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	guint32* data = NULL;
-	guint n_items;
-	
-	data = ccm_window_get_property(self, 
-								   CCM_WINDOW_GET_CLASS(self)->opacity_atom,
-								   32, XA_CARDINAL, &n_items);
-									  
-	if (data) 
-	{
-		self->priv->opacity = (double)*data / (double)0xffffffff;
-		g_free(data);
-		
-		if (self->priv->opacity == 1.0f && 
-			ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 &&
-			!ccm_window_is_opaque(self))
-			ccm_window_set_opaque(self);
-		else
-			ccm_window_set_alpha(self);
-		
-		ccm_drawable_damage(CCM_DRAWABLE(self));
-	}
+	ccm_window_plugin_query_opacity (self->priv->plugin, self);
 }
 
 #define MWM_HINTS_DECORATIONS (1L << 1)
