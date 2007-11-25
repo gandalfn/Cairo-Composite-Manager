@@ -242,6 +242,10 @@ create_atoms(CCMWindow* self)
 											CCM_DISPLAY_XDISPLAY(display),
 											"_NET_WM_STATE_ABOVE", 
 											False);
+		klass->state_below_atom        = XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_NET_WM_STATE_BELOW", 
+											False);
 		klass->mwm_hints_atom          = XInternAtom (
 											CCM_DISPLAY_XDISPLAY(display),
 											"_XA_MOTIF_WM_HINTS", 
@@ -380,11 +384,7 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format,
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	g_return_val_if_fail(property_atom != None, NULL);
-	//g_return_val_if_fail (req_type != None, NULL);
-    /*g_return_val_if_fail (req_format == 8  || 
-						  req_format == 16 || 
-						  req_format == 32, NULL);*/
-    
+	
     CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
     int ret;
     Atom type;
@@ -401,18 +401,12 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format,
 							  &n_items_internal, &bytes_after,
 							  &property);
     
-    if (ret != Success)// || type == None)
+    if (ret != Success)
     {
 		if (property) XFree(property);
 		return NULL;
     }
-    
-    /*if (format != req_format || type != req_type)
-    {
-		if (property) XFree(property);
-		return NULL;
-    }*/
-    
+        
     result = g_memdup (property, n_items_internal * (format / 8));
     XFree(property);
 	
@@ -452,9 +446,12 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	cairo_rectangle_t geometry;
+	
+	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
 	self->priv->unmap_pending = FALSE;
-	ccm_drawable_damage(CCM_DRAWABLE(self));
-	ccm_drawable_repair (CCM_DRAWABLE(self));
+	ccm_screen_damage_rectangle (screen, &geometry);
 	ccm_drawable_unset_geometry (CCM_DRAWABLE(self));
 	if (self->priv->pixmap)
 	{
@@ -500,9 +497,6 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
 					  CCM_WINDOW_XWINDOW(self),
 					  PropertyChangeMask);
-		XShapeSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
-					       CCM_WINDOW_XWINDOW(self),
-					       ShapeNotifyMask);
 	}
 	
 	return self;
@@ -547,7 +541,7 @@ ccm_window_query_state(CCMWindow* self)
 	if (data) 
 	{
 		Atom *atom = (Atom *) data;
-		
+	
 		for (cpt = 0; cpt < n_items; cpt++)
 		{
 			ccm_window_set_state (self, atom[cpt]);
@@ -560,6 +554,9 @@ void
 ccm_window_set_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
+	
+	if (self->priv->parent) 
+		ccm_window_set_state(self->priv->parent, state_atom);
 	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
@@ -578,15 +575,21 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 	
 		ccm_screen_restack (screen, self, NULL);
 	}
+	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_below_atom)
+	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 	
-	if (self->priv->parent) 
-		ccm_window_set_state(self->priv->parent, state_atom);
+		ccm_screen_restack (screen, NULL, self);
+	}
 }
 
 void
 ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
+	
+	if (self->priv->parent) 
+		ccm_window_unset_state(self->priv->parent, state_atom);
 	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
@@ -599,15 +602,15 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 		self->priv->is_fullscreen = FALSE;
 		ccm_screen_damage (screen);
 	}
-	
-	if (self->priv->parent) 
-		ccm_window_unset_state(self->priv->parent, state_atom);
 }
 
 void
 ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
+	
+	if (self->priv->parent) 
+		ccm_window_switch_state (self->priv->parent, state_atom);
 	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
@@ -620,8 +623,6 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 		self->priv->is_fullscreen = !self->priv->is_fullscreen;
 		ccm_screen_damage (screen);
 	}
-	if (self->priv->parent) 
-		ccm_window_switch_state (self->priv->parent, state_atom);
 }
 
 gboolean
@@ -1129,7 +1130,15 @@ ccm_window_set_parent(CCMWindow* self, CCMWindow* parent)
 	g_return_if_fail(self != NULL);
 	
 	self->priv->parent = parent;
-	if (parent) self->priv->is_viewable = FALSE;
+	if (parent) 
+	{
+		cairo_rectangle_t geometry;
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+		self->priv->is_viewable = FALSE;
+		
+		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
+		ccm_screen_damage_rectangle (screen, &geometry);
+	}
 }
 
 gboolean

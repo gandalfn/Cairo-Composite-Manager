@@ -159,10 +159,11 @@ gboolean		ccm_screen_add_window			(CCMScreen* self,
 void			ccm_screen_remove_window		(CCMScreen* self, 
 												 CCMWindow* window);
 void            ccm_screen_damage               (CCMScreen* self);
+void            ccm_screen_damage_rectangle     (CCMScreen* self, 
+                                                 cairo_rectangle_t* area);
 void            ccm_screen_restack              (CCMScreen* self, 
                                                  CCMWindow* above, 
                                                  CCMWindow* below);
-
 /******************************************************************************/
 
 /****************************** Drawable **************************************/

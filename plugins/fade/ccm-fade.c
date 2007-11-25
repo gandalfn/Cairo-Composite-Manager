@@ -132,18 +132,20 @@ ccm_fade_timeout(CCMFade* self)
 		
 		opacity += self->priv->animation * 
 				   (g_timer_elapsed (self->priv->timer, NULL) / duration);
-		if ((self->priv->animation == 1 && opacity >= self->priv->origin) ||
-			(self->priv->animation == -1 && opacity <= 0.0f))
+		if ((self->priv->animation == 1 && opacity > self->priv->origin) ||
+			(self->priv->animation == -1 && opacity < 0.0f))
 		{
 			opacity = self->priv->origin;
-			if (self->priv->animation > 0)
+			if (self->priv->animation == 1)
 			{
 				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), 
 									   self->priv->window);
 				ret = FALSE;
 			}
-			else
+			else if (self->priv->animation == -1)
 			{
+				ccm_window_set_opacity (self->priv->window, 0.0f);
+				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
 									     self->priv->window);
 				ret = FALSE;
@@ -155,6 +157,7 @@ ccm_fade_timeout(CCMFade* self)
 				g_timer_stop(self->priv->timer);
 			}
 		}
+		
 		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 		
 		ccm_window_set_opacity (self->priv->window, opacity);
@@ -169,9 +172,15 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMFade* self = CCM_FADE(plugin);
 	
 	self->priv->window = window;
-	self->priv->animation = 1;
-	self->priv->origin = ccm_window_get_opacity (window);
-	ccm_window_set_opacity (window, 0.0f);
+	if (self->priv->animation == 0)
+	{
+		self->priv->animation = 1;
+		self->priv->origin = ccm_window_get_opacity (window);
+		ccm_window_set_opacity (window, 0.0f);
+	}
+	else
+		self->priv->animation = 1;
+	
 	if (!self->priv->id_animation)
 	{
 		self->priv->id_animation = g_idle_add ((GSourceFunc)ccm_fade_timeout, self);
@@ -185,8 +194,14 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMFade* self = CCM_FADE(plugin);
 	
 	self->priv->window = window;
-	self->priv->animation = -1;
-	self->priv->origin = ccm_window_get_opacity (window);
+	if (self->priv->animation == 0)
+	{
+		self->priv->animation = -1;
+		self->priv->origin = ccm_window_get_opacity (window);
+	}
+	else
+		self->priv->animation = -1;
+	
 	if (!self->priv->id_animation)
 	{
 		self->priv->id_animation = g_idle_add ((GSourceFunc)ccm_fade_timeout, self);

@@ -70,6 +70,7 @@ struct _CCMWindowClass
 	Atom			 state_shade_atom;
 	Atom			 state_fullscreen_atom;
 	Atom			 state_above_atom;
+	Atom			 state_below_atom;
 	
 	Atom			 mwm_hints_atom;
 };

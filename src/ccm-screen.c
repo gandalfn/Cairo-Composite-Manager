@@ -278,10 +278,25 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 	if (!above)
 	{
 		GList* below_link = g_list_find(self->priv->windows, below);
+		GList* above_desktop =NULL, *item;
+		
 		if (below_link) 
 			self->priv->windows = g_list_remove_link (self->priv->windows,
 													  below_link);
-		self->priv->windows = g_list_prepend(self->priv->windows, below);
+		for (item = g_list_first(self->priv->windows); item; item = item->next)
+		{
+			if (ccm_window_get_hint_type (item->data) == CCM_WINDOW_TYPE_DESKTOP)
+			{
+				above_desktop = item->next;
+				break;
+			}
+		}
+		if (above_desktop)
+			self->priv->windows = g_list_insert_before (self->priv->windows, 
+														above_desktop, below);
+		else
+			self->priv->windows = g_list_prepend (self->priv->windows, below);
+		
 		ccm_drawable_damage(CCM_DRAWABLE(below));
 		return;
 	}
@@ -389,6 +404,9 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		else
 			self->priv->windows = g_list_prepend(self->priv->windows, window);
 		
+		if (ccm_window_is_viewable (window))
+			ccm_drawable_damage (CCM_DRAWABLE(window));
+		
 		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
 		
 		return TRUE;
@@ -401,10 +419,15 @@ static void
 impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 							  CCMWindow* window)
 {
-	if (!ccm_window_is_input_only(window) && ccm_window_is_viewable (window))
-		ccm_screen_damage(self);
-
 	self->priv->windows = g_list_remove(self->priv->windows, window);
+	
+	if (!ccm_window_is_input_only(window))
+	{
+		cairo_rectangle_t geometry;
+		
+		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(window), &geometry);
+		ccm_screen_damage_rectangle (self, &geometry);
+	}
 }
 
 static gboolean
@@ -414,7 +437,6 @@ ccm_screen_paint(CCMScreen* self)
 	
 	ccm_screen_plugin_paint(self->priv->plugin, self);
 	
-	self->priv->id_paint = 0;
 	g_timer_start(self->priv->vblank);
 	
 	return TRUE;
@@ -429,6 +451,7 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 	
 	if (!self->priv->cow)
 		ccm_screen_create_overlay_window(self);
+	
 	
 	if (CCM_WINDOW_XWINDOW(self->priv->cow) != CCM_WINDOW_XWINDOW(window))
 	{
@@ -756,20 +779,6 @@ on_event(CCMScreen* self, XEvent* event)
 		}
 		break;
 		default:
-			if (event->type == 
-				ccm_display_get_shape_notify_event_type(self->priv->display))
-			{
-				XShapeEvent* shape_event = (XShapeEvent*)event;
-				CCMWindow* window = ccm_screen_find_window(self,
-														   shape_event->window);
-				if (window)
-				{
-					//ccm_drawable_query_geometry(CCM_DRAWABLE(window));
-					//ccm_drawable_damage(CCM_DRAWABLE(window));
-				}
-			}
-			else
-				g_print("Event : %i\n", event->type);
 		break;
 	}
 	
@@ -909,18 +918,37 @@ ccm_screen_damage(CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	GList* item = g_list_last(self->priv->windows);
+	cairo_rectangle_t area;
 	
-	if (item)
-	{
-		cairo_rectangle_t area;
-	
-		area.x = 0.0f;
-		area.y = 0.0f;
-		area.width = CCM_SCREEN_XSCREEN(self)->width;
-		area.height = CCM_SCREEN_XSCREEN(self)->height;
+	area.x = 0.0f;
+	area.y = 0.0f;
+	area.width = CCM_SCREEN_XSCREEN(self)->width;
+	area.height = CCM_SCREEN_XSCREEN(self)->height;
 		
-		// damage toplevel window with screen geometry it damage all below windows
-		ccm_drawable_damage_rectangle (item->data, &area);
+	// damage toplevel window with screen geometry it damage all below windows
+	ccm_screen_damage_rectangle (self, &area);
+}
+
+void
+ccm_screen_damage_rectangle(CCMScreen* self, cairo_rectangle_t* area)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(area != NULL);
+	
+	GList* item;
+	
+	for (item = g_list_last(self->priv->windows); item; item = item->prev)
+	{
+		if (!ccm_window_is_input_only (item->data) &&
+			ccm_window_is_viewable (item->data))
+		{
+			g_signal_handlers_block_by_func(item->data, 
+											 on_window_damaged, 
+											 self);
+			ccm_drawable_damage_rectangle (item->data, area);
+			g_signal_handlers_unblock_by_func(item->data, 
+											  on_window_damaged, 
+											  self);
+		}
 	}
 }
