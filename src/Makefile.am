@@ -54,7 +54,9 @@ cairo_compmgr_SOURCES = \
 	ccm-screen-plugin.c \
 	ccm-window-backend.h \
 	ccm-window-backend.c \
-	ccm.h
+	ccm.h \
+	ccm-animation.h \
+	ccm-animation.c
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

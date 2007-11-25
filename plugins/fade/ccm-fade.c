@@ -22,6 +22,7 @@
 
 #include "ccm-drawable.h"
 #include "ccm-screen.h"
+#include "ccm-animation.h"
 #include "ccm-fade.h"
 #include "ccm.h"
 
@@ -46,10 +47,10 @@ struct _CCMFadePrivate
 {	
 	CCMWindow* window;
 	
-	gint animation;
+	gint way;
 	gfloat origin;
-	guint id_animation;
-	GTimer* timer;
+	
+	CCMAnimation* animation;
 	
 	CCMConfig* options[CCM_FADE_OPTION_N];
 };
@@ -57,6 +58,8 @@ struct _CCMFadePrivate
 #define CCM_FADE_GET_PRIVATE(o)  \
    ((CCMFadePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FADE, CCMFadeClass))
 
+gboolean ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, 
+							CCMFade* self);
 void ccm_fade_load_options(CCMWindowPlugin* plugin, CCMWindow* window);
 void ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window);
 void ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window);
@@ -68,9 +71,9 @@ ccm_fade_init (CCMFade *self)
 {
 	self->priv = CCM_FADE_GET_PRIVATE(self);
 	self->priv->window = NULL;
-	self->priv->animation = 0;
-	self->priv->id_animation = 0;
-	self->priv->timer = g_timer_new();
+	self->priv->way = 0;
+	self->priv->animation = 
+		ccm_animation_new((CCMAnimationFunc)ccm_fade_animation, self);
 }
 
 static void
@@ -78,8 +81,7 @@ ccm_fade_finalize (GObject *object)
 {
 	CCMFade* self = CCM_FADE(object);
 	
-	if (self->priv->id_animation) g_source_remove(self->priv->id_animation);
-	if (self->priv->timer) g_timer_destroy (self->priv->timer);
+	if (self->priv->animation) g_object_unref (self->priv->animation);
 	
 	G_OBJECT_CLASS (ccm_fade_parent_class)->finalize (object);
 }
@@ -120,43 +122,41 @@ ccm_fade_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 gboolean
-ccm_fade_timeout(CCMFade* self)
+ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 {
-	gboolean ret = TRUE;
+	gboolean ret = FALSE;
 	
-	if (self->priv->animation != 0)
+	if (self->priv->way != 0)
 	{
 		gfloat duration = ccm_config_get_float(self->priv->options[CCM_FADE_DURATION]);
-		gfloat opacity = ccm_window_get_opacity (self->priv->window);
+		gfloat opacity;
+		gfloat step = self->priv->origin * (elapsed / duration);
 		
+		opacity = self->priv->way == 1 ? step : self->priv->origin - step;
 		
-		opacity += self->priv->animation * 
-				   (g_timer_elapsed (self->priv->timer, NULL) / duration);
-		if ((self->priv->animation == 1 && opacity > self->priv->origin) ||
-			(self->priv->animation == -1 && opacity < 0.0f))
+		if ((self->priv->way == 1 && opacity > self->priv->origin) ||
+			(self->priv->way == -1 && opacity < 0.0f))
 		{
 			opacity = self->priv->origin;
-			if (self->priv->animation == 1)
+			if (self->priv->way == 1)
 			{
 				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), 
 									   self->priv->window);
+				self->priv->way = 0;
 				ret = FALSE;
 			}
-			else if (self->priv->animation == -1)
+			else if (self->priv->way == -1)
 			{
 				ccm_window_set_opacity (self->priv->window, 0.0f);
 				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
 									     self->priv->window);
+				self->priv->way = 0;
 				ret = FALSE;
 			}
-			if (!ret)
-			{
-				self->priv->animation = 0;
-				self->priv->id_animation = 0;
-				g_timer_stop(self->priv->timer);
-			}
 		}
+		else
+			ret = TRUE;
 		
 		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 		
@@ -172,20 +172,16 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMFade* self = CCM_FADE(plugin);
 	
 	self->priv->window = window;
-	if (self->priv->animation == 0)
+	if (self->priv->way == 0)
 	{
-		self->priv->animation = 1;
+		self->priv->way = 1;
 		self->priv->origin = ccm_window_get_opacity (window);
 		ccm_window_set_opacity (window, 0.0f);
 	}
 	else
-		self->priv->animation = 1;
+		self->priv->way = 1;
 	
-	if (!self->priv->id_animation)
-	{
-		self->priv->id_animation = g_idle_add ((GSourceFunc)ccm_fade_timeout, self);
-		g_timer_start(self->priv->timer);
-	}
+	ccm_animation_start(self->priv->animation);
 }
 
 void
@@ -194,18 +190,14 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMFade* self = CCM_FADE(plugin);
 	
 	self->priv->window = window;
-	if (self->priv->animation == 0)
+	if (self->priv->way == 0)
 	{
-		self->priv->animation = -1;
+		self->priv->way = -1;
 		self->priv->origin = ccm_window_get_opacity (window);
 	}
 	else
-		self->priv->animation = -1;
+		self->priv->way = -1;
 	
-	if (!self->priv->id_animation)
-	{
-		self->priv->id_animation = g_idle_add ((GSourceFunc)ccm_fade_timeout, self);
-		g_timer_start(self->priv->timer);
-	}
+	ccm_animation_start(self->priv->animation);
 }
 
