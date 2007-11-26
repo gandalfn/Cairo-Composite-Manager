@@ -78,6 +78,7 @@ plugins/Makefile
 plugins/shadow/Makefile
 plugins/opacity/Makefile
 plugins/fade/Makefile
+plugins/freeze/Makefile
 data/Makefile
 ])
 echo " "

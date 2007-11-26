@@ -2,7 +2,8 @@
 SUBDIRS = \
 	shadow\
 	opacity\
-    fade
+    fade \
+    freeze
 
 ## File created by the gnome-build tools
 

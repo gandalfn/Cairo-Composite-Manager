@@ -1,0 +1,6 @@
+[CCMPlugin]
+Plugin=ccm-freeze
+_Name=Freeze
+_Description=Window Freeze Animation
+Backends=xrender;glitz
+Depends=

@@ -99,7 +99,11 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 		
 		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
 		
-		dtempl.doublebuffer = 1;
+		format = glitz_glx_find_drawable_format_for_visual(
+				CCM_DISPLAY_XDISPLAY(display),
+				screen->number,
+				DefaultVisualOfScreen(CCM_SCREEN_XSCREEN(screen))->visualid);
+		/*dtempl.doublebuffer = 1;
 		
 		do 
 		{
@@ -120,7 +124,7 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 					cpt++;
 				}
 			}
-		} while(f);
+		} while(f);*/
 		
 		if (!format)
 		{
