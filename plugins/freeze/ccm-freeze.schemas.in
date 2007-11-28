@@ -2,14 +2,14 @@
 <gconfschemafile>
    <schemalist>
       <schema>
-         <key>/schemas/apps/cairo-compmgr/default/freeze/duration</key>
-         <applyto>/apps/cairo-compmgr/default/freeze/duration</applyto>
+         <key>/schemas/apps/cairo-compmgr/default/freeze/delay</key>
+         <applyto>/apps/cairo-compmgr/default/freeze/delay</applyto>
          <owner>gnome</owner>
-         <type>float</type>
-		 <default>0.3</default>
+         <type>int</type>
+		 <default>1000</default>
          <locale name="C">
-            <short>Freeze animation duration</short>
-            <long>Freeze animation duration</long>
+            <short>Freeze ping delay in ms</short>
+            <long>Freeze ping delay in mseconds</long>
          </locale>
       </schema>
    </schemalist>
