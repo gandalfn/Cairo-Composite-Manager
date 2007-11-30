@@ -71,49 +71,56 @@ ccm_extension_loader_class_init (CCMExtensionLoaderClass *klass)
 CCMExtensionLoader*
 ccm_extension_loader_new (GSList* filter)
 {
-	CCMExtensionLoader* self = g_object_new(CCM_TYPE_EXTENSION_LOADER, NULL);
-	GDir * plugins_dir;
-	gchar * filename;
-	GSList* item;
+	static CCMExtensionLoader* self = NULL;
 	
-	for (item = CCMPluginPath; item; item = item->next)
+	if (!self)
 	{
-		if ((plugins_dir = g_dir_open((gchar*)item->data, 0, NULL)) == NULL)
-			continue;
-		while ((filename = (gchar *)g_dir_read_name(plugins_dir)) != NULL)
+		self = g_object_new(CCM_TYPE_EXTENSION_LOADER, NULL);
+		GDir * plugins_dir;
+		gchar * filename;
+		GSList* item;
+	
+		for (item = CCMPluginPath; item; item = item->next)
 		{
-			if (g_pattern_match_simple("*.plugin", filename))
+			if ((plugins_dir = g_dir_open((gchar*)item->data, 0, NULL)) == NULL)
+				continue;
+			while ((filename = (gchar *)g_dir_read_name(plugins_dir)) != NULL)
 			{
-				CCMExtension * plugin;
-				gchar * file = g_build_filename((gchar*)item->data, 
-												filename, NULL);
-				
-				if ((plugin = ccm_extension_new(file)) != NULL)
+				if (g_pattern_match_simple("*.plugin", filename))
 				{
-					GSList* f;
-					gboolean found = FALSE;
+					CCMExtension * plugin;
+					gchar * file = g_build_filename((gchar*)item->data, 
+													filename, NULL);
 					
-					for (f = filter; f; f = f->next)
+					if ((plugin = ccm_extension_new(file)) != NULL)
 					{
-						if (!g_ascii_strcasecmp(f->data, 
-												ccm_extension_get_label(plugin)))
+						GSList* f;
+						gboolean found = FALSE;
+						
+						for (f = filter; f; f = f->next)
 						{
-							found = TRUE;
-							break;
+							if (!g_ascii_strcasecmp(f->data, 
+													ccm_extension_get_label(plugin)))
+							{
+								found = TRUE;
+								break;
+							}
 						}
+						
+						if (found)
+							self->priv->plugins = g_slist_append(self->priv->plugins,
+															 plugin);
+						else
+							g_object_unref(plugin);
 					}
-					
-					if (found)
-						self->priv->plugins = g_slist_append(self->priv->plugins,
-														 plugin);
-					else
-						g_object_unref(plugin);
+					g_free(file);
 				}
-				g_free(file);
 			}
+			g_dir_close(plugins_dir);
 		}
-		g_dir_close(plugins_dir);
 	}
+	else
+		g_object_ref(self);
 
 	return self;
 }

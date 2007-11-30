@@ -496,7 +496,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	g_return_val_if_fail(xwindow != None, NULL);
 	
 	CCMRegion* geometry;
-	CCMWindow* self = g_object_new(CCM_TYPE_WINDOW_BACKEND, 
+	CCMWindow* self = g_object_new(CCM_TYPE_WINDOW_BACKEND(screen), 
 								   "screen", screen,
 								   "drawable", xwindow,
 								   NULL);

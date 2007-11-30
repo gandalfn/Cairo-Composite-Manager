@@ -39,6 +39,7 @@ G_DEFINE_TYPE_EXTENDED (CCMScreen, ccm_screen, G_TYPE_OBJECT, 0,
 
 enum
 {
+	CCM_SCREEN_BACKEND,
 	CCM_SCREEN_PLUGINS,
 	CCM_SCREEN_REFRESH_RATE,
 	CCM_SCREEN_SYNC_WITH_VBLANK,
@@ -46,6 +47,7 @@ enum
 };
 
 static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
+	"backend",
 	"plugins",
 	"refresh_rate",
 	"sync_with_vblank"
@@ -812,6 +814,7 @@ on_event(CCMScreen* self, XEvent* event)
 		break;
 	}
 	
+	if (!refresh_rate) refresh_rate = 60;
 	if (g_timer_elapsed(self->priv->vblank, NULL) > 1.0f / (gfloat)refresh_rate)
 		ccm_screen_paint(self);
 }
@@ -822,6 +825,14 @@ _ccm_screen_sync_with_blank(CCMScreen* self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_SYNC_WITH_VBLANK]);
+}
+
+gchar*
+_ccm_screen_get_window_backend(CCMScreen* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	return ccm_config_get_string(self->priv->options[CCM_SCREEN_BACKEND]);
 }
 
 GSList*
@@ -880,6 +891,7 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	ccm_screen_query_stack(self);
 	
 	refresh_rate = ccm_config_get_integer(self->priv->options[CCM_SCREEN_REFRESH_RATE]);
+	if (!refresh_rate) refresh_rate = 60;
 	
 	self->priv->id_paint = g_timeout_add_full(G_PRIORITY_HIGH, 
 											  1000/refresh_rate, 

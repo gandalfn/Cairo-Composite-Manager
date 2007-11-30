@@ -24,22 +24,16 @@
 #include "ccm.h"
 
 GType
-ccm_window_backend_get_type(void)
+ccm_window_backend_get_type(CCMScreen* screen)
 {
-	static gchar* backend = NULL;
+	gchar* backend;
 #ifndef DISABLE_XRENDER_BACKEND
 	GType type = ccm_window_xrender_get_type();
 #else
 	GType type = 0;
 #endif
 	
-	if (!backend)
-	{
-		CCMConfig* config_backend = ccm_config_new(-1, NULL, "backend");
-		backend = ccm_config_get_string(config_backend);
-		g_object_unref(config_backend);
-	}
-	
+	backend = _ccm_screen_get_window_backend(screen);
 	if (backend)
 	{
 #ifndef DISABLE_GLITZ_BACKEND

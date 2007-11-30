@@ -196,14 +196,14 @@ ccm_extension_get_type_object (CCMExtension* self)
 {
 	g_return_val_if_fail(self != NULL, 0);
 	
-	gint cpt;
-	gboolean found = FALSE;
-	GType backend = ccm_window_backend_get_type();
+	//gint cpt;
+	gboolean found = TRUE;
+	//GType backend = ccm_window_backend_get_type();
 	
 	g_type_module_use(G_TYPE_MODULE(self));
 		
 	/* Check if plugin support current backend */
-	for (cpt = 0; self->priv->backends && self->priv->backends[cpt]; cpt++)
+	/*for (cpt = 0; self->priv->backends && self->priv->backends[cpt]; cpt++)
 	{
 #ifndef DISABLE_XRENDER_BACKEND
 		if (!g_ascii_strcasecmp("xrender", self->priv->backends[cpt]) &&
@@ -221,7 +221,7 @@ ccm_extension_get_type_object (CCMExtension* self)
 			break;
 		}
 #endif
-	}
+	}*/
 			
 	return self->priv->get_type && found ? self->priv->get_type(G_TYPE_MODULE(self)) : 0;
 }

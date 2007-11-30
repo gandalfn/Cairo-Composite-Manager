@@ -25,6 +25,8 @@
 
 #include <glib.h>
 
+#include "ccm-screen.h"
+
 #ifndef DISABLE_GLITZ_BACKEND
 #include "ccm-window-glitz.h"
 #endif
@@ -38,7 +40,7 @@ G_BEGIN_DECLS
 typedef union _CCMWindowBackend CCMWindowBackend;
 typedef union _CCMWindowBackendClass CCMWindowBackendClass;
 
-#define CCM_TYPE_WINDOW_BACKEND             (ccm_window_backend_get_type ())
+#define CCM_TYPE_WINDOW_BACKEND(screen)     (ccm_window_backend_get_type (screen))
 #define CCM_WINDOW_BACKEND(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_WINDOW_BACKEND, CCMWindowBackend))
 #define CCM_WINDOW_BACKEND_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_WINDOW_BACKEND, CCMWindowBackendClass))
 #define CCM_IS_WINDOW_BACKEND(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_WINDOW_BACKEND))
@@ -65,7 +67,7 @@ union _CCMWindowBackend
 #endif
 };
 
-GType ccm_window_backend_get_type (void) G_GNUC_CONST;
+GType ccm_window_backend_get_type (CCMScreen* screen) G_GNUC_CONST;
 
 G_END_DECLS
 

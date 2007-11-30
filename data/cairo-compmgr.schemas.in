@@ -2,17 +2,6 @@
 <gconfschemafile>
    <schemalist>
       <schema>
-         <key>/schemas/apps/cairo-compmgr/general/backend</key>
-         <applyto>/apps/cairo-compmgr/general/backend</applyto>
-         <owner>gnome</owner>
-         <type>string</type>
-         <default>xrender</default>
-         <locale name="C">
-            <short>Cairo Composite Manager backend</short>
-            <long>Cairo Composite Manager backend (xrender (2D), glitz (OpenGL)) need a restart of cairo-compmgr</long>
-         </locale>
-      </schema>
-	  <schema>
          <key>/schemas/apps/cairo-compmgr/general/use_xshm</key>
          <applyto>/apps/cairo-compmgr/general/use_xshm</applyto>
          <owner>gnome</owner>
@@ -33,6 +22,17 @@
          <locale name="C">
             <short>List of unmanaged screen</short>
             <long>List of unmanaged screen</long>
+         </locale>
+      </schema>
+	  <schema>
+         <key>/schemas/apps/cairo-compmgr/default/screen/backend</key>
+         <applyto>/apps/cairo-compmgr/default/screen/backend</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+         <default>xrender</default>
+         <locale name="C">
+            <short>Cairo Composite Manager backend</short>
+            <long>Cairo Composite Manager backend (xrender (2D), glitz (OpenGL)) need a restart of cairo-compmgr</long>
          </locale>
       </schema>
 	  <schema>
