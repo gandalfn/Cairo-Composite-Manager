@@ -61,6 +61,8 @@ struct _CCMScreenPrivate
 	CCMWindow* 			cow;
 	Window				selection_owner;
 	
+	CCMRegion*			damaged;
+	
 	GList*				windows;
 	
 	GTimer*				vblank;
@@ -93,6 +95,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->ctx = NULL;
 	self->priv->root = NULL;
 	self->priv->cow = NULL;
+	self->priv->damaged = NULL;
 	self->priv->windows = NULL;
 	self->priv->vblank = g_timer_new();
 	self->priv->id_paint = 0;
@@ -131,6 +134,8 @@ ccm_screen_finalize (GObject *object)
 		ccm_window_unredirect_subwindows(self->priv->root);
 		g_object_unref(self->priv->root);
 	}
+	if (self->priv->damaged)
+		ccm_region_destroy(self->priv->damaged);
 	if (self->priv->cow) 
 	{
 		XCompositeReleaseOverlayWindow(CCM_DISPLAY_XDISPLAY(self->priv->display),
@@ -369,7 +374,18 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 					ret = TRUE;
 			}
 		}
-		if (ret) ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
+		if (ret) 
+		{
+			if (self->priv->damaged)
+			{
+				ccm_drawable_flush_region(CCM_DRAWABLE(self->priv->cow), 
+										  self->priv->damaged);
+				ccm_region_destroy(self->priv->damaged);
+				self->priv->damaged = NULL;
+			}
+			else
+				ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
+		}
 	}
 }
 
@@ -558,6 +574,9 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 			ccm_region_destroy (damage_above);
 			return;
 		}
+		if (!self->priv->damaged) self->priv->damaged = ccm_region_new();
+		ccm_region_union(self->priv->damaged, damage_below);
+		ccm_region_union(self->priv->damaged, damage_above);
 		
 		// damage now all concurent window
 		for (item = g_list_last(self->priv->windows); item; item = item->prev)

@@ -23,7 +23,8 @@ AM_CFLAGS =\
 	 -fPIC \
      -ftracer \
      -fomit-frame-pointer \
-     -ffast-math
+     -ffast-math \
+     -fno-strict-aliasing
 
 bin_PROGRAMS = cairo-compmgr
 

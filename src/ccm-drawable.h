@@ -54,6 +54,8 @@ struct _CCMDrawableClass
 	void			  (*repair)				(CCMDrawable* self,
 											 CCMRegion* damaged);
 	void			  (*flush)				(CCMDrawable* self);
+	void			  (*flush_region)		(CCMDrawable* self,
+											 CCMRegion* region);
 };
 
 typedef struct _CCMDrawablePrivate CCMDrawablePrivate;

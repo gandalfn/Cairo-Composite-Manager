@@ -428,6 +428,25 @@ ccm_drawable_flush(CCMDrawable* self)
 }
 
 /**
+ * ccm_drawable_flush_region:
+ * @self: #CCMDrawable
+ * @region: #CCMRegion
+ *
+ * Flush all pending draw operation on region of drawable.
+ **/
+void
+ccm_drawable_flush_region(CCMDrawable* self, CCMRegion* region)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(region != NULL);
+	
+	if (CCM_DRAWABLE_GET_CLASS(self)->flush_region)
+	{
+		CCM_DRAWABLE_GET_CLASS(self)->flush_region(self, region);
+	}
+}
+
+/**
  * ccm_drawable_get_surface:
  * @self: #CCMDrawable
  *

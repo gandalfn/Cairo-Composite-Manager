@@ -44,6 +44,8 @@ struct _CCMWindowGlitzPrivate
 static cairo_surface_t* ccm_window_glitz_get_surface(CCMDrawable* drawable);
 static Visual*	ccm_window_glitz_get_visual(CCMDrawable* drawable);
 static void ccm_window_glitz_flush(CCMDrawable* drawable);
+static void ccm_window_glitz_flush_region(CCMDrawable* drawable, 
+										  CCMRegion* region);
 
 static void
 ccm_window_glitz_init (CCMWindowGlitz *self)
@@ -77,6 +79,7 @@ ccm_window_glitz_class_init (CCMWindowGlitzClass *klass)
 	CCM_DRAWABLE_CLASS(klass)->get_surface =  ccm_window_glitz_get_surface;
 	CCM_DRAWABLE_CLASS(klass)->get_visual = ccm_window_glitz_get_visual;
 	CCM_DRAWABLE_CLASS(klass)->flush = ccm_window_glitz_flush;
+	CCM_DRAWABLE_CLASS(klass)->flush_region = ccm_window_glitz_flush_region;
 	
 	object_class->finalize = ccm_window_glitz_finalize;
 }
@@ -336,5 +339,40 @@ ccm_window_glitz_flush(CCMDrawable* drawable)
 		else
 			ccm_window_glitz_vsync(self, 0);
 		glitz_drawable_swap_buffers(self->priv->gl_drawable);
+	}
+}
+static void
+ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
+{
+	g_return_if_fail(drawable != NULL);
+	
+	CCMWindowGlitz* self = CCM_WINDOW_GLITZ(drawable);
+	CCMScreen* screen = ccm_drawable_get_screen(drawable);
+	cairo_rectangle_t* rects, geometry;
+	glitz_box_t* boxs;
+	gint cpt, nb_rects;
+
+	if (ccm_window_glitz_create_gl_drawable(self))
+	{
+		if (_ccm_screen_sync_with_blank(screen)) 
+			ccm_window_glitz_vsync(self, 1);
+		else
+			ccm_window_glitz_vsync(self, 0);
+				
+		ccm_region_get_rectangles(region, &rects, &nb_rects);
+		boxs = g_new (glitz_box_t, nb_rects);
+		for (cpt = 0; cpt < nb_rects; cpt++)
+		{
+			boxs[cpt].x1 = rects[cpt].x;
+			boxs[cpt].x2 = rects[cpt].x + rects[cpt].width;
+			boxs[cpt].y1 = rects[cpt].y;
+			boxs[cpt].y2 = rects[cpt].y + rects[cpt].height;
+		}
+		g_free(rects);
+		ccm_drawable_get_geometry_clipbox(drawable, &geometry);
+		glitz_drawable_swap_buffer_region(self->priv->gl_drawable,
+										  geometry.x, geometry.y,
+										  boxs, nb_rects);
+		g_free(boxs);
 	}
 }

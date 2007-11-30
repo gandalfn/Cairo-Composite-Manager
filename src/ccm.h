@@ -192,6 +192,8 @@ void			 ccm_drawable_move					(CCMDrawable* self,
 void			 ccm_drawable_resize				(CCMDrawable* self, 
 													 int width, int height);
 void			 ccm_drawable_flush					(CCMDrawable* self);
+void             ccm_drawable_flush_region          (CCMDrawable* self, 
+                                                     CCMRegion* region);
 cairo_path_t*	 ccm_drawable_get_geometry_path		(CCMDrawable* self, 
 													 cairo_t* context);
 cairo_path_t*	 ccm_drawable_get_damage_path		(CCMDrawable* self, 

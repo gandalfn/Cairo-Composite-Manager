@@ -43,6 +43,7 @@ struct _CCMWindowXRenderPrivate
 static cairo_surface_t* ccm_window_xrender_get_surface(CCMDrawable* drawable);
 static Visual*	ccm_window_xrender_get_visual(CCMDrawable* drawable);
 static void ccm_window_xrender_flush(CCMDrawable* drawable);
+static void ccm_window_xrender_flush_region(CCMDrawable* drawable, CCMRegion* region);
 
 static void
 ccm_window_xrender_init (CCMWindowXRender *self)
@@ -74,7 +75,8 @@ ccm_window_xrender_class_init (CCMWindowXRenderClass *klass)
 	CCM_DRAWABLE_CLASS(klass)->get_surface =  ccm_window_xrender_get_surface;
 	CCM_DRAWABLE_CLASS(klass)->get_visual = ccm_window_xrender_get_visual;
 	CCM_DRAWABLE_CLASS(klass)->flush = ccm_window_xrender_flush;
-
+	CCM_DRAWABLE_CLASS(klass)->flush_region = ccm_window_xrender_flush_region;
+	
 	object_class->finalize = ccm_window_xrender_finalize;
 }
 
@@ -153,6 +155,26 @@ ccm_window_xrender_flush(CCMDrawable* drawable)
 		
 		swap_info.swap_window = CCM_WINDOW_XWINDOW(self);
 		swap_info.swap_action = XdbeUndefined;
+		
+		XdbeSwapBuffers(CCM_DISPLAY_XDISPLAY(display), &swap_info, 1);
+	}
+}
+
+static void
+ccm_window_xrender_flush_region(CCMDrawable* drawable, CCMRegion* region)
+{
+	g_return_if_fail(drawable != NULL);
+	g_return_if_fail(region != NULL);
+	
+	CCMWindowXRender* self = CCM_WINDOW_X_RENDER(drawable);
+	
+	if (ccm_window_xrender_create_backbuffer(self))
+	{
+		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+		XdbeSwapInfo swap_info;
+		
+		swap_info.swap_window = CCM_WINDOW_XWINDOW(self);
+		swap_info.swap_action = XdbeCopied;
 		
 		XdbeSwapBuffers(CCM_DISPLAY_XDISPLAY(display), &swap_info, 1);
 	}
