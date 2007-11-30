@@ -55,6 +55,8 @@ struct _CCMScreenPrivate
 {
 	CCMDisplay* 		display;
 	
+	cairo_t*			ctx;
+	
 	CCMWindow* 			root;
 	CCMWindow* 			cow;
 	Window				selection_owner;
@@ -88,6 +90,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv = CCM_SCREEN_GET_PRIVATE(self);
 	
 	self->priv->display = NULL;
+	self->priv->ctx = NULL;
 	self->priv->root = NULL;
 	self->priv->cow = NULL;
 	self->priv->windows = NULL;
@@ -114,6 +117,9 @@ ccm_screen_finalize (GObject *object)
 	
 	if (self->priv->id_paint)
 		g_source_remove(self->priv->id_paint);
+	
+	if (self->priv->ctx)
+		cairo_destroy (self->priv->ctx);
 	
 	if (self->priv->windows) 
 	{
@@ -345,20 +351,24 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 		
 	if (self->priv->cow)
 	{
-		cairo_t* ctx = ccm_drawable_create_context(CCM_DRAWABLE(self->priv->cow));
 		GList* item;
-		
+
+		if (!self->priv->ctx)
+		{
+			self->priv->ctx = 
+					ccm_drawable_create_context(CCM_DRAWABLE(self->priv->cow));
+			cairo_identity_matrix (self->priv->ctx);
+		}
 		for (item = self->priv->windows; item; item = item->next)
 		{
 			CCMWindow* window = item->data;
 				
 			if (!ccm_window_is_input_only(window))
 			{
-				if (ccm_window_paint(window, ctx))
+				if (ccm_window_paint(window, self->priv->ctx))
 					ret = TRUE;
 			}
 		}
-		cairo_destroy(ctx);
 		if (ret) ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
 	}
 }
@@ -436,7 +446,6 @@ ccm_screen_paint(CCMScreen* self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	ccm_screen_plugin_paint(self->priv->plugin, self);
-	
 	g_timer_start(self->priv->vblank);
 	
 	return TRUE;
@@ -597,6 +606,8 @@ on_event(CCMScreen* self, XEvent* event)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(event != NULL);
+	
+	gint refresh_rate = ccm_config_get_integer(self->priv->options[CCM_SCREEN_REFRESH_RATE]);
 	
 	switch (event->type)
 	{
@@ -782,7 +793,7 @@ on_event(CCMScreen* self, XEvent* event)
 		break;
 	}
 	
-	if (g_timer_elapsed(self->priv->vblank, NULL) > 1.0f / 60.0f)
+	if (g_timer_elapsed(self->priv->vblank, NULL) > 1.0f / (gfloat)refresh_rate)
 		ccm_screen_paint(self);
 }
 
