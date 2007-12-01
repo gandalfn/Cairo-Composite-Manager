@@ -253,7 +253,77 @@ create_atoms(CCMWindow* self)
 											CCM_DISPLAY_XDISPLAY(display),
 											"_XA_MOTIF_WM_HINTS", 
 											False);
+		klass->frame_extends_atom      = XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_NET_FRAME_EXTENTS", 
+											False);
 	}
+}
+
+static guint32 *
+ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format, 
+						Atom req_type, guint *n_items)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(property_atom != None, NULL);
+	
+    CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+    int ret;
+    Atom type;
+    int format;
+    gulong n_items_internal;
+    guchar *property = NULL;
+    gulong bytes_after;
+    guint32 *result;
+    
+    ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
+							  CCM_WINDOW_XWINDOW(self), property_atom, 
+							  0, G_MAXLONG, False,
+							  req_type, &type, &format,
+							  &n_items_internal, &bytes_after,
+							  &property);
+    
+    if (ret != Success)
+    {
+		if (property) XFree(property);
+		return NULL;
+    }
+        
+    result = g_memdup (property, n_items_internal * (format / 8));
+    XFree(property);
+	
+    if (n_items) *n_items = n_items_internal;
+    
+    return result;
+}
+
+static gboolean
+ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame, 
+							 int* top_frame, int* bottom_frame)
+{
+	guint32* data = NULL;
+	guint n_items;
+	gboolean ret = FALSE;
+	
+	data = ccm_window_get_property(self, 
+								   CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
+								   32, XA_CARDINAL, &n_items);
+	if (data)
+	{
+		gulong* extends = (gulong*)data;
+		
+		if (n_items == 4)
+		{
+			*left_frame   = extends[0];
+      		*right_frame  = extends[1];
+      		*top_frame    = extends[2];
+      		*bottom_frame = extends[3];
+			ret = TRUE;
+		}
+		g_free(data);
+	}
+	
+	return ret;
 }
 
 static CCMRegion*
@@ -267,6 +337,7 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	unsigned int bw, bh, cw, ch; /* dummies */
 	XWindowAttributes attrs;
 	cairo_rectangle_t area;
+	gint left_frame, right_frame, top_frame, bottom_frame;
 	
 	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
 							   CCM_WINDOW_XWINDOW(self), &attrs))
@@ -300,6 +371,16 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 		area.width = attrs.width + attrs.border_width * 2;
 		area.height = attrs.height + attrs.border_width * 2;
 		geometry = ccm_region_rectangle(&area);
+	}
+	
+	if (ccm_window_get_frame_extends(self, &left_frame, &right_frame,
+									 &top_frame, &bottom_frame))
+	{
+		ccm_region_get_clipbox (geometry, &area);
+		ccm_region_offset(geometry, area.x - left_frame, 
+									area.y - top_frame);
+		ccm_region_resize (geometry, area.width + left_frame + right_frame,
+						   area.height + top_frame + bottom_frame);
 	}
 	
 	if (ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 && 
@@ -379,43 +460,6 @@ ccm_window_resize(CCMDrawable* drawable, int width, int height)
 			self->priv->pixmap = NULL;
 		}
 	}
-}
-
-static guint32 *
-ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format, 
-						Atom req_type, guint *n_items)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	g_return_val_if_fail(property_atom != None, NULL);
-	
-    CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-    int ret;
-    Atom type;
-    int format;
-    gulong n_items_internal;
-    guchar *property = NULL;
-    gulong bytes_after;
-    guint32 *result;
-    
-    ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
-							  CCM_WINDOW_XWINDOW(self), property_atom, 
-							  0, G_MAXLONG, False,
-							  req_type, &type, &format,
-							  &n_items_internal, &bytes_after,
-							  &property);
-    
-    if (ret != Success)
-    {
-		if (property) XFree(property);
-		return NULL;
-    }
-        
-    result = g_memdup (property, n_items_internal * (format / 8));
-    XFree(property);
-	
-    if (n_items) *n_items = n_items_internal;
-    
-    return result;
 }
 
 static gboolean

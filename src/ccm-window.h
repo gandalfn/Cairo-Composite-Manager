@@ -73,6 +73,8 @@ struct _CCMWindowClass
 	Atom			 state_below_atom;
 	
 	Atom			 mwm_hints_atom;
+	
+	Atom			 frame_extends_atom;
 };
 
 typedef struct _CCMWindowPrivate CCMWindowPrivate;
