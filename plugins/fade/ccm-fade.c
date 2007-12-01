@@ -140,6 +140,7 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 			opacity = self->priv->origin;
 			if (self->priv->way == 1)
 			{
+				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), 
 									   self->priv->window);
 				self->priv->way = 0;
@@ -148,6 +149,7 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 			else if (self->priv->way == -1)
 			{
 				ccm_window_set_opacity (self->priv->window, opacity);
+				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
 									     self->priv->window);
 				self->priv->way = 0;

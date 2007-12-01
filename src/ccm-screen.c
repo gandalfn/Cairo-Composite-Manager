@@ -432,10 +432,10 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		else
 			self->priv->windows = g_list_prepend(self->priv->windows, window);
 		
+		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
+		
 		if (ccm_window_is_viewable (window))
 			ccm_drawable_damage (CCM_DRAWABLE(window));
-		
-		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
 		
 		return TRUE;
 	}
@@ -706,7 +706,17 @@ on_event(CCMScreen* self, XEvent* event)
 		break;
 		case CirculateNotify:
 		{
-			g_print("CirculateNotify\n");
+			XCirculateEvent* circulate_event = (XCirculateEvent*)event;
+			
+			CCMWindow* window = ccm_screen_find_window(self,
+													   circulate_event->window);
+			if (window)
+			{
+				if (circulate_event->place == PlaceOnTop)
+					ccm_screen_restack (self, window, NULL);
+				else
+					ccm_screen_restack (self, NULL, window);
+			}
 		}
 		break;
 		case ConfigureNotify:
@@ -769,8 +779,22 @@ on_event(CCMScreen* self, XEvent* event)
 		}
 		break;
 		case Expose:
-			g_print("Expose\n");
-			break;
+		{
+			XExposeEvent* expose_event = (XExposeEvent*)event;
+			CCMWindow* window = ccm_screen_find_window(self,
+													   expose_event->window);
+			if (window || 
+				expose_event->window == CCM_WINDOW_XWINDOW(self->priv->root))
+			{
+				cairo_rectangle_t area;
+				area.x = expose_event->x;
+				area.y = expose_event->y;
+				area.width = expose_event->width;
+				area.height = expose_event->height;
+				ccm_screen_damage_rectangle (self, &area);
+			}
+		}
+		break;
 		case ClientMessage:
 		{
 			XClientMessageEvent* client_event = (XClientMessageEvent*)event;
