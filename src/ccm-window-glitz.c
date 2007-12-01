@@ -20,12 +20,15 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
+#include <X11/Xlib.h>
+#include <GL/glx.h>
 #include <glitz.h>
 #include <glitz-glx.h>
 #include <cairo-glitz.h>
 
 #include "ccm-display.h"
 #include "ccm-screen.h"
+#include "ccm-display.h"
 #include "ccm-window-glitz.h"
 
 G_DEFINE_TYPE (CCMWindowGlitz, ccm_window_glitz, CCM_TYPE_WINDOW);
@@ -290,21 +293,26 @@ ccm_window_glitz_wait_vblank(CCMWindowGlitz* self)
 
 typedef void (*glXSwapIntervalSGIProc) (int);
 typedef void (*glXSwapIntervalMESAProc) (int);
+typedef void (*glXCopySubBufferMESAProc) (Display*, Drawable, 
+										  int, int, int, int);
 
 static void
 ccm_window_glitz_vsync(CCMWindowGlitz* self, gint interval)
 {
 	g_return_if_fail(self != NULL);
 	static int initialized = 0;
-		
-	if (initialized != interval && ccm_window_glitz_get_gl_context(self))
+	static gboolean supported = TRUE;
+	
+	if (supported && initialized != interval && ccm_window_glitz_get_gl_context(self))
 	{
 		glXSwapIntervalSGIProc s = NULL;	
 		glXSwapIntervalMESAProc m = NULL;
 
+		glitz_context_make_current(self->priv->gl_context,
+								   self->priv->gl_drawable);
+		
 		s = (glXSwapIntervalSGIProc)
-			glitz_context_get_proc_address(self->priv->gl_context,
-										   "glXSwapIntervalSGI");
+			glXGetProcAddress((const guchar*)"glXSwapIntervalSGI");
 		if (s) 
 		{
 			s(interval);
@@ -313,14 +321,14 @@ ccm_window_glitz_vsync(CCMWindowGlitz* self, gint interval)
 		}
 			
 		m = (glXSwapIntervalMESAProc)
-		glitz_context_get_proc_address(self->priv->gl_context,
-									   "glXSwapIntervalMESA");
+			glXGetProcAddress((const guchar*)"glXSwapIntervalMESA");
 		if (m)
 		{
 			m(interval);
 			initialized = interval;
 			return;
 		}
+		supported = FALSE;
 	}
 }
 					   
@@ -348,31 +356,44 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 	
 	CCMWindowGlitz* self = CCM_WINDOW_GLITZ(drawable);
 	CCMScreen* screen = ccm_drawable_get_screen(drawable);
-	cairo_rectangle_t* rects, geometry;
-	glitz_box_t* boxs;
-	gint cpt, nb_rects;
-
+	
 	if (ccm_window_glitz_create_gl_drawable(self))
 	{
+		static glXCopySubBufferMESAProc csb = NULL;
+		static gboolean supported = TRUE;
+		
 		if (_ccm_screen_sync_with_blank(screen)) 
 			ccm_window_glitz_vsync(self, 1);
 		else
 			ccm_window_glitz_vsync(self, 0);
-				
-		ccm_region_get_rectangles(region, &rects, &nb_rects);
-		boxs = g_new (glitz_box_t, nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
+		glitz_context_make_current(self->priv->gl_context,
+								   self->priv->gl_drawable);
+		if (!csb && supported)
 		{
-			boxs[cpt].x1 = rects[cpt].x;
-			boxs[cpt].x2 = rects[cpt].x + rects[cpt].width;
-			boxs[cpt].y1 = rects[cpt].y;
-			boxs[cpt].y2 = rects[cpt].y + rects[cpt].height;
+		 	csb = (glXCopySubBufferMESAProc)
+				   glXGetProcAddress((const guchar*)"glXCopySubBufferMESA");
+			supported = csb != NULL;
 		}
-		g_free(rects);
-		ccm_drawable_get_geometry_clipbox(drawable, &geometry);
-		glitz_drawable_swap_buffer_region(self->priv->gl_drawable,
-										  geometry.x, geometry.y,
-										  boxs, nb_rects);
-		g_free(boxs);
+		
+		if (csb)
+		{
+			cairo_rectangle_t* rects, geometry;
+			gint cpt, nb_rects;
+			CCMDisplay* display = ccm_drawable_get_display (drawable);
+			
+			ccm_drawable_get_geometry_clipbox (drawable, &geometry);
+			ccm_region_get_rectangles(region, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+			{
+				gint y = geometry.height - (rects[cpt].height + rects[cpt].y);
+				csb(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
+					rects[cpt].x > 0 ? rects[cpt].x : 0, y, 
+					rects[cpt].width, rects[cpt].height);
+				
+			}
+			g_free(rects);
+		}
+		else
+			glitz_drawable_swap_buffers(self->priv->gl_drawable);
 	}
 }

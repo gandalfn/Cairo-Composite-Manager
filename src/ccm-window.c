@@ -919,6 +919,8 @@ ccm_window_map(CCMWindow* self)
 	
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
+	else
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void
@@ -933,6 +935,8 @@ ccm_window_unmap(CCMWindow* self)
 		
 		ccm_window_plugin_unmap(self->priv->plugin, self);
 	}
+	else
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void 

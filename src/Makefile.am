@@ -83,6 +83,6 @@ cairo_compmgr_LDADD += $(CCM_XRENDER_BACKEND_LIBS)
 endif
 
 if HAVE_GLITZ_BACKEND
-cairo_compmgr_LDADD += $(CCM_GLITZ_BACKEND_LIBS)
+cairo_compmgr_LDADD += $(CCM_GLITZ_BACKEND_LIBS) -lGL
 endif
 
