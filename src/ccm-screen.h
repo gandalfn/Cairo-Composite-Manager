@@ -41,6 +41,8 @@ G_BEGIN_DECLS
 struct _CCMScreenClass
 {
 	GObjectClass parent_class;
+	
+	Window				selection_owner;
 };
 
 typedef struct _CCMScreenPrivate CCMScreenPrivate;

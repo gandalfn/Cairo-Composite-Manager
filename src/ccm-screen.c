@@ -61,7 +61,6 @@ struct _CCMScreenPrivate
 	
 	CCMWindow* 			root;
 	CCMWindow* 			cow;
-	Window				selection_owner;
 	
 	CCMRegion*			damaged;
 	
@@ -101,7 +100,6 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->windows = NULL;
 	self->priv->vblank = g_timer_new();
 	self->priv->id_paint = 0;
-	self->priv->selection_owner = None;
 	self->priv->plugin_loader = NULL;
 }
 
@@ -144,9 +142,6 @@ ccm_screen_finalize (GObject *object)
 									   CCM_WINDOW_XWINDOW(self->priv->cow));
 		g_object_unref(self->priv->cow);
 	}
-	if (self->priv->selection_owner) 
-		XDestroyWindow(CCM_DISPLAY_XDISPLAY(self->priv->display),
-					   self->priv->selection_owner);
 	
 	if (self->priv->display) g_object_unref(self->priv->display);
 	
@@ -159,6 +154,8 @@ ccm_screen_class_init (CCMScreenClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 	
 	g_type_class_add_private (klass, sizeof (CCMScreenPrivate));
+	
+	klass->selection_owner = None;
 	
 	object_class->finalize = ccm_screen_finalize;
 }
@@ -226,25 +223,38 @@ ccm_screen_set_selection_owner(CCMScreen* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", self->number);
-	Atom cm_atom = XInternAtom(CCM_DISPLAY_XDISPLAY(self->priv->display), 
-							   cm_atom_name, 0);
-	CCMWindow* root = ccm_screen_get_root_window(self);
-	
-	g_free(cm_atom_name);
-	 
-    self->priv->selection_owner = 
-		XCreateSimpleWindow (CCM_DISPLAY_XDISPLAY(self->priv->display), 
-							 CCM_WINDOW_XWINDOW(root), 
-							 -100, -100, 10, 10, 0, None, None);
+	if (CCM_SCREEN_GET_CLASS(self)->selection_owner == None)
+	{
+		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", self->number);
+		Atom cm_atom = XInternAtom(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+								   cm_atom_name, 0);
+		CCMWindow* root = ccm_screen_get_root_window(self);
+		
+		g_free(cm_atom_name);
+		 
+		if (XGetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+								cm_atom) != None)
+		{
+			g_critical("\nScreen %d already has a composite manager running, \n"
+					   "try to stop it before run cairo-compmgr", 
+					   self->number);
+			return FALSE;
+		}
+		
+		CCM_SCREEN_GET_CLASS(self)->selection_owner = 
+			XCreateSimpleWindow (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+								 CCM_WINDOW_XWINDOW(root), 
+								 -100, -100, 10, 10, 0, None, None);
 
-	Xutf8SetWMProperties (CCM_DISPLAY_XDISPLAY(self->priv->display), 
-						  self->priv->selection_owner, "cairo-compmgr", 
-						  "cairo-compmgr", NULL, 0, 
-						  NULL, NULL, NULL);
+		Xutf8SetWMProperties (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+							  CCM_SCREEN_GET_CLASS(self)->selection_owner, "cairo-compmgr", 
+							  "cairo-compmgr", NULL, 0, 
+							  NULL, NULL, NULL);
 
-	XSetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
-						cm_atom, self->priv->selection_owner, 0);
+		XSetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+							cm_atom, CCM_SCREEN_GET_CLASS(self)->selection_owner, 0);
+		
+	}
 	
 	return TRUE;
 }
@@ -403,8 +413,8 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->cow))
 		return FALSE;
 	
-	if (self->priv->selection_owner && 
-		CCM_WINDOW_XWINDOW(window) == self->priv->selection_owner)
+	if (CCM_SCREEN_GET_CLASS(self)->selection_owner && 
+		CCM_WINDOW_XWINDOW(window) == CCM_SCREEN_GET_CLASS(self)->selection_owner)
 		return FALSE;
 	
 	if (!ccm_window_is_input_only(window) &&
@@ -736,7 +746,7 @@ on_event(CCMScreen* self, XEvent* event)
 					if (configure_event->above && 
 						configure_event->above != CCM_WINDOW_XWINDOW(self->priv->root) &&
 						configure_event->above != CCM_WINDOW_XWINDOW(self->priv->cow) &&
-						configure_event->above != self->priv->selection_owner)
+						configure_event->above != CCM_SCREEN_GET_CLASS(self)->selection_owner)
 					{
 						below = ccm_screen_find_window(self, configure_event->above);
 						if (below)
@@ -910,7 +920,11 @@ ccm_screen_new(CCMDisplay* display, guint number)
 		return NULL;
 	}
 	
-	ccm_screen_set_selection_owner(self);
+	if (!ccm_screen_set_selection_owner(self))
+	{
+		return NULL;
+	}
+	
 	ccm_window_redirect_subwindows(ccm_screen_get_root_window(self));
 	ccm_screen_query_stack(self);
 	
