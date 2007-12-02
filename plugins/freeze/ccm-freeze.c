@@ -39,7 +39,8 @@ static gchar* CCMFreezeOptions[CCM_FREEZE_OPTION_N] = {
 };
 
 static void ccm_freeze_iface_init(CCMWindowPluginClass* iface);
-
+static Atom protocol_atom = 0;
+	
 CCM_DEFINE_PLUGIN (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_freeze,
 										   CCM_TYPE_WINDOW_PLUGIN,
@@ -52,8 +53,7 @@ struct _CCMFreezePrivate
 	CCMWindow* window;
 	
 	guint id_ping;
-	gint last_ping;
-	gint last_pong;
+	guint32 last_ping;
 	
 	CCMConfig* options[CCM_FREEZE_OPTION_N];
 };
@@ -75,7 +75,6 @@ ccm_freeze_init (CCMFreeze *self)
 	self->priv->window = NULL;
 	self->priv->id_ping = 0;
 	self->priv->last_ping = 0;
-	self->priv->last_pong = 0;
 }
 
 static void
@@ -84,8 +83,9 @@ ccm_freeze_finalize (GObject *object)
 	CCMFreeze* self = CCM_FREEZE(object);
 	
 	self->priv->window = NULL;
-	
 	if (self->priv->id_ping) g_source_remove (self->priv->id_ping);
+	self->priv->id_ping = 0;
+	self->priv->last_ping = 0;
 	
 	G_OBJECT_CLASS (ccm_freeze_parent_class)->finalize (object);
 }
@@ -117,56 +117,64 @@ ccm_freeze_iface_init(CCMWindowPluginClass* iface)
 void
 ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
 {
-/*	if (event->type == ClientMessage && 
-		event->xclient.message_type == CCM_FREEZE_GET_CLASS(self)->protocol_atom &&
-		event->xclient.data.l[0] == CCM_FREEZE_GET_CLASS(self)->ping_atom)
-		g_print("0x%x 0x%x pong\n", event->xclient.window, CCM_WINDOW_XWINDOW(self->priv->window));*/
-		
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(event != NULL);
+	
+	if (!CCM_IS_FREEZE(self)) return;
+	
 	if (self->priv->window && event->type == ClientMessage && 
-		event->xclient.data.l[2] == CCM_WINDOW_XWINDOW(self->priv->window) &&
-		event->xclient.message_type == CCM_FREEZE_GET_CLASS(self)->protocol_atom &&
-		event->xclient.data.l[0] == CCM_FREEZE_GET_CLASS(self)->ping_atom)
+		event->xclient.window == CCM_WINDOW_XWINDOW(self->priv->window))
 	{
-		if (!self->priv->alive) 
+		if (event->xclient.message_type == protocol_atom)
 		{
-			g_print("0x%x alive\n", CCM_WINDOW_XWINDOW(self->priv->window));
+			g_print("Pong 0x%x, %li\n", event->xclient.window,
+					event->xclient.data.l[1]);
 			self->priv->alive = TRUE;
+			self->priv->last_ping = 0;
 		}
-		self->priv->last_pong = self->priv->last_ping;
 	}
 }
 
 gboolean
-ccm_freeze_on_timeout(CCMFreeze* self)
+ccm_freeze_ping(CCMFreeze* self)
 {
-	gint ping = self->priv->last_ping + 1;
-		
-	if (self->priv->window && self->priv->last_pong < self->priv->last_ping)
+	if (self->priv->window)
 	{
 		XEvent event;
     	CCMDisplay* display = 
 			ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));
 		
-		g_print("0x%x not alive\n", CCM_WINDOW_XWINDOW(self->priv->window));
-			
-		//if (self->priv->last_pong + 1 < self->priv->last_ping)
+		if (!ccm_window_is_viewable (self->priv->window))
+			return FALSE;
+		
+		if (self->priv->last_ping)
+		{
+			g_print("Not alive 0x%x\n", CCM_WINDOW_XWINDOW(self->priv->window));
 			self->priv->alive = FALSE;
+			ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+		}
+		else
+			self->priv->alive = TRUE;
+		
+		self->priv->last_ping = time(NULL);
+		g_print("Ping 0x%x, %li\n", CCM_WINDOW_XWINDOW(self->priv->window),
+				self->priv->last_ping);
 		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
     	event.type = ClientMessage;
-    	event.xclient.window = CCM_WINDOW_XWINDOW(self->priv->window);
+		event.xclient.window = CCM_WINDOW_XWINDOW(self->priv->window);
     	event.xclient.message_type = CCM_FREEZE_GET_CLASS(self)->protocol_atom;
     	event.xclient.format = 32;
     	event.xclient.data.l[0] = CCM_FREEZE_GET_CLASS(self)->ping_atom;
-    	event.xclient.data.l[1] = ping;
+    	event.xclient.data.l[1] = self->priv->last_ping;
     	event.xclient.data.l[2] = CCM_WINDOW_XWINDOW(self->priv->window);
     	event.xclient.data.l[3] = 0;
     	event.xclient.data.l[4] = 0;
 		XSendEvent (CCM_DISPLAY_XDISPLAY(display), 
-					CCM_WINDOW_XWINDOW(self->priv->window), FALSE, 
-					NoEventMask, &event);
-		//ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+					CCM_WINDOW_XWINDOW(self->priv->window), False, 
+					SubstructureRedirectMask | 
+					SubstructureNotifyMask, &event);
 	}
-	self->priv->last_ping = ping;
+	
 	
 	return TRUE;
 }
@@ -187,9 +195,13 @@ ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
+	self->priv->window = window;
 	g_signal_connect_swapped(G_OBJECT(display), "event", 
 							 G_CALLBACK(ccm_freeze_on_event), self);
 	
+	if (protocol_atom == None)
+		protocol_atom = 
+			XInternAtom (CCM_DISPLAY_XDISPLAY(display), "WM_PROTOCOLS", 0);
 	if (CCM_FREEZE_GET_CLASS(self)->protocol_atom == None)
 		CCM_FREEZE_GET_CLASS(self)->protocol_atom = 
 			XInternAtom (CCM_DISPLAY_XDISPLAY(display), "WM_PROTOCOLS", 0);
@@ -217,9 +229,8 @@ ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			gint delay = 
 				ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
 			self->priv->alive = TRUE;
-			self->priv->window = window;
 			self->priv->id_ping = g_timeout_add (delay, 
-												 (GSourceFunc)ccm_freeze_on_timeout, 
+												 (GSourceFunc)ccm_freeze_ping, 
 												 self);
 		}
 		if (!self->priv->alive)
@@ -236,17 +247,18 @@ void
 ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFreeze* self = CCM_FREEZE(plugin);
-	CCMWindowType type = ccm_window_get_hint_type(window);
 	
-	if (!self->priv->id_ping &&
-		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_UNKNOWN))	
+	CCMWindowType type = ccm_window_get_hint_type (window);
+	
+	if (self->priv->id_ping && (type == CCM_WINDOW_TYPE_NORMAL ||
+								type == CCM_WINDOW_TYPE_UNKNOWN))	
 	{
 		gint delay = 
 			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
 		
 		self->priv->alive = TRUE;
 		self->priv->id_ping = g_timeout_add (delay, 
-											 (GSourceFunc)ccm_freeze_on_timeout, 
+											 (GSourceFunc)ccm_freeze_ping, 
 											 self);
 	}
 	ccm_window_plugin_map(CCM_WINDOW_PLUGIN_PARENT(plugin), window);

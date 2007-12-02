@@ -509,7 +509,10 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 		}
 		
 		// If top window is fullscreen
-		fullscreen = g_list_last(self->priv->windows);
+		for (fullscreen = g_list_last(self->priv->windows); 
+			 fullscreen && !ccm_window_is_fullscreen (fullscreen->data); 
+			 fullscreen = fullscreen->prev);
+			
 		if (fullscreen && 
 			ccm_window_is_viewable (fullscreen->data) &&
 			ccm_window_is_fullscreen (fullscreen->data))
@@ -649,16 +652,12 @@ on_event(CCMScreen* self, XEvent* event)
 													   create_event->window);
 			if (!window) 
 			{
-				CCMWindow* parent = ccm_screen_find_window(self, 
-														create_event->parent);
 				CCMWindow* root = ccm_screen_get_root_window(self);
-				if (parent || create_event->parent == CCM_WINDOW_XWINDOW(root))
+				if (create_event->parent == CCM_WINDOW_XWINDOW(root))
 				{
 					window = ccm_window_new(self, create_event->window);
 					if (!ccm_screen_add_window(self, window))
 						g_object_unref(window);
-					else if (create_event->parent != CCM_WINDOW_XWINDOW(root))
-						ccm_window_set_parent (window, parent);
 				}
 			}
 			break;	
@@ -702,15 +701,11 @@ on_event(CCMScreen* self, XEvent* event)
 					if (!ccm_screen_add_window(self, window))
 						g_object_unref(window);
 				}
-				else
-					ccm_window_set_parent (window, NULL);
 			}
 			else if (window)
 			{
-				CCMWindow* parent = ccm_screen_find_window(self,
-											((XReparentEvent*)event)->parent);
-				if (parent)
-					ccm_window_set_parent (window, parent);
+				ccm_screen_remove_window (self, window);
+				g_object_unref(window);
 			}
 		}
 		break;
@@ -968,7 +963,7 @@ ccm_screen_get_root_window(CCMScreen* self)
 		self->priv->root = ccm_window_new(self, root);
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(self)), 
 				      root,
-				      SubstructureNotifyMask |
+				      SubstructureNotifyMask   |
 					  ExposureMask);
 	}
 	

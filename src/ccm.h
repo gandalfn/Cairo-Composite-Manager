@@ -240,8 +240,6 @@ void            ccm_window_switch_state             (CCMWindow* self,
                                                      Atom state_atom);
 gboolean        ccm_window_is_shaded                (CCMWindow* self);
 gboolean        ccm_window_is_fullscreen            (CCMWindow* self);
-void            ccm_window_set_parent               (CCMWindow* self, 
-                                                     CCMWindow* parent);
 void            ccm_window_query_mwm_hints          (CCMWindow* self);
 gboolean        ccm_window_is_decorated             (CCMWindow* self);
 /******************************************************************************/

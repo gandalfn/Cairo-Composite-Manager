@@ -80,7 +80,6 @@ struct _CCMWindowPrivate
 	
 	gboolean			unmap_pending;
 
-	CCMWindow*			parent;
 	CCMPixmap*			pixmap;
 	CCMRegion*			opaque;
 	
@@ -569,7 +568,8 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
 					  CCM_WINDOW_XWINDOW(self),
-					  PropertyChangeMask);
+					  PropertyChangeMask | 
+					  SubstructureNotifyMask);
 	}
 	
 	return self;
@@ -628,9 +628,6 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->priv->parent) 
-		ccm_window_set_state(self->priv->parent, state_atom);
-	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
 		self->priv->is_shaded = TRUE;
@@ -661,9 +658,6 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->priv->parent) 
-		ccm_window_unset_state(self->priv->parent, state_atom);
-	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
 		self->priv->is_shaded = FALSE;
@@ -681,9 +675,6 @@ void
 ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
-	
-	if (self->priv->parent) 
-		ccm_window_switch_state (self->priv->parent, state_atom);
 	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
@@ -1179,23 +1170,6 @@ ccm_window_get_opaque_region(CCMWindow* self)
 	g_return_val_if_fail(self != NULL, NULL);
 	
 	return self->priv->opaque;
-}
-
-void
-ccm_window_set_parent(CCMWindow* self, CCMWindow* parent)
-{
-	g_return_if_fail(self != NULL);
-	
-	self->priv->parent = parent;
-	if (parent) 
-	{
-		cairo_rectangle_t geometry;
-		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
-		self->priv->is_viewable = FALSE;
-		
-		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
-		ccm_screen_damage_rectangle (screen, &geometry);
-	}
 }
 
 gboolean
