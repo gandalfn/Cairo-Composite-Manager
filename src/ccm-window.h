@@ -27,6 +27,7 @@
 
 #include "ccm.h"
 #include "ccm-drawable.h"
+#include "ccm-window-plugin.h"
 
 G_BEGIN_DECLS
 
@@ -87,6 +88,7 @@ struct _CCMWindow
 };
 
 GType ccm_window_get_type (void) G_GNUC_CONST;
+CCMWindowPlugin* _ccm_window_get_plugin(CCMWindow *self);
 
 G_END_DECLS
 

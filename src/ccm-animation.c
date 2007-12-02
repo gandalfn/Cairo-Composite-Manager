@@ -109,7 +109,7 @@ ccm_animation_start(CCMAnimation* self)
 	
 	if (!self->priv->id)
 	{
-		self->priv->id = g_idle_add ((GSourceFunc)ccm_animation_main, self);
+		self->priv->id = g_idle_add((GSourceFunc)ccm_animation_main, self);
 		g_timer_start(self->priv->timer);
 	}
 }

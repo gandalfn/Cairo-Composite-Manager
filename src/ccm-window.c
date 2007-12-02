@@ -532,6 +532,14 @@ impl_ccm_window_query_opacity(CCMWindowPlugin* plugin, CCMWindow* self)
 	}
 }
 
+CCMWindowPlugin*
+_ccm_window_get_plugin(CCMWindow *self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	return self->priv->plugin;
+}
+
 CCMWindow *
 ccm_window_new (CCMScreen* screen, Window xwindow)
 {

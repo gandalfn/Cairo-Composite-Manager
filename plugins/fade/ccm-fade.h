@@ -28,6 +28,7 @@
 
 #include "ccm-plugin.h"
 #include "ccm-window-plugin.h"
+#include "ccm-screen-plugin.h"
 
 G_BEGIN_DECLS
 

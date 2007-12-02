@@ -459,13 +459,15 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 {
 	self->priv->windows = g_list_remove(self->priv->windows, window);
 	
-	if (!ccm_window_is_input_only(window))
+	if (!ccm_window_is_input_only(window) && 
+		ccm_window_is_viewable (window))
 	{
 		cairo_rectangle_t geometry;
 		
 		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(window), &geometry);
 		ccm_screen_damage_rectangle (self, &geometry);
 	}
+	g_object_unref(window);
 }
 
 static gboolean
@@ -666,11 +668,7 @@ on_event(CCMScreen* self, XEvent* event)
 		{	
 			CCMWindow* window = ccm_screen_find_window(self,
 										((XCreateWindowEvent*)event)->window);
-			if (window) 
-			{
-				ccm_screen_remove_window(self, window);
-				g_object_unref(window);
-			}
+			if (window) ccm_screen_remove_window(self, window);
 			break;	
 		}
 		case MapNotify:
@@ -702,11 +700,7 @@ on_event(CCMScreen* self, XEvent* event)
 						g_object_unref(window);
 				}
 			}
-			else if (window)
-			{
-				ccm_screen_remove_window (self, window);
-				g_object_unref(window);
-			}
+			else if (window) ccm_screen_remove_window (self, window);
 		}
 		break;
 		case CirculateNotify:
@@ -862,6 +856,14 @@ _ccm_screen_get_window_backend(CCMScreen* self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	return ccm_config_get_string(self->priv->options[CCM_SCREEN_BACKEND]);
+}
+
+CCMScreenPlugin*
+_ccm_screen_get_plugin(CCMScreen *self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	return self->priv->plugin;
 }
 
 GSList*
