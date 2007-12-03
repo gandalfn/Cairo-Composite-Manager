@@ -224,15 +224,6 @@ ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	
 	if (type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_UNKNOWN)
 	{	
-		if (!self->priv->id_ping)
-		{
-			gint delay = 
-				ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
-			self->priv->alive = TRUE;
-			self->priv->id_ping = g_timeout_add (delay, 
-												 (GSourceFunc)ccm_freeze_ping, 
-												 self);
-		}
 		if (!self->priv->alive)
 		{
 			cairo_set_source_rgba(context, 0, 0, 0, 0.5);

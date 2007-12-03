@@ -188,8 +188,7 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 		(ccm_window_is_decorated (window) ||
 		 type != CCM_WINDOW_TYPE_NORMAL) &&
 		type != CCM_WINDOW_TYPE_DESKTOP && 
-		type != CCM_WINDOW_TYPE_DOCK &&
-		type != CCM_WINDOW_TYPE_UTILITY &&
+		(type != CCM_WINDOW_TYPE_DOCK || ccm_window_is_opaque (window)) &&
 		type != CCM_WINDOW_TYPE_DND &&
 		!ccm_window_is_shaded (window) &&
 		(ccm_window_is_managed(window) || 
@@ -227,8 +226,7 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		(ccm_window_is_decorated (window) ||
 		 type != CCM_WINDOW_TYPE_NORMAL) &&
 		type != CCM_WINDOW_TYPE_DESKTOP && 
-		type != CCM_WINDOW_TYPE_DOCK &&
-		type != CCM_WINDOW_TYPE_UTILITY &&
+		(type != CCM_WINDOW_TYPE_DOCK || ccm_window_is_opaque (window)) &&
 		type != CCM_WINDOW_TYPE_DND &&
 		!ccm_window_is_shaded (window) &&
 		(ccm_window_is_managed(window) || 

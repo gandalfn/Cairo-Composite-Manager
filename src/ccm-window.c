@@ -372,8 +372,8 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 		geometry = ccm_region_rectangle(&area);
 	}
 	
-	if (ccm_window_get_frame_extends(self, &left_frame, &right_frame,
-									 &top_frame, &bottom_frame))
+	if (0)//ccm_window_get_frame_extends(self, &left_frame, &right_frame,
+			//						 &top_frame, &bottom_frame))
 	{
 		ccm_region_get_clipbox (geometry, &area);
 		ccm_region_offset(geometry, area.x - left_frame, 

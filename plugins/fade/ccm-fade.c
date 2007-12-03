@@ -19,6 +19,7 @@
  * 	51 Franklin Street, Fifth Floor
  * 	Boston, MA  02110-1301, USA.
  */
+#include <math.h>
 
 #include "ccm-drawable.h"
 #include "ccm-screen.h"
@@ -202,6 +203,12 @@ ccm_fade_finish(CCMFade* self)
 	return TRUE;
 }
 
+static gfloat
+interpolate (gfloat t, gfloat begin, gfloat end, gfloat power)
+{
+    return (begin + (end - begin) * pow (t, power));
+}
+
 gboolean
 ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 {
@@ -214,7 +221,8 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 		gfloat step = self->priv->origin * (elapsed / duration);
 		
 		opacity = self->priv->way & CCM_FADE_ON_MAP || 
-				  self->priv->way & CCM_FADE_ON_CREATE ? step : self->priv->origin - step;
+				  self->priv->way & CCM_FADE_ON_CREATE ? 
+					interpolate(step, 0.0, self->priv->origin, 1) : interpolate(step, self->priv->origin, 0.0, 1);
 		
 		if (((self->priv->way & CCM_FADE_ON_MAP || 
 			  self->priv->way & CCM_FADE_ON_CREATE) && 
@@ -402,7 +410,10 @@ ccm_fade_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen, CCMWindow* wi
 				self->priv->way |= CCM_FADE_ON_DESTROY;
 		}
 		else
+		{
+			ccm_drawable_damage (CCM_DRAWABLE(window));
 			ccm_screen_plugin_remove_window (CCM_SCREEN_PLUGIN_PARENT(plugin), 
 											 screen, window);
+		}
 	}
 }
