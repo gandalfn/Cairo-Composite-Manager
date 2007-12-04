@@ -335,12 +335,14 @@ ccm_fade_add_window(CCMScreenPlugin* plugin, CCMScreen* screen, CCMWindow* windo
 	{
 		if (self->priv->way & CCM_FADE_ON_UNMAP)
 		{
+			ccm_window_set_opacity(window, self->priv->origin);
 			ccm_animation_stop(self->priv->animation);
 			ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), window);
 		}
 		self->priv->way &= ~CCM_FADE_ON_UNMAP;
 		if (self->priv->way & CCM_FADE_ON_DESTROY)
 		{
+			ccm_window_set_opacity(window, self->priv->origin);
 			ccm_animation_stop(self->priv->animation);
 			ccm_screen_plugin_remove_window (CCM_SCREEN_PLUGIN_PARENT(plugin), 
 											 screen, window);
@@ -386,12 +388,14 @@ ccm_fade_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen, CCMWindow* wi
 		self->priv->is_blocked = FALSE;
 		if (self->priv->way & CCM_FADE_ON_MAP)
 		{
+			ccm_window_set_opacity(window, self->priv->origin);
 			ccm_animation_stop(self->priv->animation);
 			ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), window);
 		}
 		self->priv->way &= ~CCM_FADE_ON_MAP;
 		if (self->priv->way & CCM_FADE_ON_CREATE)
 		{
+			ccm_window_set_opacity(window, self->priv->origin);
 			ccm_animation_stop(self->priv->animation);
 			ccm_screen_plugin_add_window (CCM_SCREEN_PLUGIN_PARENT(plugin), 
 										  screen, window);
