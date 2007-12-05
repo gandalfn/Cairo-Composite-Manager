@@ -48,6 +48,9 @@ struct _CCMShadowPrivate
 {
 	cairo_surface_t* shadow;
 	
+	CCMRegion* geometry;
+	CCMRegion* shadow_region;
+	
 	CCMConfig* options[CCM_SHADOW_OPTION_N];
 };
 
@@ -66,7 +69,9 @@ ccm_shadow_init (CCMShadow *self)
 {
 	self->priv = CCM_SHADOW_GET_PRIVATE(self);
 	
+	self->priv->geometry = NULL;
 	self->priv->shadow = NULL;
+	self->priv->shadow_region = NULL;
 }
 
 static void
@@ -75,6 +80,8 @@ ccm_shadow_finalize (GObject *object)
 	CCMShadow* self = CCM_SHADOW(object);
 	
 	if (self->priv->shadow) cairo_surface_destroy(self->priv->shadow);
+	if (self->priv->geometry) ccm_region_destroy (self->priv->geometry);
+	if (self->priv->shadow_region) ccm_region_destroy (self->priv->shadow_region);
 	
 	G_OBJECT_CLASS (ccm_shadow_parent_class)->finalize (object);
 }
@@ -182,8 +189,15 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMRegion* geometry = NULL;
 	cairo_rectangle_t area;
 	CCMWindowType type = ccm_window_get_hint_type(window);
+	CCMShadow* self = CCM_SHADOW(plugin);
+		
+	if (self->priv->geometry) ccm_region_destroy (self->priv->geometry);
+	self->priv->geometry = NULL;
+	if (self->priv->shadow_region) ccm_region_destroy (self->priv->shadow_region);
+	self->priv->shadow_region = NULL;
 	
-	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
+												window);
 	if (geometry && 
 		(ccm_window_is_decorated (window) ||
 		 type != CCM_WINDOW_TYPE_NORMAL) &&
@@ -197,20 +211,19 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 		 type == CCM_WINDOW_TYPE_TOOLTIP || 
 		 type == CCM_WINDOW_TYPE_MENU))
 	{
-		CCMShadow* self = CCM_SHADOW(plugin);
-		CCMRegion* shadow_geometry = ccm_region_copy(geometry);
 		int border = 
 				ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 	
+		self->priv->geometry = ccm_region_copy (geometry);
 		ccm_region_get_clipbox(geometry, &area);
 		
 		area.width += border;
 		area.height += border;
 		create_shadow(self, area.width, area.height);
-		ccm_region_resize(shadow_geometry, area.width, area.height);
-		ccm_region_subtract(shadow_geometry, geometry);
-		ccm_region_union(geometry, shadow_geometry);
-		ccm_region_destroy(shadow_geometry);
+		ccm_region_resize(geometry, area.width, area.height);
+		self->priv->shadow_region = ccm_region_copy(geometry);
+		ccm_region_subtract (self->priv->shadow_region, self->priv->geometry);
+		ccm_window_add_alpha_region (window, self->priv->shadow_region);
 	}	
 	return geometry;
 }
@@ -236,30 +249,36 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		 type == CCM_WINDOW_TYPE_MENU))
 	{
 		cairo_rectangle_t area;
-		CCMRegion* geometry;
-		int border = 
-				ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 		
-		if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &area))
+		if (self->priv->geometry && self->priv->shadow_region &&
+			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &area))
 		{
 			cairo_rectangle_t* rects;
 			gint nb_rects, cpt;
-			cairo_set_source_surface(context, self->priv->shadow, 
-							     area.x, area.y);
-			cairo_paint_with_alpha(context,
-								   ccm_window_get_opacity(window));
-	
-			geometry = ccm_region_copy(ccm_drawable_get_geometry (CCM_DRAWABLE(window)));
-			ccm_region_resize (geometry, area.width - border, 
-							   area.height - border);
-			ccm_region_get_rectangles (geometry, &rects, &nb_rects);
+			
+			cairo_save(context);
+			ccm_region_get_rectangles (self->priv->shadow_region, 
+									   &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{
 				cairo_rectangle(context, rects[cpt].x, rects[cpt].y, 
 								rects[cpt].width, rects[cpt].height);
 			}
 			g_free(rects);
-			ccm_region_destroy (geometry);
+			cairo_clip(context);
+			cairo_set_source_surface(context, self->priv->shadow, 
+							     area.x, area.y);
+			cairo_paint_with_alpha(context,
+								   ccm_window_get_opacity(window));
+			cairo_restore(context);
+			
+			ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+			{
+				cairo_rectangle(context, rects[cpt].x, rects[cpt].y, 
+								rects[cpt].width, rects[cpt].height);
+			}
+			g_free(rects);
 			cairo_clip(context);
 		}
 	} 

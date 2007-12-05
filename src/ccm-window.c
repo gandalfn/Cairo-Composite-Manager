@@ -336,7 +336,8 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	unsigned int bw, bh, cw, ch; /* dummies */
 	XWindowAttributes attrs;
 	cairo_rectangle_t area;
-	gint left_frame, right_frame, top_frame, bottom_frame;
+	
+	ccm_display_sync(display);
 	
 	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
 							   CCM_WINDOW_XWINDOW(self), &attrs))
@@ -370,16 +371,6 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 		area.width = attrs.width + attrs.border_width * 2;
 		area.height = attrs.height + attrs.border_width * 2;
 		geometry = ccm_region_rectangle(&area);
-	}
-	
-	if (0)//ccm_window_get_frame_extends(self, &left_frame, &right_frame,
-			//						 &top_frame, &bottom_frame))
-	{
-		ccm_region_get_clipbox (geometry, &area);
-		ccm_region_offset(geometry, area.x - left_frame, 
-									area.y - top_frame);
-		ccm_region_resize (geometry, area.width + left_frame + right_frame,
-						   area.height + top_frame + bottom_frame);
 	}
 	
 	if (ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 && 
