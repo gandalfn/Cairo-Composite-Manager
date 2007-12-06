@@ -57,6 +57,8 @@ static void 		impl_ccm_window_unmap		  (CCMWindowPlugin* plugin,
 												   CCMWindow* self);
 static void 		impl_ccm_window_query_opacity (CCMWindowPlugin* plugin, 
 												   CCMWindow* self);
+static void			impl_ccm_window_set_opaque	  (CCMWindowPlugin* plugin, 
+												   CCMWindow* self);
 
 G_DEFINE_TYPE_EXTENDED (CCMWindow, ccm_window, CCM_TYPE_DRAWABLE, 0,
 						G_IMPLEMENT_INTERFACE(CCM_TYPE_WINDOW_PLUGIN,
@@ -150,6 +152,7 @@ ccm_window_iface_init(CCMWindowPluginClass* iface)
 	iface->map  			= impl_ccm_window_map;
 	iface->unmap  			= impl_ccm_window_unmap;
 	iface->query_opacity  	= impl_ccm_window_query_opacity;
+	iface->set_opaque	  	= impl_ccm_window_set_opaque;
 }
 
 static void
@@ -521,6 +524,18 @@ impl_ccm_window_query_opacity(CCMWindowPlugin* plugin, CCMWindow* self)
 		
 		ccm_drawable_damage(CCM_DRAWABLE(self));
 	}
+}
+
+static void
+impl_ccm_window_set_opaque(CCMWindowPlugin* plugin, CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(self));
+	
+	ccm_window_set_alpha(self);
+	if (geometry)
+	self->priv->opaque = ccm_region_copy(geometry);
 }
 
 CCMWindowPlugin*
@@ -1156,11 +1171,7 @@ ccm_window_set_opaque(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(self));
-	
-	ccm_window_set_alpha(self);
-	if (geometry)
-	self->priv->opaque = ccm_region_copy(geometry);
+	ccm_window_plugin_set_opaque (self->priv->plugin, self);
 }
 
 CCMRegion*

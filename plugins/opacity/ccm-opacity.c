@@ -85,6 +85,7 @@ ccm_opacity_iface_init(CCMWindowPluginClass* iface)
 	iface->map				= NULL;
 	iface->unmap			= NULL;
 	iface->query_opacity  	= NULL;
+	iface->set_opaque		= NULL;
 }
 
 void

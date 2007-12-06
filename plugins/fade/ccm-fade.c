@@ -126,6 +126,7 @@ ccm_fade_window_iface_init(CCMWindowPluginClass* iface)
 	iface->map				= ccm_fade_map;
 	iface->unmap			= ccm_fade_unmap;
 	iface->query_opacity  	= ccm_fade_query_opacity;
+	iface->set_opaque		= NULL;
 }
 
 static void
@@ -174,7 +175,6 @@ ccm_fade_finish(CCMFade* self)
 		CCMScreen* screen = 
 			ccm_drawable_get_screen (CCM_DRAWABLE(self->priv->window));
 		
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 		ccm_screen_plugin_remove_window (CCM_SCREEN_PLUGIN_PARENT(self->priv->screen), 
 										 screen, self->priv->window);
 		self->priv->way = CCM_FADE_NONE;
@@ -185,7 +185,6 @@ ccm_fade_finish(CCMFade* self)
 		CCMScreen* screen = 
 			ccm_drawable_get_screen (CCM_DRAWABLE(self->priv->window));
 		
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 		ccm_screen_plugin_add_window (CCM_SCREEN_PLUGIN_PARENT(self->priv->screen), 
 									  screen, self->priv->window);
 	}
@@ -193,7 +192,6 @@ ccm_fade_finish(CCMFade* self)
 	{
 		ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), 
 							   self->priv->window);
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 	}
 	if (self->priv->way & CCM_FADE_ON_UNMAP)
 	{
@@ -266,8 +264,10 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		else
 			self->priv->way |= CCM_FADE_ON_MAP;
 	}
-	else
+	{
+		ccm_drawable_damage (CCM_DRAWABLE(window));
 		ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+	}
 	
 	self->priv->is_blocked = FALSE;
 }
