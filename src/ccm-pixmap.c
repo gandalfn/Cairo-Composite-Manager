@@ -185,35 +185,29 @@ ccm_pixmap_repair(CCMDrawable* drawable, CCMRegion* area)
 	
 	CCMPixmap* self = CCM_PIXMAP(drawable);
 	CCMDisplay* display = ccm_drawable_get_display(drawable);
-	cairo_rectangle_t* rects;
-	gint nb_rects, cpt;
-		
-	ccm_region_get_rectangles(area, &rects, &nb_rects);
 	
-	for (cpt = 0; cpt < nb_rects; cpt++)
+	cairo_rectangle_t clipbox;
+	
+	ccm_region_get_clipbox(area, &clipbox);
+	if (_ccm_display_use_xshm(display))
 	{
-		if (_ccm_display_use_xshm(display))
-		{
-			XCopyArea(CCM_DISPLAY_XDISPLAY(display),
-					  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
-					  self->priv->gc, 
-					  (int)rects[cpt].x, (int)rects[cpt].y, 
-					  (int)rects[cpt].width, (int)rects[cpt].height, 
-					  (int)rects[cpt].x, (int)rects[cpt].y);
-		}
-		else
-		{
-			XGetSubImage (CCM_DISPLAY_XDISPLAY(display),
-						  CCM_PIXMAP_XPIXMAP(self),
-						  (int)rects[cpt].x, (int)rects[cpt].y, 
-						  (int)rects[cpt].width, (int)rects[cpt].height,
-						  AllPlanes, ZPixmap, self->priv->image, 
-						  (int)rects[cpt].x, (int)rects[cpt].y);
-		}
+		XCopyArea(CCM_DISPLAY_XDISPLAY(display),
+				  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
+				  self->priv->gc, 
+				  (int)clipbox.x, (int)clipbox.y, 
+				  (int)clipbox.width, (int)clipbox.height, 
+				  (int)clipbox.x, (int)clipbox.y);
+	}
+	else
+	{
+		XGetSubImage (CCM_DISPLAY_XDISPLAY(display),
+					  CCM_PIXMAP_XPIXMAP(self),
+					  (int)clipbox.x, (int)clipbox.y, 
+				      (int)clipbox.width, (int)clipbox.height, 
+				      AllPlanes, ZPixmap, self->priv->image, 
+					  (int)clipbox.x, (int)clipbox.y);
 	}
 	ccm_display_sync(display);
-	
-	g_free(rects);
 }
 
 static cairo_surface_t*

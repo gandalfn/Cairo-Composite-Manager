@@ -175,6 +175,7 @@ ccm_fade_finish(CCMFade* self)
 		CCMScreen* screen = 
 			ccm_drawable_get_screen (CCM_DRAWABLE(self->priv->window));
 		
+		ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
 		ccm_screen_plugin_remove_window (CCM_SCREEN_PLUGIN_PARENT(self->priv->screen), 
 										 screen, self->priv->window);
 		self->priv->way = CCM_FADE_NONE;
@@ -195,7 +196,7 @@ ccm_fade_finish(CCMFade* self)
 	}
 	if (self->priv->way & CCM_FADE_ON_UNMAP)
 	{
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+		ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
 		ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
 								 self->priv->window);
 	}
