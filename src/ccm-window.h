@@ -89,6 +89,8 @@ struct _CCMWindow
 
 GType ccm_window_get_type (void) G_GNUC_CONST;
 CCMWindowPlugin* _ccm_window_get_plugin(CCMWindow *self);
+Window _ccm_window_get_child(CCMWindow* self);
+void _ccm_window_set_child(CCMWindow* self, Window child);
 
 G_END_DECLS
 

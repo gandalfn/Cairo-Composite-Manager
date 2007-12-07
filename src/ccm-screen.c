@@ -218,6 +218,24 @@ ccm_screen_find_window(CCMScreen* self, Window xwindow)
 	return NULL;
 }
 
+static CCMWindow*
+ccm_screen_find_window_or_child(CCMScreen* self, Window xwindow)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(xwindow != None, NULL);
+	
+	GList* item;
+	
+	for (item = self->priv->windows; item; item = item->next)
+	{
+		if (CCM_WINDOW_XWINDOW(item->data) == xwindow ||
+			_ccm_window_get_child (item->data) == xwindow)
+			return CCM_WINDOW(item->data);
+	}
+	
+	return NULL;
+}
+
 static gboolean
 ccm_screen_set_selection_owner(CCMScreen* self)
 {
@@ -696,6 +714,9 @@ on_event(CCMScreen* self, XEvent* event)
 		{
 			CCMWindow* window = ccm_screen_find_window(self,
 											((XReparentEvent*)event)->window);
+			CCMWindow* parent = ccm_screen_find_window(self,
+											((XReparentEvent*)event)->parent);
+			
 			if (((XReparentEvent*)event)->parent == CCM_WINDOW_XWINDOW(self->priv->root))
 			{
 				if (!window)
@@ -706,6 +727,9 @@ on_event(CCMScreen* self, XEvent* event)
 				}
 			}
 			else if (window) ccm_screen_remove_window (self, window);
+			
+			if (parent) 
+				_ccm_window_set_child (parent, ((XReparentEvent*)event)->window);
 		}
 		break;
 		case CirculateNotify:
@@ -768,7 +792,7 @@ on_event(CCMScreen* self, XEvent* event)
 		case PropertyNotify:
 		{
 			XPropertyEvent* property_event = (XPropertyEvent*)event;
-			CCMWindow* window = ccm_screen_find_window(self,
+			CCMWindow* window = ccm_screen_find_window_or_child (self,
 													   property_event->window);
 			
 			if (window)
@@ -803,7 +827,7 @@ on_event(CCMScreen* self, XEvent* event)
 		{
 			XClientMessageEvent* client_event = (XClientMessageEvent*)event;
 			
-			CCMWindow* window = ccm_screen_find_window(self,
+			CCMWindow* window = ccm_screen_find_window_or_child (self,
 													   client_event->window);
 			
 			if (window)

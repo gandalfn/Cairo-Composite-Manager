@@ -223,7 +223,7 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 		
 		opacity = self->priv->way & CCM_FADE_ON_MAP || 
 				  self->priv->way & CCM_FADE_ON_CREATE ? 
-					interpolate(step, 0.0, self->priv->origin, 1) : interpolate(step, self->priv->origin, 0.0, 1);
+					interpolate(step, 0.0, self->priv->origin, 3) : interpolate(step, self->priv->origin, 0.0, 3);
 			
 		if (((self->priv->way & CCM_FADE_ON_MAP || 
 			  self->priv->way & CCM_FADE_ON_CREATE) && 
