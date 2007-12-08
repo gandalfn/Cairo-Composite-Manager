@@ -359,11 +359,16 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 			ccm_region_get_rectangles(region, &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{
+				gint x = rects[cpt].x > 0 ? rects[cpt].x : 0;
 				gint y = geometry.height - (rects[cpt].height + rects[cpt].y);
-				csb(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
-					rects[cpt].x > 0 ? rects[cpt].x : 0, y, 
-					rects[cpt].width, rects[cpt].height);
+				gint width = rects[cpt].width + x > screen->xscreen->width ? 
+							 screen->xscreen->width - x : rects[cpt].width;
+				gint height = rects[cpt].height + y > screen->xscreen->height ? 
+							  screen->xscreen->height - y : rects[cpt].height;
 				
+				if (width > 0 && height > 0)
+					csb(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
+						x, y > 0 ? y : 0, width, height);
 			}
 			g_free(rects);
 		}

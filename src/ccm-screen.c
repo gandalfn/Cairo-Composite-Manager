@@ -31,6 +31,14 @@
 #include "ccm-drawable.h"
 #include "ccm-extension-loader.h"
 
+enum
+{
+	TIMER,
+    N_SIGNALS
+};
+
+static guint signals[N_SIGNALS] = { 0 };
+
 static void ccm_screen_iface_init(CCMScreenPluginClass* iface);
 
 G_DEFINE_TYPE_EXTENDED (CCMScreen, ccm_screen, G_TYPE_OBJECT, 0,
@@ -156,6 +164,12 @@ ccm_screen_class_init (CCMScreenClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMScreenPrivate));
 	
 	klass->selection_owner = None;
+	
+	signals[TIMER] = g_signal_new ("timer",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__VOID,
+								   G_TYPE_NONE, 0, G_TYPE_NONE);
 	
 	object_class->finalize = ccm_screen_finalize;
 }
@@ -393,6 +407,8 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 			self->priv->ctx = 
 					ccm_drawable_create_context(CCM_DRAWABLE(self->priv->cow));
 			cairo_identity_matrix (self->priv->ctx);
+			cairo_rectangle(self->priv->ctx, 0, 0, self->xscreen->width, self->xscreen->height);
+			cairo_clip(self->priv->ctx);
 		}
 		for (item = self->priv->windows; item; item = item->next)
 		{
@@ -462,8 +478,13 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		
 		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
 		
-		if (ccm_window_is_viewable (window))
-			ccm_drawable_damage (CCM_DRAWABLE(window));
+		if (ccm_window_is_viewable(window))
+		{
+			if (!ccm_window_is_decorated(window)) 
+				ccm_drawable_damage (CCM_DRAWABLE(window));
+			else
+				ccm_window_map(window);
+		}
 		
 		return TRUE;
 	}
@@ -497,6 +518,8 @@ static gboolean
 ccm_screen_paint(CCMScreen* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
+	
+	g_signal_emit (self, signals[TIMER], 0, NULL);
 	
 	ccm_screen_plugin_paint(self->priv->plugin, self);
 	g_timer_start(self->priv->vblank);

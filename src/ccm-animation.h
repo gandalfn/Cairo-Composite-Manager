@@ -25,6 +25,8 @@
 
 #include <glib-object.h>
 
+#include "ccm-screen.h"
+
 G_BEGIN_DECLS
 
 #define CCM_TYPE_ANIMATION             (ccm_animation_get_type ())
@@ -54,7 +56,8 @@ struct _CCMAnimation
 };
 
 GType 			ccm_animation_get_type 	(void) G_GNUC_CONST;
-CCMAnimation* 	ccm_animation_new		(CCMAnimationFunc callback, 
+CCMAnimation* 	ccm_animation_new		(CCMScreen* screen,
+										 CCMAnimationFunc callback, 
 										 gpointer data);
 void			ccm_animation_start		(CCMAnimation* self);
 void			ccm_animation_stop		(CCMAnimation* self);

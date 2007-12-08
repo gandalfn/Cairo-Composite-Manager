@@ -20,6 +20,7 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
+#include "ccm-screen.h"
 #include "ccm-animation.h"
 
 G_DEFINE_TYPE (CCMAnimation, ccm_animation, G_TYPE_OBJECT);
@@ -27,21 +28,25 @@ G_DEFINE_TYPE (CCMAnimation, ccm_animation, G_TYPE_OBJECT);
 struct _CCMAnimationPrivate
 {	
 	CCMAnimationFunc callback;
+	CCMScreen* screen;
 	gpointer data;
-	guint id;
+	gboolean run;
 	GTimer* timer;
 };
 
 #define CCM_ANIMATION_GET_PRIVATE(o)  \
    ((CCMAnimationPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_ANIMATION, CCMAnimationClass))
 
+static void ccm_animation_main(CCMAnimation* self);
+
 static void
 ccm_animation_init (CCMAnimation *self)
 {
 	self->priv = CCM_ANIMATION_GET_PRIVATE(self);
+	self->priv->screen = NULL;
 	self->priv->callback = NULL;
 	self->priv->data = NULL;
-	self->priv->id = 0;
+	self->priv->run = FALSE;
 	self->priv->timer = g_timer_new();
 }
 
@@ -50,9 +55,11 @@ ccm_animation_finalize (GObject *object)
 {
 	CCMAnimation* self = CCM_ANIMATION(object);
 	
-	if (self->priv->id) g_source_remove(self->priv->id);
 	if (self->priv->timer) g_timer_destroy (self->priv->timer);
-
+	if (self->priv->screen) 
+		g_signal_handlers_disconnect_by_func(self->priv->screen, 
+											 ccm_animation_main, self);
+	
 	G_OBJECT_CLASS (ccm_animation_parent_class)->finalize (object);
 }
 
@@ -66,36 +73,38 @@ ccm_animation_class_init (CCMAnimationClass *klass)
 	object_class->finalize = ccm_animation_finalize;
 }
 
-static gboolean
+static void
 ccm_animation_main(CCMAnimation* self)
 {
-	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_if_fail(self != NULL);
 
-	gboolean ret = FALSE;
-	
-	if (self->priv->callback)
+	if (self->priv->run)
 	{
-		gfloat elapsed = g_timer_elapsed (self->priv->timer, NULL);
-		
-		ret = self->priv->callback(self, elapsed, self->priv->data);
+		if (self->priv->callback)
+		{
+			gfloat elapsed = g_timer_elapsed (self->priv->timer, NULL);
+			
+			self->priv->run = self->priv->callback(self, elapsed, 
+												   self->priv->data);
+		}
 	}
 	
-	if (!ret) 
+	if (!self->priv->run) 
 	{
-		self->priv->id = 0;
 		g_timer_stop(self->priv->timer);
+		g_signal_handlers_disconnect_by_func(self->priv->screen, 
+											 ccm_animation_main, self);
 	}
-	
-	return ret;
 }
 
 CCMAnimation*
-ccm_animation_new(CCMAnimationFunc callback, gpointer data)
+ccm_animation_new(CCMScreen* screen, CCMAnimationFunc callback, gpointer data)
 {
 	g_return_val_if_fail(callback != NULL, NULL);
 	
 	CCMAnimation* self = g_object_new (CCM_TYPE_ANIMATION, NULL);
 	
+	self->priv->screen = screen;
 	self->priv->callback = callback;
 	self->priv->data = data;
 	
@@ -107,9 +116,11 @@ ccm_animation_start(CCMAnimation* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (!self->priv->id)
+	if (!self->priv->run)
 	{
-		self->priv->id = g_idle_add_full(G_PRIORITY_HIGH, (GSourceFunc)ccm_animation_main, self, NULL);
+		self->priv->run = TRUE;
+		g_signal_connect_swapped(self->priv->screen, "timer", 
+								 G_CALLBACK(ccm_animation_main), self);
 		g_timer_start(self->priv->timer);
 	}
 }
@@ -119,10 +130,11 @@ ccm_animation_stop(CCMAnimation* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->priv->id)
+	if (self->priv->run)
 	{
-		g_source_remove (self->priv->id);
-		self->priv->id = 0;
+		self->priv->run = FALSE;
+		g_signal_handlers_disconnect_by_func(self->priv->screen, 
+											 ccm_animation_main, self);
 		g_timer_stop(self->priv->timer);
 	}
 }
