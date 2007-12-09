@@ -396,6 +396,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
 	
+	static gboolean have_desktop = FALSE;
 	gboolean ret = FALSE;
 		
 	if (self->priv->cow)
@@ -410,9 +411,18 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 			cairo_rectangle(self->priv->ctx, 0, 0, self->xscreen->width, self->xscreen->height);
 			cairo_clip(self->priv->ctx);
 		}
+		if (!have_desktop)
+		{
+			cairo_set_source_rgb (self->priv->ctx, 0, 0, 0);
+			cairo_paint(self->priv->ctx);
+		}
 		for (item = self->priv->windows; item; item = item->next)
 		{
 			CCMWindow* window = item->data;
+			
+			if (!have_desktop)
+				have_desktop = ccm_window_is_viewable (window) &&
+				               ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP;
 				
 			if (!ccm_window_is_input_only(window))
 			{
