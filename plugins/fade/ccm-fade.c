@@ -213,12 +213,12 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 		gfloat step = elapsed / duration;
 		
 		opacity = self->priv->way & CCM_FADE_ON_MAP ? 
-					interpolate(step, 0.0, self->priv->origin, 3) : interpolate(step, self->priv->origin, 0.0, 3);
+					interpolate(step, 0.0, self->priv->origin, 1) : interpolate(step, self->priv->origin, 0.1, 1);
 			
 		if ((self->priv->way & CCM_FADE_ON_MAP && 
 			 opacity > self->priv->origin) ||
 			((self->priv->way & CCM_FADE_ON_UNMAP || 
-			  self->priv->way & CCM_FADE_ON_DESTROY) && opacity <= 0.0f))
+			  self->priv->way & CCM_FADE_ON_DESTROY) && opacity <= 0.1f))
 		{
 			if (ccm_fade_finish(self))  return FALSE;
 			opacity = self->priv->origin;
