@@ -324,9 +324,9 @@ ccm_fade_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen, CCMWindow* wi
 		{
 			ccm_animation_stop(self->priv->animation);
 			if (self->priv->way & CCM_FADE_ON_MAP)
-				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(_ccm_window_get_plugin (window)), window);
 			else
-				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(_ccm_window_get_plugin (window)), window);
 			is_set = TRUE;
 		}
 		

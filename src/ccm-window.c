@@ -422,9 +422,9 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 			geometry = ccm_region_new();
 			for (cpt = 0; cpt < nb; cpt++)
 				ccm_region_union_with_xrect(geometry, &shapes[cpt]);
+			ccm_region_offset(geometry, attrs.x - attrs.border_width, 
+										attrs.y - attrs.border_width);
 		}
-		ccm_region_offset(geometry, attrs.x - attrs.border_width, 
-									attrs.y - attrs.border_width);
 		XFree(shapes);
 	}
 	else
@@ -436,7 +436,8 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 		geometry = ccm_region_rectangle(&area);
 	}
 	
-	if (ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 && 
+	if (geometry &&
+		ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 && 
 		self->priv->opacity == 1.0f)
 	{
 		ccm_window_set_alpha(self);
@@ -504,6 +505,15 @@ ccm_window_resize(CCMDrawable* drawable, int width, int height)
 	if (width != (int)geometry.width || height != (int)geometry.height)
 	{
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->resize(drawable, width, height);
+		if (0)//self->priv->opaque)
+		{
+			cairo_rectangle_t opaque;
+			
+			ccm_region_get_clipbox (self->priv->opaque, &opaque);
+			ccm_region_resize(self->priv->opaque, 
+							  round((gfloat)width * (opaque.width / geometry.width)),
+							  round((gfloat)height * (opaque.width / geometry.height)));
+		}
 		ccm_drawable_damage_rectangle(drawable, &geometry);
 		ccm_drawable_damage(drawable);
 		

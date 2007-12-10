@@ -112,11 +112,17 @@ ccm_pixmap_query_geometry(CCMDrawable* drawable)
 	
 	CCMPixmap* self = CCM_PIXMAP(drawable);
 	CCMRegion* win_geo = ccm_drawable_get_geometry(CCM_DRAWABLE(self->priv->window));
-	CCMRegion* geometry = ccm_region_copy(win_geo);
-	cairo_rectangle_t clipbox;
+	CCMRegion* geometry = NULL;
 	
-	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self->priv->window), &clipbox);
-	ccm_region_offset(geometry, -(int)clipbox.x, -(int)clipbox.y);
+	if (win_geo)
+	{
+		cairo_rectangle_t clipbox;
+	
+		geometry = ccm_region_copy(win_geo);
+		
+		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self->priv->window), &clipbox);
+		ccm_region_offset(geometry, -(int)clipbox.x, -(int)clipbox.y);
+	}
 	
 	return geometry;
 }
