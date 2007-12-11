@@ -227,9 +227,8 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 		else
 			ret = TRUE;
 		
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-		
 		ccm_window_set_opacity (self->priv->window, opacity);
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 	}
 	
 	return ret;
@@ -323,6 +322,7 @@ ccm_fade_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen, CCMWindow* wi
 		    (self->priv->way & CCM_FADE_ON_UNMAP))
 		{
 			ccm_animation_stop(self->priv->animation);
+			ccm_window_set_opacity(window, self->priv->origin);
 			if (self->priv->way & CCM_FADE_ON_MAP)
 				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(_ccm_window_get_plugin (window)), window);
 			else
@@ -330,7 +330,7 @@ ccm_fade_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen, CCMWindow* wi
 			is_set = TRUE;
 		}
 		
-		if (ccm_window_is_viewable (window) && !self->priv->is_blocked)
+		if (window->is_viewable && !self->priv->is_blocked)
 		{
 			self->priv->way = CCM_FADE_ON_DESTROY;
 			if (!is_set) self->priv->origin = ccm_window_get_opacity (window);

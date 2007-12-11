@@ -72,8 +72,6 @@ struct _CCMWindowPrivate
 	
 	Window				child;
 	
-	gboolean			is_input_only;
-	gboolean			is_viewable;
 	gboolean			is_shaped;
 	gboolean			is_shaded;
 	gboolean			is_fullscreen;
@@ -97,13 +95,13 @@ struct _CCMWindowPrivate
 static void
 ccm_window_init (CCMWindow *self)
 {
+	self->is_input_only = FALSE;
+	self->is_viewable = FALSE;
 	self->priv = CCM_WINDOW_GET_PRIVATE(self);
 	self->priv->hint_type = CCM_WINDOW_TYPE_UNKNOWN;
 	self->priv->name = NULL;
 	self->priv->class_name = NULL;
 	self->priv->child = None;
-	self->priv->is_input_only = FALSE;
-	self->priv->is_viewable = FALSE;
 	self->priv->is_shaped = FALSE;
 	self->priv->is_shaded = FALSE;
 	self->priv->is_fullscreen = FALSE;
@@ -474,9 +472,6 @@ ccm_window_move(CCMDrawable* drawable, int x, int y)
 	CCMWindow* self = CCM_WINDOW(drawable);
 	cairo_rectangle_t geometry;
 	
-	if (ccm_window_is_input_only(self) && !ccm_window_is_viewable(self))
-		return;
-	
 	ccm_drawable_get_geometry_clipbox(drawable, &geometry);
 	
 	if (x != (int)geometry.x || y != (int)geometry.y)
@@ -484,8 +479,11 @@ ccm_window_move(CCMDrawable* drawable, int x, int y)
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(drawable, x, y);
 		if (self->priv->opaque)
 			ccm_region_offset(self->priv->opaque, x - geometry.x, y - geometry.y);
-		ccm_drawable_damage_rectangle(drawable, &geometry);
-		ccm_drawable_damage(drawable);
+		if (self->is_viewable || self->priv->unmap_pending)
+		{
+			ccm_drawable_damage_rectangle(drawable, &geometry);
+			ccm_drawable_damage(drawable);
+		}
 	}
 }
 
@@ -496,9 +494,6 @@ ccm_window_resize(CCMDrawable* drawable, int width, int height)
 	
 	CCMWindow* self = CCM_WINDOW(drawable);
 	cairo_rectangle_t geometry;
-	
-	if (ccm_window_is_input_only(self) && !ccm_window_is_viewable(self))
-		return;
 	
 	ccm_drawable_get_geometry_clipbox(drawable, &geometry);
 		
@@ -514,8 +509,11 @@ ccm_window_resize(CCMDrawable* drawable, int width, int height)
 							  round((gfloat)width * (opaque.width / geometry.width)),
 							  round((gfloat)height * (opaque.width / geometry.height)));
 		}
-		ccm_drawable_damage_rectangle(drawable, &geometry);
-		ccm_drawable_damage(drawable);
+		if (self->is_viewable || self->priv->unmap_pending)
+		{
+			ccm_drawable_damage_rectangle(drawable, &geometry);
+			ccm_drawable_damage(drawable);
+		}
 		
 		if (self->priv->pixmap)
 		{
@@ -661,7 +659,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	
 	create_atoms(self);
 	
-	if (!ccm_window_is_input_only(self))
+	if (!self->is_input_only)
 	{
 		ccm_window_query_hint_type(self);
 		ccm_window_query_mwm_hints (self);
@@ -674,22 +672,6 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	}
 	
 	return self;
-}
-
-gboolean
-ccm_window_is_viewable(CCMWindow* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	return self->priv->is_viewable;
-}
-
-gboolean
-ccm_window_is_input_only(CCMWindow* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-
-	return self->priv->is_input_only;
 }
 
 gboolean
@@ -935,12 +917,12 @@ ccm_window_get_format (CCMWindow* self)
 							   CCM_WINDOW_XWINDOW(self), &attrs))
 		return CAIRO_FORMAT_ARGB32;
 	
-    self->priv->is_viewable = attrs.map_state == IsViewable;
+    self->is_viewable = attrs.map_state == IsViewable;
 	self->priv->override_redirect = attrs.override_redirect;
 	
     if (attrs.class == InputOnly)
     {
-		self->priv->is_input_only = TRUE;
+		self->is_input_only = TRUE;
     }
     else if (attrs.depth == 16 &&
 			 attrs.visual->red_mask == 0xf800 &&
@@ -1030,7 +1012,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context)
 	
 	cairo_path_t* damaged;
 	
-	if (!self->priv->is_viewable && !self->priv->unmap_pending)
+	if (!self->is_viewable && !self->priv->unmap_pending)
 		return ret;
 	
 	cairo_save(context);
@@ -1064,9 +1046,9 @@ ccm_window_map(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (!self->priv->is_viewable)
+	if (!self->is_viewable)
 	{
-		self->priv->is_viewable = TRUE;
+		self->is_viewable = TRUE;
 	
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
@@ -1077,9 +1059,9 @@ ccm_window_unmap(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->priv->is_viewable)
+	if (self->is_viewable)
 	{
-		self->priv->is_viewable = FALSE;
+		self->is_viewable = FALSE;
 		self->priv->unmap_pending = TRUE;
 		
 		ccm_window_plugin_unmap(self->priv->plugin, self);

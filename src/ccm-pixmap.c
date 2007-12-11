@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "ccm-pixmap.h"
+#include "ccm-window.h"
 #include "ccm-display.h"
 
 G_DEFINE_TYPE (CCMPixmap, ccm_pixmap, CCM_TYPE_DRAWABLE);
@@ -228,7 +229,7 @@ ccm_pixmap_get_surface(CCMDrawable* drawable)
 	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self->priv->window), 
 									  &geometry))
 	{
-		if (ccm_window_is_viewable(self->priv->window))
+		if (self->priv->window->is_viewable)
 			ccm_drawable_repair(CCM_DRAWABLE(self));
 		
 		surface = cairo_image_surface_create_for_data(

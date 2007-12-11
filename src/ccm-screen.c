@@ -69,6 +69,7 @@ struct _CCMScreenPrivate
 	
 	CCMWindow* 			root;
 	CCMWindow* 			cow;
+	CCMWindow*          fullscreen;
 	
 	CCMRegion*			damaged;
 	
@@ -104,6 +105,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->ctx = NULL;
 	self->priv->root = NULL;
 	self->priv->cow = NULL;
+	self->priv->fullscreen = NULL;
 	self->priv->damaged = NULL;
 	self->priv->windows = NULL;
 	self->priv->vblank = g_timer_new();
@@ -422,9 +424,9 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 			CCMWindow* window = item->data;
 			
 			if (!have_desktop)
-				have_desktop = ccm_window_is_viewable (window) &&
+				have_desktop = window->is_viewable &&
 				               ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP;
-			if (!ccm_window_is_input_only(window))
+			if (!window->is_input_only)
 			{
 				if (ccm_window_paint(window, self->priv->ctx))
 					ret = TRUE;
@@ -461,7 +463,7 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		CCM_WINDOW_XWINDOW(window) == CCM_SCREEN_GET_CLASS(self)->selection_owner)
 		return FALSE;
 	
-	if (!ccm_window_is_input_only(window) &&
+	if (!window->is_input_only &&
 		!ccm_screen_find_window(self, CCM_WINDOW_XWINDOW(window)))
 	{
 		CCMWindowType type = ccm_window_get_hint_type(window);
@@ -488,12 +490,10 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		
 		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
 		
-		if (ccm_window_is_viewable(window))
+		if (window->is_viewable) 
 		{
-			if (!ccm_window_is_decorated(window)) 
-				ccm_drawable_damage (CCM_DRAWABLE(window));
-			else
-				ccm_window_map(window);
+			ccm_drawable_damage (CCM_DRAWABLE(window));
+			ccm_window_map (window);
 		}
 		
 		return TRUE;
@@ -512,8 +512,10 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	{
 		self->priv->windows = g_list_remove(self->priv->windows, window);
 		
-		if (!ccm_window_is_input_only(window) && 
-			ccm_window_is_viewable (window))
+		if (self->priv->fullscreen == window)
+			self->priv->fullscreen = NULL;
+		
+		if (!window->is_input_only && window->is_viewable)
 		{
 			cairo_rectangle_t geometry;
 			
@@ -530,7 +532,6 @@ ccm_screen_paint(CCMScreen* self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	g_signal_emit (self, signals[TIMER], 0, NULL);
-	
 	ccm_screen_plugin_paint(self->priv->plugin, self);
 	g_timer_start(self->priv->vblank);
 	
@@ -549,33 +550,25 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 	
 	if (CCM_WINDOW_XWINDOW(self->priv->cow) != CCM_WINDOW_XWINDOW(window))
 	{
-		GList* item = NULL, *fullscreen = NULL;
+		GList* item = NULL;
 		gboolean top = TRUE;
 		CCMRegion* damage_above = NULL, * damage_below = NULL;
 		
 		damage_above = ccm_region_rectangle(area);
 		damage_below = ccm_region_rectangle(area);
 		// Substract opaque region of window to damage region below
-		if (ccm_window_is_opaque(window) && 
-			ccm_window_is_viewable(window))
+		if (ccm_window_is_opaque(window) && window->is_viewable)
 		{
 			CCMRegion* opaque = ccm_window_get_opaque_region(window);
 			if (opaque) ccm_region_subtract(damage_below, opaque);
 		}
 		
-		// If top window is fullscreen
-		for (fullscreen = g_list_last(self->priv->windows); 
-			 fullscreen && fullscreen->data != window && 
-			 !ccm_window_is_fullscreen (fullscreen->data); 
-			 fullscreen = fullscreen->prev);
-			
-		if (fullscreen && 
-			ccm_window_is_viewable (fullscreen->data) &&
-			ccm_window_is_fullscreen (fullscreen->data))
+		if (self->priv->fullscreen && self->priv->fullscreen != window &&
+			self->priv->fullscreen->is_viewable)
 		{
-			if (ccm_window_is_opaque(fullscreen->data))
+			if (ccm_window_is_opaque(self->priv->fullscreen))
 			{
-				CCMRegion* opaque = ccm_window_get_opaque_region(fullscreen->data);
+				CCMRegion* opaque = ccm_window_get_opaque_region(self->priv->fullscreen);
 				
 				if (opaque)
 				{
@@ -583,9 +576,8 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 					ccm_region_subtract(damage_below, opaque);
 					ccm_region_subtract(damage_above, opaque);
 					// Undamage opaque region
-					if (window != fullscreen->data)
-						ccm_drawable_undamage_region(CCM_DRAWABLE(window), 
-													 opaque);
+					ccm_drawable_undamage_region(CCM_DRAWABLE(window), 
+												 opaque);
 				}
 				// If no below damage or window is undamaged
 				if (ccm_region_empty (damage_below) ||
@@ -601,7 +593,7 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 		// Substract all obscured area to damage region
 		for (item = g_list_last(self->priv->windows); item; item = item->prev)
 		{
-			if (ccm_window_is_viewable(item->data) && item->data != window)
+			if (((CCMWindow*)item->data)->is_viewable && item->data != window)
 			{
 				if (ccm_window_is_opaque(item->data))
 				{
@@ -644,7 +636,7 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 		// damage now all concurent window
 		for (; item; item = item->prev)
 		{
-			if (ccm_window_is_viewable(item->data) && item->data != window)
+			if (((CCMWindow*)item->data)->is_viewable && item->data != window)
 			{
 				if (top)
 				{
@@ -826,7 +818,16 @@ on_event(CCMScreen* self, XEvent* event)
 				else if (property_event->atom == CCM_WINDOW_GET_CLASS(window)->type_atom)
 					ccm_window_query_hint_type(window);
 				else if (property_event->atom == CCM_WINDOW_GET_CLASS(window)->state_atom)
+				{
 					ccm_window_query_state(window);
+					if (ccm_window_is_fullscreen (window))
+					{
+						self->priv->fullscreen = window;
+						ccm_screen_restack (self, window, NULL);
+					}
+					else if (self->priv->fullscreen == window)
+						self->priv->fullscreen = NULL;
+				}
 			}
 		}
 		break;
@@ -881,7 +882,12 @@ on_event(CCMScreen* self, XEvent* event)
 						}
 					}
 					if (ccm_window_is_fullscreen (window))
+					{
 						ccm_screen_restack (self, window, NULL);
+						self->priv->fullscreen = window;
+					}
+					else if (self->priv->fullscreen == window)
+						self->priv->fullscreen = NULL;
 				}
 			}
 		}
@@ -1069,8 +1075,8 @@ ccm_screen_damage_rectangle(CCMScreen* self, cairo_rectangle_t* area)
 	
 	for (item = g_list_last(self->priv->windows); item; item = item->prev)
 	{
-		if (!ccm_window_is_input_only (item->data) &&
-			ccm_window_is_viewable (item->data))
+		if (!((CCMWindow*)item->data)->is_input_only &&
+			((CCMWindow*)item->data)->is_viewable)
 		{
 			g_signal_handlers_block_by_func(item->data, 
 											 on_window_damaged, 

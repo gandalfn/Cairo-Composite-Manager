@@ -82,8 +82,10 @@ typedef struct _CCMWindowPrivate CCMWindowPrivate;
 
 struct _CCMWindow
 {
-	CCMDrawable parent_instance;
+	CCMDrawable       parent_instance;
 	
+	gboolean 		  is_viewable;
+	gboolean 		  is_input_only;
 	CCMWindowPrivate* priv;
 };
 

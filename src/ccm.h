@@ -203,8 +203,6 @@ cairo_path_t*	 ccm_drawable_get_damage_path		(CCMDrawable* self,
 /******************************** Window **************************************/
 CCMWindow*  	ccm_window_new          			(CCMScreen* screen, 
 											 		 Window xwindow);
-gboolean 		ccm_window_is_viewable				(CCMWindow* self);
-gboolean		ccm_window_is_input_only			(CCMWindow* self);
 gboolean		ccm_window_is_managed				(CCMWindow* self);
 void			ccm_window_make_output_only			(CCMWindow* self);
 void			ccm_window_redirect 				(CCMWindow* self);
