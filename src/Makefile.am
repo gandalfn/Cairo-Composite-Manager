@@ -72,7 +72,7 @@ endif
 
 cairo_compmgr_LDFLAGS = -rdynamic
 
-cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS)
+cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS)
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_LDADD += $(CCM_XRENDER_BACKEND_LIBS)

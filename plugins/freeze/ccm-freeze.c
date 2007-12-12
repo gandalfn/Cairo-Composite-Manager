@@ -130,8 +130,8 @@ ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
 	{
 		if (event->xclient.message_type == protocol_atom)
 		{
-			g_print("Pong 0x%x, %li\n", event->xclient.window,
-					event->xclient.data.l[1]);
+			/*g_print("Pong 0x%x, %li\n", event->xclient.window,
+					event->xclient.data.l[1]);*/
 			self->priv->alive = TRUE;
 			self->priv->last_ping = 0;
 		}
@@ -152,7 +152,7 @@ ccm_freeze_ping(CCMFreeze* self)
 		
 		if (self->priv->last_ping)
 		{
-			g_print("Not alive 0x%x\n", CCM_WINDOW_XWINDOW(self->priv->window));
+			/*g_print("Not alive 0x%x\n", CCM_WINDOW_XWINDOW(self->priv->window));*/
 			self->priv->alive = FALSE;
 			ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 		}
@@ -160,8 +160,8 @@ ccm_freeze_ping(CCMFreeze* self)
 			self->priv->alive = TRUE;
 		
 		self->priv->last_ping = time(NULL);
-		g_print("Ping 0x%x, %li\n", CCM_WINDOW_XWINDOW(self->priv->window),
-				self->priv->last_ping);
+		/*g_print("Ping 0x%x, %li\n", CCM_WINDOW_XWINDOW(self->priv->window),
+				self->priv->last_ping);*/
 		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
     	event.type = ClientMessage;
 		event.xclient.window = CCM_WINDOW_XWINDOW(self->priv->window);

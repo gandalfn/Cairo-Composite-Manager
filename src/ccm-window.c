@@ -364,40 +364,6 @@ ccm_window_query_child(CCMWindow* self)
 	}
 }
 
-static gboolean
-ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame, 
-							 int* top_frame, int* bottom_frame)
-{
-	guint32* data = NULL;
-	guint n_items;
-	gboolean ret = FALSE;
-	
-	if (self->priv->child)
-		data = ccm_window_get_child_property(self, 
-								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
-								32, XA_CARDINAL, &n_items);
-	else
-		data = ccm_window_get_property(self, 
-								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
-								32, XA_CARDINAL, &n_items);
-	if (data)
-	{
-		guint32* extends = (guint32*)data;
-		
-		if (n_items == 4)
-		{
-			*left_frame   = (int)extends[0];
-      		*right_frame  = (int)extends[1];
-      		*top_frame    = (int)extends[2];
-      		*bottom_frame = (int)extends[3];
-			ret = TRUE;
-		}
-		g_free(data);
-	}
-	
-	return ret;
-}
-
 static CCMRegion*
 impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 {
@@ -407,7 +373,6 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	int bx, by, cs, cx, cy, o; /* dummies */
 	unsigned int bw, bh, cw, ch; /* dummies */
-	int left_frame, right_frame, top_frame, bottom_frame;
 	XWindowAttributes attrs;
 	cairo_rectangle_t area;
 	
@@ -1273,4 +1238,38 @@ ccm_window_is_decorated(CCMWindow* self)
 	g_return_val_if_fail(self != NULL, TRUE);
 	
 	return self->priv->is_decorated;
+}
+
+gboolean
+ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame, 
+							 int* top_frame, int* bottom_frame)
+{
+	guint32* data = NULL;
+	guint n_items;
+	gboolean ret = FALSE;
+	
+	if (self->priv->child)
+		data = ccm_window_get_child_property(self, 
+								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
+								32, XA_CARDINAL, &n_items);
+	else
+		data = ccm_window_get_property(self, 
+								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
+								32, XA_CARDINAL, &n_items);
+	if (data)
+	{
+		guint32* extends = (guint32*)data;
+		
+		if (n_items == 4)
+		{
+			*left_frame   = (int)extends[0];
+      		*right_frame  = (int)extends[1];
+      		*top_frame    = (int)extends[2];
+      		*bottom_frame = (int)extends[3];
+			ret = TRUE;
+		}
+		g_free(data);
+	}
+	
+	return ret;
 }

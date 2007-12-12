@@ -29,7 +29,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/backend</applyto>
          <owner>gnome</owner>
          <type>string</type>
-         <default>xrender</default>
+         <default>glitz</default>
          <locale name="C">
             <short>Cairo Composite Manager backend</short>
             <long>Cairo Composite Manager backend (xrender (2D), glitz (OpenGL)) need a restart of cairo-compmgr</long>

@@ -9,6 +9,7 @@ AC_ISC_POSIX
 AC_PROG_CC
 AM_PROG_CC_STDC
 AC_HEADER_STDC
+AC_PROG_CC_C99
 
 dnl ***************************************************************************
 dnl Internatinalization
@@ -67,6 +68,11 @@ PKG_CHECK_MODULES(CCM_GLITZ_BACKEND,
 		 [glitzbackend="no"])
 AC_SUBST(CCM_GLITZ_BACKEND_CFLAGS)
 AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
+
+AC_CHECK_LIB(m, round, [M_LIBS="-lm"], AC_MSG_ERROR([libm is required to
+build cairo-compmgr. This lib comes with GNU C libraries (glibc) and you can
+find the lastest version from http://www.gnu.org/software/libc/]))
+AC_SUBST(M_LIBS)
 
 AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 

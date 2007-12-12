@@ -6,7 +6,7 @@
          <applyto>/apps/cairo-compmgr/default/opacity/opacity</applyto>
          <owner>gnome</owner>
          <type>float</type>
-		 <default>0.9</default>
+		 <default>0.85</default>
          <locale name="C">
             <short>Opacity of menu</short>
             <long>Opacity of menu</long>
