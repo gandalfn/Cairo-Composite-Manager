@@ -204,6 +204,8 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	self->priv->geometry = NULL;
 	if (self->priv->shadow_region) ccm_region_destroy (self->priv->shadow_region);
 	self->priv->shadow_region = NULL;
+	if (self->priv->shadow)	cairo_surface_destroy(self->priv->shadow);
+	self->priv->shadow = NULL;
 	
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
 												window);
