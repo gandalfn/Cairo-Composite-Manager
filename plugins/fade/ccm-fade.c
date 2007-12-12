@@ -124,6 +124,8 @@ ccm_fade_window_iface_init(CCMWindowPluginClass* iface)
 	iface->unmap			= ccm_fade_unmap;
 	iface->query_opacity  	= ccm_fade_query_opacity;
 	iface->set_opaque		= NULL;
+	iface->move				= NULL;
+	iface->resize			= NULL;
 }
 
 static void

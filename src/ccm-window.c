@@ -59,6 +59,12 @@ static void 		impl_ccm_window_query_opacity (CCMWindowPlugin* plugin,
 												   CCMWindow* self);
 static void			impl_ccm_window_set_opaque	  (CCMWindowPlugin* plugin, 
 												   CCMWindow* self);
+static void			impl_ccm_window_move		  (CCMWindowPlugin* plugin, 
+												   CCMWindow* self, 
+												   int x, int y);
+static void			impl_ccm_window_resize		  (CCMWindowPlugin* plugin, 
+												   CCMWindow* self, 
+												   int width, int height);
 
 G_DEFINE_TYPE_EXTENDED (CCMWindow, ccm_window, CCM_TYPE_DRAWABLE, 0,
 						G_IMPLEMENT_INTERFACE(CCM_TYPE_WINDOW_PLUGIN,
@@ -153,6 +159,8 @@ ccm_window_iface_init(CCMWindowPluginClass* iface)
 	iface->unmap  			= impl_ccm_window_unmap;
 	iface->query_opacity  	= impl_ccm_window_query_opacity;
 	iface->set_opaque	  	= impl_ccm_window_set_opaque;
+	iface->move				= impl_ccm_window_move;
+	iface->resize			= impl_ccm_window_resize;
 }
 
 static void
@@ -364,19 +372,24 @@ ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame,
 	guint n_items;
 	gboolean ret = FALSE;
 	
-	data = ccm_window_get_property(self, 
-								   CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
-								   32, XA_CARDINAL, &n_items);
+	if (self->priv->child)
+		data = ccm_window_get_child_property(self, 
+								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
+								32, XA_CARDINAL, &n_items);
+	else
+		data = ccm_window_get_property(self, 
+								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
+								32, XA_CARDINAL, &n_items);
 	if (data)
 	{
-		gulong* extends = (gulong*)data;
+		guint32* extends = (guint32*)data;
 		
 		if (n_items == 4)
 		{
-			*left_frame   = extends[0];
-      		*right_frame  = extends[1];
-      		*top_frame    = extends[2];
-      		*bottom_frame = extends[3];
+			*left_frame   = (int)extends[0];
+      		*right_frame  = (int)extends[1];
+      		*top_frame    = (int)extends[2];
+      		*bottom_frame = (int)extends[3];
 			ret = TRUE;
 		}
 		g_free(data);
@@ -394,6 +407,7 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	int bx, by, cs, cx, cy, o; /* dummies */
 	unsigned int bw, bh, cw, ch; /* dummies */
+	int left_frame, right_frame, top_frame, bottom_frame;
 	XWindowAttributes attrs;
 	cairo_rectangle_t area;
 	
@@ -469,49 +483,56 @@ ccm_window_move(CCMDrawable* drawable, int x, int y)
 	g_return_if_fail(drawable != NULL);
 	
 	CCMWindow* self = CCM_WINDOW(drawable);
+
+	ccm_window_plugin_move(self->priv->plugin, self, x , y);
+}
+
+static void
+impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
+{
 	cairo_rectangle_t geometry;
 	
-	ccm_drawable_get_geometry_clipbox(drawable, &geometry);
+	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
 	
 	if (x != (int)geometry.x || y != (int)geometry.y)
 	{
-		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(drawable, x, y);
+		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
+														  x, y);
 		if (self->opaque)
 			ccm_region_offset(self->opaque, x - geometry.x, y - geometry.y);
 		if (self->is_viewable || self->priv->unmap_pending)
 		{
-			ccm_drawable_damage_rectangle(drawable, &geometry);
-			ccm_drawable_damage(drawable);
+			ccm_drawable_damage_rectangle(CCM_DRAWABLE(self), &geometry);
+			ccm_drawable_damage(CCM_DRAWABLE(self));
 		}
 	}
 }
-
 static void
 ccm_window_resize(CCMDrawable* drawable, int width, int height)
 {
 	g_return_if_fail(drawable != NULL);
 	
 	CCMWindow* self = CCM_WINDOW(drawable);
+
+	ccm_window_plugin_resize(self->priv->plugin, self, width, height);
+}
+
+static void
+impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self, 
+					   int width, int height)
+{
 	cairo_rectangle_t geometry;
 	
-	ccm_drawable_get_geometry_clipbox(drawable, &geometry);
+	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
 		
-	if (width != (int)geometry.width || height != (int)geometry.height)
+	if (width != (int)geometry.width - 14 || height != (int)geometry.height - 14)
 	{
-		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->resize(drawable, width, height);
-		if (0)//self->opaque)
-		{
-			cairo_rectangle_t opaque;
-			
-			ccm_region_get_clipbox (self->opaque, &opaque);
-			ccm_region_resize(self->opaque, 
-							  round((gfloat)width * (opaque.width / geometry.width)),
-							  round((gfloat)height * (opaque.width / geometry.height)));
-		}
+		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->resize(CCM_DRAWABLE(self), 
+															width, height);
 		if (self->is_viewable || self->priv->unmap_pending)
 		{
-			ccm_drawable_damage_rectangle(drawable, &geometry);
-			ccm_drawable_damage(drawable);
+			ccm_drawable_damage_rectangle(CCM_DRAWABLE(self), &geometry);
+			ccm_drawable_damage(CCM_DRAWABLE(self));
 		}
 		
 		if (self->priv->pixmap)

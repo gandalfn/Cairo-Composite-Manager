@@ -113,6 +113,8 @@ ccm_freeze_iface_init(CCMWindowPluginClass* iface)
 	iface->unmap			= ccm_freeze_unmap;
 	iface->query_opacity  	= NULL;
 	iface->set_opaque		= NULL;
+	iface->move				= NULL;
+	iface->resize			= NULL;
 }
 
 void

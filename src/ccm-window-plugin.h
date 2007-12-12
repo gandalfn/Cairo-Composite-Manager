@@ -58,6 +58,13 @@ struct _CCMWindowPluginClass
 											 CCMWindow* window);
 	void 			  (*set_opaque)			(CCMWindowPlugin* self, 
 											 CCMWindow* window);
+	void			  (*move)	 			(CCMWindowPlugin* self, 
+											 CCMWindow* window,
+											 int x, int y);
+	void			  (*resize)	 			(CCMWindowPlugin* self, 
+											 CCMWindow* window,
+											 int width, int height);
+
 };
 
 GType ccm_window_plugin_get_type (void) G_GNUC_CONST;
@@ -78,6 +85,12 @@ void 		ccm_window_plugin_query_opacity (CCMWindowPlugin* self,
 										     CCMWindow* window);
 void		ccm_window_plugin_set_opaque	(CCMWindowPlugin* self, 
 											 CCMWindow* window);
+void		ccm_window_plugin_move			(CCMWindowPlugin* self, 
+											 CCMWindow* window,
+											 int x, int y);
+void		ccm_window_plugin_resize		(CCMWindowPlugin* self, 
+											 CCMWindow* window,
+											 int width, int height);
 
 G_END_DECLS
 

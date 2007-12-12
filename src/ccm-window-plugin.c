@@ -182,3 +182,40 @@ ccm_window_plugin_set_opaque(CCMWindowPlugin* self, CCMWindow* window)
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque)
   		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque(plugin, window);
 }
+
+void
+ccm_window_plugin_move(CCMWindowPlugin* self, CCMWindow* window,
+					   int x, int y)
+{
+  	g_return_if_fail (CCM_IS_WINDOW_PLUGIN (self));
+	g_return_if_fail (window != NULL);
+
+	CCMWindowPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin) && 
+		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move; 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
+	
+	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move)
+  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move(plugin, window, x, y);
+}
+
+void
+ccm_window_plugin_resize(CCMWindowPlugin* self, CCMWindow* window,
+						 int width, int height)
+{
+  	g_return_if_fail (CCM_IS_WINDOW_PLUGIN (self));
+	g_return_if_fail (window != NULL);
+
+	CCMWindowPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin) && 
+		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize; 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
+	
+	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize)
+  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize(plugin, window,
+														 width, height);
+}

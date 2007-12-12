@@ -65,6 +65,10 @@ gboolean ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 						  cairo_t* context, cairo_surface_t* suface);
 void ccm_shadow_unmap(CCMWindowPlugin* plugin, CCMWindow* window);
 void ccm_shadow_set_opaque(CCMWindowPlugin* plugin, CCMWindow* window);
+void ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window, 
+					 int x, int y);
+void ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window, 
+					   int width, int height);
 
 static void
 ccm_shadow_init (CCMShadow *self)
@@ -108,6 +112,8 @@ ccm_shadow_iface_init(CCMWindowPluginClass* iface)
 	iface->unmap			= ccm_shadow_unmap;
 	iface->query_opacity  	= NULL;
 	iface->set_opaque		= ccm_shadow_set_opaque;
+	iface->move				= ccm_shadow_move;
+	iface->resize			= ccm_shadow_resize;
 }
 
 static void
@@ -310,4 +316,37 @@ ccm_shadow_set_opaque(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	if (self->priv->shadow_region)
 		ccm_window_add_alpha_region (window, self->priv->shadow_region);
+}
+
+void ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window, 
+					 int x, int y)
+{
+	CCMShadow* self = CCM_SHADOW(plugin);
+	cairo_rectangle_t area;
+	
+	if (self->priv->geometry)
+	{
+		ccm_region_get_clipbox(self->priv->geometry, &area);
+		ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
+	}
+	if (self->priv->shadow_region)
+	{
+		ccm_region_get_clipbox(self->priv->shadow_region, &area);
+		ccm_region_offset(self->priv->shadow_region, x - area.x, y - area.y);
+	}
+	
+	ccm_window_plugin_move (CCM_WINDOW_PLUGIN_PARENT(plugin), window, x, y);
+}
+
+void ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window, 
+					   int width, int height)
+{
+	CCMShadow* self = CCM_SHADOW(plugin);
+	int border = 0;
+	
+	if (self->priv->shadow)
+		border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
+	
+	ccm_window_plugin_resize (CCM_WINDOW_PLUGIN_PARENT(plugin), window,
+							  width + border, height + border);
 }

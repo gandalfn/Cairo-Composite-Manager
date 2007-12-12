@@ -398,7 +398,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	static gboolean have_desktop = FALSE;
+	static gboolean have_desktop = TRUE;
 	gboolean ret = FALSE;
 		
 	if (self->priv->cow)
