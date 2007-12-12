@@ -145,7 +145,7 @@ ccm_freeze_ping(CCMFreeze* self)
     	CCMDisplay* display = 
 			ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));
 		
-		if (!ccm_window_is_viewable (self->priv->window))
+		if (!self->priv->window->is_viewable)
 			return FALSE;
 		
 		if (self->priv->last_ping)

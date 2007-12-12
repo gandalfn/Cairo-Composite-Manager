@@ -83,7 +83,6 @@ struct _CCMWindowPrivate
 	gboolean			unmap_pending;
 
 	CCMPixmap*			pixmap;
-	CCMRegion*			opaque;
 	
 	CCMWindowPlugin*	plugin;
 	double				opacity;
@@ -97,6 +96,7 @@ ccm_window_init (CCMWindow *self)
 {
 	self->is_input_only = FALSE;
 	self->is_viewable = FALSE;
+	self->opaque = NULL;
 	self->priv = CCM_WINDOW_GET_PRIVATE(self);
 	self->priv->hint_type = CCM_WINDOW_TYPE_UNKNOWN;
 	self->priv->name = NULL;
@@ -111,7 +111,6 @@ ccm_window_init (CCMWindow *self)
 	self->priv->unmap_pending = FALSE;
 	self->priv->opacity = 1.0f;
 	self->priv->pixmap = NULL;
-	self->priv->opaque = NULL;
 	self->priv->plugin = NULL;
 }
 
@@ -120,10 +119,10 @@ ccm_window_finalize (GObject *object)
 {
 	CCMWindow* self = CCM_WINDOW(object);
 	
+	if (self->opaque) ccm_region_destroy(self->opaque);
 	if (self->priv->pixmap) g_object_unref(self->priv->pixmap);
 	if (self->priv->name) g_free(self->priv->name);
 	if (self->priv->plugin) g_object_unref(self->priv->plugin);
-	if (self->priv->opaque) ccm_region_destroy(self->priv->opaque);
 	
 	G_OBJECT_CLASS (ccm_window_parent_class)->finalize (object);
 }
@@ -439,7 +438,7 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 		self->priv->opacity == 1.0f)
 	{
 		ccm_window_set_alpha(self);
-		self->priv->opaque = ccm_region_copy(geometry);
+		self->opaque = ccm_region_copy(geometry);
 	}
 		
 	if (geometry && self->priv->pixmap)
@@ -477,8 +476,8 @@ ccm_window_move(CCMDrawable* drawable, int x, int y)
 	if (x != (int)geometry.x || y != (int)geometry.y)
 	{
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(drawable, x, y);
-		if (self->priv->opaque)
-			ccm_region_offset(self->priv->opaque, x - geometry.x, y - geometry.y);
+		if (self->opaque)
+			ccm_region_offset(self->opaque, x - geometry.x, y - geometry.y);
 		if (self->is_viewable || self->priv->unmap_pending)
 		{
 			ccm_drawable_damage_rectangle(drawable, &geometry);
@@ -500,12 +499,12 @@ ccm_window_resize(CCMDrawable* drawable, int width, int height)
 	if (width != (int)geometry.width || height != (int)geometry.height)
 	{
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->resize(drawable, width, height);
-		if (0)//self->priv->opaque)
+		if (0)//self->opaque)
 		{
 			cairo_rectangle_t opaque;
 			
-			ccm_region_get_clipbox (self->priv->opaque, &opaque);
-			ccm_region_resize(self->priv->opaque, 
+			ccm_region_get_clipbox (self->opaque, &opaque);
+			ccm_region_resize(self->opaque, 
 							  round((gfloat)width * (opaque.width / geometry.width)),
 							  round((gfloat)height * (opaque.width / geometry.height)));
 		}
@@ -585,7 +584,7 @@ impl_ccm_window_query_opacity(CCMWindowPlugin* plugin, CCMWindow* self)
 		
 		if (self->priv->opacity == 1.0f && 
 			ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 &&
-			!ccm_window_is_opaque(self))
+			!self->opaque)
 			ccm_window_set_opaque(self);
 		else
 			ccm_window_set_alpha(self);
@@ -602,8 +601,7 @@ impl_ccm_window_set_opaque(CCMWindowPlugin* plugin, CCMWindow* self)
 	CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(self));
 	
 	ccm_window_set_alpha(self);
-	if (geometry)
-	self->priv->opaque = ccm_region_copy(geometry);
+	if (geometry) self->opaque = ccm_region_copy(geometry);
 }
 
 CCMWindowPlugin*
@@ -1211,27 +1209,19 @@ ccm_window_get_name(CCMWindow* self)
 	return self->priv->name;
 }
 
-gboolean
-ccm_window_is_opaque(CCMWindow* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	return self->priv->opaque != NULL;
-}
-
 void
 ccm_window_add_alpha_region(CCMWindow* self, CCMRegion* region)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(region != NULL);
 	
-	if (self->priv->opaque)
+	if (self->opaque)
 	{
-		ccm_region_subtract(self->priv->opaque, region);
-		if (ccm_region_empty(self->priv->opaque))
+		ccm_region_subtract(self->opaque, region);
+		if (ccm_region_empty(self->opaque))
 		{
-			ccm_region_destroy(self->priv->opaque);
-			self->priv->opaque = NULL;
+			ccm_region_destroy(self->opaque);
+			self->opaque = NULL;
 		}
 	}
 }
@@ -1241,10 +1231,10 @@ ccm_window_set_alpha(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->priv->opaque)
+	if (self->opaque)
 	{
-		ccm_region_destroy(self->priv->opaque);
-		self->priv->opaque = NULL;
+		ccm_region_destroy(self->opaque);
+		self->opaque = NULL;
 	}
 }
 
@@ -1254,14 +1244,6 @@ ccm_window_set_opaque(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	ccm_window_plugin_set_opaque (self->priv->plugin, self);
-}
-
-CCMRegion*
-ccm_window_get_opaque_region(CCMWindow* self)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	
-	return self->priv->opaque;
 }
 
 gboolean

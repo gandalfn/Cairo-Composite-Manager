@@ -217,11 +217,9 @@ gboolean		ccm_window_paint 					(CCMWindow* self,
 void			ccm_window_map						(CCMWindow* self);
 void			ccm_window_unmap					(CCMWindow* self);
 void 			ccm_window_query_opacity			(CCMWindow* self);
-gboolean		ccm_window_is_opaque				(CCMWindow* self);
 void            ccm_window_query_hint_type          (CCMWindow* self);
 CCMWindowType	ccm_window_get_hint_type			(CCMWindow* self);
 const gchar*	ccm_window_get_name					(CCMWindow* self);
-CCMRegion*      ccm_window_get_opaque_region        (CCMWindow* self);
 void            ccm_window_add_alpha_region         (CCMWindow* self, 
                                                      CCMRegion* region);
 void            ccm_window_set_alpha                (CCMWindow* self);

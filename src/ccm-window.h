@@ -86,6 +86,9 @@ struct _CCMWindow
 	
 	gboolean 		  is_viewable;
 	gboolean 		  is_input_only;
+	
+	CCMRegion*		  opaque;
+	
 	CCMWindowPrivate* priv;
 };
 
