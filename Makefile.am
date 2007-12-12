@@ -13,7 +13,14 @@ cairo_compmgrdoc_DATA = \
 	INSTALL\
 	NEWS
 
-EXTRA_DIST = $(cairo_compmgrdoc_DATA)
+EXTRA_DIST = $(cairo_compmgrdoc_DATA)\
+			 intltool-extract.in \
+			 intltool-merge.in \
+			 intltool-update.in
+
+DISTCLEANFILES = intltool-extract \
+				 intltool-merge \
+				 intltool-update
 
 # Copy all the spec files. Of cource, only one is actually used.
 dist-hook:

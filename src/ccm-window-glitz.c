@@ -340,8 +340,7 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 			ccm_window_glitz_vsync(self, 1);
 		else
 			ccm_window_glitz_vsync(self, 0);
-		glitz_context_make_current(self->priv->gl_context,
-								   self->priv->gl_drawable);
+		
 		if (!csb && supported)
 		{
 		 	csb = (glXCopySubBufferMESAProc)
