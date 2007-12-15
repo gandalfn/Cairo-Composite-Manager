@@ -26,7 +26,9 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <X11/extensions/XShm.h>
+#include <X11/extensions/Xfixes.h>
 #include <stdlib.h>
+#include <cairo-xlib.h>
 
 #include "ccm-pixmap.h"
 #include "ccm-window.h"
@@ -138,6 +140,15 @@ ccm_pixmap_bind (CCMPixmap* self)
 	XGCValues gcv;
 	
 	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self->priv->window), &geometry);
+
+	gcv.graphics_exposures = FALSE;
+	gcv.subwindow_mode = IncludeInferiors;
+
+	self->priv->gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display),
+							   CCM_PIXMAP_XPIXMAP(self),
+							   GCGraphicsExposures | GCSubwindowMode,
+							   &gcv);
+		
 	if (_ccm_display_use_xshm(display))
 	{
 		self->priv->image = XShmCreateImage(CCM_DISPLAY_XDISPLAY(display),
@@ -154,14 +165,6 @@ ccm_pixmap_bind (CCMPixmap* self)
 		self->priv->shminfo.shmaddr = self->priv->image->data = shmat (self->priv->shminfo.shmid, 0, 0);
 		XShmAttach(CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
 		
-		gcv.graphics_exposures = FALSE;
-		gcv.subwindow_mode = IncludeInferiors;
-
-		self->priv->gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display),
-								   CCM_PIXMAP_XPIXMAP(self),
-								   GCGraphicsExposures | GCSubwindowMode,
-								   &gcv);
-
 		self->priv->pixmap = XShmCreatePixmap(CCM_DISPLAY_XDISPLAY(display),
 											  CCM_PIXMAP_XPIXMAP(self),
 											  self->priv->image->data,
@@ -172,14 +175,11 @@ ccm_pixmap_bind (CCMPixmap* self)
 	}
 	else
 	{
-		self->priv->image = XCreateImage (CCM_DISPLAY_XDISPLAY(display),
-										  visual,
-										  ccm_window_get_depth(self->priv->window),
-										  ZPixmap, 0, NULL,
-										  (int)geometry.width, 
-										  (int)geometry.height, 32, 0);
-		if (self->priv->image)
-			self->priv->image->data = malloc(self->priv->image->bytes_per_line * geometry.height);
+		self->priv->pixmap = XCreatePixmap(CCM_DISPLAY_XDISPLAY(display),
+										   CCM_PIXMAP_XPIXMAP(self),
+										   (int)geometry.width, 
+										   (int)geometry.height,
+										   ccm_window_get_depth(self->priv->window));
 	}
 	if (visual) XFree(visual);
 }
@@ -192,28 +192,20 @@ ccm_pixmap_repair(CCMDrawable* drawable, CCMRegion* area)
 	
 	CCMPixmap* self = CCM_PIXMAP(drawable);
 	CCMDisplay* display = ccm_drawable_get_display(drawable);
+	cairo_rectangle_t* rects;
+	gint nb_rects, cpt;
 	
-	cairo_rectangle_t clipbox;
-	
-	ccm_region_get_clipbox(area, &clipbox);
-	if (_ccm_display_use_xshm(display))
+	ccm_region_get_rectangles (area, &rects, &nb_rects);
+	for (cpt = 0; cpt < nb_rects; cpt++)
 	{
 		XCopyArea(CCM_DISPLAY_XDISPLAY(display),
-				  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
-				  self->priv->gc, 
-				  (int)clipbox.x, (int)clipbox.y, 
-				  (int)clipbox.width, (int)clipbox.height, 
-				  (int)clipbox.x, (int)clipbox.y);
+			  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
+			  self->priv->gc, 
+			  (int)rects[cpt].x, (int)rects[cpt].y, 
+			  (int)rects[cpt].width, (int)rects[cpt].height, 
+			  (int)rects[cpt].x, (int)rects[cpt].y);
 	}
-	else
-	{
-		XGetSubImage (CCM_DISPLAY_XDISPLAY(display),
-					  CCM_PIXMAP_XPIXMAP(self),
-					  (int)clipbox.x, (int)clipbox.y, 
-				      (int)clipbox.width, (int)clipbox.height, 
-				      AllPlanes, ZPixmap, self->priv->image, 
-					  (int)clipbox.x, (int)clipbox.y);
-	}
+	g_free(rects);
 	ccm_display_sync(display);
 }
 
@@ -223,6 +215,7 @@ ccm_pixmap_get_surface(CCMDrawable* drawable)
 	g_return_val_if_fail(drawable != NULL, NULL);
 	
 	CCMPixmap *self = CCM_PIXMAP(drawable);
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));
 	cairo_rectangle_t geometry;
 	cairo_surface_t* surface = NULL;
 	
@@ -232,6 +225,16 @@ ccm_pixmap_get_surface(CCMDrawable* drawable)
 		if (self->priv->window->is_viewable)
 			ccm_drawable_repair(CCM_DRAWABLE(self));
 		
+		if (!_ccm_display_use_xshm(display))
+		{
+			if (self->priv->image) XDestroyImage(self->priv->image);
+			
+			self->priv->image = XGetImage (CCM_DISPLAY_XDISPLAY(display),
+										   self->priv->pixmap, 0, 0, 
+										   (int)geometry.width, 
+										   (int)geometry.height, 
+										   AllPlanes, ZPixmap);
+		}
 		surface = cairo_image_surface_create_for_data(
 									(unsigned char *)self->priv->image->data, 
 									ccm_window_get_format(self->priv->window),
@@ -249,11 +252,24 @@ ccm_pixmap_on_damage(CCMDisplay* display, cairo_rectangle_t* area,
 	g_return_if_fail(display != NULL);
 	g_return_if_fail(area != NULL);
 	g_return_if_fail(self != NULL);
+	XserverRegion region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY (display), NULL, 0);
+	XRectangle* rects;
+	gint nb_rects, cpt;
 	
 	XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
-					 None, None);
+					 None, region);
 	
-	ccm_drawable_damage_rectangle(CCM_DRAWABLE(self), area);
+	rects = XFixesFetchRegion(CCM_DISPLAY_XDISPLAY (display), region, &nb_rects);
+	for (cpt = 0; cpt < nb_rects; cpt++)
+	{
+		area->x = rects[cpt].x;
+		area->y = rects[cpt].y;
+		area->width = rects[cpt].width;
+		area->height = rects[cpt].height;
+		ccm_drawable_damage_rectangle(CCM_DRAWABLE(self), area);
+	}
+	XFree(rects);
+	XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY (display), region);
 }
 
 static void
