@@ -27,6 +27,7 @@
 #include <X11/X.h>
 #include <X11/extensions/Xdamage.h>
 
+#include "async-getprop.h"
 #include "ccm.h"
 
 G_BEGIN_DECLS
@@ -42,6 +43,8 @@ G_BEGIN_DECLS
 
 typedef void (* CCMDamageFunc) (CCMDisplay* self, cairo_rectangle_t* area,
 								gpointer data);
+typedef void (* CCMAsyncGetpropFunc) (CCMDisplay* self, AgGetPropertyTask* task,
+									  gpointer data);
 
 struct _CCMDisplayClass
 {
@@ -64,6 +67,10 @@ gboolean	_ccm_display_use_xshm			(CCMDisplay* self);
 void 		_ccm_display_register_damage    (CCMDisplay* self, XID damage, 
 											 CCMDamageFunc func, gpointer data);
 void  		_ccm_display_unregister_damage 	(CCMDisplay* self, XID damage); 
+void 		_ccm_display_get_property_async (CCMDisplay* self, 
+											 AgGetPropertyTask* task, 
+											 CCMAsyncGetpropFunc func,
+											 gpointer data);
 									 
 G_END_DECLS
 

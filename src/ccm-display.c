@@ -69,6 +69,13 @@ typedef struct
     gpointer 	  data;
 } CCMDamage;
 
+typedef struct
+{
+    AgGetPropertyTask  *task;
+    CCMAsyncGetpropFunc callback;
+    gpointer 	  		data;
+} CCMAsyncGetprop;
+
 struct _CCMDisplayPrivate
 {
 	gint 		nb_screens;
@@ -81,6 +88,7 @@ struct _CCMDisplayPrivate
 	CCMExtension dbe;
 	
 	GHashTable*	 damages;
+	GHashTable*	 asyncprops;
 	
 	CCMConfig*   options[CCM_DISPLAY_OPTION_N];
 };
@@ -96,6 +104,8 @@ ccm_display_init (CCMDisplay *self)
 	self->priv->screens = NULL;
 	self->priv->damages = g_hash_table_new_full(g_direct_hash, g_direct_equal,
 												NULL, g_free);
+	self->priv->asyncprops = g_hash_table_new_full(g_direct_hash, g_direct_equal,
+												   NULL, g_free);
 }
 
 static void
@@ -113,6 +123,7 @@ ccm_display_finalize (GObject *object)
 					  self->priv->screens);
 	}
 	g_hash_table_destroy(self->priv->damages);
+	g_hash_table_destroy(self->priv->asyncprops);
 	
 	for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; cpt++)
 		g_object_unref(self->priv->options[cpt]);
@@ -240,6 +251,7 @@ ccm_display_process_events(CCMDisplay* self)
 	g_return_if_fail(self != NULL);
 	
 	XEvent xevent;
+	AgGetPropertyTask *task;
 	
 	do 
 	{
@@ -266,6 +278,17 @@ ccm_display_process_events(CCMDisplay* self)
 			g_signal_emit (self, signals[EVENT], 0, &xevent);
 		}
 	} while (XPending(CCM_DISPLAY_XDISPLAY(self)));
+	
+	while ((task = ag_get_next_completed_task (CCM_DISPLAY_XDISPLAY(self))))
+	{
+		CCMAsyncGetprop* asyncprop = g_hash_table_lookup(self->priv->asyncprops,
+														 task);
+		if (asyncprop && ag_task_have_reply (task))
+		{
+			asyncprop->callback(self, task, asyncprop->data);
+			g_hash_table_remove (self->priv->asyncprops, task);
+		}
+	}
 }
 
 gboolean
@@ -302,6 +325,24 @@ _ccm_display_unregister_damage(CCMDisplay* self, XID damage)
 	CCMDamage* info = g_hash_table_lookup(self->priv->damages, (gpointer)damage);
     
 	if (info) g_hash_table_remove (self->priv->damages, (gpointer)damage);
+}
+
+void 		
+_ccm_display_get_property_async (CCMDisplay* self, AgGetPropertyTask* task, 
+								 CCMAsyncGetpropFunc func, gpointer data)
+{
+	g_return_if_fail (self != NULL);
+    g_return_if_fail (task != NULL);
+	
+	CCMAsyncGetprop* info;
+    
+    info = g_new (CCMAsyncGetprop, 1);
+    
+    info->task = task;
+    info->callback = func;
+    info->data = data;
+
+	g_hash_table_insert (self->priv->asyncprops, (gpointer)task, info);
 }
 
 CCMDisplay*

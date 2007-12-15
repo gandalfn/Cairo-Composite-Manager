@@ -25,6 +25,8 @@ AM_CFLAGS =\
 bin_PROGRAMS = cairo-compmgr
 
 cairo_compmgr_SOURCES = \
+    async-getprop.c \
+	async-getprop.h \
 	ccm-region.c \
 	ccm-region.h \
 	ccm-drawable.h \
