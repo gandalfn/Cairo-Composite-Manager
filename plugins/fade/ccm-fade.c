@@ -252,7 +252,7 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 			ccm_animation_start(self->priv->animation);
 		}
 		else
-			self->priv->way |= CCM_FADE_ON_MAP;
+			self->priv->way = CCM_FADE_ON_MAP;
 	}
 	else
 	{
@@ -278,7 +278,7 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 			ccm_animation_start(self->priv->animation);
 		}
 		else
-			self->priv->way |= CCM_FADE_ON_UNMAP;
+			self->priv->way = CCM_FADE_ON_UNMAP;
 	}
 	else
 	{
@@ -310,7 +310,7 @@ ccm_fade_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen, CCMWindow* wi
 {
 	g_return_if_fail(window != NULL);
 	
-	CCMFade* self = CCM_FADE(_ccm_window_get_plugin (window));
+	CCMFade* self = CCM_FADE(_ccm_window_get_plugin (window, CCM_TYPE_FADE));
 	
 	self->priv->screen = plugin;
 	self->priv->window = window;
@@ -326,9 +326,9 @@ ccm_fade_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen, CCMWindow* wi
 			ccm_animation_stop(self->priv->animation);
 			ccm_window_set_opacity(window, self->priv->origin);
 			if (self->priv->way & CCM_FADE_ON_MAP)
-				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(_ccm_window_get_plugin (window)), window);
+				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), window);
 			else
-				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(_ccm_window_get_plugin (window)), window);
+				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), window);
 			is_set = TRUE;
 		}
 		

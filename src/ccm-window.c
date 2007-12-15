@@ -591,11 +591,19 @@ impl_ccm_window_set_opaque(CCMWindowPlugin* plugin, CCMWindow* self)
 }
 
 CCMWindowPlugin*
-_ccm_window_get_plugin(CCMWindow *self)
+_ccm_window_get_plugin(CCMWindow *self, GType type)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
-	return self->priv->plugin;
+	CCMWindowPlugin* plugin;
+	
+	for (plugin = self->priv->plugin; plugin != (CCMWindowPlugin*)self; plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (g_type_is_a(G_OBJECT_TYPE(plugin), type))
+			return plugin;
+	}
+	
+	return NULL;
 }
 
 Window
