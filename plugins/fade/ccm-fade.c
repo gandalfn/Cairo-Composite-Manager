@@ -215,12 +215,12 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 		gfloat step = elapsed / duration;
 		
 		opacity = self->priv->way & CCM_FADE_ON_MAP ? 
-					interpolate(step, 0.0, self->priv->origin, 1) : interpolate(step, self->priv->origin, 0.1, 1);
+					interpolate(step, 0.1, self->priv->origin, 1) : interpolate(step, self->priv->origin, 0.1, 1);
 			
 		if ((self->priv->way & CCM_FADE_ON_MAP && 
 			 opacity > self->priv->origin) ||
 			((self->priv->way & CCM_FADE_ON_UNMAP || 
-			  self->priv->way & CCM_FADE_ON_DESTROY) && opacity <= 0.1f))
+			  self->priv->way & CCM_FADE_ON_DESTROY) && opacity < 0.1f))
 		{
 			if (ccm_fade_finish(self))  return FALSE;
 			opacity = self->priv->origin;
@@ -248,7 +248,7 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		{
 			self->priv->way = CCM_FADE_ON_MAP;
 			self->priv->origin = ccm_window_get_opacity (window);
-			ccm_window_set_opacity (window, 0.0f);
+			ccm_window_set_opacity (window, 0.15f);
 			ccm_animation_start(self->priv->animation);
 		}
 		else
@@ -274,6 +274,7 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 		if (self->priv->way == CCM_FADE_NONE)
 		{
 			self->priv->origin = ccm_window_get_opacity (window);
+			ccm_window_set_opacity (window, self->priv->origin - 0.05f);
 			self->priv->way = CCM_FADE_ON_UNMAP;
 			ccm_animation_start(self->priv->animation);
 		}
