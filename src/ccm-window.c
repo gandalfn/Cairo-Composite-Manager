@@ -467,8 +467,7 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 			ccm_region_offset(self->opaque, x - geometry.x, y - geometry.y);
 		if (self->is_viewable || self->priv->unmap_pending)
 		{
-			ccm_drawable_damage_rectangle(CCM_DRAWABLE(self), &geometry);
-			ccm_drawable_damage(CCM_DRAWABLE(self));
+			ccm_drawable_damage_rectangle (CCM_DRAWABLE(self), &geometry);
 		}
 	}
 }
@@ -497,7 +496,6 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 		if (self->is_viewable || self->priv->unmap_pending)
 		{
 			ccm_drawable_damage_rectangle(CCM_DRAWABLE(self), &geometry);
-			ccm_drawable_damage(CCM_DRAWABLE(self));
 		}
 		
 		if (self->priv->pixmap)
@@ -530,7 +528,6 @@ impl_ccm_window_map(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
-	ccm_drawable_damage(CCM_DRAWABLE(self));
 }
 
 static void
@@ -539,12 +536,10 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	
-	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 	cairo_rectangle_t geometry;
 	
 	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
 	self->priv->unmap_pending = FALSE;
-	ccm_screen_damage_rectangle (screen, &geometry);
 	ccm_drawable_unset_geometry (CCM_DRAWABLE(self));
 	if (self->priv->pixmap)
 	{
@@ -721,6 +716,7 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
 		self->priv->is_shaded = TRUE;
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
@@ -751,6 +747,7 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
 		self->priv->is_shaded = FALSE;
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
@@ -769,6 +766,7 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
 		self->priv->is_shaded = !self->priv->is_shaded;
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
@@ -1058,8 +1056,6 @@ ccm_window_unmap(CCMWindow* self)
 		
 		ccm_window_plugin_unmap(self->priv->plugin, self);
 	}
-	else
-		ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void 

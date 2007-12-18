@@ -354,7 +354,6 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 		else
 			self->priv->windows = g_list_prepend (self->priv->windows, below);
 		
-		ccm_drawable_damage(CCM_DRAWABLE(below));
 		return;
 	}
 		
@@ -365,7 +364,6 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 			self->priv->windows = g_list_remove_link (self->priv->windows,
 													  above_link);
 		self->priv->windows = g_list_append(self->priv->windows, above);
-		ccm_drawable_damage(CCM_DRAWABLE(above));
 		return;
 	}
 	
@@ -388,9 +386,6 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 												   below_link->next, above);
 	else
 		self->priv->windows = g_list_append(self->priv->windows, above);
-	
-	ccm_drawable_damage(CCM_DRAWABLE(below));
-	ccm_drawable_damage(CCM_DRAWABLE(above));
 }
 
 static void 
@@ -398,7 +393,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	static gboolean have_desktop = TRUE;
+	static gboolean have_desktop = FALSE;
 	gboolean ret = FALSE;
 		
 	if (self->priv->cow)
@@ -419,6 +414,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 			cairo_paint(self->priv->ctx);
 			ccm_screen_damage (self);
 		}
+		
 		for (item = self->priv->windows; item; item = item->next)
 		{
 			CCMWindow* window = item->data;
@@ -490,12 +486,6 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		
 		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
 		
-		if (window->is_viewable) 
-		{
-			ccm_drawable_damage (CCM_DRAWABLE(window));
-			ccm_window_map (window);
-		}
-		
 		return TRUE;
 	}
 	
@@ -515,7 +505,7 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		if (self->priv->fullscreen == window)
 			self->priv->fullscreen = NULL;
 		
-		if (!window->is_input_only && window->is_viewable)
+		if (!window->is_input_only)
 		{
 			cairo_rectangle_t geometry;
 			

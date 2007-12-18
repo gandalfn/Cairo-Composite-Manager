@@ -241,20 +241,8 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 				 cairo_t* context, cairo_surface_t* surface)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
-	CCMWindowType type = ccm_window_get_hint_type(window);
 	
-	if (self->priv->shadow && 
-		(ccm_window_is_decorated (window) ||
-		 type != CCM_WINDOW_TYPE_NORMAL) &&
-		type != CCM_WINDOW_TYPE_DESKTOP && 
-		(type != CCM_WINDOW_TYPE_DOCK || window->opaque) &&
-		type != CCM_WINDOW_TYPE_DND &&
-		!ccm_window_is_shaded (window) &&
-		(ccm_window_is_managed(window) || 
-		 type == CCM_WINDOW_TYPE_DROPDOWN_MENU || 
-		 type == CCM_WINDOW_TYPE_POPUP_MENU || 
-		 type == CCM_WINDOW_TYPE_TOOLTIP || 
-		 type == CCM_WINDOW_TYPE_MENU))
+	if (self->priv->shadow)
 	{
 		cairo_rectangle_t area;
 		
@@ -326,15 +314,18 @@ void ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMShadow* self = CCM_SHADOW(plugin);
 	cairo_rectangle_t area;
 	
-	if (self->priv->geometry)
+	if (self->priv->shadow)
 	{
-		ccm_region_get_clipbox(self->priv->geometry, &area);
-		ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
-	}
-	if (self->priv->shadow_region)
-	{
-		ccm_region_get_clipbox(self->priv->shadow_region, &area);
-		ccm_region_offset(self->priv->shadow_region, x - area.x, y - area.y);
+		if (self->priv->geometry)
+		{
+			ccm_region_get_clipbox(self->priv->geometry, &area);
+			ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
+		}
+		if (self->priv->shadow_region)
+		{
+			ccm_region_get_clipbox(self->priv->shadow_region, &area);
+			ccm_region_offset(self->priv->shadow_region, x - area.x, y - area.y);
+		}
 	}
 	
 	ccm_window_plugin_move (CCM_WINDOW_PLUGIN_PARENT(plugin), window, x, y);
