@@ -490,6 +490,7 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	
 	if (link)
 	{
+		ccm_window_unmap(window);
 		self->priv->windows = g_list_remove(self->priv->windows, window);
 		
 		if (self->priv->fullscreen == window)
