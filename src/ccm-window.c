@@ -538,12 +538,8 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	
-	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
-	cairo_rectangle_t geometry;
-	
-	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
-	ccm_screen_damage_rectangle(screen, &geometry);
 	self->priv->unmap_pending = FALSE;
+	ccm_drawable_damage(CCM_DRAWABLE(self));
 	ccm_drawable_unset_geometry (CCM_DRAWABLE(self));
 	if (self->priv->pixmap)
 	{

@@ -90,12 +90,8 @@ ccm_fade_finalize (GObject *object)
 	CCMFade* self = CCM_FADE(object);
 	
 	if (self->priv->animation) 
-	{
 		g_object_unref (self->priv->animation);
-		ccm_window_set_opacity (self->priv->window, 0.0f);
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-	}
-	
+		
 	G_OBJECT_CLASS (ccm_fade_parent_class)->finalize (object);
 }
 
@@ -139,25 +135,6 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	self->priv->animation = ccm_animation_new(screen, (CCMAnimationFunc)ccm_fade_animation, self);
 }
 
-gboolean
-ccm_fade_finish(CCMFade* self)
-{
-	if (self->priv->way & CCM_FADE_ON_MAP)
-	{
-		ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), 
-							   self->priv->window);
-	}
-	if (self->priv->way & CCM_FADE_ON_UNMAP)
-	{
-		ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
-		ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
-								 self->priv->window);
-	}
-	self->priv->way = CCM_FADE_NONE;
-	
-	return FALSE;
-}
-
 static gfloat
 interpolate (gfloat t, gfloat begin, gfloat end, gfloat power)
 {
@@ -178,18 +155,28 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 		opacity = self->priv->way & CCM_FADE_ON_MAP ? 
 					interpolate(step, 0.1, self->priv->origin, 1) : interpolate(step, self->priv->origin, 0.1, 1);
 			
-		if (((self->priv->way & CCM_FADE_ON_MAP) && opacity > self->priv->origin) ||
-			((self->priv->way & CCM_FADE_ON_UNMAP) && opacity < 0.1f))
+		ccm_window_set_opacity (self->priv->window, opacity);
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+		
+		if (((self->priv->way & CCM_FADE_ON_MAP) && opacity >= self->priv->origin) ||
+			((self->priv->way & CCM_FADE_ON_UNMAP) && opacity <= 0.1f))
 		{
-			if (ccm_fade_finish(self))  return FALSE;
-			opacity = self->priv->origin;
+			if (self->priv->way & CCM_FADE_ON_MAP)
+			{
+				ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), 
+									   self->priv->window);
+			}
+			if (self->priv->way & CCM_FADE_ON_UNMAP)
+			{
+				ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
+										 self->priv->window);
+			}
+			self->priv->way = CCM_FADE_NONE;
+			ccm_window_set_opacity (self->priv->window, self->priv->origin);
 			ret = FALSE;
 		}
 		else
 			ret = TRUE;
-		
-		ccm_window_set_opacity (self->priv->window, opacity);
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 	}
 	
 	return ret;
@@ -209,11 +196,10 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 			ccm_window_set_opacity (window, 0.15f);
 			ccm_animation_start(self->priv->animation);
 		}
-		self->priv->way |= CCM_FADE_ON_MAP;
+		self->priv->way = CCM_FADE_ON_MAP;
 	}
 	else
 	{
-		ccm_drawable_damage (CCM_DRAWABLE(window));
 		ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	}
 	
@@ -234,11 +220,10 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 			ccm_window_set_opacity (window, self->priv->origin - 0.05f);
 			ccm_animation_start(self->priv->animation);
 		}
-		self->priv->way |= CCM_FADE_ON_UNMAP;
+		self->priv->way = CCM_FADE_ON_UNMAP;
 	}
 	else
 	{
-		ccm_drawable_damage (CCM_DRAWABLE(window));
 		ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	}
 	self->priv->is_blocked = FALSE;
@@ -254,7 +239,18 @@ ccm_fade_query_opacity(CCMWindowPlugin* plugin, CCMWindow* window)
 		ccm_window_set_opacity (window, self->priv->origin);
 		ccm_animation_stop(self->priv->animation);
 	
-		ccm_fade_finish(self);
+		if (self->priv->way & CCM_FADE_ON_MAP)
+		{
+			ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(self), 
+								   self->priv->window);
+		}
+		if (self->priv->way & CCM_FADE_ON_UNMAP)
+		{
+			ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(self), 
+									 self->priv->window);
+		}
+		self->priv->way = CCM_FADE_NONE;
+		ccm_window_set_opacity (self->priv->window, self->priv->origin);
 	}
 	
 	self->priv->is_blocked = TRUE;
