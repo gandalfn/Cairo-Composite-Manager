@@ -496,6 +496,7 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 		if (self->is_viewable || self->priv->unmap_pending)
 		{
 			ccm_drawable_damage_rectangle(CCM_DRAWABLE(self), &geometry);
+			ccm_drawable_damage (CCM_DRAWABLE(self));
 		}
 		
 		if (self->priv->pixmap)
@@ -1059,6 +1060,8 @@ ccm_window_unmap(CCMWindow* self)
 		
 		ccm_window_plugin_unmap(self->priv->plugin, self);
 	}
+	else
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void 

@@ -353,7 +353,6 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 														above_desktop, below);
 		else
 			self->priv->windows = g_list_prepend (self->priv->windows, below);
-		
 		return;
 	}
 		
@@ -410,9 +409,15 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
 		}
 		if (!have_desktop)
 		{
+			static gboolean screen_damaged = FALSE;
+			
 			cairo_set_source_rgb (self->priv->ctx, 0, 0, 0);
 			cairo_paint(self->priv->ctx);
-			ccm_screen_damage (self);
+			if (!screen_damaged)
+			{
+				ccm_screen_damage (self);
+				screen_damaged = TRUE;
+			}
 		}
 		
 		for (item = self->priv->windows; item; item = item->next)
@@ -465,22 +470,7 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		CCMWindowType type = ccm_window_get_hint_type(window);
 
 		if (type != CCM_WINDOW_TYPE_DESKTOP)
-		{
-			GList* item;
-			
-			for (item = g_list_last(self->priv->windows); 
-				 (type == CCM_WINDOW_TYPE_NORMAL || 
-				  type == CCM_WINDOW_TYPE_UNKNOWN) && item; item = item->prev)
-			{
-				if (ccm_window_get_hint_type(item->data) != CCM_WINDOW_TYPE_DOCK)
-					break;
-			}
-			if (item && item->next)
-				self->priv->windows = g_list_insert_before(self->priv->windows, 
-														   item->next, window);
-			else
-				self->priv->windows = g_list_append(self->priv->windows, window);
-		}
+			self->priv->windows = g_list_append(self->priv->windows, window);
 		else
 			self->priv->windows = g_list_prepend(self->priv->windows, window);
 		
@@ -891,7 +881,7 @@ on_event(CCMScreen* self, XEvent* event)
 	}
 	
 	if (!refresh_rate) refresh_rate = 60;
-	if (g_timer_elapsed(self->priv->vblank, NULL) > 1.0f / (gfloat)refresh_rate)
+	if (g_timer_elapsed(self->priv->vblank, NULL) >= 1.0f / (gfloat)refresh_rate)
 		ccm_screen_paint(self);
 }
 

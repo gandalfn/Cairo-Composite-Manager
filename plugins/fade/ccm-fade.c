@@ -89,7 +89,12 @@ ccm_fade_finalize (GObject *object)
 {
 	CCMFade* self = CCM_FADE(object);
 	
-	if (self->priv->animation) g_object_unref (self->priv->animation);
+	if (self->priv->animation) 
+	{
+		g_object_unref (self->priv->animation);
+		ccm_window_set_opacity (self->priv->window, 0.0f);
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+	}
 	
 	G_OBJECT_CLASS (ccm_fade_parent_class)->finalize (object);
 }
