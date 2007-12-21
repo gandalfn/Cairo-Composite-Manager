@@ -81,6 +81,7 @@ struct _CCMScreenPrivate
 	CCMExtensionLoader* plugin_loader;
 	CCMScreenPlugin*	plugin;
 
+	GSList*				animations;
 	CCMConfig*			options[CCM_SCREEN_OPTION_N];
 };
 
@@ -111,6 +112,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->vblank = g_timer_new();
 	self->priv->id_paint = 0;
 	self->priv->plugin_loader = NULL;
+	self->priv->animations = NULL;
 }
 
 static void
@@ -118,6 +120,9 @@ ccm_screen_finalize (GObject *object)
 {
 	CCMScreen *self = CCM_SCREEN(object);
 	gint cpt;
+	
+	if (self->priv->animations)
+		g_slist_free(self->priv->animations);
 	
 	if (self->priv->plugin_loader)
 		g_object_unref(self->priv->plugin_loader);
@@ -476,6 +481,8 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		
 		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
 		
+		if (window->is_viewable) ccm_window_map(window);
+		
 		return TRUE;
 	}
 	
@@ -512,9 +519,18 @@ ccm_screen_paint(CCMScreen* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	g_signal_emit (self, signals[TIMER], 0, NULL);
-	ccm_screen_plugin_paint(self->priv->plugin, self);
-	g_timer_start(self->priv->vblank);
+	GSList* item;
+	
+	if (g_timer_elapsed (self->priv->vblank, NULL) >= 1/60)
+	{
+		for (item = self->priv->animations; item; item = item->next)
+		{	
+			if (!_ccm_animation_main (item->data))
+				_ccm_screen_remove_animation (self, item->data);
+		}
+		ccm_screen_plugin_paint(self->priv->plugin, self);
+		g_timer_start(self->priv->vblank);
+	}
 	
 	return TRUE;
 }
@@ -882,8 +898,8 @@ on_event(CCMScreen* self, XEvent* event)
 	}
 	
 	if (!refresh_rate) refresh_rate = 60;
-	if (g_timer_elapsed(self->priv->vblank, NULL) >= 1.0f / (gfloat)refresh_rate)
-		ccm_screen_paint(self);
+	/*if (g_timer_elapsed(self->priv->vblank, NULL) >= 1.0f / (gfloat)refresh_rate)
+		ccm_screen_paint(self);*/
 }
 
 gboolean
@@ -916,6 +932,24 @@ _ccm_screen_get_window_plugins(CCMScreen* self)
 	g_return_val_if_fail(self != NULL, NULL);
 	
 	return ccm_extension_loader_get_window_plugins(self->priv->plugin_loader);
+}
+
+void
+_ccm_screen_add_animation(CCMScreen* self, CCMAnimation* animation)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(self != NULL);
+	
+	self->priv->animations = g_slist_append(self->priv->animations, animation);
+}
+
+void
+_ccm_screen_remove_animation(CCMScreen* self, CCMAnimation* animation)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(self != NULL);
+	
+	self->priv->animations = g_slist_remove(self->priv->animations, animation);
 }
 
 CCMScreen*

@@ -23,6 +23,7 @@
 
 #include "ccm-drawable.h"
 #include "ccm-window.h"
+#include "ccm-screen.h"
 #include "ccm-animation.h"
 #include "ccm-fade.h"
 #include "ccm.h"

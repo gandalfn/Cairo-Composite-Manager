@@ -3,7 +3,8 @@ SUBDIRS = \
 	shadow\
 	opacity\
     fade \
-    freeze
+    freeze \
+    menu-animation
 
 ## File created by the gnome-build tools
 

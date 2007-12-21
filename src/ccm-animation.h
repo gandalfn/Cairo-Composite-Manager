@@ -61,6 +61,7 @@ CCMAnimation* 	ccm_animation_new		(CCMScreen* screen,
 										 gpointer data);
 void			ccm_animation_start		(CCMAnimation* self);
 void			ccm_animation_stop		(CCMAnimation* self);
+gboolean		_ccm_animation_main		(CCMAnimation* self);
 
 G_END_DECLS
 

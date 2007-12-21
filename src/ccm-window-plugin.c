@@ -56,6 +56,20 @@ ccm_window_plugin_get_type (void)
   	return ccm_window_plugin_type;
 }
 
+CCMWindowPlugin*
+_ccm_window_plugin_get_root(CCMWindowPlugin* self)
+{
+  	g_return_val_if_fail (CCM_IS_WINDOW_PLUGIN (self), NULL);
+	
+	CCMWindowPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
+	
+	return plugin;
+}
+
 void
 ccm_window_plugin_load_options(CCMWindowPlugin* self, CCMWindow* window)
 {

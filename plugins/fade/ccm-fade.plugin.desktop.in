@@ -3,4 +3,4 @@ Plugin=ccm-fade
 _Name=Fade
 _Description=Window Fade Animation
 Backends=xrender;glitz
-Depends=
+Depends=Shadow

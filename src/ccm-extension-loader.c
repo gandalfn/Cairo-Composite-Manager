@@ -108,8 +108,9 @@ ccm_extension_loader_new (GSList* filter)
 						}
 						
 						if (found)
-							self->priv->plugins = g_slist_append(self->priv->plugins,
-															 plugin);
+							self->priv->plugins = g_slist_insert_sorted (
+										self->priv->plugins, plugin,
+										(GCompareFunc)_ccm_extension_compare);
 						else
 							g_object_unref(plugin);
 					}

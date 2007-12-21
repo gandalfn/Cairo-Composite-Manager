@@ -225,3 +225,35 @@ ccm_extension_get_type_object (CCMExtension* self)
 			
 	return self->priv->get_type && found ? self->priv->get_type(G_TYPE_MODULE(self)) : 0;
 }
+
+gint
+_ccm_extension_compare(CCMExtension* self, CCMExtension* other)
+{
+	int cpt;
+	
+	if (!self && !other) return 0;
+	if (!self && other) return -1;
+	if (self && !other) return 1;
+	
+	if (self->priv->depends)
+	{
+		for (cpt = 0; self->priv->depends[cpt]; cpt++)
+		{
+			if (!g_ascii_strcasecmp (self->priv->depends[cpt], 
+									 other->priv->label))
+				return 1;
+		}
+	}
+	
+	if (other->priv->depends)
+	{
+		for (cpt = 0; other->priv->depends[cpt]; cpt++)
+		{
+			if (!g_ascii_strcasecmp (other->priv->depends[cpt], 
+									 self->priv->label))
+				return -1;
+		}
+	}
+	
+	return 0;
+}

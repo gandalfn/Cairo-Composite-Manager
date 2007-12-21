@@ -1,0 +1,6 @@
+[CCMPlugin]
+Plugin=ccm-menu-animation
+_Name=Menu-Animation
+_Description=Menu Zoom Animation
+Backends=xrender;glitz
+Depends=fade;shadow

@@ -514,9 +514,12 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	cairo_rectangle_t geometry;
+	cairo_matrix_t matrix;
 	
-	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
-	cairo_set_source_surface(context, surface, geometry.x, geometry.y); 
+	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
+	cairo_get_matrix (context, &matrix);
+	cairo_translate (context, geometry.x / matrix.xx, geometry.y / matrix.yy);
+	cairo_set_source_surface(context, surface, 0.0f, 0.0f);
 	cairo_paint_with_alpha(context, self->priv->opacity);
 		
 	return TRUE;
@@ -527,7 +530,6 @@ impl_ccm_window_map(CCMWindowPlugin* plugin, CCMWindow* self)
 {
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
-	
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
 	ccm_drawable_damage(CCM_DRAWABLE(self));
 }

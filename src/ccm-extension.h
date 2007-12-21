@@ -56,6 +56,8 @@ GType 			ccm_extension_get_type 			(void) G_GNUC_CONST;
 CCMExtension* 	ccm_extension_new 				(gchar* filename);
 GType 			ccm_extension_get_type_object 	(CCMExtension* self);
 const gchar*	ccm_extension_get_label			(CCMExtension* self);
+gint			_ccm_extension_compare			(CCMExtension* self, 
+												 CCMExtension* other);
 
 G_END_DECLS
 

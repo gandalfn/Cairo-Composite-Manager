@@ -253,7 +253,7 @@ ccm_display_process_events(CCMDisplay* self)
 	XEvent xevent;
 	AgGetPropertyTask *task;
 	
-	do 
+	while (XEventsQueued(CCM_DISPLAY_XDISPLAY(self), QueuedAfterReading))
 	{
 		XNextEvent(CCM_DISPLAY_XDISPLAY(self), &xevent);
 		if (xevent.type == self->priv->damage.event_base + XDamageNotify)
@@ -277,7 +277,7 @@ ccm_display_process_events(CCMDisplay* self)
 		{
 			g_signal_emit (self, signals[EVENT], 0, &xevent);
 		}
-	} while (XPending(CCM_DISPLAY_XDISPLAY(self)));
+	}
 	
 	while ((task = ag_get_next_completed_task (CCM_DISPLAY_XDISPLAY(self))))
 	{

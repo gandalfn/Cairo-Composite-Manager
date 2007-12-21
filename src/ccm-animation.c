@@ -37,8 +37,6 @@ struct _CCMAnimationPrivate
 #define CCM_ANIMATION_GET_PRIVATE(o)  \
    ((CCMAnimationPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_ANIMATION, CCMAnimationClass))
 
-static void ccm_animation_main(CCMAnimation* self);
-
 static void
 ccm_animation_init (CCMAnimation *self)
 {
@@ -56,9 +54,7 @@ ccm_animation_finalize (GObject *object)
 	CCMAnimation* self = CCM_ANIMATION(object);
 	
 	if (self->priv->timer) g_timer_destroy (self->priv->timer);
-	if (self->priv->screen) 
-		g_signal_handlers_disconnect_by_func(self->priv->screen, 
-											 ccm_animation_main, self);
+	if (self->priv->run) _ccm_screen_remove_animation (self->priv->screen, self);;
 	
 	G_OBJECT_CLASS (ccm_animation_parent_class)->finalize (object);
 }
@@ -73,28 +69,30 @@ ccm_animation_class_init (CCMAnimationClass *klass)
 	object_class->finalize = ccm_animation_finalize;
 }
 
-static void
-ccm_animation_main(CCMAnimation* self)
+gboolean
+_ccm_animation_main(CCMAnimation* self)
 {
-	g_return_if_fail(self != NULL);
+	g_return_val_if_fail(self != NULL, FALSE);
 
+	gboolean ret = FALSE;
+	
 	if (self->priv->run)
 	{
 		if (self->priv->callback)
 		{
 			gfloat elapsed = g_timer_elapsed (self->priv->timer, NULL);
 			
-			self->priv->run = self->priv->callback(self, elapsed, 
-												   self->priv->data);
+			ret = self->priv->callback(self, elapsed, self->priv->data);
 		}
 	}
 	
-	if (!self->priv->run) 
+	if (!ret) 
 	{
 		g_timer_stop(self->priv->timer);
-		g_signal_handlers_disconnect_by_func(self->priv->screen, 
-											 ccm_animation_main, self);
+		self->priv->run = 0;
 	}
+	
+	return ret;
 }
 
 CCMAnimation*
@@ -118,9 +116,8 @@ ccm_animation_start(CCMAnimation* self)
 	
 	if (!self->priv->run)
 	{
+		_ccm_screen_add_animation (self->priv->screen, self);
 		self->priv->run = TRUE;
-		g_signal_connect_swapped(self->priv->screen, "timer", 
-								 G_CALLBACK(ccm_animation_main), self);
 		g_timer_start(self->priv->timer);
 	}
 }
@@ -132,9 +129,8 @@ ccm_animation_stop(CCMAnimation* self)
 	
 	if (self->priv->run)
 	{
+		_ccm_screen_remove_animation (self->priv->screen, self);
 		self->priv->run = FALSE;
-		g_signal_handlers_disconnect_by_func(self->priv->screen, 
-											 ccm_animation_main, self);
 		g_timer_stop(self->priv->timer);
 	}
 }

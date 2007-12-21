@@ -36,6 +36,7 @@ G_BEGIN_DECLS
 #define CCM_WINDOW_PLUGIN_GET_INTERFACE(obj)   (G_TYPE_INSTANCE_GET_INTERFACE ((obj), CCM_TYPE_WINDOW_PLUGIN, CCMWindowPluginClass))
 
 #define CCM_WINDOW_PLUGIN_PARENT(obj)	   ((CCMWindowPlugin*)ccm_plugin_get_parent((CCMPlugin*)obj))
+#define CCM_WINDOW_PLUGIN_ROOT(obj)	   	   ((CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)obj))
 
 typedef struct _CCMWindowPluginClass CCMWindowPluginClass;
 typedef struct _CCMWindowPlugin CCMWindowPlugin;
@@ -69,6 +70,7 @@ struct _CCMWindowPluginClass
 
 GType ccm_window_plugin_get_type (void) G_GNUC_CONST;
 
+CCMWindowPlugin* _ccm_window_plugin_get_root(CCMWindowPlugin* self);
 void 		ccm_window_plugin_load_options	(CCMWindowPlugin* self, 
 											 CCMWindow* window);
 CCMRegion* 	ccm_window_plugin_query_geometry(CCMWindowPlugin* self,
