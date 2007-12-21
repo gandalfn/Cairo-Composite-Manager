@@ -6,7 +6,7 @@
          <applyto>/apps/cairo-compmgr/default/fade/duration</applyto>
          <owner>gnome</owner>
          <type>float</type>
-		 <default>0.2</default>
+		 <default>0.3</default>
          <locale name="C">
             <short>Opacity animation duration</short>
             <long>Opacity animation duration</long>

@@ -41,7 +41,7 @@
          <owner>gnome</owner>
          <type>list</type>
 		 <list_type>string</list_type>
-         <default>[shadow,opacity,fade,menu-animation]</default>
+         <default>[opacity,fade,shadow,menu-animation]</default>
          <locale name="C">
             <short>List of active plugins</short>
             <long>List of active plugins</long>
@@ -63,7 +63,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/sync_with_vblank</applyto>
          <owner>gnome</owner>
          <type>bool</type>
-		 <default>false</default>
+		 <default>true</default>
          <locale name="C">
             <short>Sync redraw with vblank</short>
             <long>Sync redraw with vblank</long>

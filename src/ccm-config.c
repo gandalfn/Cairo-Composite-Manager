@@ -103,16 +103,15 @@ ccm_config_copy_entry(CCMConfig* self, gchar* src)
 	GConfEntry* entry;
 		
 	entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
-									   src, NULL, TRUE, NULL);
+								   src, NULL, TRUE, NULL);
 	if (entry)
 	{
 		gconf_engine_associate_schema (CCM_CONFIG_GET_CLASS(self)->client->engine,
 									   self->priv->key,
 									   gconf_entry_get_schema_name (entry),
 									   NULL);
-		if (!gconf_entry_get_is_default (entry) && entry->value)
-			gconf_client_set (CCM_CONFIG_GET_CLASS(self)->client, 
-							  self->priv->key, entry->value, NULL);
+		gconf_client_set (CCM_CONFIG_GET_CLASS(self)->client, 
+						  self->priv->key, entry->value, NULL);
 		gconf_entry_unref(entry);
 	}
 }
@@ -128,23 +127,41 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 	{
 		if (extension)
 		{
-			gchar * default_config = g_strdup_printf("%s/default/%s/%s", 
-													 CCM_CONFIG_PREFIX, 
-													 extension, key);
+			GConfEntry* entry;
+		
 			self->priv->key = g_strdup_printf("%s/screen_%i/%s/%s", 
 											  CCM_CONFIG_PREFIX, 
 											  screen, extension, key);
-			ccm_config_copy_entry(self, default_config);
-			g_free(default_config);
+			
+			entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
+								           self->priv->key, NULL, TRUE, NULL);
+			if (!entry || !entry->value)
+			{
+				gchar * default_config = g_strdup_printf("%s/default/%s/%s", 
+														 CCM_CONFIG_PREFIX, 
+														 extension, key);
+				ccm_config_copy_entry(self, default_config);
+				g_free(default_config);
+				entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
+								           self->priv->key, NULL, TRUE, NULL);
+			}
 		}
 		else
 		{
-			gchar * default_config = g_strdup_printf("%s/default/screen/%s", 
-													 CCM_CONFIG_PREFIX, key);
+			GConfEntry* entry;
 			self->priv->key = g_strdup_printf("%s/screen_%i/general/%s", 
 											  CCM_CONFIG_PREFIX, screen, key);
-			ccm_config_copy_entry(self, default_config);
-			g_free(default_config);
+			entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
+								           self->priv->key, NULL, TRUE, NULL);
+			if (!entry || !entry->value)
+			{
+				gchar * default_config = g_strdup_printf("%s/default/screen/%s", 
+														 CCM_CONFIG_PREFIX, key);
+				ccm_config_copy_entry(self, default_config);
+				g_free(default_config);
+				entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
+								           self->priv->key, NULL, TRUE, NULL);
+			}
 		}
 	}
 	else
