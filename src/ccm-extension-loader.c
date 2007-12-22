@@ -118,6 +118,8 @@ ccm_extension_loader_new (GSList* filter)
 				}
 			}
 			g_dir_close(plugins_dir);
+			self->priv->plugins = g_slist_sort (self->priv->plugins, 
+										(GCompareFunc)_ccm_extension_compare);
 		}
 	}
 	else
