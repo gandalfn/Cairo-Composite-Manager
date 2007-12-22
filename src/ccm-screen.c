@@ -898,8 +898,8 @@ on_event(CCMScreen* self, XEvent* event)
 	}
 	
 	if (!refresh_rate) refresh_rate = 60;
-	/*if (g_timer_elapsed(self->priv->vblank, NULL) >= 1.0f / (gfloat)refresh_rate)
-		ccm_screen_paint(self);*/
+	if (g_timer_elapsed(self->priv->vblank, NULL) >= 1.0f / (gfloat)refresh_rate)
+		ccm_screen_paint(self);
 }
 
 gboolean
@@ -1006,7 +1006,7 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	refresh_rate = ccm_config_get_integer(self->priv->options[CCM_SCREEN_REFRESH_RATE]);
 	if (!refresh_rate) refresh_rate = 60;
 	
-	self->priv->id_paint = g_timeout_add_full(G_PRIORITY_HIGH, 
+	self->priv->id_paint = g_timeout_add_full(G_PRIORITY_DEFAULT, 
 											  1000/refresh_rate, 
 											  (GSourceFunc)ccm_screen_paint, 
 											  self, NULL);

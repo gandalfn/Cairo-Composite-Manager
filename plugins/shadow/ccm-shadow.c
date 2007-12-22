@@ -251,6 +251,7 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		{
 			cairo_rectangle_t* rects;
 			gint nb_rects, cpt;
+			cairo_path_t* path;
 			
 			cairo_save(context);
 			ccm_region_get_rectangles (self->priv->shadow_region, 
@@ -268,6 +269,10 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 								   ccm_window_get_opacity(window));
 			cairo_restore(context);
 			
+			cairo_reset_clip (context);
+			path = ccm_drawable_get_damage_path (CCM_DRAWABLE(window), context);
+			cairo_append_path (context, path);
+			cairo_clip(context);
 			ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{
