@@ -151,8 +151,6 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 			((self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP) && 
 			 self->priv->scale <= 0.1f))
 		{
-			/*if (self->priv->opaque)
-				self->priv->window->opaque = ccm_region_copy(self->priv->opaque);*/
 			if (self->priv->way & CCM_MENU_ANIMATION_ON_MAP)
 			{
 				ccm_window_plugin_map ((CCMWindowPlugin*)self->priv->window, 
@@ -183,8 +181,6 @@ ccm_menu_animation_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	region = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin),
 											  window);
-	ccm_window_set_alpha (window);
-	
 	self->priv->type = ccm_window_get_hint_type(window);
 	
 	return region;
@@ -194,7 +190,6 @@ void
 ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
 	
 	self->priv->type = ccm_window_get_hint_type(window);
 		
@@ -202,7 +197,6 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		self->priv->type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
 		self->priv->type == CCM_WINDOW_TYPE_POPUP_MENU)
 	{
-		//ccm_window_set_alpha (window);
 		self->priv->window = window;
 		if (self->priv->way == CCM_MENU_ANIMATION_NONE)
 		{
@@ -224,7 +218,6 @@ ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 		self->priv->type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
 		self->priv->type == CCM_WINDOW_TYPE_POPUP_MENU)
 	{
-		//ccm_window_set_alpha (window);
 		self->priv->window = window;
 		if (self->priv->way == CCM_MENU_ANIMATION_NONE)
 		{
