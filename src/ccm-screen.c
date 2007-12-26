@@ -860,12 +860,12 @@ on_event(CCMScreen* self, XEvent* event)
 		{
 			XClientMessageEvent* client_event = (XClientMessageEvent*)event;
 			
-			CCMWindow* window = ccm_screen_find_window_or_child (self,
-													   client_event->window);
-			
-			if (window)
+			if (client_event->message_type == 
+							CCM_WINDOW_GET_CLASS(self->priv->root)->state_atom)
 			{
-				if (client_event->message_type == CCM_WINDOW_GET_CLASS(window)->state_atom)
+				CCMWindow* window = ccm_screen_find_window_or_child (self,
+													   client_event->window);
+				if (window)
 				{
 					gint cpt;
 					

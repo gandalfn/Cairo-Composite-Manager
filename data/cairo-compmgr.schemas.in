@@ -41,7 +41,7 @@
          <owner>gnome</owner>
          <type>list</type>
 		 <list_type>string</list_type>
-         <default>[opacity,fade,shadow,menu-animation]</default>
+         <default>[opacity,fade,shadow,menu-animation,freeze]</default>
          <locale name="C">
             <short>List of active plugins</short>
             <long>List of active plugins</long>
