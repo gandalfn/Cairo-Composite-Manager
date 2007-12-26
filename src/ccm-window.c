@@ -361,6 +361,7 @@ ccm_window_query_child(CCMWindow* self)
 		self->priv->child = windows[n_windows - 1];
 		XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
 					  self->priv->child, PropertyChangeMask);
+		XFree(windows);
 	}
 }
 
@@ -1021,10 +1022,13 @@ ccm_window_paint (CCMWindow* self, cairo_t* context)
 		if (pixmap)
 		{
 			cairo_surface_t* surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
+			cairo_path_t* geometry;
+			
 			cairo_clip(context);
 			
-			ccm_drawable_get_geometry_path (CCM_DRAWABLE(self), context);
+			geometry = ccm_drawable_get_geometry_path (CCM_DRAWABLE(self), context);
 			cairo_clip(context);
+			cairo_path_destroy (geometry);
 			
 			if (surface)
 			{

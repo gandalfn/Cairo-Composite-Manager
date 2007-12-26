@@ -52,8 +52,12 @@ ccm_extension_init (CCMExtension *self)
 {
 	self->priv = CCM_EXTENSION_GET_PRIVATE(self);
 	self->priv->name = NULL;
+	self->priv->label = NULL;
+	self->priv->description = NULL;
 	self->priv->filename = NULL;
 	self->priv->module = NULL;
+	self->priv->backends = NULL;
+	self->priv->depends = NULL;
 	self->priv->get_type = NULL;
 }
 
@@ -63,8 +67,12 @@ ccm_extension_finalize (GObject *object)
 	CCMExtension* self = CCM_EXTENSION(object);
 	
 	if (self->priv->name) g_free(self->priv->name);
+	if (self->priv->label) g_free(self->priv->label);
+	if (self->priv->description) g_free(self->priv->description);
 	if (self->priv->filename) g_free(self->priv->filename);
 	if (self->priv->module) g_type_module_unuse(G_TYPE_MODULE(self));
+	if (self->priv->backends) g_strfreev(self->priv->backends);
+	if (self->priv->depends) g_strfreev(self->priv->depends);
 	
 	G_OBJECT_CLASS (ccm_extension_parent_class)->finalize (object);
 }

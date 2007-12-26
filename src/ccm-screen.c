@@ -327,6 +327,7 @@ ccm_screen_query_stack(CCMScreen* self)
 				g_object_unref(window);
 		}
 	}
+	XFree(windows);
 }
 
 void
@@ -921,7 +922,12 @@ _ccm_screen_get_window_backend(CCMScreen* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	return ccm_config_get_string(self->priv->options[CCM_SCREEN_BACKEND]);
+	static gchar* backend = NULL;
+	
+	if (backend) g_free(backend);
+	backend = ccm_config_get_string(self->priv->options[CCM_SCREEN_BACKEND]);
+	
+	return backend;
 }
 
 CCMScreenPlugin*
