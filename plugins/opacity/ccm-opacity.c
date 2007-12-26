@@ -50,10 +50,6 @@ struct _CCMOpacityPrivate
 #define CCM_OPACITY_GET_PRIVATE(o)  \
    ((CCMOpacityPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_OPACITY, CCMOpacityClass))
 
-void ccm_opacity_load_options(CCMWindowPlugin* plugin, CCMWindow* window);
-CCMRegion* ccm_opacity_query_geometry(CCMWindowPlugin* plugin, 
-									  CCMWindow* window);
-
 static void
 ccm_opacity_init (CCMOpacity *self)
 {
@@ -77,20 +73,6 @@ ccm_opacity_class_init (CCMOpacityClass *klass)
 }
 
 static void
-ccm_opacity_iface_init(CCMWindowPluginClass* iface)
-{
-	iface->load_options 	= ccm_opacity_load_options;
-	iface->query_geometry 	= ccm_opacity_query_geometry;
-	iface->paint 			= NULL;
-	iface->map				= NULL;
-	iface->unmap			= NULL;
-	iface->query_opacity  	= NULL;
-	iface->set_opaque		= NULL;
-	iface->move				= NULL;
-	iface->resize			= NULL;
-}
-
-void
 ccm_opacity_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMOpacity* self = CCM_OPACITY(plugin);
@@ -105,7 +87,7 @@ ccm_opacity_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
-CCMRegion*
+static CCMRegion*
 ccm_opacity_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMOpacity* self = CCM_OPACITY(plugin);
@@ -123,3 +105,18 @@ ccm_opacity_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	return ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin),
 											window);
 }
+
+static void
+ccm_opacity_iface_init(CCMWindowPluginClass* iface)
+{
+	iface->load_options 	= ccm_opacity_load_options;
+	iface->query_geometry 	= ccm_opacity_query_geometry;
+	iface->paint 			= NULL;
+	iface->map				= NULL;
+	iface->unmap			= NULL;
+	iface->query_opacity  	= NULL;
+	iface->set_opaque		= NULL;
+	iface->move				= NULL;
+	iface->resize			= NULL;
+}
+

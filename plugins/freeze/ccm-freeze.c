@@ -61,12 +61,6 @@ struct _CCMFreezePrivate
 #define CCM_FREEZE_GET_PRIVATE(o)  \
    ((CCMFreezePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FREEZE, CCMFreezeClass))
 
-void ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window);
-gboolean ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-						  cairo_t* context, cairo_surface_t* suface);
-void ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window);
-void ccm_freeze_unmap(CCMWindowPlugin* plugin, CCMWindow* window);
-
 static void
 ccm_freeze_init (CCMFreeze *self)
 {
@@ -104,20 +98,6 @@ ccm_freeze_class_init (CCMFreezeClass *klass)
 }
 
 static void
-ccm_freeze_iface_init(CCMWindowPluginClass* iface)
-{
-	iface->load_options 	= ccm_freeze_load_options;
-	iface->query_geometry 	= NULL;
-	iface->paint 			= ccm_freeze_paint;
-	iface->map				= ccm_freeze_map;
-	iface->unmap			= ccm_freeze_unmap;
-	iface->query_opacity  	= NULL;
-	iface->set_opaque		= NULL;
-	iface->move				= NULL;
-	iface->resize			= NULL;
-}
-
-void
 ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
 {
 	g_return_if_fail(self != NULL);
@@ -138,7 +118,7 @@ ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
 	}
 }
 
-gboolean
+static gboolean
 ccm_freeze_ping(CCMFreeze* self)
 {
 	if (self->priv->window)
@@ -182,8 +162,7 @@ ccm_freeze_ping(CCMFreeze* self)
 	return TRUE;
 }
 
-
-void
+static void
 ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFreeze* self = CCM_FREEZE(plugin);
@@ -213,7 +192,7 @@ ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 			XInternAtom (CCM_DISPLAY_XDISPLAY(display), "_NET_WM_PING", 0);
 }
 
-gboolean 
+static gboolean 
 ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
 				 cairo_t* context, cairo_surface_t* surface)
 {
@@ -237,7 +216,7 @@ ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	return ret;
 }
 
-void
+static void
 ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFreeze* self = CCM_FREEZE(plugin);
@@ -258,7 +237,7 @@ ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_map(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
-void
+static void
 ccm_freeze_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFreeze* self = CCM_FREEZE(plugin);
@@ -270,4 +249,18 @@ ccm_freeze_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 		self->priv->alive = TRUE;
 	}
 	ccm_window_plugin_unmap(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+}
+
+static void
+ccm_freeze_iface_init(CCMWindowPluginClass* iface)
+{
+	iface->load_options 	= ccm_freeze_load_options;
+	iface->query_geometry 	= NULL;
+	iface->paint 			= ccm_freeze_paint;
+	iface->map				= ccm_freeze_map;
+	iface->unmap			= ccm_freeze_unmap;
+	iface->query_opacity  	= NULL;
+	iface->set_opaque		= NULL;
+	iface->move				= NULL;
+	iface->resize			= NULL;
 }

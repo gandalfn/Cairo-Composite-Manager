@@ -69,9 +69,6 @@ struct _CCMMenuAnimationPrivate
 #define CCM_MENU_ANIMATION_GET_PRIVATE(o)  \
    ((CCMMenuAnimationPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationClass))
 
-gboolean ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, 
-							CCMMenuAnimation* self);
-
 static void
 ccm_menu_animation_init (CCMMenuAnimation *self)
 {
@@ -108,30 +105,13 @@ ccm_menu_animation_class_init (CCMMenuAnimationClass *klass)
 	object_class->finalize = ccm_menu_animation_finalize;
 }
 
-void
-ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
-	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	gint cpt;
-	
-	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++)
-	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "menu-animation", 
-												  CCMMenuAnimationOptions[cpt]);
-	}
-	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-	
-	self->priv->animation = ccm_animation_new(screen, (CCMAnimationFunc)ccm_menu_animation_animation, self);
-}
-
 static gfloat
 interpolate (gfloat t, gfloat begin, gfloat end, gfloat power)
 {
     return (begin + (end - begin) * pow (t, power));
 }
 
-gboolean
+static gboolean
 ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAnimation* self)
 {
 	gboolean ret = FALSE;
@@ -173,7 +153,24 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 	return ret;
 }
 
-CCMRegion*
+static void
+ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
+{
+	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
+	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
+	gint cpt;
+	
+	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++)
+	{
+		self->priv->options[cpt] = ccm_config_new(screen->number, "menu-animation", 
+												  CCMMenuAnimationOptions[cpt]);
+	}
+	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+	
+	self->priv->animation = ccm_animation_new(screen, (CCMAnimationFunc)ccm_menu_animation_animation, self);
+}
+
+static CCMRegion*
 ccm_menu_animation_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
@@ -186,7 +183,7 @@ ccm_menu_animation_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	return region;
 }
 
-void
+static void
 ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
@@ -209,7 +206,7 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
-void
+static void
 ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
@@ -230,7 +227,7 @@ ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 		ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
-gboolean
+static gboolean
 ccm_menu_animation_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
 						 cairo_t* context, cairo_surface_t* surface)
 {

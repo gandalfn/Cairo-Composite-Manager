@@ -68,13 +68,6 @@ struct _CCMFadePrivate
 #define CCM_FADE_GET_PRIVATE(o)  \
    ((CCMFadePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FADE, CCMFadeClass))
 
-gboolean ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, 
-							CCMFade* self);
-void ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window);
-void ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window);
-void ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window);
-void ccm_fade_query_opacity(CCMWindowPlugin* plugin, CCMWindow* window);
-
 static void
 ccm_fade_init (CCMFade *self)
 {
@@ -106,43 +99,13 @@ ccm_fade_class_init (CCMFadeClass *klass)
 	object_class->finalize = ccm_fade_finalize;
 }
 
-static void
-ccm_fade_window_iface_init(CCMWindowPluginClass* iface)
-{
-	iface->load_options 	= ccm_fade_window_load_options;
-	iface->query_geometry 	= NULL;
-	iface->paint 			= NULL;
-	iface->map				= ccm_fade_map;
-	iface->unmap			= ccm_fade_unmap;
-	iface->query_opacity  	= ccm_fade_query_opacity;
-	iface->set_opaque		= NULL;
-	iface->move				= NULL;
-	iface->resize			= NULL;
-}
-
-void
-ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	CCMFade* self = CCM_FADE(plugin);
-	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	gint cpt;
-	
-	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
-	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "fade", 
-												  CCMFadeOptions[cpt]);
-	}
-	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-	self->priv->animation = ccm_animation_new(screen, (CCMAnimationFunc)ccm_fade_animation, self);
-}
-
 static gfloat
 interpolate (gfloat t, gfloat begin, gfloat end, gfloat power)
 {
     return (begin + (end - begin) * pow (t, power));
 }
 
-gboolean
+static gboolean
 ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 {
 	gboolean ret = FALSE;
@@ -183,7 +146,23 @@ ccm_fade_animation(CCMAnimation* animation, gfloat elapsed, CCMFade* self)
 	return ret;
 }
 
-void
+static void
+ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
+{
+	CCMFade* self = CCM_FADE(plugin);
+	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
+	gint cpt;
+	
+	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
+	{
+		self->priv->options[cpt] = ccm_config_new(screen->number, "fade", 
+												  CCMFadeOptions[cpt]);
+	}
+	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+	self->priv->animation = ccm_animation_new(screen, (CCMAnimationFunc)ccm_fade_animation, self);
+}
+
+static void
 ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
@@ -207,7 +186,7 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 	self->priv->is_blocked = FALSE;
 }
 
-void
+static void
 ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
@@ -230,7 +209,7 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	self->priv->is_blocked = FALSE;
 }
 
-void
+static void
 ccm_fade_query_opacity(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
@@ -257,3 +236,18 @@ ccm_fade_query_opacity(CCMWindowPlugin* plugin, CCMWindow* window)
 	self->priv->is_blocked = TRUE;
 	ccm_window_plugin_query_opacity (CCM_WINDOW_PLUGIN_PARENT(self), window);
 }
+
+static void
+ccm_fade_window_iface_init(CCMWindowPluginClass* iface)
+{
+	iface->load_options 	= ccm_fade_window_load_options;
+	iface->query_geometry 	= NULL;
+	iface->paint 			= NULL;
+	iface->map				= ccm_fade_map;
+	iface->unmap			= ccm_fade_unmap;
+	iface->query_opacity  	= ccm_fade_query_opacity;
+	iface->set_opaque		= NULL;
+	iface->move				= NULL;
+	iface->resize			= NULL;
+}
+
