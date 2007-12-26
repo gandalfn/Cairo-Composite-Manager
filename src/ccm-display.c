@@ -262,16 +262,7 @@ ccm_display_process_events(CCMDisplay* self)
 			CCMDamage* damage = g_hash_table_lookup(self->priv->damages,
 													(gpointer)event_damage->damage);
 		
-			if (damage)
-			{
-				cairo_rectangle_t area;
-						
-				area.x = event_damage->area.x + event_damage->geometry.x;
-				area.y = event_damage->area.y + event_damage->geometry.y;
-				area.width = event_damage->area.width;
-				area.height = event_damage->area.height;
-				damage->callback(self, &area, damage->data);
-			}
+			if (damage) damage->callback(self, damage->data);
 		}
 		else
 		{

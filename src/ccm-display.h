@@ -41,8 +41,7 @@ G_BEGIN_DECLS
 
 #define CCM_DISPLAY_XDISPLAY(obj)    (CCM_DISPLAY(obj)->xdisplay)
 
-typedef void (* CCMDamageFunc) (CCMDisplay* self, cairo_rectangle_t* area,
-								gpointer data);
+typedef void (* CCMDamageFunc) (CCMDisplay* self, gpointer data);
 typedef void (* CCMAsyncGetpropFunc) (CCMDisplay* self, AgGetPropertyTask* task,
 									  gpointer data);
 

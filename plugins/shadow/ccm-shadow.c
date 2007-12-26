@@ -58,18 +58,6 @@ struct _CCMShadowPrivate
 #define CCM_SHADOW_GET_PRIVATE(o)  \
    ((CCMShadowPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SHADOW, CCMShadowClass))
 
-void ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window);
-CCMRegion* ccm_shadow_query_geometry(CCMWindowPlugin* plugin, 
-									 CCMWindow* window);
-gboolean ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-						  cairo_t* context, cairo_surface_t* suface);
-void ccm_shadow_unmap(CCMWindowPlugin* plugin, CCMWindow* window);
-void ccm_shadow_set_opaque(CCMWindowPlugin* plugin, CCMWindow* window);
-void ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window, 
-					 int x, int y);
-void ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window, 
-					   int width, int height);
-
 static void
 ccm_shadow_init (CCMShadow *self)
 {
@@ -100,20 +88,6 @@ ccm_shadow_class_init (CCMShadowClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMShadowPrivate));
 	
 	object_class->finalize = ccm_shadow_finalize;
-}
-
-static void
-ccm_shadow_iface_init(CCMWindowPluginClass* iface)
-{
-	iface->load_options 	= ccm_shadow_load_options;
-	iface->query_geometry 	= ccm_shadow_query_geometry;
-	iface->paint 			= ccm_shadow_paint;
-	iface->map				= NULL;
-	iface->unmap			= ccm_shadow_unmap;
-	iface->query_opacity  	= NULL;
-	iface->set_opaque		= ccm_shadow_set_opaque;
-	iface->move				= ccm_shadow_move;
-	iface->resize			= ccm_shadow_resize;
 }
 
 static void
@@ -177,7 +151,7 @@ create_shadow(CCMShadow* self,int width, int height)
 	cairo_destroy(cr);
 }
 
-void
+static void
 ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
@@ -192,7 +166,7 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
-CCMRegion*
+static CCMRegion*
 ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMRegion* geometry = NULL;
@@ -236,7 +210,7 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	return geometry;
 }
 
-gboolean
+static gboolean
 ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
 				 cairo_t* context, cairo_surface_t* surface)
 {
@@ -251,32 +225,30 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		{
 			cairo_rectangle_t* rects;
 			gint nb_rects, cpt;
-			cairo_path_t* path;
+			cairo_matrix_t matrix;
 			
 			cairo_save(context);
+			cairo_get_matrix (context, &matrix);
+			cairo_translate (context, area.x / matrix.xx, area.y / matrix.yy);
 			ccm_region_get_rectangles (self->priv->shadow_region, 
 									   &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{
-				cairo_rectangle(context, rects[cpt].x, rects[cpt].y, 
+				cairo_rectangle(context, rects[cpt].x - area.x / matrix.xx, 
+								rects[cpt].y - area.y / matrix.yy, 
 								rects[cpt].width, rects[cpt].height);
 			}
 			g_free(rects);
 			cairo_clip(context);
-			cairo_set_source_surface(context, self->priv->shadow, 
-							     area.x, area.y);
+			cairo_set_source_surface(context, self->priv->shadow, 0.0f, 0.0f);
 			cairo_paint_with_alpha(context,
 								   ccm_window_get_opacity(window));
 			cairo_restore(context);
 			
-			cairo_reset_clip (context);
-			path = ccm_drawable_get_damage_path (CCM_DRAWABLE(window), context);
-			cairo_append_path (context, path);
-			cairo_clip(context);
 			ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{
-				cairo_rectangle(context, rects[cpt].x, rects[cpt].y, 
+				cairo_rectangle(context, rects[cpt].x / matrix.xx, rects[cpt].y / matrix.yy, 
 								rects[cpt].width, rects[cpt].height);
 			}
 			g_free(rects);
@@ -288,7 +260,7 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 								   window, context, surface);
 }
 
-void
+static void
 ccm_shadow_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
@@ -302,7 +274,7 @@ ccm_shadow_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
-void 
+static void 
 ccm_shadow_set_opaque(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
@@ -310,11 +282,14 @@ ccm_shadow_set_opaque(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_set_opaque (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	if (self->priv->shadow_region)
+	{
 		ccm_window_add_alpha_region (window, self->priv->shadow_region);
+	}
 }
 
-void ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window, 
-					 int x, int y)
+static void 
+ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window, 
+				int x, int y)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
 	cairo_rectangle_t area;
@@ -336,8 +311,9 @@ void ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window,
 	ccm_window_plugin_move (CCM_WINDOW_PLUGIN_PARENT(plugin), window, x, y);
 }
 
-void ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window, 
-					   int width, int height)
+static void 
+ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window, 
+				  int width, int height)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
 	int border = 0;
@@ -348,3 +324,18 @@ void ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 	ccm_window_plugin_resize (CCM_WINDOW_PLUGIN_PARENT(plugin), window,
 							  width + border, height + border);
 }
+
+static void
+ccm_shadow_iface_init(CCMWindowPluginClass* iface)
+{
+	iface->load_options 	= ccm_shadow_load_options;
+	iface->query_geometry 	= ccm_shadow_query_geometry;
+	iface->paint 			= ccm_shadow_paint;
+	iface->map				= NULL;
+	iface->unmap			= ccm_shadow_unmap;
+	iface->query_opacity  	= NULL;
+	iface->set_opaque		= ccm_shadow_set_opaque;
+	iface->move				= ccm_shadow_move;
+	iface->resize			= ccm_shadow_resize;
+}
+

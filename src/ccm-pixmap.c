@@ -220,7 +220,7 @@ ccm_pixmap_get_surface(CCMDrawable* drawable)
 	cairo_surface_t* surface = NULL;
 	
 	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self->priv->window), 
-									  &geometry))
+										  &geometry))
 	{
 		if (self->priv->window->is_viewable)
 			ccm_drawable_repair(CCM_DRAWABLE(self));
@@ -246,12 +246,12 @@ ccm_pixmap_get_surface(CCMDrawable* drawable)
 }
 
 static void
-ccm_pixmap_on_damage(CCMDisplay* display, cairo_rectangle_t* area, 
-					 CCMPixmap* self)
+ccm_pixmap_on_damage(CCMDisplay* display, CCMPixmap* self)
 {
 	g_return_if_fail(display != NULL);
-	g_return_if_fail(area != NULL);
 	g_return_if_fail(self != NULL);
+	
+	CCMRegion* damaged = ccm_region_new();
 	XserverRegion region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY (display), NULL, 0);
 	XRectangle* rects;
 	gint nb_rects, cpt;
@@ -261,15 +261,12 @@ ccm_pixmap_on_damage(CCMDisplay* display, cairo_rectangle_t* area,
 	
 	rects = XFixesFetchRegion(CCM_DISPLAY_XDISPLAY (display), region, &nb_rects);
 	for (cpt = 0; cpt < nb_rects; cpt++)
-	{
-		area->x = rects[cpt].x;
-		area->y = rects[cpt].y;
-		area->width = rects[cpt].width;
-		area->height = rects[cpt].height;
-		ccm_drawable_damage_rectangle(CCM_DRAWABLE(self), area);
-	}
+		ccm_region_union_with_xrect(damaged, &rects[cpt]);
+	
 	XFree(rects);
 	XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY (display), region);
+	ccm_drawable_damage_region (CCM_DRAWABLE(self), damaged);
+	ccm_region_destroy (damaged);
 }
 
 static void

@@ -117,6 +117,7 @@ ccm_drawable_finalize (GObject *object)
 	
 	self->priv->drawable = 0;
 	if (self->priv->geometry) ccm_region_destroy(self->priv->geometry);
+	if (self->priv->damaged) ccm_region_destroy(self->priv->damaged);
 	if (self->priv->screen) g_object_unref(self->priv->screen);
 	
 	G_OBJECT_CLASS (ccm_drawable_parent_class)->finalize (object);
@@ -507,39 +508,6 @@ ccm_drawable_is_damaged(CCMDrawable* self)
 }
 
 /**
- * ccm_drawable_damage_rectangle:
- * @self: #CCMDrawable
- * @area: #cairo_rectangle_t damaged
- *
- * Add a damaged rectangle for a drawable
- **/
-void 
-ccm_drawable_damage_rectangle(CCMDrawable* self, cairo_rectangle_t* area)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(area != NULL);
-	
-	if (self->priv->geometry)
-	{
-		CCMRegion* new_damage = ccm_region_rectangle(area);
-		CCMRegion* damaged = ccm_region_copy(self->priv->geometry);
-		
-		ccm_region_intersect(damaged, new_damage);
-		ccm_region_destroy(new_damage);
-		
-		if (self->priv->damaged)
-		{
-			ccm_region_union(self->priv->damaged, damaged);
-			ccm_region_destroy(damaged);
-		}
-		else
-			self->priv->damaged = damaged;
-		
-		g_signal_emit(self, signals[DAMAGED], 0, area);
-	}
-}
-
-/**
  * ccm_drawable_damage_region:
  * @self: #CCMDrawable
  * @region: #CCMRegion damaged
@@ -552,15 +520,15 @@ ccm_drawable_damage_region(CCMDrawable* self, CCMRegion* area)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(area != NULL);
 
-	cairo_rectangle_t* rectangles;
-	gint cpt, nb_rects;
-	
-	ccm_region_get_rectangles(area, &rectangles, &nb_rects);
-	for (cpt = 0; cpt < nb_rects; cpt++)
-	{
-		ccm_drawable_damage_rectangle(self, &rectangles[cpt]);
-	}
-	g_free(rectangles);
+	if (!ccm_region_empty (area))
+ 	{
+		if (self->priv->damaged)
+			ccm_region_union(self->priv->damaged, area);
+		else
+			self->priv->damaged = ccm_region_copy(area);
+		
+		g_signal_emit(self, signals[DAMAGED], 0, area);
+	 }
 }
 
 /**

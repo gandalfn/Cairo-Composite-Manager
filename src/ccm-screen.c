@@ -94,7 +94,7 @@ static gboolean impl_ccm_screen_add_window(CCMScreenPlugin* plugin,
 static void impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, 
 										  CCMScreen* self, 
 										  CCMWindow* window);
-static void on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, 
+static void on_window_damaged(CCMScreen* self, CCMRegion* area, 
 							  CCMWindow* window);
 
 static void
@@ -390,6 +390,8 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 												   below_link->next, above);
 	else
 		self->priv->windows = g_list_append(self->priv->windows, above);
+	
+	ccm_drawable_damage (CCM_DRAWABLE(above));
 }
 
 static void 
@@ -497,7 +499,6 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	
 	if (link)
 	{
-		ccm_window_unmap(window);
 		self->priv->windows = g_list_remove(self->priv->windows, window);
 		
 		if (self->priv->fullscreen == window)
@@ -505,10 +506,11 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		
 		if (!window->is_input_only)
 		{
-			cairo_rectangle_t geometry;
-			
-			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(window), &geometry);
-			ccm_screen_damage_rectangle (self, &geometry);
+			CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(window));
+			if (geometry) 
+				ccm_screen_damage_region (self, geometry);
+			else
+				ccm_screen_damage (self);
 		}
 		g_object_unref(window);
 	}
@@ -536,7 +538,7 @@ ccm_screen_paint(CCMScreen* self)
 }
 
 static void
-on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
+on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(area != NULL);
@@ -551,8 +553,8 @@ on_window_damaged(CCMScreen* self, cairo_rectangle_t* area, CCMWindow* window)
 		gboolean top = TRUE;
 		CCMRegion* damage_above = NULL, * damage_below = NULL;
 		
-		damage_above = ccm_region_rectangle(area);
-		damage_below = ccm_region_rectangle(area);
+		damage_above = ccm_region_copy(area);
+		damage_below = ccm_region_copy(area);
 		
 		// Substract opaque region of window to damage region below
 		if (window->opaque && window->is_viewable)
@@ -841,11 +843,15 @@ on_event(CCMScreen* self, XEvent* event)
 				expose_event->window == CCM_WINDOW_XWINDOW(self->priv->root))
 			{
 				cairo_rectangle_t area;
+				CCMRegion* damaged;
+				
 				area.x = expose_event->x;
-				area.y = expose_event->y;
-				area.width = expose_event->width;
-				area.height = expose_event->height;
-				ccm_screen_damage_rectangle (self, &area);
+ 				area.y = expose_event->y;
+ 				area.width = expose_event->width;
+ 				area.height = expose_event->height;
+				damaged = ccm_region_rectangle (&area);
+				ccm_screen_damage_region (self, damaged);
+				ccm_region_destroy (damaged);
 			}
 		}
 		break;
@@ -1072,6 +1078,7 @@ void
 ccm_screen_damage(CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
+	CCMRegion* screen_geometry;
 	
 	cairo_rectangle_t area;
 	
@@ -1080,12 +1087,13 @@ ccm_screen_damage(CCMScreen* self)
 	area.width = CCM_SCREEN_XSCREEN(self)->width;
 	area.height = CCM_SCREEN_XSCREEN(self)->height;
 		
-	// damage toplevel window with screen geometry it damage all below windows
-	ccm_screen_damage_rectangle (self, &area);
+	screen_geometry = ccm_region_rectangle (&area);	
+	ccm_screen_damage_region (self, screen_geometry);
+	ccm_region_destroy (screen_geometry);
 }
 
 void
-ccm_screen_damage_rectangle(CCMScreen* self, cairo_rectangle_t* area)
+ccm_screen_damage_region(CCMScreen* self, CCMRegion* area)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(area != NULL);
@@ -1097,13 +1105,8 @@ ccm_screen_damage_rectangle(CCMScreen* self, cairo_rectangle_t* area)
 		if (!((CCMWindow*)item->data)->is_input_only &&
 			((CCMWindow*)item->data)->is_viewable)
 		{
-			g_signal_handlers_block_by_func(item->data, 
-											 on_window_damaged, 
-											 self);
-			ccm_drawable_damage_rectangle (item->data, area);
-			g_signal_handlers_unblock_by_func(item->data, 
-											  on_window_damaged, 
-											  self);
+			ccm_drawable_damage_region (item->data, area);
+			break;
 		}
 	}
 }

@@ -159,8 +159,8 @@ gboolean		ccm_screen_add_window			(CCMScreen* self,
 void			ccm_screen_remove_window		(CCMScreen* self, 
 												 CCMWindow* window);
 void            ccm_screen_damage               (CCMScreen* self);
-void            ccm_screen_damage_rectangle     (CCMScreen* self, 
-                                                 cairo_rectangle_t* area);
+void            ccm_screen_damage_region        (CCMScreen* self, 
+                                                 CCMRegion* region);
 void            ccm_screen_restack              (CCMScreen* self, 
                                                  CCMWindow* above, 
                                                  CCMWindow* below);
@@ -179,8 +179,6 @@ gboolean 		 ccm_drawable_get_geometry_clipbox	(CCMDrawable* self,
 cairo_surface_t* ccm_drawable_get_surface			(CCMDrawable* self);
 cairo_t*		 ccm_drawable_create_context		(CCMDrawable* self);
 gboolean		 ccm_drawable_is_damaged			(CCMDrawable* self);
-void 			 ccm_drawable_damage_rectangle		(CCMDrawable* self, 
-													 cairo_rectangle_t* area);
 void 			 ccm_drawable_damage_region 		(CCMDrawable* self, 
 													 CCMRegion* area);
 void 			 ccm_drawable_damage				(CCMDrawable* self);
