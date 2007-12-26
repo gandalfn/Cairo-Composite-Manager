@@ -579,7 +579,10 @@ ccm_region_resize (CCMRegion *region,
 	scale_width = (double)width / (double)(region->extents.x2 - region->extents.x1);
 	scale_height = (double)height / (double)(region->extents.y2 - region->extents.y1);
 	
-	pbox = region->rects;
+    region->extents.x2 = region->extents.x1 + width;
+    region->extents.y2 = region->extents.y1 + height;
+	
+    pbox = region->rects;
     nbox = region->numRects;
     
     while(nbox--)
@@ -590,7 +593,6 @@ ccm_region_resize (CCMRegion *region,
 			    pbox->y1;
 	pbox++;
     }
-	miSetExtents(region);
 }
 
 /* 

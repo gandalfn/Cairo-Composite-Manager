@@ -469,13 +469,14 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 			ccm_region_offset(self->opaque, x - geometry.x, y - geometry.y);
 		if (self->is_viewable || self->priv->unmap_pending)
 		{
-			ccm_region_subtract(old_geometry, ccm_drawable_get_geometry (CCM_DRAWABLE(self)));
+			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
+			ccm_region_union_with_rect (old_geometry, &geometry);
 			ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
-			ccm_drawable_damage (CCM_DRAWABLE(self));
 		}
 		ccm_region_destroy (old_geometry);
 	}
 }
+
 static void
 ccm_window_resize(CCMDrawable* drawable, int width, int height)
 {
