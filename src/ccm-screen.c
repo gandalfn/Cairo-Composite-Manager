@@ -478,9 +478,9 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		CCMWindowType type = ccm_window_get_hint_type(window);
 
 		if (type != CCM_WINDOW_TYPE_DESKTOP)
-			self->priv->windows = g_list_append(self->priv->windows, window);
+			ccm_screen_restack (self, window, NULL);
 		else
-			self->priv->windows = g_list_prepend(self->priv->windows, window);
+			ccm_screen_restack (self, NULL, window);
 		
 		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
 		
