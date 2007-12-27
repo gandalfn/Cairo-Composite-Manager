@@ -162,53 +162,41 @@ ccm_freeze_ping(CCMFreeze* self)
 {
 	if (self->priv->window && self->priv->window->is_viewable)
 	{
-		CCMWindowType type = ccm_window_get_hint_type (self->priv->window);
-		if (ccm_window_is_managed (self->priv->window) &&
-			(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_UNKNOWN))
+		XEvent event;
+		CCMDisplay* display = 
+			ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));
+		Window window = _ccm_window_get_child (self->priv->window);
+		
+		if (!window) window = CCM_WINDOW_XWINDOW(self->priv->window);
+		
+		if (self->priv->last_ping)
 		{
-			XEvent event;
-			CCMDisplay* display = 
-				ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));
-			Window window = _ccm_window_get_child (self->priv->window);
-			
-			if (!window) window = CCM_WINDOW_XWINDOW(self->priv->window);
-			
-			if (self->priv->last_ping)
-			{
-				self->priv->alive = FALSE;
-				ccm_animation_start(self->priv->animation);
-			}
-			else
-			{
-				self->priv->alive = TRUE;
-				ccm_animation_stop(self->priv->animation);
-				if (self->priv->opacity > 0)
-					ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-				self->priv->opacity = 0.0f;
-			}
-			
-			self->priv->last_ping = 1;
-			
-			ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-			event.type = ClientMessage;
-			event.xclient.window = window;
-			event.xclient.message_type = CCM_FREEZE_GET_CLASS(self)->protocol_atom;
-			event.xclient.format = 32;
-			event.xclient.data.l[0] = CCM_FREEZE_GET_CLASS(self)->ping_atom;
-			event.xclient.data.l[1] = self->priv->last_ping;
-			event.xclient.data.l[2] = window;
-			event.xclient.data.l[3] = 0;
-			event.xclient.data.l[4] = 0;
-			XSendEvent (CCM_DISPLAY_XDISPLAY(display), window, False, 
-						NoEventMask, &event);
+			self->priv->alive = FALSE;
+			ccm_animation_start(self->priv->animation);
 		}
 		else
 		{
-			self->priv->opacity = 0.0f;
-			ccm_animation_stop(self->priv->animation);
 			self->priv->alive = TRUE;
-			return FALSE;
+			ccm_animation_stop(self->priv->animation);
+			if (self->priv->opacity > 0)
+				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+			self->priv->opacity = 0.0f;
 		}
+		
+		self->priv->last_ping = 1;
+		
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+		event.type = ClientMessage;
+		event.xclient.window = window;
+		event.xclient.message_type = CCM_FREEZE_GET_CLASS(self)->protocol_atom;
+		event.xclient.format = 32;
+		event.xclient.data.l[0] = CCM_FREEZE_GET_CLASS(self)->ping_atom;
+		event.xclient.data.l[1] = self->priv->last_ping;
+		event.xclient.data.l[2] = window;
+		event.xclient.data.l[3] = 0;
+		event.xclient.data.l[4] = 0;
+		XSendEvent (CCM_DISPLAY_XDISPLAY(display), window, False, 
+					NoEventMask, &event);
 	}
 	
 	
@@ -276,7 +264,7 @@ ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		
 	if (!self->priv->id_ping && !window->is_input_only && window->is_viewable &&
 		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_UNKNOWN) &&
-		_ccm_window_get_child (window))	
+		_ccm_window_get_child (window) && ccm_window_is_managed (self->priv->window))	
 	{
 		gint delay = 
 			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
@@ -317,7 +305,7 @@ ccm_freeze_add_window(CCMScreenPlugin* plugin, CCMScreen* screen,
 		
 	if (!self->priv->id_ping && !window->is_input_only && window->is_viewable &&
 		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_UNKNOWN) &&
-		_ccm_window_get_child (window))	
+		_ccm_window_get_child (window) && ccm_window_is_managed (self->priv->window))	
 	{
 		gint delay = 
 			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
