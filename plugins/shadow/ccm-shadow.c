@@ -260,20 +260,6 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 								   window, context, surface);
 }
 
-static void
-ccm_shadow_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	CCMShadow* self = CCM_SHADOW(plugin);
-	
-	if (self->priv->shadow)
-	{
-		cairo_surface_destroy (self->priv->shadow);
-		self->priv->shadow = NULL;
-	}
-	
-	ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-}
-
 static void 
 ccm_shadow_set_opaque(CCMWindowPlugin* plugin, CCMWindow* window)
 {
@@ -332,7 +318,7 @@ ccm_shadow_iface_init(CCMWindowPluginClass* iface)
 	iface->query_geometry 	= ccm_shadow_query_geometry;
 	iface->paint 			= ccm_shadow_paint;
 	iface->map				= NULL;
-	iface->unmap			= ccm_shadow_unmap;
+	iface->unmap			= NULL;
 	iface->query_opacity  	= NULL;
 	iface->set_opaque		= ccm_shadow_set_opaque;
 	iface->move				= ccm_shadow_move;
