@@ -31,6 +31,9 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/shape.h>
 
+#include <gdk/gdkx.h>
+#include <gdk/gdk.h>
+
 #include "ccm-window.h"
 #include "ccm-window-backend.h"
 #include "ccm-window-plugin.h"
@@ -346,6 +349,85 @@ ccm_window_get_child_property(CCMWindow* self, Atom property_atom, int req_forma
     return result;
 }
 
+static gchar*
+ccm_window_get_utf8_property (CCMWindow* self, Atom atom)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(atom != None, NULL);
+  
+	gchar *val;
+	guint32* data = NULL;
+	guint n_items;
+		
+	data = ccm_window_get_property(self, atom, 8, 
+								   CCM_WINDOW_GET_CLASS(self)->utf8_string_atom, 
+								   &n_items);
+  
+	if (!data) return NULL;
+	
+	if (!g_utf8_validate ((gchar*)data, n_items, NULL))
+    {
+		XFree (data);
+		return NULL;
+    }
+  
+  	val = g_strndup ((gchar*)data, n_items);
+  
+  	XFree (data);
+  
+  	return val;
+}
+
+static gchar*
+text_property_to_utf8 (const XTextProperty* prop)
+{
+	gchar **list;
+	gint count;
+	gchar *retval;
+  
+  	list = NULL;
+
+  	count = gdk_text_property_to_utf8_list (gdk_x11_xatom_to_atom (prop->encoding),
+											prop->format,
+											prop->value,
+											prop->nitems,
+											&list);
+
+  	if (count == 0)
+		retval = NULL;
+	else
+    {
+      	retval = list[0];
+      	list[0] = g_strdup (""); /* something to free */
+    }
+
+  	g_strfreev (list);
+
+  	return retval;
+}
+
+static gchar*
+ccm_window_get_text_property (CCMWindow* self, Atom atom)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(atom != None, NULL);
+  
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
+	XTextProperty text;
+	gchar* retval = NULL;
+  
+  	text.nitems = 0;
+  	if (XGetTextProperty(CCM_DISPLAY_XDISPLAY(display), 
+						 CCM_WINDOW_XWINDOW(self), &text, atom))
+    {
+      	retval = text_property_to_utf8 (&text);
+
+      	if (text.value) XFree (text.value);
+    }
+	
+	return retval;
+}
+
 static void
 ccm_window_query_child(CCMWindow* self)
 {
@@ -642,6 +724,8 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	GSList* item, *plugins = _ccm_screen_get_window_plugins(screen);
 	self->priv->plugin = (CCMWindowPlugin*)self;
 	
+	create_atoms(self);
+	
 	for (item = plugins; item; item = item->next)
 	{
 		GType type = GPOINTER_TO_INT(item->data);
@@ -654,8 +738,6 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	ccm_window_plugin_load_options(self->priv->plugin, self);
 	
 	geometry = ccm_drawable_query_geometry(CCM_DRAWABLE(self));
-	
-	create_atoms(self);
 	
 	if (!self->is_input_only)
 	{
@@ -1186,33 +1268,15 @@ ccm_window_get_name(CCMWindow* self)
 	
 	if (self->priv->name == NULL)
 	{
-		guint32* data = NULL;
-		guint n_items;
+		self->priv->name = ccm_window_get_utf8_property (self, 
+								CCM_WINDOW_GET_CLASS(self)->visible_name_atom);
 		
-		data = ccm_window_get_property(self, 
-							CCM_WINDOW_GET_CLASS(self)->visible_name_atom,
-							8, CCM_WINDOW_GET_CLASS(self)->utf8_string_atom, 
-						    &n_items);
-		if (!data)
-		{
-			data = ccm_window_get_property(self, 
-							CCM_WINDOW_GET_CLASS(self)->name_atom,
-							8, CCM_WINDOW_GET_CLASS(self)->utf8_string_atom, 
-						    &n_items);
-		}
+		if (!self->priv->name)
+			self->priv->name = ccm_window_get_utf8_property (self, 
+										CCM_WINDOW_GET_CLASS(self)->name_atom);
 		
-		if (!data)
-		{
-			data = ccm_window_get_property(self, 
-							CCM_WINDOW_GET_CLASS(self)->name_atom,
-							8, XA_WM_NAME, &n_items);
-		}
-			
-		if (data)
-		{
-			self->priv->name = g_strndup((const gchar *)data, n_items);
-			XFree(data);
-		}
+		if (!self->priv->name)
+			self->priv->name = ccm_window_get_text_property (self, XA_WM_NAME);
 	}
 	
 	return self->priv->name;
