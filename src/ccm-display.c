@@ -119,7 +119,18 @@ ccm_display_finalize (GObject *object)
 	if (self->priv->nb_screens) 
 	{
 		for (cpt = 0; cpt < self->priv->nb_screens; cpt++)
-			g_object_unref(self->priv->screens[cpt]);
+		{
+			if (self->priv->screens[cpt])
+			{
+				if (CCM_SCREEN_GET_CLASS(self->priv->screens[cpt])->selection_owner != None)
+				{
+					XDestroyWindow (CCM_DISPLAY_XDISPLAY(self),
+									CCM_SCREEN_GET_CLASS(self->priv->screens[cpt])->selection_owner);
+					CCM_SCREEN_GET_CLASS(self->priv->screens[cpt])->selection_owner = None;
+				}
+				g_object_unref(self->priv->screens[cpt]);
+			}
+		}
 		
 		g_slice_free1(sizeof(CCMScreen*) * (self->priv->nb_screens + 1), 
 					  self->priv->screens);
