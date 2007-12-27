@@ -162,6 +162,15 @@ ccm_freeze_ping(CCMFreeze* self)
 {
 	if (self->priv->window && self->priv->window->is_viewable)
 	{
+		CCMWindowType type = ccm_window_get_hint_type (self->priv->window);
+		
+		if (type != CCM_WINDOW_TYPE_NORMAL && type != CCM_WINDOW_TYPE_UNKNOWN)
+		{
+			self->priv->alive = TRUE;
+			ccm_animation_stop(self->priv->animation);
+			return FALSE;
+		}
+		
 		XEvent event;
 		CCMDisplay* display = 
 			ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));

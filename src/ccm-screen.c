@@ -823,6 +823,7 @@ on_event(CCMScreen* self, XEvent* event)
 													   property_event->window);
 				if (window) 
 				{
+					ccm_window_query_hint_type(window);
 					ccm_window_query_state(window);
 					if (ccm_window_is_fullscreen (window))
 					{
@@ -897,6 +898,13 @@ on_event(CCMScreen* self, XEvent* event)
 					else if (self->priv->fullscreen == window)
 						self->priv->fullscreen = NULL;
 				}
+			}
+			else if (client_event->message_type == 
+							CCM_WINDOW_GET_CLASS(self->priv->root)->type_atom)
+			{
+				CCMWindow* window = ccm_screen_find_window_or_child (self,
+													   client_event->window);
+				if (window) ccm_window_query_hint_type(window);
 			}
 		}
 		break;
