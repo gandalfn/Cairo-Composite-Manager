@@ -1,4 +1,9 @@
-## File created by the gnome-build tools
+pixmapsdir = $(datadir)/pixmaps/cairo-compmgr
+
+pixmaps_DATA = \
+    cairo-compmgr.png \
+	cairo-compmgr-on-24.png \
+	cairo-compmgr-off-24.png 
 
 schemasdir = $(GCONF_SCHEMA_FILE_DIR)
 schemas_in_files = cairo-compmgr.schemas.in
@@ -18,5 +23,6 @@ else
 install-data-local:
 endif
 
-EXTRA_DIST = $(schemas_in_files)
+EXTRA_DIST = $(schemas_in_files) \
+			 $(pixmaps_DATA)
 

@@ -122,10 +122,8 @@ ccm_extension_loader_new (GSList* filter)
 										(GCompareFunc)_ccm_extension_compare);
 		}
 	}
-	else
-		g_object_ref(self);
 
-	return self;
+	return g_object_ref(self);
 }
 
 GSList*

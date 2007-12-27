@@ -26,6 +26,7 @@
 #include <gnome.h>
 
 #include "ccm.h"
+#include "ccm-tray-icon.h"
 #include "ccm-extension-loader.h"
 
 /*
@@ -58,7 +59,7 @@ static void session_die (GnomeClient *client, gpointer client_data)
 int
 main(gint argc, gchar **argv)
 {
-	CCMDisplay* display;
+	CCMTrayIcon* trayicon;
 	GnomeClient* client;
 	
 #ifdef ENABLE_NLS
@@ -77,8 +78,8 @@ main(gint argc, gchar **argv)
 	
 	ccm_extension_loader_add_plugin_path(PACKAGE_PLUGIN_DIR);
 	
-	display = ccm_display_new(NULL);
+	trayicon = ccm_tray_icon_new ();
 	gtk_main();
-	g_object_unref(display);
+	g_object_unref(trayicon);
 	return 0;
 }

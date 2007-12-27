@@ -2,6 +2,7 @@ INCLUDES = \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
 	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
 	-DPACKAGE_PLUGIN_DIR=\""$(libdir)/cairo-compmgr"\" \
+    -DPACKAGE_PIXMAP_DIR=\""$(datadir)/pixmaps/cairo-compmgr"\" \
 	-DPACKAGE_DATA_DIR=\""$(datadir)"\" \
     $(CAIRO_COMPMGR_CFLAGS)
 
@@ -58,7 +59,11 @@ cairo_compmgr_SOURCES = \
 	ccm-window-backend.c \
 	ccm.h \
 	ccm-animation.h \
-	ccm-animation.c
+	ccm-animation.c \
+	ccm-tray-menu.h \
+	ccm-tray-menu.c \
+	ccm-tray-icon.h \
+	ccm-tray-icon.c
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

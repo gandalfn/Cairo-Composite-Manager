@@ -2,6 +2,17 @@
 <gconfschemafile>
    <schemalist>
       <schema>
+         <key>/schemas/apps/cairo-compmgr/general/enable</key>
+         <applyto>/apps/cairo-compmgr/general/enable</applyto>
+         <owner>gnome</owner>
+         <type>bool</type>
+         <default>true</default>
+         <locale name="C">
+            <short>Enable Cairo Composite Manager</short>
+            <long>Enable Cairo Composite Manager</long>
+         </locale>
+      </schema>
+      <schema>
          <key>/schemas/apps/cairo-compmgr/general/use_xshm</key>
          <applyto>/apps/cairo-compmgr/general/use_xshm</applyto>
          <owner>gnome</owner>

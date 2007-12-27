@@ -140,6 +140,7 @@ void          	ccm_region_xor             (CCMRegion     *source1,
 
 /********************************** Display ***********************************/
 CCMDisplay* 	ccm_display_new        		(gchar* display);
+void            ccm_display_destroy         (CCMDisplay* self);
 CCMScreen*	 	ccm_display_get_screen 		(CCMDisplay* self, 
 											 guint number);
 int				ccm_display_get_shape_notify_event_type(CCMDisplay* self);

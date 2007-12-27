@@ -69,7 +69,7 @@ ccm_drawable_set_property(GObject *object,
 	switch (prop_id)
     {
     	case PROP_SCREEN:
-			priv->screen= g_object_ref(g_value_get_pointer (value));
+			priv->screen= g_value_get_pointer (value);
 			break;
 		case PROP_XDRAWABLE:
 			priv->drawable = g_value_get_ulong (value);
@@ -118,7 +118,6 @@ ccm_drawable_finalize (GObject *object)
 	self->priv->drawable = 0;
 	if (self->priv->geometry) ccm_region_destroy(self->priv->geometry);
 	if (self->priv->damaged) ccm_region_destroy(self->priv->damaged);
-	if (self->priv->screen) g_object_unref(self->priv->screen);
 	
 	G_OBJECT_CLASS (ccm_drawable_parent_class)->finalize (object);
 }

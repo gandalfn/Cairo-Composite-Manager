@@ -147,6 +147,7 @@ ccm_screen_finalize (GObject *object)
 	if (self->priv->root) 
 	{
 		ccm_window_unredirect_subwindows(self->priv->root);
+		ccm_display_sync(self->priv->display);
 		g_object_unref(self->priv->root);
 	}
 	if (self->priv->damaged)
@@ -155,10 +156,9 @@ ccm_screen_finalize (GObject *object)
 	{
 		XCompositeReleaseOverlayWindow(CCM_DISPLAY_XDISPLAY(self->priv->display),
 									   CCM_WINDOW_XWINDOW(self->priv->cow));
+		ccm_display_sync(self->priv->display);
 		g_object_unref(self->priv->cow);
 	}
-	
-	if (self->priv->display) g_object_unref(self->priv->display);
 	
 	G_OBJECT_CLASS (ccm_screen_parent_class)->finalize (object);
 }
@@ -981,7 +981,7 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	GSList* filter = NULL, *plugins = NULL, *item;
 	int refresh_rate;
 	
-	self->priv->display = g_object_ref(display);
+	self->priv->display = display;
 	
 	self->xscreen = ScreenOfDisplay(CCM_DISPLAY_XDISPLAY(display), number);
 	self->number = number;

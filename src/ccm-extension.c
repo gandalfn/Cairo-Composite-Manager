@@ -35,6 +35,7 @@ struct _CCMExtensionPrivate
 	gchar* 				filename;
 	gchar**				backends;
 	gchar**				depends;
+	GType				type;
 	GModule* 			module;
 	CCMExtensionGetType get_type;
 };
@@ -58,6 +59,7 @@ ccm_extension_init (CCMExtension *self)
 	self->priv->module = NULL;
 	self->priv->backends = NULL;
 	self->priv->depends = NULL;
+	self->priv->type = 0;
 	self->priv->get_type = NULL;
 }
 
@@ -70,7 +72,7 @@ ccm_extension_finalize (GObject *object)
 	if (self->priv->label) g_free(self->priv->label);
 	if (self->priv->description) g_free(self->priv->description);
 	if (self->priv->filename) g_free(self->priv->filename);
-	if (self->priv->module) g_type_module_unuse(G_TYPE_MODULE(self));
+	if (self->priv->module) g_module_close (self->priv->module);
 	if (self->priv->backends) g_strfreev(self->priv->backends);
 	if (self->priv->depends) g_strfreev(self->priv->depends);
 	
@@ -188,6 +190,8 @@ ccm_extension_new (gchar* filename)
 											   G_TYPE_MODULE(self)->name);
 	g_free(dirname);
 	
+	g_type_module_use(G_TYPE_MODULE(self));
+		
 	return self;
 }
 
@@ -205,11 +209,9 @@ ccm_extension_get_type_object (CCMExtension* self)
 	g_return_val_if_fail(self != NULL, 0);
 	
 	//gint cpt;
-	gboolean found = TRUE;
+	//gboolean found = TRUE;
 	//GType backend = ccm_window_backend_get_type();
 	
-	g_type_module_use(G_TYPE_MODULE(self));
-		
 	/* Check if plugin support current backend */
 	/*for (cpt = 0; self->priv->backends && self->priv->backends[cpt]; cpt++)
 	{
@@ -231,7 +233,10 @@ ccm_extension_get_type_object (CCMExtension* self)
 #endif
 	}*/
 			
-	return self->priv->get_type && found ? self->priv->get_type(G_TYPE_MODULE(self)) : 0;
+	if (!self->priv->type && self->priv->get_type)
+		self->priv->type = self->priv->get_type(G_TYPE_MODULE(self));
+	
+	return self->priv->type;
 }
 
 gint

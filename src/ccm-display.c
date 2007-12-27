@@ -90,6 +90,7 @@ struct _CCMDisplayPrivate
 	GHashTable*	 damages;
 	GHashTable*	 asyncprops;
 	
+	gint		 fd;
 	CCMConfig*   options[CCM_DISPLAY_OPTION_N];
 };
 
@@ -101,6 +102,7 @@ ccm_display_init (CCMDisplay *self)
 {
 	self->priv = CCM_DISPLAY_GET_PRIVATE(self);
 	self->priv->nb_screens = 0;
+	self->priv->fd = 0;
 	self->priv->screens = NULL;
 	self->priv->damages = g_hash_table_new_full(g_direct_hash, g_direct_equal,
 												NULL, g_free);
@@ -127,6 +129,8 @@ ccm_display_finalize (GObject *object)
 	
 	for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; cpt++)
 		g_object_unref(self->priv->options[cpt]);
+	
+	if (self->priv->fd) fd_remove_watch (self->priv->fd);
 	
 	G_OBJECT_CLASS (ccm_display_parent_class)->finalize (object);
 }
@@ -340,7 +344,7 @@ CCMDisplay*
 ccm_display_new(gchar* display)
 {
 	CCMDisplay *self;
-	gint cpt, fd;
+	gint cpt;
 	GSList* unmanaged = NULL;
 	
 	self = g_object_new(CCM_TYPE_DISPLAY, NULL);
@@ -418,10 +422,12 @@ ccm_display_new(gchar* display)
 	}
 	g_slist_free(unmanaged);
 	
-	fd = ConnectionNumber (CCM_DISPLAY_XDISPLAY(self));
-	fd_add_watch (fd, self);
-    fd_set_read_callback (fd, (CCMWatchCallback)ccm_display_process_events);
-    fd_set_poll_callback (fd, (CCMWatchCallback)ccm_display_process_events);
+	self->priv->fd = ConnectionNumber (CCM_DISPLAY_XDISPLAY(self));
+	fd_add_watch (self->priv->fd, self);
+    fd_set_read_callback (self->priv->fd, 
+						  (CCMWatchCallback)ccm_display_process_events);
+    fd_set_poll_callback (self->priv->fd, 
+						  (CCMWatchCallback)ccm_display_process_events);
 	
 	return self;
 }
