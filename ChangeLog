@@ -1,0 +1,643 @@
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: Bump version to 0.1.3
+
+============ Version 0.1.2
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-display.c: Destruct selection owner window on display destruction
+
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/Makefile.am: 
+	* data/cairo-compmgr-off-24.png: 
+	* data/cairo-compmgr-on-24.png: 
+	* data/cairo-compmgr.png: 
+	* data/cairo-compmgr.schemas.in: 
+	* src/Makefile.am: 
+	* src/cairo-compmgr.c: 
+	* src/ccm-display.c: 
+	* src/ccm-drawable.c: 
+	* src/ccm-extension-loader.c: 
+	* src/ccm-extension.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-tray-icon.c: 
+	* src/ccm-tray-icon.h: 
+	* src/ccm-tray-menu.c: 
+	* src/ccm-tray-menu.h: 
+	* src/ccm-watch.c: 
+	* src/ccm.h: Add tray icon launcher
+
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c: 
+	* src/ccm-screen.c: Force check hint type
+
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: Revert "Use ccm_screen_restack on window add"
+
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: Use ccm_screen_restack on window add
+
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: Remove unmap implementation in shadow plugin
+
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-window.c: Fix get window name and warning on ccm startup
+
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c: Enable freeze animation only in good case
+
+2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/cairo-compmgr.schemas.in: 
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/freeze/ccm-freeze.schemas.in: 
+	* src/ccm-screen.c: Fix freeze plugin and enable it by default
+
+2007-12-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/menu-animation/ccm-menu-animation.c: 
+	* plugins/opacity/ccm-opacity.c: Code cleanup
+
+2007-12-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-extension.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: Fix memory leak
+
+2007-12-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-region.c: 
+	* src/ccm-window.c: Fix redraw on move
+
+2007-12-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-display.c: 
+	* src/ccm-display.h: 
+	* src/ccm-drawable.c: 
+	* src/ccm-pixmap.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm.h: Use region instead rectangle for damage
+
+2007-12-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/menu-animation/ccm-menu-animation.c: Remove set alpha in 
+	                                               menu-animation
+
+2007-12-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/cairo-compmgr.schemas.in: Set xrender backend as default
+
+2007-12-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-screen.c: Change repaint priority and force repaint on each event 
+	                    if refresh rate expired
+
+2007-12-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-extension-loader.c: Sort extension to ensure they are in good 
+	                              place
+
+2007-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/cairo-compmgr.schemas.in: 
+	* plugins/fade/ccm-fade.schemas.in: 
+	* plugins/menu-animation/ccm-menu-animation.schemas.in: 
+	* src/ccm-config.c: Fix configuration load and some default value
+
+2007-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: 
+	* data/cairo-compmgr.schemas.in: 
+	* plugins/Makefile.am: 
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.plugin.desktop.in: 
+	* plugins/menu-animation/Makefile.am: 
+	* plugins/menu-animation/ccm-menu-animation.c: 
+	* plugins/menu-animation/ccm-menu-animation.h: 
+	* plugins/menu-animation/ccm-menu-animation.plugin.desktop.in: 
+	* plugins/menu-animation/ccm-menu-animation.schemas.in: 
+	* po/Makefile.in.in: 
+	* src/ccm-animation.c: 
+	* src/ccm-animation.h: 
+	* src/ccm-display.c: 
+	* src/ccm-extension-loader.c: 
+	* src/ccm-extension.c: 
+	* src/ccm-extension.h: 
+	* src/ccm-screen.c: 
+	* src/ccm-screen.h: 
+	* src/ccm-window-plugin.c: 
+	* src/ccm-window-plugin.h: 
+	* src/ccm-window.c: Animation enhancement
+
+2007-12-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: Force unmap on remove window
+
+2007-12-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-window.c: Fix fade map/unmap
+
+2007-12-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: Damage window on fade destruction
+
+2007-12-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* po/Makefile.in.in: 
+	* src/ccm-window.c: Add damage on map/unmap
+
+2007-12-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: Remove all unnecessary damage improve performance for 
+	                    move
+
+2007-12-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: Add offset on start of fade animation to prevent 
+	                           transparent window
+
+2007-12-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/Makefile.am: 
+	* src/async-getprop.c: 
+	* src/async-getprop.h: 
+	* src/ccm-display.c: 
+	* src/ccm-display.h: Begin of async get property implementation
+
+2007-12-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-pixmap.c: Fix no shm mode and minimize damaged redraw area
+
+2007-12-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: Fix crash on plugin order (fix #04, #05)
+
+2007-12-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: Bump version to 0.1.2
+
+============ Version 0.1.1
+2007-12-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* Makefile.am: 
+	* src/ccm-window-glitz.c: Add intltool script for packaging
+
+2007-12-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: 
+	* data/cairo-compmgr.schemas.in: 
+	* plugins/fade/ccm-fade.schemas.in: 
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/opacity/ccm-opacity.schemas.in: 
+	* po/Makefile.in.in: 
+	* src/Makefile.am: 
+	* src/ccm-window.c: 
+	* src/ccm.h: Check libm in configure, remove some warning
+
+2007-12-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: Destroy shadow surface on query geometry
+
+2007-12-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/opacity/ccm-opacity.c: 
+	* plugins/shadow/ccm-shadow.c: 
+	* po/Makefile.in.in: 
+	* src/ccm-drawable.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window-plugin.c: 
+	* src/ccm-window-plugin.h: 
+	* src/ccm-window.c: Add move and resize interface backend
+
+2007-12-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: 
+	* src/ccm.h: Another small performance improvement
+
+2007-12-11  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/opacity/Makefile.am: 
+	* src/ccm-pixmap.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: 
+	* src/ccm.h: Performance improvements
+
+2007-12-10  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-drawable.c: 
+	* src/ccm-pixmap.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: Fix some warning
+
+2007-12-10  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-screen.c: Fix performance issue with many windows subtract opaque 
+	                    region of below
+
+2007-12-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/Makefile.am: 
+	* plugins/freeze/Makefile.am: 
+	* plugins/shadow/Makefile.am: 
+	* po/Makefile.in.in: 
+	* src/Makefile.am: 
+	* src/ccm-screen.c: Paint background if no desktop window
+
+2007-12-08  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-animation.c: 
+	* src/ccm-animation.h: 
+	* src/ccm-screen.c: 
+	* src/ccm-window-glitz.c: 
+	* src/ccm-window.c: Clip drawing region to screen size
+
+2007-12-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-animation.c: 
+	* src/ccm-pixmap.c: Use clipbox area instead list of rectangle when repair 
+	                    pixmap
+
+2007-12-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-window-glitz.c: Always use 
+	                          glitz_glx_find_drawable_format_for_visual to get 
+	                          glitz format
+
+2007-12-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: Add child window support
+
+2007-12-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/opacity/ccm-opacity.c: 
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-window-plugin.c: 
+	* src/ccm-window-plugin.h: 
+	* src/ccm-window.c: Add set_opaque interface for window plugin
+
+2007-12-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-screen.c: Fix fade when a window is reparented
+
+2007-12-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-window.c: Fade: fix black screen
+
+2007-12-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: Restore orginal opacity when cancel animation
+
+2007-12-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-window.c: Use a better fade calculation in animation
+
+2007-12-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: Don't damage window on fade map, stop animation 
+	                           on map/unmap
+
+2007-12-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.h: 
+	* src/ccm-animation.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-screen.h: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: Add fade on destroy and create window
+
+2007-12-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm.h: Remove ccm_window_set_parent to manage event of child add 
+	             SubstructureNotifyMask
+
+2007-12-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-window.c: 
+	* src/ccm-window.h: Add frame extends support
+
+2007-12-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: 
+	* src/ccm-screen.h: Detect if an another composite manager run on startup
+
+2007-12-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/ccm-screen.c: Damage window in end of fade
+
+2007-12-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/Makefile.am: 
+	* src/ccm-window-glitz.c: 
+	* src/ccm-window.c: Implement CopySubBuffer in glitz backend.
+
+2007-11-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/cairo-compmgr.schemas.in: 
+	* src/ccm-extension-loader.c: 
+	* src/ccm-extension.c: 
+	* src/ccm-screen.c: 
+	* src/ccm-screen.h: 
+	* src/ccm-window-backend.c: 
+	* src/ccm-window-backend.h: 
+	* src/ccm-window.c: Add backend support per screen
+
+2007-11-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/Makefile.am: 
+	* plugins/freeze/Makefile.am: 
+	* plugins/opacity/Makefile.am: 
+	* plugins/shadow/Makefile.am: 
+	* po/Makefile.in.in: 
+	* src/Makefile.am: 
+	* src/ccm-drawable.c: 
+	* src/ccm-drawable.h: 
+	* src/ccm-screen.c: 
+	* src/ccm-window-glitz.c: 
+	* src/ccm-window-xrender.c: 
+	* src/ccm.h: Add ccm_drawable_swap_buffer_region interface, in glitz 
+	             backend swap region in xrender
+
+2007-11-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/Makefile.am: 
+	* plugins/freeze/Makefile.am: 
+	* plugins/opacity/Makefile.am: 
+	* plugins/shadow/Makefile.am: 
+	* src/Makefile.am: 
+	* src/ccm-screen.c: 
+	* src/ccm-window-glitz.c: Some small performance improvements and fix glitz 
+	                          visual detection.
+
+2007-11-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/cairo-compmgr.schemas.in: 
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/freeze/ccm-freeze.h: 
+	* plugins/freeze/ccm-freeze.schemas.in: 
+	* po/Makefile.in.in: Attempt to use compiz ping window method in freeze 
+	                     plugin. Disabled by default, don't provide good 
+	                     performance, we must try to ping window only in good 
+	                     place and made a timeout only if ping is send, and on 
+	                     pong receive we need to compare timestamp between send 
+	                     and receive.
+
+2007-11-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: 
+	* data/cairo-compmgr.schemas.in: 
+	* plugins/Makefile.am: 
+	* plugins/freeze/Makefile.am: 
+	* plugins/freeze/ccm-freeze.c: 
+	* plugins/freeze/ccm-freeze.h: 
+	* plugins/freeze/ccm-freeze.plugin.desktop.in: 
+	* plugins/freeze/ccm-freeze.schemas.in: 
+	* po/Makefile.in.in: 
+	* src/ccm-window-glitz.c: Add embrionic freeze plugin
+
+2007-11-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.schemas.in: 
+	* plugins/opacity/ccm-opacity.c: 
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-window-plugin.c: 
+	* src/ccm-window-plugin.h: 
+	* src/ccm-window.c: Add query_opacity plugin interface, stop fade if 
+	                    query_opacity. Set default duration fade at 0.3 seconds
+
+2007-11-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* src/Makefile.am: 
+	* src/ccm-animation.c: 
+	* src/ccm-animation.h: Merge from fade branch add ccm-animation object for 
+	                       manage effect progress
+
+2007-11-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.schemas.in: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: 
+	* src/ccm.h: 
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.schemas.in: 
+	* src/ccm-window.c: 
+	* plugins/fade/ccm-fade.c: 
+	* configure.ac: 
+	* plugins/Makefile.am: 
+	* plugins/fade/Makefile.am: 
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.h: 
+	* plugins/fade/ccm-fade.plugin.desktop.in: 
+	* plugins/fade/ccm-fade.schemas.in: Initial fade plugin
+
+2007-11-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: Damage screen on window destroy, don't map or unmap if 
+	                    window already in this state
+
+2007-11-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: Fix some glitches on open and close windows
+
+2007-11-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: Fix damage on open and close window
+
+2007-11-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: Fix damage on fade
+
+2007-11-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.schemas.in: 
+	* src/ccm-window.c: Use timer and timeout for animation
+
+2007-11-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c: Temporary commit fix some issue with fade
+
+2007-11-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: 
+	* plugins/Makefile.am: 
+	* plugins/fade/Makefile.am: 
+	* plugins/fade/ccm-fade.c: 
+	* plugins/fade/ccm-fade.h: 
+	* plugins/fade/ccm-fade.plugin.desktop.in: 
+	* plugins/fade/ccm-fade.schemas.in: Initial fade plugin
+
+2007-11-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: Require glitz  0.5.6
+
+2007-11-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: Don't add window on map, set parent on create notify
+
+2007-11-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: Disable for now remove window on reparent event
+
+2007-11-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: Rework of track damage : when a window is damaged 
+	                    consider three damage, window damage itself, the above 
+	                    window damage and below damage. First substract all 
+	                    opaque area of above window to all damage, next damage 
+	                    above window and below window. Suppress also all opaque 
+	                    area of fulscreen window. Its seem more CPU hangry but 
+	                    less artifact.
+
+2007-11-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm.h: Add missing ccm_window_is_decorated declaration
+
+2007-11-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: 
+	* src/ccm.h: Add ccm_window_is_decorated, don't shadow for normal window 
+	             without decoration
+
+2007-11-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: Bump version to 0.1.1
+
+============ Version 0.1.0
+2007-11-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: 
+	* src/ccm.h: state and fullscreen improvement need a rework in long term
+
+2007-11-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: Manage damage when we have a fullscreen window
+
+2007-11-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm.h: Set window parent on reparent event and propagate state of 
+	             child to parent
+
+2007-11-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-drawable.c: 
+	* src/ccm-window.c: 
+	* src/ccm.h: unset drawable geometry on window unmap
+
+2007-11-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: Destroy shadow surface on unmap
+
+2007-11-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-pixmap.c: 
+	* src/ccm-window-xrender.c: Fix a memory leak
+
+2007-11-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: Fix a small memory leak
+
+2007-11-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-region.c: Fix clipping area on shadow draw
+
+2007-11-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: Don't damage all above window if window is fully 
+	                    obscured
+
+2007-11-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-pixmap.c: Fix double free on visual
+
+2007-11-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: 
+	* po/Makefile.in.in: 
+	* src/Makefile.am: 
+	* src/cairo-compmgr.c: 
+	* src/ccm-extension.c: 
+	* src/ccm-window-backend.c: 
+	* src/ccm-window-backend.h: Add check backend conditional build
+
+2007-11-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c: 
+	* src/ccm-window.c: 
+	* src/ccm-window.h: 
+	* src/ccm.h: Add fullscreen check
+
+2007-11-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c: 
+	* src/ccm-screen.c: Fix shadow redraw for fullscreen windows
+
+2007-11-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: Fix intltool check
+

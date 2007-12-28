@@ -1,0 +1,34 @@
+Overview of Changes in Cairo Composite Manager 0.1.2
+====================================
+
+* Fix crash on plugin order (fix #04, #05)
+* Fix no shm mode
+* Animation enhancement
+* Fix configuration load and some default value
+* Sort extension to ensure they are in good place
+* Use region instead rectangle for damage
+* Fix freeze plugin and enable it by default
+* Add tray icon launcher
+* Add menu-animation plugin
+* Some performance improvements
+
+Overview of Changes in Cairo Composite Manager 0.1.1
+====================================
+
+* Don't shadow window without decoration
+* Rework of track damage
+* Add fade plugin
+* Fix some glitches on open and close windows
+* Add embrionic freeze plugin
+* Add backend support per screen
+* Implement CopySubBuffer in glitz backend.
+* Detect if an another composite manager run on startup
+* Add frame extends support
+* Add child window support
+* Some performance improvements
+
+Overview of Changes in Cairo Composite Manager 0.1.0
+====================================
+
+* First release!
+
