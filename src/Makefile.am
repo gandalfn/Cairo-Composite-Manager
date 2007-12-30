@@ -69,20 +69,22 @@ cairo_compmgr_SOURCES = \
 	ccm-pixmap-shm.h \
 	ccm-pixmap-shm.c \
 	ccm-pixmap-image.h \
-	ccm-pixmap-image.c \
-	ccm-pixmap-xrender.h \
-	ccm-pixmap-xrender.c
+	ccm-pixmap-image.c
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \
-	ccm-window-xrender.h \
+	ccm-pixmap-xrender.h \
+	ccm-pixmap-xrender.c \
+    ccm-window-xrender.h \
 	ccm-window-xrender.c
 endif
 
 if HAVE_GLITZ_BACKEND    
 cairo_compmgr_SOURCES += \
 	ccm-window-glitz.h \
-	ccm-window-glitz.c
+	ccm-window-glitz.c \
+    ccm-pixmap-glitz.h \
+	ccm-pixmap-glitz.c
 endif
 
 cairo_compmgr_LDFLAGS = -rdynamic

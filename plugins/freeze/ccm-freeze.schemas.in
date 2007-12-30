@@ -6,7 +6,7 @@
          <applyto>/apps/cairo-compmgr/default/freeze/delay</applyto>
          <owner>gnome</owner>
          <type>int</type>
-		 <default>3</default>
+		 <default>5</default>
          <locale name="C">
             <short>Freeze ping delay</short>
             <long>Freeze ping delay in seconds</long>

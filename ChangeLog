@@ -1,4 +1,15 @@
 2007-12-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * data/cairo-compmgr.schemas.in: fix type of native_pixmap_bind
+    * plugins/freeze/ccm-freeze.schemas.in: set default timeout of ping at 5s
+    * src/Makefile.am:
+    * src/ccm-pixmap-backend.h
+    * src/ccm-pixmap-glitz.c
+    * src/ccm-pixmap-glitz.h: Add glitz backend for pixmap, this backend needs
+                              some patch on glitz to work and specially my 
+                              current patch to add TFP support in glitz.
+
+2007-12-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
     * data/cairo-compmgr.schemas.in:
     * src/Makefile.am:
     * src/ccm-pixmap-backend.c:

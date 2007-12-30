@@ -23,8 +23,6 @@
 #ifndef _CCM_PIXMAP_BACKEND_H_
 #define _CCM_PIXMAP_BACKEND_H_
 
-#define DISABLE_GLITZ_BACKEND
-
 #include <glib-object.h>
 
 #include "ccm-screen.h"
