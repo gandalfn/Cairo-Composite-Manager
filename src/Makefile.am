@@ -63,7 +63,15 @@ cairo_compmgr_SOURCES = \
 	ccm-tray-menu.h \
 	ccm-tray-menu.c \
 	ccm-tray-icon.h \
-	ccm-tray-icon.c
+	ccm-tray-icon.c \
+	ccm-pixmap-backend.h \
+	ccm-pixmap-backend.c \
+	ccm-pixmap-shm.h \
+	ccm-pixmap-shm.c \
+	ccm-pixmap-image.h \
+	ccm-pixmap-image.c \
+	ccm-pixmap-xrender.h \
+	ccm-pixmap-xrender.c
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

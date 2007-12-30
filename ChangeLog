@@ -1,3 +1,22 @@
+2007-12-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
+    * data/cairo-compmgr.schemas.in:
+    * src/Makefile.am:
+    * src/ccm-pixmap-backend.c:
+    * src/ccm-pixmap-backend.h:
+    * src/ccm-pixmap-image.c:
+    * src/ccm-pixmap-image.h:
+    * src/ccm-pixmap-shm.c:
+    * src/ccm-pixmap-shm.h:
+    * src/ccm-pixmap-xrender.c:
+    * src/ccm-pixmap-xrender.h:
+    * src/ccm-pixmap.c:
+    * src/ccm-pixmap.h:
+    * src/ccm-screen.c:
+    * src/ccm-screen.h: First implementation of pixmap backends, we can use the
+                        native backend associated to window or shm/get_image 
+                        backend. For now only xrender native backend with no 
+                        damage repair zone a bit slow.
+
 2007-12-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* configure.ac: Bump version to 0.1.3

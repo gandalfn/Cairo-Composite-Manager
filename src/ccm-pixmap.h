@@ -41,14 +41,19 @@ G_BEGIN_DECLS
 struct _CCMPixmapClass
 {
 	CCMDrawableClass parent_class;
+	
+	void	(*bind) 	(CCMPixmap* self);
+	void	(*release) 	(CCMPixmap* self);
 };
 
 typedef struct _CCMPixmapPrivate CCMPixmapPrivate;
 
 struct _CCMPixmap
 {
-	CCMDrawable parent_instance;
-	CCMPixmapPrivate* priv;
+	CCMDrawable 		parent_instance;
+	
+	CCMWindow*			window;
+	CCMPixmapPrivate* 	priv;
 };
 
 GType 				ccm_pixmap_get_type 	(void) G_GNUC_CONST;
