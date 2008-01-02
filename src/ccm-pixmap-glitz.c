@@ -103,7 +103,6 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 				CCM_DISPLAY_XDISPLAY(display),
 				screen->number,
 				DefaultVisualOfScreen(CCM_SCREEN_XSCREEN(screen))->visualid);
-		
 		if (!format)
 		{
 			g_warning("Error on get glitz format drawable");
@@ -114,7 +113,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 											CCM_DISPLAY_XDISPLAY(display),
 											screen->number,
 											format,
-											CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
+											CCM_WINDOW_XWINDOW(ccm_screen_get_root_window (screen)),
 											CCM_PIXMAP_XPIXMAP(self),
 											geometry.width, geometry.height);
 		if (!self->priv->gl_drawable)
@@ -167,7 +166,7 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 			
 			glitz_surface_attach (self->priv->gl_surface,
 								  self->priv->gl_drawable,
-								  GLITZ_DRAWABLE_BUFFER_FRONT_COLOR);
+								  GLITZ_DRAWABLE_BUFFER_BACK_COLOR);
 		}
 	}
 }
@@ -179,29 +178,22 @@ ccm_pixmap_glitz_repair (CCMDrawable* drawable, CCMRegion* area)
 	g_return_if_fail(area != NULL);
 	
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(drawable);
-	CCMScreen* screen = ccm_drawable_get_screen (drawable);
-	cairo_rectangle_t clipbox;
-	glitz_box_t box;
-	int screen_width = CCM_SCREEN_XSCREEN(screen)->width;
-	int screen_height = CCM_SCREEN_XSCREEN(screen)->height;
+	cairo_rectangle_t* rects;
+	gint nb_rects, cpt;
 	
-	ccm_region_get_clipbox (area, &clipbox);
-	box.x1 = clipbox.x;
-	box.y1 = clipbox.y;
-	box.x2 = clipbox.x + clipbox.width;
-	box.y2 = clipbox.y + clipbox.height;
+	ccm_region_get_rectangles (area, &rects, &nb_rects);
+	for (cpt = 0; cpt < nb_rects; cpt++)
+	{
+		glitz_box_t box;
+		
+		box.x1 = rects[cpt].x;
+		box.y1 = rects[cpt].y;
+		box.x2 = rects[cpt].x + rects[cpt].width;
+		box.y2 = rects[cpt].y + rects[cpt].height;
 	
-	box.x1 = box.x1 < 0 ? 0 : box.x1;
-	box.x1 = box.x1 > screen_width ? screen_width : box.x1;
-	box.x2 = box.x2 < 0 ? 0 : box.x2;
-	box.x2 = box.x2 > screen_width ? screen_width : box.x2;
-	box.y1 = box.y1 < 0 ? 0 : box.y1;
-	box.y1 = box.y1 > screen_height ? screen_height : box.y1;
-	box.y2 = box.y2 < 0 ? 0 : box.y2;
-	box.y2 = box.y2 > screen_height ? screen_height : box.y2;
-	
-	glitz_surface_damage (self->priv->gl_surface, &box, 
-						  GLITZ_DAMAGE_TEXTURE_MASK);
+		glitz_surface_damage (self->priv->gl_surface, &box, 
+							  GLITZ_DAMAGE_TEXTURE_MASK);
+	}
 }
 
 static cairo_surface_t*

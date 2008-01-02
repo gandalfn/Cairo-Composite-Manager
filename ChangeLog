@@ -1,3 +1,8 @@
+2008-01-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-glitz.c: Damage all rectangles of texture
+    * src/ccm-window-glitz.c: Remove make_current and get_context not needed
+
 2007-12-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * data/cairo-compmgr.schemas.in: fix type of native_pixmap_bind

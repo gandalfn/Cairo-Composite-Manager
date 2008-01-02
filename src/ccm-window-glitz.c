@@ -38,7 +38,6 @@ struct _CCMWindowGlitzPrivate
 	glitz_drawable_t*   gl_drawable;
 	glitz_format_t*		gl_format;
 	glitz_surface_t*	gl_surface;
-	glitz_context_t*	gl_context;
 };
 
 #define CCM_WINDOW_GLITZ_GET_PRIVATE(o)  \
@@ -57,7 +56,6 @@ ccm_window_glitz_init (CCMWindowGlitz *self)
 	self->priv->gl_drawable = NULL;
 	self->priv->gl_format = NULL;
 	self->priv->gl_surface = NULL;
-	self->priv->gl_context = NULL;
 }
 
 static void
@@ -67,7 +65,6 @@ ccm_window_glitz_finalize (GObject *object)
 	
 	if (self->priv->gl_drawable) glitz_drawable_destroy(self->priv->gl_drawable);
 	if (self->priv->gl_surface) glitz_surface_destroy(self->priv->gl_surface);
-	if (self->priv->gl_context) glitz_context_destroy(self->priv->gl_context);
 
 	G_OBJECT_CLASS (ccm_window_glitz_parent_class)->finalize (object);
 }
@@ -217,54 +214,6 @@ ccm_window_glitz_get_visual(CCMDrawable* drawable)
 	return visual;
 }
 
-static gboolean
-ccm_window_glitz_get_gl_context(CCMWindowGlitz* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	if (!self->priv->gl_context)
-	{
-		self->priv->gl_context = 
-		   glitz_context_create(self->priv->gl_drawable,
-							glitz_drawable_get_format(self->priv->gl_drawable));
-	}
-	
-	return self->priv->gl_context != NULL;
-}
-
-/*typedef int (*GLXGetVideoSyncProc)  (unsigned int *count);
-typedef int (*GLXWaitVideoSyncProc) (int	  divisor,
-									 int	  remainder,
-									 unsigned int *count);
-
-static void
-ccm_window_glitz_wait_vblank(CCMWindowGlitz* self)
-{
-	g_return_if_fail(self != NULL);
-	
-	if (ccm_window_glitz_get_gl_context(self))
-	{
-		static GLXGetVideoSyncProc g = NULL;
-		static GLXWaitVideoSyncProc w = NULL;
-		unsigned int sync;
-	
-		if (!g) 
-			g = (GLXGetVideoSyncProc)
-				glitz_context_get_proc_address(self->priv->gl_context,
-											   "glXGetVideoSyncSGI");
-		if (!w)
-			w = (GLXWaitVideoSyncProc)
-				glitz_context_get_proc_address(self->priv->gl_context,
-											   "glXWaitVideoSyncSGI");
-	
-		if (w && g)
-		{
-			(*g) (&sync);
-			(*w) (2, (sync + 1) % 2, &sync);
-		}
-	}
-}*/
-
 typedef void (*glXSwapIntervalSGIProc) (int);
 typedef void (*glXSwapIntervalMESAProc) (int);
 typedef void (*glXCopySubBufferMESAProc) (Display*, Drawable, 
@@ -277,14 +226,11 @@ ccm_window_glitz_vsync(CCMWindowGlitz* self, gint interval)
 	static int initialized = 0;
 	static gboolean supported = TRUE;
 	
-	if (supported && initialized != interval && ccm_window_glitz_get_gl_context(self))
+	if (supported && initialized != interval)
 	{
 		glXSwapIntervalSGIProc s = NULL;	
 		glXSwapIntervalMESAProc m = NULL;
 
-		glitz_context_make_current(self->priv->gl_context,
-								   self->priv->gl_drawable);
-		
 		s = (glXSwapIntervalSGIProc)
 			glXGetProcAddress((const guchar*)"glXSwapIntervalSGI");
 		if (s) 
