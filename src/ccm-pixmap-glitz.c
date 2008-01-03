@@ -91,18 +91,20 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	glitz_drawable_format_t* format = NULL;
-	cairo_rectangle_t geometry;
 	
 	if (!self->priv->gl_drawable)
 	{
 		glitz_format_t templ;
-				
-		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
+		XWindowAttributes attribs;
+		
+		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+							  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
+							  &attribs);
 		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
 				screen->number,
-				DefaultVisualOfScreen(CCM_SCREEN_XSCREEN(screen))->visualid);
+				XVisualIDFromVisual (attribs.visual));
 		if (!format)
 		{
 			g_warning("Error on get glitz format drawable");
@@ -113,9 +115,9 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 											CCM_DISPLAY_XDISPLAY(display),
 											screen->number,
 											format,
-											CCM_WINDOW_XWINDOW(ccm_screen_get_root_window (screen)),
+											CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
 											CCM_PIXMAP_XPIXMAP(self),
-											geometry.width, geometry.height);
+											attribs.width, attribs.height);
 		if (!self->priv->gl_drawable)
 		{
 			g_warning("Error on create glitz drawable");
@@ -163,10 +165,9 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 											0, NULL);
 		if (self->priv->gl_surface)
 		{
-			
 			glitz_surface_attach (self->priv->gl_surface,
 								  self->priv->gl_drawable,
-								  GLITZ_DRAWABLE_BUFFER_BACK_COLOR);
+								  GLITZ_DRAWABLE_BUFFER_FRONT_COLOR);
 		}
 	}
 }

@@ -97,13 +97,17 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 	if (!self->priv->gl_drawable)
 	{
 		glitz_format_t templ;
-				
+		XWindowAttributes attribs;
+		
+		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+							  CCM_WINDOW_XWINDOW(self),
+							  &attribs);	
 		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
 		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
 				screen->number,
-				DefaultVisualOfScreen(CCM_SCREEN_XSCREEN(screen))->visualid);
+				XVisualIDFromVisual (attribs.visual));
 		
 		if (!format)
 		{

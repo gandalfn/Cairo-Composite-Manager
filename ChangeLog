@@ -1,3 +1,8 @@
+2008-01-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-glitz.c:
+    * src/ccm-window-glitz.c: Use window visual to determine glitz format
+
 2008-01-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-glitz.c: Damage all rectangles of texture
