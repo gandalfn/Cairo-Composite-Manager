@@ -69,12 +69,26 @@ PKG_CHECK_MODULES(CCM_GLITZ_BACKEND,
 AC_SUBST(CCM_GLITZ_BACKEND_CFLAGS)
 AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
 
+AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
+
+if [ test x$glitzbackend = xyes ]; then
+    cflags_save=$CFLAGS 
+    libs_save=$LIBS 
+    CFLAGS="$CFLAGS $CCM_GLITZ_BACKEND_CFLAGS" 
+    LIBS="$LIBS $CCM_GLITZ_BACKEND_LIBS" 
+    AC_CHECK_FUNC(glitz_glx_create_drawable_for_pixmap, 
+                  [glitztfpbackend="yes"],
+                  [glitztfpbackend="no"])
+    CFLAGS=$cflags_save 
+ 	LIBS=$libs_save 
+    AM_CONDITIONAL(HAVE_GLITZ_TFP_BACKEND, [test x$glitztfpbackend = xyes])
+fi                  
+
 AC_CHECK_LIB(m, round, [M_LIBS="-lm"], AC_MSG_ERROR([libm is required to
 build cairo-compmgr. This lib comes with GNU C libraries (glibc) and you can
 find the lastest version from http://www.gnu.org/software/libc/]))
 AC_SUBST(M_LIBS)
 
-AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 
 AC_OUTPUT([
 Makefile
@@ -102,4 +116,10 @@ if [ test x$glitzbackend = xyes ]; then
         echo "Building Glitz backend: .....................YES"
 else
         echo "Building Glitz backend: .....................NO"
+fi
+
+if [ test x$glitztfpbackend = xyes ]; then
+        echo "Building Glitz TFP backend: .................YES"
+else
+        echo "Building Glitz TFP backend: .................NO"
 fi

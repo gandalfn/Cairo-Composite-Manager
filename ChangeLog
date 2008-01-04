@@ -1,5 +1,14 @@
 2008-01-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * configure.ac:
+    * src/Makefile.am:
+    * src/ccm-pixmap-backend.c:
+    * src/ccm-pixmap-backend.h:
+    * src/ccm-window-glitz.c: Check if glitz TFP support is enabled else 
+                              disable pixmap glitz backend
+
+2008-01-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/ccm-pixmap-glitz.c: 
     * src/ccm-window-glitz.c: Use the real geometry of window to create glitz
                               drawable and surface. Set indirect mode with

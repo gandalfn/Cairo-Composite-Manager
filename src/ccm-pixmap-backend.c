@@ -45,7 +45,7 @@ ccm_pixmap_backend_get_type(CCMScreen* screen)
 		if (!g_ascii_strcasecmp(backend, "xrender"))
 			type = ccm_pixmap_xrender_get_type();
 #endif
-#ifndef DISABLE_GLITZ_BACKEND
+#ifdef ENABLE_GLITZ_TFP_BACKEND
 		if (!g_ascii_strcasecmp(backend, "glitz"))
 			type = ccm_pixmap_glitz_get_type();
 #endif

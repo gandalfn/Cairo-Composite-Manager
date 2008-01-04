@@ -18,6 +18,10 @@ else
 INCLUDES += -DDISABLE_GLITZ_BACKEND
 endif
 
+if HAVE_GLITZ_TFP_BACKEND
+INCLUDES += -DENABLE_GLITZ_TFP_BACKEND
+endif
+
 AM_CFLAGS =\
      -O2 \
      -Wall \
@@ -82,8 +86,12 @@ endif
 if HAVE_GLITZ_BACKEND    
 cairo_compmgr_SOURCES += \
 	ccm-window-glitz.h \
-	ccm-window-glitz.c \
-    ccm-pixmap-glitz.h \
+	ccm-window-glitz.c
+endif
+
+if HAVE_GLITZ_TFP_BACKEND    
+cairo_compmgr_SOURCES += \
+	ccm-pixmap-glitz.h \
 	ccm-pixmap-glitz.c
 endif
 

@@ -27,7 +27,7 @@
 
 #include "ccm-screen.h"
 
-#ifndef DISABLE_GLITZ_BACKEND
+#ifdef ENABLE_GLITZ_TFP_BACKEND
 #include "ccm-pixmap-glitz.h"
 #endif
 
@@ -54,7 +54,7 @@ union _CCMPixmapBackendClass
 {
 	CCMPixmapShmClass		shm_class;
 	CCMPixmapImageClass		image_class;
-#ifndef DISABLE_GLITZ_BACKEND
+#ifdef ENABLE_GLITZ_TFP_BACKEND
 	CCMPixmapGlitzClass 	glitz_class;
 #endif
 #ifndef DISABLE_XRENDER_BACKEND
@@ -66,7 +66,7 @@ union _CCMPixmapBackend
 {
 	CCMPixmapShm			shm;
 	CCMPixmapImage			image;
-#ifndef DISABLE_GLITZ_BACKEND
+#ifdef ENABLE_GLITZ_TFP_BACKEND
 	CCMPixmapGlitz 			glitz;
 #endif
 #ifndef DISABLE_XRENDER_BACKEND
