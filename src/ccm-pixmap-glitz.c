@@ -111,6 +111,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 			return FALSE;
 		}
 		
+		format->indirect = TRUE;
 		self->priv->gl_drawable = glitz_glx_create_drawable_for_pixmap (
 											CCM_DISPLAY_XDISPLAY(display),
 											screen->number,
@@ -150,18 +151,21 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 	g_return_if_fail(pixmap != NULL);
 	
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(pixmap);
-	cairo_rectangle_t geometry;
+	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 		
 	if (!self->priv->gl_surface && 
 		ccm_pixmap_glitz_create_gl_drawable(self))
 	{
-		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(CCM_PIXMAP(self)->window), 
-										  &geometry);
+		XWindowAttributes attribs;
+		
+		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+							  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
+							  &attribs);
 		
 		self->priv->gl_surface = glitz_surface_create(
 											self->priv->gl_drawable,
 											self->priv->gl_format,
-											geometry.width, geometry.height,
+											attribs.width, attribs.height,
 											0, NULL);
 		if (self->priv->gl_surface)
 		{

@@ -92,7 +92,6 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	glitz_drawable_format_t* format = NULL;
-	cairo_rectangle_t geometry;
 	
 	if (!self->priv->gl_drawable)
 	{
@@ -102,7 +101,6 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
 							  CCM_WINDOW_XWINDOW(self),
 							  &attribs);	
-		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
 		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
@@ -115,12 +113,13 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 			return FALSE;
 		}
 		
+		format->indirect = _ccm_screen_native_pixmap_bind(screen);
 		self->priv->gl_drawable = glitz_glx_create_drawable_for_window(
 											CCM_DISPLAY_XDISPLAY(display),
 											screen->number,
 											format,
 											CCM_WINDOW_XWINDOW(self),
-											geometry.width, geometry.height);
+											attribs.width, attribs.height);
 		if (!self->priv->gl_drawable)
 		{
 			g_warning("Error on create glitz drawable");
@@ -152,17 +151,21 @@ ccm_window_glitz_create_gl_surface(CCMWindowGlitz* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	cairo_rectangle_t geometry;
+	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 		
 	if (!self->priv->gl_surface && 
 		ccm_window_glitz_create_gl_drawable(self))
 	{
-		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
+		XWindowAttributes attribs;
+		
+		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+							  CCM_WINDOW_XWINDOW(self),
+							  &attribs);
 		
 		self->priv->gl_surface = glitz_surface_create(
 											self->priv->gl_drawable,
 											self->priv->gl_format,
-											geometry.width, geometry.height,
+											attribs.width, attribs.height,
 											0, NULL);
 		if (self->priv->gl_surface)
 		{

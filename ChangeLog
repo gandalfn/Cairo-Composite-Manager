@@ -1,3 +1,10 @@
+2008-01-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-glitz.c: 
+    * src/ccm-window-glitz.c: Use the real geometry of window to create glitz
+                              drawable and surface. Set indirect mode with
+                              glitz_drawable_format_t
+
 2008-01-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-glitz.c:
