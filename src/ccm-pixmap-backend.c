@@ -31,16 +31,26 @@ ccm_pixmap_backend_get_type(CCMScreen* screen)
 	CCMDisplay* display = ccm_screen_get_display (screen);
 	
 	if (_ccm_display_use_xshm (display))
-		type = ccm_pixmap_shm_get_type();
+	{
+		if (_ccm_display_use_buffered (display))
+			type = ccm_pixmap_buffered_shm_get_type();
+		else
+			type = ccm_pixmap_shm_get_type();
+	}
 	else
-		type = ccm_pixmap_image_get_type();
+	{
+		if (_ccm_display_use_buffered (display))
+			type = ccm_pixmap_buffered_image_get_type();
+		else
+			type = ccm_pixmap_image_get_type();
+	}
 	
 	if (_ccm_screen_native_pixmap_bind(screen))
 	{
 		gchar* backend;
 	
 		backend = _ccm_screen_get_window_backend(screen);
-		
+
 #ifndef DISABLE_XRENDER_BACKEND
 		if (!g_ascii_strcasecmp(backend, "xrender"))
 			type = ccm_pixmap_xrender_get_type();

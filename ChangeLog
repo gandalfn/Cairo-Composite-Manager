@@ -1,3 +1,30 @@
+2008-01-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
+    
+    * configure.ac:
+    * data/Makefile.am:
+    * data/cairo-compmgr.desktop.in.in: Add desktop entry.
+    
+    * plugins/shadow/ccm-shadow.c: Use similar surface than window instead
+                                   create an image surface.
+    
+    * src/ccm-drawable.c: Suppress damaged zone outside drawable geometry.
+    
+    * data/cairo-compmgr.schemas.in:
+    * src/ccm-display.c:
+    * src/ccm-display.h: Add use_buffered_pixmap option
+    
+    * src/ccm-window.c: Don't clip geometry made on damage.
+    
+    * src/Makefile.am:
+    * src/ccm-pixmap-backend.c:
+    * src/ccm-pixmap-backend.h:
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-buffered-image.h:
+    * src/ccm-pixmap-buffered-shm.c:
+    * src/ccm-pixmap-buffered-shm.h:
+    * src/ccm-pixmap-image.c:
+    * src/ccm-pixmap-shm.c: Add buffered pixmap surface support.
+
 2008-01-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * configure.ac:

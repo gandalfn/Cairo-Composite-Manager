@@ -72,8 +72,12 @@ cairo_compmgr_SOURCES = \
 	ccm-pixmap-backend.c \
 	ccm-pixmap-shm.h \
 	ccm-pixmap-shm.c \
+    ccm-pixmap-buffered-shm.h \
+	ccm-pixmap-buffered-shm.c \
 	ccm-pixmap-image.h \
-	ccm-pixmap-image.c
+	ccm-pixmap-image.c \
+    ccm-pixmap-buffered-image.h \
+	ccm-pixmap-buffered-image.c
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

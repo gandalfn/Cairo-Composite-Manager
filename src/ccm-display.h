@@ -63,6 +63,7 @@ struct _CCMDisplay
 
 GType 		ccm_display_get_type 			(void) G_GNUC_CONST;
 gboolean	_ccm_display_use_xshm			(CCMDisplay* self);
+gboolean	_ccm_display_use_buffered		(CCMDisplay* self);
 void 		_ccm_display_register_damage    (CCMDisplay* self, XID damage, 
 											 CCMDamageFunc func, gpointer data);
 void  		_ccm_display_unregister_damage 	(CCMDisplay* self, XID damage); 

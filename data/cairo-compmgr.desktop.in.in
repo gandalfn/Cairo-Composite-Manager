@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+_Name=Cairo Composite Manager
+_Comment=Cairo Composite Manager
+Exec=cairo-compmgr
+Icon=@prefix@/share/pixmaps/cairo-compmgr/cairo-compmgr.png
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=GNOME;GTK;Applications;System;

@@ -36,6 +36,8 @@ struct _CCMPixmapImagePrivate
 	XImage* 			image;
 	Pixmap 				pixmap;
 	GC 					gc;
+	int 				width;
+	int 				height;
 };
 
 #define CCM_PIXMAP_IMAGE_GET_PRIVATE(o) \
@@ -85,12 +87,13 @@ ccm_pixmap_image_bind (CCMPixmap* pixmap)
 	
 	CCMPixmapImage* self = CCM_PIXMAP_IMAGE(pixmap);
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-	Visual* visual = ccm_drawable_get_visual(CCM_DRAWABLE(CCM_PIXMAP(self)->window));
-	cairo_rectangle_t geometry;
 	XGCValues gcv;
+	XWindowAttributes attribs;
+		
+	XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+						  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
+						  &attribs);
 	
-	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(CCM_PIXMAP(self)->window), &geometry);
-
 	gcv.graphics_exposures = FALSE;
 	gcv.subwindow_mode = IncludeInferiors;
 
@@ -101,11 +104,11 @@ ccm_pixmap_image_bind (CCMPixmap* pixmap)
 	
 	self->priv->pixmap = XCreatePixmap(CCM_DISPLAY_XDISPLAY(display),
 									   CCM_PIXMAP_XPIXMAP(self),
-									   (int)geometry.width, 
-									   (int)geometry.height,
+									   attribs.width, 
+									   attribs.height,
 									   ccm_window_get_depth(CCM_PIXMAP(self)->window));
-	
-	if (visual) XFree(visual);
+	self->priv->width = attribs.width;
+	self->priv->height = attribs.height;
 }
 
 static void
@@ -157,29 +160,25 @@ ccm_pixmap_image_get_surface (CCMDrawable* drawable)
 	
 	CCMPixmapImage *self = CCM_PIXMAP_IMAGE(drawable);
 	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(CCM_PIXMAP(self)->window));
-	cairo_rectangle_t geometry;
 	cairo_surface_t* surface = NULL;
 	
-	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(CCM_PIXMAP(self)->window), 
-										  &geometry))
-	{
-		if (CCM_PIXMAP(self)->window->is_viewable)
-			ccm_drawable_repair(CCM_DRAWABLE(self));
+	if (CCM_PIXMAP(self)->window->is_viewable)
+		ccm_drawable_repair(CCM_DRAWABLE(self));
 		
-		if (self->priv->image) XDestroyImage(self->priv->image);
-		self->priv->image = XGetImage (CCM_DISPLAY_XDISPLAY(display),
-									   self->priv->pixmap, 0, 0, 
-									   (int)geometry.width, 
-									   (int)geometry.height, 
-									   AllPlanes, ZPixmap);
+	if (self->priv->image) XDestroyImage(self->priv->image);
+	self->priv->image = XGetImage (CCM_DISPLAY_XDISPLAY(display),
+								   self->priv->pixmap, 0, 0, 
+								   self->priv->width, 
+								   self->priv->height, 
+								   AllPlanes, ZPixmap);
 		
-		surface = cairo_image_surface_create_for_data(
+	surface = cairo_image_surface_create_for_data(
 									(unsigned char *)self->priv->image->data, 
 									ccm_window_get_format(CCM_PIXMAP(self)->window),
-									(int)geometry.width, 
-									(int)geometry.height, 
-									self->priv->image->bytes_per_line);
-	}
+									self->priv->width, 
+								    self->priv->height, 
+								    self->priv->image->bytes_per_line);
+	
 	return surface;
 }
 

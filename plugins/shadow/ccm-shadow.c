@@ -91,11 +91,12 @@ ccm_shadow_class_init (CCMShadowClass *klass)
 }
 
 static void
-create_shadow(CCMShadow* self,int width, int height)
+create_shadow(CCMShadow* self,CCMWindow* window, int width, int height)
 {
 	cairo_t* cr;
 	cairo_pattern_t *shadow;
 	int border, offset;
+	cairo_surface_t* surface = ccm_drawable_get_surface (CCM_DRAWABLE(window));
 	
 	if (self->priv->shadow)
 		cairo_surface_destroy(self->priv->shadow);
@@ -103,8 +104,8 @@ create_shadow(CCMShadow* self,int width, int height)
 	border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 	offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
 	
-	self->priv->shadow = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 
-													width, height);
+	self->priv->shadow = cairo_surface_create_similar (surface, CAIRO_CONTENT_COLOR_ALPHA, 
+													   width, height);
 	
     cr = cairo_create(self->priv->shadow);
 	
@@ -202,7 +203,7 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 		ccm_region_get_clipbox(geometry, &area);
 		area.width += border;
 		area.height += border;
-		create_shadow(self, area.width, area.height);
+		create_shadow(self, window, area.width, area.height);
 		ccm_region_resize(geometry, area.width, area.height);
 		self->priv->shadow_region = ccm_region_copy(geometry);
 		ccm_region_subtract (self->priv->shadow_region, self->priv->geometry);

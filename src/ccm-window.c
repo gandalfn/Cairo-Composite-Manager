@@ -1091,27 +1091,25 @@ ccm_window_paint (CCMWindow* self, cairo_t* context)
 	gboolean ret = FALSE;
 	
 	cairo_path_t* damaged;
-	
+			
 	if (!self->is_viewable && !self->priv->unmap_pending)
 		return ret;
 	
 	cairo_save(context);
 	cairo_reset_clip (context);
+			
 	damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(self), context);
+	cairo_clip(context);
+	
 	if (damaged)
 	{
 		CCMPixmap* pixmap = ccm_window_get_pixmap(self);
 		if (pixmap)
 		{
-			cairo_surface_t* surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
-			cairo_path_t* geometry;
-			
-			cairo_clip(context);
-			
-			geometry = ccm_drawable_get_geometry_path (CCM_DRAWABLE(self), context);
-			cairo_clip(context);
-			cairo_path_destroy (geometry);
-			
+			cairo_surface_t* surface;
+				
+			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
+				
 			if (surface)
 			{
 				ret = ccm_window_plugin_paint(self->priv->plugin, self, 

@@ -101,6 +101,7 @@ plugins/fade/Makefile
 plugins/freeze/Makefile
 plugins/menu-animation/Makefile
 data/Makefile
+data/cairo-compmgr.desktop.in
 ])
 echo " "
 echo "-------------------------------------------------------------------"

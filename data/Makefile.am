@@ -23,6 +23,17 @@ else
 install-data-local:
 endif
 
-EXTRA_DIST = $(schemas_in_files) \
+@INTLTOOL_DESKTOP_RULE@
+
+DESKTOP_IN_FILES = cairo-compmgr.desktop.in
+DESKTOP_FILES =$(DESKTOP_IN_FILES:.desktop.in=.desktop)
+
+desktopdir = $(datadir)/applications
+desktop_DATA = $(DESKTOP_FILES)
+
+EXTRA_DIST = cairo-compmgr.desktop.in \
+             $(schemas_in_files) \
 			 $(pixmaps_DATA)
 
+CLEANFILES = $(schemas_in_files) \
+             $(DESKTOP_FILES)

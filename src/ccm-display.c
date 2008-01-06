@@ -38,12 +38,14 @@ G_DEFINE_TYPE (CCMDisplay, ccm_display, G_TYPE_OBJECT);
 enum
 {
 	CCM_DISPLAY_OPTION_USE_XSHM,
+	CCM_DISPLAY_OPTION_USE_BUFFERED,
 	CCM_DISPLAY_UNMANAGED_SCREEN,
 	CCM_DISPLAY_OPTION_N
 };
 
 static gchar* CCMDisplayOptions[CCM_DISPLAY_OPTION_N] = {
 	"use_xshm",
+	"use_buffered_pixmap",
 	"unmanaged_screen"
 };
 
@@ -304,6 +306,14 @@ _ccm_display_use_xshm(CCMDisplay* self)
 	
 	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
 		   self->priv->shm.available;
+}
+
+gboolean
+_ccm_display_use_buffered(CCMDisplay* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_BUFFERED]);
 }
 
 void

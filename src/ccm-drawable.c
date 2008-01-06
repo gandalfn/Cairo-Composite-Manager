@@ -526,6 +526,13 @@ ccm_drawable_damage_region(CCMDrawable* self, CCMRegion* area)
 		else
 			self->priv->damaged = ccm_region_copy(area);
 		
+		if (self->priv->geometry)
+			 ccm_region_intersect (self->priv->damaged, self->priv->geometry);
+		if (!self->priv->geometry || ccm_region_empty(self->priv->damaged))
+		{
+			ccm_region_destroy (self->priv->damaged);
+			self->priv->damaged = NULL;
+		}
 		g_signal_emit(self, signals[DAMAGED], 0, area);
 	 }
 }
