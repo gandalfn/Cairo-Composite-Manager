@@ -121,6 +121,7 @@ ccm_pixmap_buffered_shm_sync(CCMPixmapBufferedShm* self, cairo_surface_t* surfac
 				self->priv->surface = cairo_surface_create_similar (target, 
 													CAIRO_CONTENT_COLOR_ALPHA,
 													width, height);
+				cairo_surface_destroy (target);
 			}
 		}
 		if (self->priv->surface)

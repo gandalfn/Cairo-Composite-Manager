@@ -1,4 +1,12 @@
 2008-01-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * data/Makefile.am: Fix schemas clean rules
+    
+    * plugins/shadow/ccm-shadow.c:
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-buffered-shm.c: Fixes memory leaks
+
+2008-01-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
     
     * configure.ac:
     * data/Makefile.am:

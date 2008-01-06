@@ -106,6 +106,7 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height)
 	
 	self->priv->shadow = cairo_surface_create_similar (surface, CAIRO_CONTENT_COLOR_ALPHA, 
 													   width, height);
+	cairo_surface_destroy (surface);
 	
     cr = cairo_create(self->priv->shadow);
 	

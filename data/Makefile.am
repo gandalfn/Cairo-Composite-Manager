@@ -35,5 +35,5 @@ EXTRA_DIST = cairo-compmgr.desktop.in \
              $(schemas_in_files) \
 			 $(pixmaps_DATA)
 
-CLEANFILES = $(schemas_in_files) \
+CLEANFILES = $(schemas_DATA) \
              $(DESKTOP_FILES)
