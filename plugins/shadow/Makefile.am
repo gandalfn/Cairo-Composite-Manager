@@ -7,9 +7,13 @@ INCLUDES = \
 	-DPACKAGE_DATA_DIR=\""$(datadir)"\" $(CAIRO_COMPMGR_CFLAGS)
 
 AM_CFLAGS =\
-     -O2 \
-     -Wall \
-	 -fPIC
+      -O3 \
+      -Wall \
+ 	  -fPIC \
+      -ftracer \
+      -fomit-frame-pointer \
+      -ffast-math \
+      -fno-strict-aliasing
 	 
 plugindir = $(libdir)/cairo-compmgr
 
@@ -47,3 +51,6 @@ endif
 EXTRA_DIST = $(schemas_in_files) \
 			 $(plugin_DATA) \
 			 $(plugin_in_files)
+
+CLEAN_FILES = $(schemas_DATA) \
+              $(plugin_DATA)

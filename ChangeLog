@@ -1,5 +1,15 @@
 2008-01-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * plugins/fade/Makefile.am:
+    * plugins/freeze/Makefile.am:
+    * plugins/menu-animation/Makefile.am:
+    * plugins/opacity/Makefile.am:
+    * plugins/shadow/Makefile.am:
+    * src/Makefile.am: Use O3 compilation optimisation, can improve 
+                       ccm_drawable_get_damage_path.
+
+2008-01-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * data/Makefile.am: Fix schemas clean rules
     
     * plugins/shadow/ccm-shadow.c:

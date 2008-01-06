@@ -23,9 +23,13 @@ INCLUDES += -DENABLE_GLITZ_TFP_BACKEND
 endif
 
 AM_CFLAGS =\
-     -O2 \
-     -Wall \
-	 -fPIC
+      -O3 \
+      -Wall \
+ 	  -fPIC \
+      -ftracer \
+      -fomit-frame-pointer \
+      -ffast-math \
+      -fno-strict-aliasing
 
 bin_PROGRAMS = cairo-compmgr
 
