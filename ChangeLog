@@ -1,3 +1,12 @@
+2008-01-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-region.c:
+    * src/ccm.h: Add ccm_region_get_xrectangles function
+    
+    * src/ccm-pixmap-image.c:
+    * src/ccm-pixmap-shm.c: Use XFixesSetGCClipRegion instead copy all damaged
+                            rectangles
+
 2008-01-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/fade/Makefile.am:

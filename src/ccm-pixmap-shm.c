@@ -160,20 +160,23 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 	
 	CCMPixmapShm* self = CCM_PIXMAP_SHM(drawable);
 	CCMDisplay* display = ccm_drawable_get_display(drawable);
-	cairo_rectangle_t* rects;
-	gint nb_rects, cpt;
+	XRectangle* rects;
+	gint nb_rects;
+	XserverRegion region;
 	
-	ccm_region_get_rectangles (area, &rects, &nb_rects);
-	for (cpt = 0; cpt < nb_rects; cpt++)
-	{
-		XCopyArea(CCM_DISPLAY_XDISPLAY(display),
+	ccm_region_get_xrectangles (area, &rects, &nb_rects);
+	region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY(display), rects, nb_rects);
+	g_free(rects);
+	
+	XFixesSetGCClipRegion(CCM_DISPLAY_XDISPLAY (display), self->priv->gc,
+						  0, 0, region);
+	XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY (display), region);
+	
+	XCopyArea(CCM_DISPLAY_XDISPLAY(display),
 			  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
 			  self->priv->gc, 
-			  (int)rects[cpt].x, (int)rects[cpt].y, 
-			  (int)rects[cpt].width, (int)rects[cpt].height, 
-			  (int)rects[cpt].x, (int)rects[cpt].y);
-	}
-	g_free(rects);
+			  0, 0, self->priv->image->width, self->priv->image->height, 0, 0);
+	
 	ccm_display_sync(display);
 }
 

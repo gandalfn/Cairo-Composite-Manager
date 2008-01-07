@@ -107,6 +107,9 @@ void          	ccm_region_get_clipbox     (CCMRegion     *region,
 void         	ccm_region_get_rectangles  (CCMRegion     *region,
 											cairo_rectangle_t **rectangles,
 											gint         *n_rectangles);
+void            ccm_region_get_xrectangles (CCMRegion     *region,
+                                            XRectangle **rectangles,
+                                            gint          *n_rectangles);
 gboolean      	ccm_region_empty           (CCMRegion     *region);
 gboolean      	ccm_region_equal           (CCMRegion     *region1,
 											CCMRegion     *region2);
