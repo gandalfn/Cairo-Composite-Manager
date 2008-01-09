@@ -115,9 +115,17 @@ ccm_pixmap_buffered_image_sync(CCMPixmapBufferedImage* self, cairo_surface_t* su
 				
 			if (target)
 			{
+				cairo_content_t content;
+				
+				if (ccm_window_get_format(CCM_PIXMAP(self)->window) == CAIRO_FORMAT_ARGB32) 
+					content = CAIRO_CONTENT_COLOR_ALPHA;
+				else
+					content = CAIRO_CONTENT_COLOR;
+				
 				self->priv->surface = cairo_surface_create_similar (target, 
-													CAIRO_CONTENT_COLOR_ALPHA,
-													width, height);
+																	content,
+																	width, 
+																	height);
 				cairo_surface_destroy (target);
 			}
 		}

@@ -1,3 +1,9 @@
+2008-01-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-buffered-shm.c: Create buffered surface in window format
+                                     instead always in ARGB format.
+
 2008-01-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-region.c:
