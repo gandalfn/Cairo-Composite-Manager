@@ -1,5 +1,15 @@
 2008-01-11  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* data/cairo-compmgr.schemas.in:
+	* plugins/freeze/ccm-freeze.c:
+	* src/ccm-display.c:
+	* src/ccm-display.h:
+	* src/ccm-pixmap-backend.c:
+	* src/ccm-screen.c:
+	* src/ccm-screen.h: Push use_buffered_pixmap option in screen config
+
+2008-01-11  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/ccm-pixmap-buffered-image.c:
     * src/ccm-pixmap-buffered-shm.c: Add buffered property to activate surface
                                      buffering, disable buffering by default.

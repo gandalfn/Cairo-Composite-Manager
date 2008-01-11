@@ -60,6 +60,7 @@ struct _CCMScreen
 };
 
 GType 			 ccm_screen_get_type			(void) G_GNUC_CONST;
+gboolean	     _ccm_screen_use_buffered		(CCMScreen* self);
 gboolean		 _ccm_screen_sync_with_blank 	(CCMScreen* self);
 GSList*			 _ccm_screen_get_window_plugins	(CCMScreen* self);
 gchar*			 _ccm_screen_get_window_backend	(CCMScreen* self);

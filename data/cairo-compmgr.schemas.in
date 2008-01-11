@@ -24,17 +24,6 @@
          </locale>
       </schema>
 	  <schema>
-         <key>/schemas/apps/cairo-compmgr/general/use_buffered_pixmap</key>
-         <applyto>/apps/cairo-compmgr/general/use_buffered_pixmap</applyto>
-         <owner>gnome</owner>
-         <type>bool</type>
-         <default>true</default>
-         <locale name="C">
-            <short>Use buffered pixmap</short>
-            <long>Use buffered pixmap</long>
-         </locale>
-      </schema>
-	  <schema>
          <key>/schemas/apps/cairo-compmgr/general/unmanaged_screen</key>
          <applyto>/apps/cairo-compmgr/general/unmanaged_screen</applyto>
          <owner>gnome</owner>
@@ -66,6 +55,17 @@
          <locale name="C">
             <short>Use pixmap bind associated to backend</short>
             <long>Use pixmap bind associated to backend</long>
+         </locale>
+      </schema>
+	  <schema>
+         <key>/schemas/apps/cairo-compmgr/default/screen/use_buffered_pixmap</key>
+         <applyto>/apps/cairo-compmgr/default/screen/use_buffered_pixmap</applyto>
+         <owner>gnome</owner>
+         <type>bool</type>
+         <default>true</default>
+         <locale name="C">
+            <short>Use buffered pixmap</short>
+            <long>Use buffered pixmap</long>
          </locale>
       </schema>
 	  <schema>

@@ -22,6 +22,7 @@
 
 #include "ccm-pixmap-backend.h"
 #include "ccm-display.h"
+#include "ccm-screen.h"
 #include "ccm.h"
 
 GType
@@ -32,14 +33,14 @@ ccm_pixmap_backend_get_type(CCMScreen* screen)
 	
 	if (_ccm_display_use_xshm (display))
 	{
-		if (_ccm_display_use_buffered (display))
+		if (_ccm_screen_use_buffered (screen))
 			type = ccm_pixmap_buffered_shm_get_type();
 		else
 			type = ccm_pixmap_shm_get_type();
 	}
 	else
 	{
-		if (_ccm_display_use_buffered (display))
+		if (_ccm_screen_use_buffered (screen))
 			type = ccm_pixmap_buffered_image_get_type();
 		else
 			type = ccm_pixmap_image_get_type();

@@ -49,6 +49,7 @@ enum
 {
 	CCM_SCREEN_BACKEND,
 	CCM_SCREEN_PIXMAP,
+	CCM_SCREEN_USE_BUFFERED,
 	CCM_SCREEN_PLUGINS,
 	CCM_SCREEN_REFRESH_RATE,
 	CCM_SCREEN_SYNC_WITH_VBLANK,
@@ -58,6 +59,7 @@ enum
 static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 	"backend",
 	"native_pixmap_bind",
+	"use_buffered_pixmap",
 	"plugins",
 	"refresh_rate",
 	"sync_with_vblank"
@@ -946,6 +948,14 @@ _ccm_screen_native_pixmap_bind(CCMScreen* self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_PIXMAP]);
+}
+
+gboolean
+_ccm_screen_use_buffered(CCMScreen* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_USE_BUFFERED]);
 }
 
 CCMScreenPlugin*

@@ -279,7 +279,7 @@ ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
 		
 		self->priv->alive = TRUE;
-		self->priv->id_ping = g_timeout_add_seconds_full (G_PRIORITY_LOW, delay, 
+		self->priv->id_ping = g_timeout_add_full (G_PRIORITY_LOW, delay * 1000, 
 											(GSourceFunc)ccm_freeze_ping, 
 											 self, NULL);
 	}
@@ -320,7 +320,7 @@ ccm_freeze_add_window(CCMScreenPlugin* plugin, CCMScreen* screen,
 			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
 		
 		self->priv->alive = TRUE;
-		self->priv->id_ping = g_timeout_add_seconds_full (G_PRIORITY_LOW, delay, 
+		self->priv->id_ping = g_timeout_add_full (G_PRIORITY_LOW, delay * 1000, 
 											 (GSourceFunc)ccm_freeze_ping, 
 											 self, NULL);
 	}
