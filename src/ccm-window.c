@@ -623,7 +623,6 @@ impl_ccm_window_map(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
-	ccm_drawable_damage(CCM_DRAWABLE(self));
 }
 
 static void
@@ -633,12 +632,6 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	self->priv->unmap_pending = FALSE;
-	ccm_drawable_damage(CCM_DRAWABLE(self));
-	if (self->priv->pixmap)
-	{
-		g_object_unref(self->priv->pixmap);
-		self->priv->pixmap = NULL;
-	}
 }
 	
 static void
@@ -1104,10 +1097,13 @@ ccm_window_paint (CCMWindow* self, cairo_t* context)
 	if (damaged)
 	{
 		CCMPixmap* pixmap = ccm_window_get_pixmap(self);
+		
 		if (pixmap)
 		{
 			cairo_surface_t* surface;
-				
+			
+			g_object_set(pixmap, "buffered", self->is_viewable, NULL);
+			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
 				
 			if (surface)

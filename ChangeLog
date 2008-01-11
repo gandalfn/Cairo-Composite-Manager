@@ -1,3 +1,12 @@
+2008-01-11  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-buffered-shm.c: Add buffered property to activate surface
+                                     buffering, disable buffering by default.
+    * src/ccm-screen.c: set redraw as high priority.
+    * src/ccm-window.c: Don't destruct and damage window on unmap and on map. 
+                        Activate pixmap buffering on first window redraw.
+
 2008-01-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-buffered-image.c:
