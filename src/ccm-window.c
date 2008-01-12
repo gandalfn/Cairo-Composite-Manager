@@ -40,6 +40,7 @@
 #include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-pixmap.h"
+#include "ccm-pixmap-backend.h"
 
 static void 		ccm_window_iface_init		(CCMWindowPluginClass* iface);
 static CCMRegion* 	ccm_window_query_geometry	(CCMDrawable* drawable);
@@ -1102,7 +1103,8 @@ ccm_window_paint (CCMWindow* self, cairo_t* context)
 		{
 			cairo_surface_t* surface;
 			
-			g_object_set(pixmap, "buffered", self->is_viewable, NULL);
+			if (CCM_IS_PIXMAP_BUFFERED(self))
+				g_object_set(pixmap, "buffered", self->is_viewable, NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
 				

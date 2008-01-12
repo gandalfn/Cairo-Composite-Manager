@@ -1,3 +1,10 @@
+2008-01-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-backend.h:
+    * src/ccm-window.c: Add CCM_IS_PIXMAP_BUFFERED macros and set pixmap 
+                        buffered property in ccm_window_paint only if pixmap 
+                        is a buffered pixmap
+
 2008-01-11  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* data/cairo-compmgr.schemas.in:
