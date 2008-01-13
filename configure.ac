@@ -1,4 +1,4 @@
-AC_INIT(cairo-compmgr, 0.1.3)
+AC_INIT(cairo-compmgr, 0.1.3.1)
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AM_CONFIG_HEADER(config.h)
@@ -92,8 +92,8 @@ if [ test x$glitzbackend = xyes ]; then
                   [glitztfpbackend="no"])
     CFLAGS=$cflags_save 
  	LIBS=$libs_save 
-    AM_CONDITIONAL(HAVE_GLITZ_TFP_BACKEND, [test x$glitztfpbackend = xyes])
 fi                  
+AM_CONDITIONAL(HAVE_GLITZ_TFP_BACKEND, [test x$glitztfpbackend = xyes])
 
 AC_CHECK_LIB(m, round, [M_LIBS="-lm"], AC_MSG_ERROR([libm is required to
 build cairo-compmgr. This lib comes with GNU C libraries (glibc) and you can

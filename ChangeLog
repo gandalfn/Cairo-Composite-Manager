@@ -1,3 +1,9 @@
+============ Version 0.1.3.1
+2008-01-13  Carlos Diógenes  <cerdiogenes@gmail.com>
+
+    * configure.ac: Fix AM_CONDITIONAL when no glitz lib found, bump version 
+                    to 0.1.3.1
+
 ============ Version 0.1.3
 2008-01-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
