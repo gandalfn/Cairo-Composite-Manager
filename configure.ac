@@ -3,10 +3,21 @@ AC_INIT(cairo-compmgr, 0.1.3)
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
+dnl Enable debug
+AC_ARG_ENABLE(debug,
+  [  --disable-debug        Disable debug],
+  [use_debug=$enableval], [use_debug=yes])
 
 IT_PROG_INTLTOOL
 AC_ISC_POSIX
 AC_PROG_CC
+if test "x$GCC" = "xyes" ; then
+    if test "x$use_debug" = "xno"; then
+        CFLAGS="-O2 -Wall -fPIC -fomit-frame-pointer -ffast-math -fno-strict-aliasing"
+    else
+        CFLAGS="-g -O2 -Wall -fPIC"
+    fi
+fi
 AM_PROG_CC_STDC
 AC_HEADER_STDC
 AC_PROG_CC_C99

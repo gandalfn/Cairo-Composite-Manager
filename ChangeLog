@@ -1,3 +1,16 @@
+============ Version 0.1.3
+2008-01-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * configure.ac:
+    * plugins/fade/Makefile.am:
+    * plugins/freeze/Makefile.am:
+    * plugins/menu-animation/Makefile.am:
+    * plugins/opacity/Makefile.am:
+    * plugins/shadow/Makefile.am:
+    * src/Makefile.am: Remove stupid compilation optimisation use configure to
+                       fix gcc options
+    * NEWS: update to new release 0.1.3
+    
 2008-01-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * data/cairo-compmgr.desktop.in.in: Disable startup notification

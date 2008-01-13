@@ -6,15 +6,6 @@ INCLUDES = \
 	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
 	-DPACKAGE_DATA_DIR=\""$(datadir)"\" $(CAIRO_COMPMGR_CFLAGS)
 
-AM_CFLAGS =\
-      -O3 \
-      -Wall \
- 	  -fPIC \
-      -ftracer \
-      -fomit-frame-pointer \
-      -ffast-math \
-      -fno-strict-aliasing
-	 
 plugindir = $(libdir)/cairo-compmgr
 
 plugin_LTLIBRARIES = \

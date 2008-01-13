@@ -1,3 +1,11 @@
+Overview of Changes in Cairo Composite Manager 0.1.3
+====================================
+
+* Add pixmap buffered surface, improve significantly the performance
+* Native pixmap backend (for now only xrender backend is supported)
+* Fix some issues in shadow plugins.
+* Some performances improvements
+
 Overview of Changes in Cairo Composite Manager 0.1.2
 ====================================
 

@@ -22,15 +22,6 @@ if HAVE_GLITZ_TFP_BACKEND
 INCLUDES += -DENABLE_GLITZ_TFP_BACKEND
 endif
 
-AM_CFLAGS =\
-      -O3 \
-      -Wall \
- 	  -fPIC \
-      -ftracer \
-      -fomit-frame-pointer \
-      -ffast-math \
-      -fno-strict-aliasing
-
 bin_PROGRAMS = cairo-compmgr
 
 cairo_compmgr_SOURCES = \
