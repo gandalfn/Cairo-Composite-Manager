@@ -1,3 +1,29 @@
+2008-01-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * data/cairo-compmgr.desktop.in.in: Disable startup notification
+    
+    * plugins/menu-animation/ccm-menu-animation.c: Set damage region with scale
+    
+    * src/ccm-extension-loader.c:
+    * src/ccm-extension-loader.h:
+    * src/ccm-screen.c: Check filter plugins on loading instead on extension
+                        loader creation
+    
+    * src/ccm-window.c: Add ccm_window_set_opaque_region
+    
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-buffered-shm.c: Flush surface in end of sync
+    
+    * src/ccm-region.c:
+    * src/ccm.h: Add ccm_region_scale and ccm_region_shaped functions
+    
+    * src/ccm-pixmap-image.c: Fix crash on XCopyArea
+    
+    * plugins/shadow/ccm-shadow.c: Create two surface for shadow onr for right
+                                   shadow and one for bottom shadow instead one
+                                   big region with geometry size. Fix also
+                                   shadow drawing
+                                   
 2008-01-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-backend.h:

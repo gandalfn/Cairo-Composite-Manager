@@ -222,6 +222,7 @@ ccm_pixmap_buffered_shm_sync(CCMPixmapBufferedShm* self, cairo_surface_t* surfac
 			cairo_set_source_surface (cr, surface, 0, 0);
 			cairo_paint (cr);
 			cairo_destroy (cr);
+			cairo_surface_flush(self->priv->surface);
 		}
 	}
 }

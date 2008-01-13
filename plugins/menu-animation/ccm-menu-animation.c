@@ -120,12 +120,31 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 	{
 		gfloat duration = ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION]);
 		gfloat step = elapsed / duration;
+		CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self->priv->window));
 		
+		if (geometry && (self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP))
+		{
+			CCMRegion* damage = ccm_region_copy (geometry);
+			ccm_region_scale(damage, self->priv->scale, self->priv->scale);
+			
+			ccm_drawable_damage_region (CCM_DRAWABLE(self->priv->window), 
+										damage);
+			ccm_region_destroy (damage);
+		}
+				
 		self->priv->scale = self->priv->way & CCM_MENU_ANIMATION_ON_MAP ? 
 					interpolate(step, 0.1, 1.0, 1) : interpolate(step, 1.0, 0.1, 1);
+		
+		if (geometry && (self->priv->way & CCM_MENU_ANIMATION_ON_MAP))
+		{
+			CCMRegion* damage = ccm_region_copy (geometry);
+			ccm_region_scale(damage, self->priv->scale, self->priv->scale);
 			
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-				
+			ccm_drawable_damage_region (CCM_DRAWABLE(self->priv->window), 
+										damage);
+			ccm_region_destroy (damage);
+		}
+		
 		if (((self->priv->way & CCM_MENU_ANIMATION_ON_MAP) && 
 			 self->priv->scale >= 1.0f) ||
 			((self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP) && 
@@ -135,6 +154,7 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 			{
 				ccm_window_plugin_map ((CCMWindowPlugin*)self->priv->window, 
 									   self->priv->window);
+				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 			}
 			if (self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP)
 			{

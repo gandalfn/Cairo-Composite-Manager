@@ -1308,6 +1308,19 @@ ccm_window_set_alpha(CCMWindow* self)
 }
 
 void
+ccm_window_set_opaque_region(CCMWindow* self, CCMRegion* region)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(region != NULL);
+	
+	if (!ccm_region_empty(region))
+	{
+		ccm_window_set_alpha(self);
+		self->opaque = ccm_region_copy(region);
+	}
+}
+
+void
 ccm_window_set_opaque(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);

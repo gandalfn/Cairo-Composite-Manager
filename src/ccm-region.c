@@ -630,6 +630,26 @@ ccm_region_resize (CCMRegion *region,
     }
 }
 
+/* ScaleRegion(pRegion, scale_width, scale_height)
+   scale region
+   added by gandalfn for ccm
+*/
+void
+ccm_region_scale (CCMRegion *region,
+		  gdouble       scale_width,
+		  gdouble       scale_height)
+{
+    g_return_if_fail (region != NULL);
+	g_return_if_fail (scale_width != 0 && scale_height != 0);
+    
+    int width, height;
+    
+	width = round((double)(region->extents.x2 - region->extents.x1) * scale_width);
+    height = round((double)(region->extents.y2 - region->extents.y1) * scale_height);
+    
+    ccm_region_resize(region, width, height);
+}
+
 /* 
    Utility procedure Compress:
    Replace r by the region r', where 
@@ -1749,6 +1769,21 @@ ccm_region_empty (CCMRegion *r)
     g_return_val_if_fail (r != NULL, FALSE);
     
     if (r->numRects == 0)
+	return TRUE;
+    else
+	return FALSE;
+}
+
+/*
+ * Check to see if the region is shaped.  Assumes a region is passed 
+ * as a parameter
+ */
+gboolean
+ccm_region_shaped (CCMRegion *r)
+{
+    g_return_val_if_fail (r != NULL, FALSE);
+    
+    if (r->numRects > 1)
 	return TRUE;
     else
 	return FALSE;

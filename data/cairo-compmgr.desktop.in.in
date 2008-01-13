@@ -6,5 +6,5 @@ Exec=cairo-compmgr
 Icon=@prefix@/share/pixmaps/cairo-compmgr/cairo-compmgr.png
 Terminal=false
 Type=Application
-StartupNotify=true
+StartupNotify=false
 Categories=GNOME;GTK;Applications;System;

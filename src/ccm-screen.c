@@ -971,7 +971,15 @@ _ccm_screen_get_window_plugins(CCMScreen* self)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
-	return ccm_extension_loader_get_window_plugins(self->priv->plugin_loader);
+	GSList* filter, *plugins = NULL;
+	
+	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
+	plugins = ccm_extension_loader_get_window_plugins(self->priv->plugin_loader,
+													  filter);
+	g_slist_foreach(filter, (GFunc)g_free, NULL);
+	g_slist_free(filter);
+	
+	return plugins;
 }
 
 void
@@ -1008,14 +1016,15 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	
 	ccm_screen_load_config(self);
 	
-	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
-	self->priv->plugin_loader = ccm_extension_loader_new(filter);
-	g_slist_foreach(filter, (GFunc)g_free, NULL);
-	g_slist_free(filter);
+	self->priv->plugin_loader = ccm_extension_loader_new();
 	
 	/* Load plugins */
 	self->priv->plugin = (CCMScreenPlugin*)self;
-	plugins = ccm_extension_loader_get_screen_plugins(self->priv->plugin_loader);
+	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
+	plugins = ccm_extension_loader_get_screen_plugins(self->priv->plugin_loader,
+													  filter);
+	g_slist_foreach(filter, (GFunc)g_free, NULL);
+	g_slist_free(filter);
 	for (item = plugins; item; item = item->next)
 	{
 		GType type = GPOINTER_TO_INT(item->data);

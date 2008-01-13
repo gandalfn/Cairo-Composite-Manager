@@ -111,6 +111,7 @@ void            ccm_region_get_xrectangles (CCMRegion     *region,
                                             XRectangle **rectangles,
                                             gint          *n_rectangles);
 gboolean      	ccm_region_empty           (CCMRegion     *region);
+gboolean        ccm_region_shaped          (CCMRegion     *region);
 gboolean      	ccm_region_equal           (CCMRegion     *region1,
 											CCMRegion     *region2);
 gboolean      	ccm_region_point_in        (CCMRegion     *region,
@@ -121,9 +122,12 @@ CCMOverlapType 	ccm_region_rect_in         (CCMRegion     *region,
 void          	ccm_region_offset          (CCMRegion     *region,
 											gint          dx,
 											gint          dy);
-void			ccm_region_resize 			(CCMRegion *region,
-											 gint       width,
-											 gint       height);
+void			ccm_region_resize 			(CCMRegion*   region,
+											 gint         width,
+											 gint         height);
+void            ccm_region_scale            (CCMRegion*   region,
+                                             gdouble      scale_width,
+                                             gdouble      scale_height);
 void          	ccm_region_shrink          (CCMRegion     *region,
 											gint          dx,
 											gint          dy);
@@ -226,6 +230,8 @@ void            ccm_window_add_alpha_region         (CCMWindow* self,
                                                      CCMRegion* region);
 void            ccm_window_set_alpha                (CCMWindow* self);
 void            ccm_window_set_opaque               (CCMWindow* self);
+void            ccm_window_set_opaque_region        (CCMWindow* self, 
+                                                     CCMRegion* region);
 gfloat			ccm_window_get_opacity 				(CCMWindow* self);
 void			ccm_window_set_opacity 				(CCMWindow* self, 
 													 gfloat opacity);

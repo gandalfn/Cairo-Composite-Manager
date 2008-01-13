@@ -51,9 +51,11 @@ struct _CCMExtensionLoader
 };
 
 GType ccm_extension_loader_get_type (void) G_GNUC_CONST;
-CCMExtensionLoader* ccm_extension_loader_new (GSList* filter);
-GSList* ccm_extension_loader_get_screen_plugins (CCMExtensionLoader* self);
-GSList* ccm_extension_loader_get_window_plugins (CCMExtensionLoader* self);
+CCMExtensionLoader* ccm_extension_loader_new ();
+GSList* ccm_extension_loader_get_screen_plugins (CCMExtensionLoader* self,
+												 GSList* filter);
+GSList* ccm_extension_loader_get_window_plugins (CCMExtensionLoader* self,
+												 GSList* filter);
 void ccm_extension_loader_add_plugin_path (gchar* path);
 
 G_END_DECLS

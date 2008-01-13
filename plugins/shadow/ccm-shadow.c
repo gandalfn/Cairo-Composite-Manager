@@ -47,10 +47,10 @@ CCM_DEFINE_PLUGIN (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN,
 
 struct _CCMShadowPrivate
 {
-	cairo_surface_t* shadow;
+	cairo_surface_t* shadow_right;
+	cairo_surface_t* shadow_bottom;
 	
 	CCMRegion* geometry;
-	CCMRegion* shadow_region;
 	
 	CCMConfig* options[CCM_SHADOW_OPTION_N];
 };
@@ -64,8 +64,8 @@ ccm_shadow_init (CCMShadow *self)
 	self->priv = CCM_SHADOW_GET_PRIVATE(self);
 	
 	self->priv->geometry = NULL;
-	self->priv->shadow = NULL;
-	self->priv->shadow_region = NULL;
+	self->priv->shadow_right = NULL;
+	self->priv->shadow_bottom = NULL;
 }
 
 static void
@@ -73,9 +73,9 @@ ccm_shadow_finalize (GObject *object)
 {
 	CCMShadow* self = CCM_SHADOW(object);
 	
-	if (self->priv->shadow) cairo_surface_destroy(self->priv->shadow);
+	if (self->priv->shadow_right) cairo_surface_destroy(self->priv->shadow_right);
+	if (self->priv->shadow_bottom) cairo_surface_destroy(self->priv->shadow_bottom);
 	if (self->priv->geometry) ccm_region_destroy (self->priv->geometry);
-	if (self->priv->shadow_region) ccm_region_destroy (self->priv->shadow_region);
 	
 	G_OBJECT_CLASS (ccm_shadow_parent_class)->finalize (object);
 }
@@ -91,63 +91,94 @@ ccm_shadow_class_init (CCMShadowClass *klass)
 }
 
 static void
-create_shadow(CCMShadow* self,CCMWindow* window, int width, int height)
+create_shadow(CCMShadow* self,CCMWindow* window, int width, int height, 
+			  gboolean shaped)
 {
 	cairo_t* cr;
 	cairo_pattern_t *shadow;
 	int border, offset;
 	cairo_surface_t* surface = ccm_drawable_get_surface (CCM_DRAWABLE(window));
 	
-	if (self->priv->shadow)
-		cairo_surface_destroy(self->priv->shadow);
+	if (self->priv->shadow_right)
+		cairo_surface_destroy(self->priv->shadow_right);
+	if (self->priv->shadow_bottom)
+		cairo_surface_destroy(self->priv->shadow_bottom);
 	
 	border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 	offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
 	
-	self->priv->shadow = cairo_surface_create_similar (surface, CAIRO_CONTENT_COLOR_ALPHA, 
-													   width, height);
+	self->priv->shadow_right = cairo_surface_create_similar (surface, CAIRO_CONTENT_COLOR_ALPHA, 
+													   		 border * 2, height - offset + border);
+	self->priv->shadow_bottom = cairo_surface_create_similar (surface, CAIRO_CONTENT_COLOR_ALPHA, 
+													   		  width - offset, border);
 	cairo_surface_destroy (surface);
 	
-    cr = cairo_create(self->priv->shadow);
+    cr = cairo_create(self->priv->shadow_right);
 	
-	/* Clear background */
-	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_rgba(cr, 0.0f, 0.0f, 0.0f, 0.0f);
-	cairo_paint(cr);
-	
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	
-    /* Right side */
-    shadow = cairo_pattern_create_linear (width, 0, width - border, 0);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.0, 0, 0, 0, 0);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.5, 0, 0, 0, 0.0375);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.75, 0, 0, 0, 0.125);
-    cairo_pattern_add_color_stop_rgba (shadow, 1.0, 0, 0, 0, 0.37);
+	/* Corner top right */
+    shadow = cairo_pattern_create_radial(border, border / 2.0, 0, 
+										 border, border / 2.0, border / 2.0);
+    cairo_pattern_add_color_stop_rgba (shadow, 1.0, 0, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.75, 0, 0, 0, 0.05);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.5, 0, 0, 0, 0.17);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.0, 0, 0, 0, 0.5);
     cairo_set_source (cr, shadow);
-    cairo_rectangle (cr, width - border, offset, border, height - border - offset);
+    cairo_rectangle (cr, border, 0, border / 2.0, border / 2.0);
+    cairo_fill (cr);
+    cairo_pattern_destroy (shadow);
+	
+	/* Right side */
+    shadow = cairo_pattern_create_linear (border * 2, 0, border, 0);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.0, 0, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.5, 0, 0, 0, 0.05);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.75, 0, 0, 0, 0.17);
+    cairo_pattern_add_color_stop_rgba (shadow, 1.0, 0, 0, 0, 0.5);
+    cairo_set_source (cr, shadow);
+    cairo_rectangle (cr, border, border / 2.0, border, height - offset - 3 * border / 2);
     cairo_fill (cr);
     cairo_pattern_destroy (shadow);
 
 	/* Corner bottom right */
-    shadow = cairo_pattern_create_radial(width - border, height - border, 0, 
-										 width - border, height - border, border);
-    cairo_pattern_add_color_stop_rgba (shadow, 1.0 / 2.0, 0, 0, 0, 0);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.75 / 2.0, 0, 0, 0, 0.0375);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.5 / 2.0, 0, 0, 0, 0.125);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.0, 0, 0, 0, 0.37);
+	if (shaped)
+	{
+		cairo_set_source_rgba (cr, 0.0f, 0.0f, 0.0f, 0.5f);
+		cairo_rectangle (cr, 0, height - offset - border * 2, border, border);
+		cairo_fill(cr);
+	}
+    shadow = cairo_pattern_create_radial(border, height - offset - border, 0, 
+										 border, height - offset - border, border / 2.0);
+    cairo_pattern_add_color_stop_rgba (shadow, 1.0, 0, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.75, 0, 0, 0, 0.05);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.5, 0, 0, 0, 0.17);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.0, 0, 0, 0, 0.5);
     cairo_set_source (cr, shadow);
-    cairo_rectangle (cr, width - border, height - border, width, height);
+	cairo_rectangle (cr, border, height - offset - border, border, border);
     cairo_fill (cr);
     cairo_pattern_destroy (shadow);
-    
-	/* Bottom */
-    shadow = cairo_pattern_create_linear (0, height, 0, height - border);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.0, 0, 0, 0, 0);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.5, 0, 0, 0, 0.0375);
-    cairo_pattern_add_color_stop_rgba (shadow, 0.75, 0, 0, 0, 0.125);
-    cairo_pattern_add_color_stop_rgba (shadow, 1.0, 0, 0, 0, 0.37);
+    cairo_destroy (cr);
+	
+	cr = cairo_create(self->priv->shadow_bottom);
+		
+	/* Corner bottom left */
+    shadow = cairo_pattern_create_radial(border / 2.0, 0, 0, 
+										 border / 2.0, 0, border / 2.0);
+    cairo_pattern_add_color_stop_rgba (shadow, 1.0, 0, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.75, 0, 0, 0, 0.05);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.5, 0, 0, 0, 0.17);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.0, 0, 0, 0, 0.5);
     cairo_set_source (cr, shadow);
-    cairo_rectangle (cr, offset, height - border, width - border - offset, border);
+    cairo_rectangle (cr, 0, 0, border / 2.0, border / 2.0);
+    cairo_fill (cr);
+    cairo_pattern_destroy (shadow);
+	
+	/* Bottom */
+    shadow = cairo_pattern_create_linear (0, border, 0, 0);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.0, 0, 0, 0, 0);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.5, 0, 0, 0, 0.05);
+    cairo_pattern_add_color_stop_rgba (shadow, 0.75, 0, 0, 0, 0.17);
+    cairo_pattern_add_color_stop_rgba (shadow, 1.0, 0, 0, 0, 0.5);
+    cairo_set_source (cr, shadow);
+    cairo_rectangle (cr, border / 2.0, 0, width - offset - 3 * border / 2.0, border);
     cairo_fill (cr);
     cairo_pattern_destroy (shadow);
 	cairo_destroy(cr);
@@ -178,10 +209,10 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 		
 	if (self->priv->geometry) ccm_region_destroy (self->priv->geometry);
 	self->priv->geometry = NULL;
-	if (self->priv->shadow_region) ccm_region_destroy (self->priv->shadow_region);
-	self->priv->shadow_region = NULL;
-	if (self->priv->shadow)	cairo_surface_destroy(self->priv->shadow);
-	self->priv->shadow = NULL;
+	if (self->priv->shadow_right) cairo_surface_destroy(self->priv->shadow_right);
+	self->priv->shadow_right = NULL;
+	if (self->priv->shadow_bottom) cairo_surface_destroy(self->priv->shadow_bottom);
+	self->priv->shadow_bottom = NULL;
 	
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
 												window);
@@ -204,10 +235,9 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 		ccm_region_get_clipbox(geometry, &area);
 		area.width += border;
 		area.height += border;
-		create_shadow(self, window, area.width, area.height);
+		create_shadow(self, window, area.width, area.height, 
+					  ccm_region_shaped(geometry));
 		ccm_region_resize(geometry, area.width, area.height);
-		self->priv->shadow_region = ccm_region_copy(geometry);
-		ccm_region_subtract (self->priv->shadow_region, self->priv->geometry);
 	}	
 	return geometry;
 }
@@ -218,31 +248,30 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
 	
-	if (self->priv->shadow)
+	if (self->priv->shadow_right && self->priv->shadow_bottom)
 	{
 		cairo_rectangle_t area;
 		
-		if (self->priv->geometry && self->priv->shadow_region &&
+		if (self->priv->geometry && 
 			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &area))
 		{
 			cairo_rectangle_t* rects;
 			gint nb_rects, cpt;
 			cairo_matrix_t matrix;
+			int border, offset;
+	
+			border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
+			offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
 			
 			cairo_save(context);
 			cairo_get_matrix (context, &matrix);
 			cairo_translate (context, area.x / matrix.xx, area.y / matrix.yy);
-			ccm_region_get_rectangles (self->priv->shadow_region, 
-									   &rects, &nb_rects);
-			for (cpt = 0; cpt < nb_rects; cpt++)
-			{
-				cairo_rectangle(context, rects[cpt].x - area.x / matrix.xx, 
-								rects[cpt].y - area.y / matrix.yy, 
-								rects[cpt].width, rects[cpt].height);
-			}
-			g_free(rects);
-			cairo_clip(context);
-			cairo_set_source_surface(context, self->priv->shadow, 0.0f, 0.0f);
+			cairo_set_source_surface(context, self->priv->shadow_right, 
+									 area.width - border * 2, offset);
+			cairo_paint_with_alpha(context,
+								   ccm_window_get_opacity(window));
+			cairo_set_source_surface(context, self->priv->shadow_bottom, 
+									 offset, area.height - border);
 			cairo_paint_with_alpha(context,
 								   ccm_window_get_opacity(window));
 			cairo_restore(context);
@@ -269,10 +298,8 @@ ccm_shadow_set_opaque(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	ccm_window_plugin_set_opaque (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
-	if (self->priv->shadow_region)
-	{
-		ccm_window_add_alpha_region (window, self->priv->shadow_region);
-	}
+	if (self->priv->geometry)
+		ccm_window_set_opaque_region (window, self->priv->geometry);
 }
 
 static void 
@@ -282,17 +309,12 @@ ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMShadow* self = CCM_SHADOW(plugin);
 	cairo_rectangle_t area;
 	
-	if (self->priv->shadow)
+	if (self->priv->shadow_right && self->priv->shadow_bottom)
 	{
 		if (self->priv->geometry)
 		{
 			ccm_region_get_clipbox(self->priv->geometry, &area);
 			ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
-		}
-		if (self->priv->shadow_region)
-		{
-			ccm_region_get_clipbox(self->priv->shadow_region, &area);
-			ccm_region_offset(self->priv->shadow_region, x - area.x, y - area.y);
 		}
 	}
 	
@@ -306,7 +328,7 @@ ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMShadow* self = CCM_SHADOW(plugin);
 	int border = 0;
 	
-	if (self->priv->shadow)
+	if (self->priv->shadow_right && self->priv->shadow_bottom)
 		border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 	
 	ccm_window_plugin_resize (CCM_WINDOW_PLUGIN_PARENT(plugin), window,

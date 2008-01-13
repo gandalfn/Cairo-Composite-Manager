@@ -151,7 +151,7 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 	XCopyArea(CCM_DISPLAY_XDISPLAY(display),
 			  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
 			  self->priv->gc, 
-			  0, 0, self->priv->image->width, self->priv->image->height, 0, 0);
+			  0, 0, self->priv->width, self->priv->height, 0, 0);
 	
 	ccm_display_sync(display);
 }
@@ -174,7 +174,7 @@ ccm_pixmap_image_get_surface (CCMDrawable* drawable)
 								   self->priv->width, 
 								   self->priv->height, 
 								   AllPlanes, ZPixmap);
-		
+	if (self->priv->image)
 	surface = cairo_image_surface_create_for_data(
 									(unsigned char *)self->priv->image->data, 
 									ccm_window_get_format(CCM_PIXMAP(self)->window),

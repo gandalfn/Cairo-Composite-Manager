@@ -69,7 +69,7 @@ ccm_extension_loader_class_init (CCMExtensionLoaderClass *klass)
 
 
 CCMExtensionLoader*
-ccm_extension_loader_new (GSList* filter)
+ccm_extension_loader_new ()
 {
 	static CCMExtensionLoader* self = NULL;
 	
@@ -94,25 +94,9 @@ ccm_extension_loader_new (GSList* filter)
 					
 					if ((plugin = ccm_extension_new(file)) != NULL)
 					{
-						GSList* f;
-						gboolean found = FALSE;
-						
-						for (f = filter; f; f = f->next)
-						{
-							if (!g_ascii_strcasecmp(f->data, 
-													ccm_extension_get_label(plugin)))
-							{
-								found = TRUE;
-								break;
-							}
-						}
-						
-						if (found)
-							self->priv->plugins = g_slist_insert_sorted (
+						self->priv->plugins = g_slist_insert_sorted (
 										self->priv->plugins, plugin,
 										(GCompareFunc)_ccm_extension_compare);
-						else
-							g_object_unref(plugin);
 					}
 					g_free(file);
 				}
@@ -127,7 +111,8 @@ ccm_extension_loader_new (GSList* filter)
 }
 
 GSList*
-ccm_extension_loader_get_screen_plugins (CCMExtensionLoader* self)
+ccm_extension_loader_get_screen_plugins (CCMExtensionLoader* self, 
+										 GSList* filter)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
@@ -138,14 +123,31 @@ ccm_extension_loader_get_screen_plugins (CCMExtensionLoader* self)
 		GType plugin = ccm_extension_get_type_object(item->data);
 		
 		if (g_type_is_a(plugin, CCM_TYPE_SCREEN_PLUGIN))
-			plugins = g_slist_append(plugins, GINT_TO_POINTER(plugin));
+		{
+			GSList* f;
+			gboolean found = FALSE;
+			
+			for (f = filter; f; f = f->next)
+			{
+				if (!g_ascii_strcasecmp(f->data, 
+										ccm_extension_get_label(item->data)))
+				{
+					found = TRUE;
+					break;
+				}
+			}
+			
+			if (found)
+				plugins = g_slist_append(plugins, GINT_TO_POINTER(plugin));
+		}
 	}
 	
 	return plugins;
 }
 
 GSList*
-ccm_extension_loader_get_window_plugins (CCMExtensionLoader* self)
+ccm_extension_loader_get_window_plugins (CCMExtensionLoader* self, 
+										 GSList* filter)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
@@ -156,7 +158,23 @@ ccm_extension_loader_get_window_plugins (CCMExtensionLoader* self)
 		GType plugin = ccm_extension_get_type_object(item->data);
 		
 		if (g_type_is_a(plugin, CCM_TYPE_WINDOW_PLUGIN))
-			plugins = g_slist_append(plugins, GINT_TO_POINTER(plugin));
+		{
+			GSList* f;
+			gboolean found = FALSE;
+			
+			for (f = filter; f; f = f->next)
+			{
+				if (!g_ascii_strcasecmp(f->data, 
+										ccm_extension_get_label(item->data)))
+				{
+					found = TRUE;
+					break;
+				}
+			}
+			
+			if (found)
+				plugins = g_slist_append(plugins, GINT_TO_POINTER(plugin));
+		}
 	}
 	
 	return plugins;
