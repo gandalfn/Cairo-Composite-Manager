@@ -644,8 +644,8 @@ ccm_region_scale (CCMRegion *region,
     
     int width, height;
     
-	width = round((double)(region->extents.x2 - region->extents.x1) * scale_width);
-    height = round((double)(region->extents.y2 - region->extents.y1) * scale_height);
+	width = round((double)(region->extents.x2 - region->extents.x1) * scale_width) + 1;
+    height = round((double)(region->extents.y2 - region->extents.y1) * scale_height) + 1;
     
     ccm_region_resize(region, width, height);
 }

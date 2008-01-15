@@ -99,6 +99,8 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height,
 	int border, offset;
 	cairo_surface_t* surface = ccm_drawable_get_surface (CCM_DRAWABLE(window));
 	
+	if (!surface) return;
+	
 	if (self->priv->shadow_right)
 		cairo_surface_destroy(self->priv->shadow_right);
 	if (self->priv->shadow_bottom)
