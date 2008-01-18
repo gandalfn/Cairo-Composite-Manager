@@ -1,3 +1,7 @@
+2008-01-18  Carlos Diógenes  <cerdiogenes@gmail.com>
+
+    * configure.ac: Fix use custom CFLAGS if defined
+
 2008-01-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/shadow/ccm-shadow.c: Fix a crash if surface of ccm_window can't 
