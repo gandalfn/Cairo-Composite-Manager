@@ -44,7 +44,8 @@ struct _CCMScreenPluginClass
 	GTypeInterface    base_iface;
 	
 	void 	 (*load_options)	(CCMScreenPlugin* self, CCMScreen* screen);
-	void 	 (*paint) 			(CCMScreenPlugin* self, CCMScreen* screen);
+	gboolean (*paint) 			(CCMScreenPlugin* self, CCMScreen* screen,
+								 cairo_t* ctx);
 	gboolean (*add_window) 		(CCMScreenPlugin* self, CCMScreen* screen,
 								 CCMWindow* window);
 	void	 (*remove_window) 	(CCMScreenPlugin* self, CCMScreen* screen,
@@ -55,8 +56,8 @@ GType 		ccm_screen_plugin_get_type 		(void) G_GNUC_CONST;
 
 void  		ccm_screen_plugin_load_options	(CCMScreenPlugin* self, 
 										   	 CCMScreen* screen);
-void  		ccm_screen_plugin_paint	 	  	(CCMScreenPlugin* self, 
-										     CCMScreen* screen);
+gboolean	ccm_screen_plugin_paint	 	  	(CCMScreenPlugin* self, 
+										     CCMScreen* screen, cairo_t* ctx);
 gboolean 	ccm_screen_plugin_add_window  	(CCMScreenPlugin* self, 
 											 CCMScreen* screen,
 										     CCMWindow* window);

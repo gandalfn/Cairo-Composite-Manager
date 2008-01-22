@@ -1,3 +1,23 @@
+2008-01-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-screen.c:
+    * src/ccm-screen.h: 
+    * src/ccm-screen-plugin.c:
+    * src/ccm-screen-plugin.h: (ccm_screen_plugin_paint) Add cow cairo context 
+                               in parameters
+    * src/Makefile.am:
+    * src/ccm-keybind.c:
+    * src/ccm-keybind.h:
+    * src/eggaccelerators.c:
+    * src/eggaccelerators.h: First implementation of key bind need to be tested.
+    
+
+2008-01-22  Carlos Diógenes  <cerdiogenes@gmail.com>
+
+    * src/ccm-screen.c:
+    * src/ccm-screen.h: (_ccm_screen_get_plugin) Parse all screen plugins to 
+                        get corresponding plugin type.
+
 2008-01-18  Carlos Diógenes  <cerdiogenes@gmail.com>
 
     * configure.ac: Fix use custom CFLAGS if defined

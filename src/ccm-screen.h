@@ -65,7 +65,7 @@ gboolean		 _ccm_screen_sync_with_blank 	(CCMScreen* self);
 GSList*			 _ccm_screen_get_window_plugins	(CCMScreen* self);
 gchar*			 _ccm_screen_get_window_backend	(CCMScreen* self);
 gboolean		 _ccm_screen_native_pixmap_bind (CCMScreen* self);
-CCMScreenPlugin* _ccm_screen_get_plugin			(CCMScreen *self);
+CCMScreenPlugin* _ccm_screen_get_plugin			(CCMScreen *self, GType type);
 void			 _ccm_screen_add_animation		(CCMScreen* self, 
 												 CCMAnimation* animation);
 void			 _ccm_screen_remove_animation	(CCMScreen* self, 

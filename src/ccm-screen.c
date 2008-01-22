@@ -92,7 +92,8 @@ struct _CCMScreenPrivate
 #define CCM_SCREEN_GET_PRIVATE(o)  \
    ((CCMScreenPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SCREEN, CCMScreenClass))
 
-static void impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self);
+static gboolean impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self,
+									  cairo_t* ctx);
 static gboolean impl_ccm_screen_add_window(CCMScreenPlugin* plugin, 
 										   CCMScreen* self, CCMWindow* window);
 static void impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, 
@@ -399,65 +400,45 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
 	ccm_drawable_damage (CCM_DRAWABLE(above));
 }
 
-static void 
-impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self)
+static gboolean
+impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 {
-	g_return_if_fail(self != NULL);
+	g_return_val_if_fail(plugin != NULL, FALSE);
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(ctx != NULL, FALSE);
 	
 	static gboolean have_desktop = FALSE;
 	gboolean ret = FALSE;
-		
-	if (self->priv->cow)
+	GList* item;
+	
+	if (!have_desktop)
 	{
-		GList* item;
-
-		if (!self->priv->ctx)
+		static gboolean screen_damaged = FALSE;
+	
+		cairo_set_source_rgb (self->priv->ctx, 0, 0, 0);
+		cairo_paint(self->priv->ctx);
+		if (!screen_damaged)
 		{
-			self->priv->ctx = 
-					ccm_drawable_create_context(CCM_DRAWABLE(self->priv->cow));
-			cairo_identity_matrix (self->priv->ctx);
-			cairo_rectangle(self->priv->ctx, 0, 0, self->xscreen->width, self->xscreen->height);
-			cairo_clip(self->priv->ctx);
-		}
-		if (!have_desktop)
-		{
-			static gboolean screen_damaged = FALSE;
-			
-			cairo_set_source_rgb (self->priv->ctx, 0, 0, 0);
-			cairo_paint(self->priv->ctx);
-			if (!screen_damaged)
-			{
-				ccm_screen_damage (self);
-				screen_damaged = TRUE;
-			}
-		}
-		
-		for (item = self->priv->windows; item; item = item->next)
-		{
-			CCMWindow* window = item->data;
-			
-			if (!have_desktop)
-				have_desktop = window->is_viewable &&
-				               ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP;
-			if (!window->is_input_only)
-			{
-				if (ccm_window_paint(window, self->priv->ctx))
-					ret = TRUE;
-			}
-		}
-		if (ret) 
-		{
-			if (self->priv->damaged)
-			{
-				ccm_drawable_flush_region(CCM_DRAWABLE(self->priv->cow), 
-										  self->priv->damaged);
-				ccm_region_destroy(self->priv->damaged);
-				self->priv->damaged = NULL;
-			}
-			else
-				ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
+			ccm_screen_damage (self);
+			screen_damaged = TRUE;
 		}
 	}
+	for (item = self->priv->windows; item; item = item->next)
+	{
+		CCMWindow* window = item->data;
+		
+		if (!have_desktop)
+			have_desktop = window->is_viewable &&
+						   ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP;
+		
+		if (!window->is_input_only)
+		{
+			if (ccm_window_paint(window, self->priv->ctx))
+				ret = TRUE;
+		}
+	}
+	
+	return ret;
 }
 
 static gboolean
@@ -535,7 +516,32 @@ ccm_screen_paint(CCMScreen* self)
 			if (!_ccm_animation_main (item->data))
 				_ccm_screen_remove_animation (self, item->data);
 		}
-		ccm_screen_plugin_paint(self->priv->plugin, self);
+				
+		if (self->priv->cow)
+		{
+			if (!self->priv->ctx)
+			{
+				self->priv->ctx = 
+					ccm_drawable_create_context(CCM_DRAWABLE(self->priv->cow));
+				cairo_identity_matrix (self->priv->ctx);
+				cairo_rectangle(self->priv->ctx, 0, 0, 
+								self->xscreen->width, self->xscreen->height);
+				cairo_clip(self->priv->ctx);
+			}
+			if (ccm_screen_plugin_paint(self->priv->plugin, self, 
+										self->priv->ctx))
+			{
+				if (self->priv->damaged)
+				{
+					ccm_drawable_flush_region(CCM_DRAWABLE(self->priv->cow), 
+											  self->priv->damaged);
+					ccm_region_destroy(self->priv->damaged);
+					self->priv->damaged = NULL;
+				}
+				else
+					ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
+			}
+		}
 		g_timer_start(self->priv->vblank);
 	}
 	
@@ -685,6 +691,11 @@ on_event(CCMScreen* self, XEvent* event)
 	
 	switch (event->type)
 	{
+		case KeyPress:
+		{
+			g_print("%s KeyPress\n", __FUNCTION__);
+		}
+		break;
 		case CreateNotify:
 		{	
 			XCreateWindowEvent* create_event = ((XCreateWindowEvent*)event);
@@ -959,11 +970,20 @@ _ccm_screen_use_buffered(CCMScreen* self)
 }
 
 CCMScreenPlugin*
-_ccm_screen_get_plugin(CCMScreen *self)
+_ccm_screen_get_plugin(CCMScreen *self, GType type)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
-	return self->priv->plugin;
+	CCMScreenPlugin* plugin;
+ 	
+	for (plugin = self->priv->plugin; plugin != (CCMScreenPlugin*)self; 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin))
+	{
+		if (g_type_is_a(G_OBJECT_TYPE(plugin), type))
+			return plugin;
+	}
+	
+	return NULL;
 }
 
 GSList*

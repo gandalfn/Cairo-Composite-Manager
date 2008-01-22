@@ -72,20 +72,25 @@ ccm_screen_plugin_load_options(CCMScreenPlugin* self, CCMScreen* screen)
   		CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options (plugin, screen);
 }
 
-void
-ccm_screen_plugin_paint (CCMScreenPlugin* self, CCMScreen* screen)
+gboolean
+ccm_screen_plugin_paint (CCMScreenPlugin* self, CCMScreen* screen, cairo_t* ctx)
 {
-	g_return_if_fail (CCM_IS_SCREEN_PLUGIN (self));
-	g_return_if_fail (screen != NULL);
+	g_return_val_if_fail (CCM_IS_SCREEN_PLUGIN (self), FALSE);
+	g_return_val_if_fail (screen != NULL, FALSE);
+	g_return_val_if_fail (ctx != NULL, FALSE);
 	
   	CCMScreenPlugin* plugin;
+	
 	for (plugin = self; 
 		 CCM_IS_PLUGIN(plugin) && 
 		 !CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint; 
 		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin));
 	
 	if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint)
-  		CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint (plugin, screen);
+  		return CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint (plugin, screen, 
+															    ctx);
+	else
+		return FALSE;
 }
 
 gboolean

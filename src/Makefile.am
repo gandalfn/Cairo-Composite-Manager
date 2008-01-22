@@ -25,6 +25,8 @@ endif
 bin_PROGRAMS = cairo-compmgr
 
 cairo_compmgr_SOURCES = \
+    eggaccelerators.c \
+    eggaccelerators.h \
     async-getprop.c \
 	async-getprop.h \
 	ccm-region.c \
@@ -72,7 +74,9 @@ cairo_compmgr_SOURCES = \
 	ccm-pixmap-image.h \
 	ccm-pixmap-image.c \
     ccm-pixmap-buffered-image.h \
-	ccm-pixmap-buffered-image.c
+	ccm-pixmap-buffered-image.c \
+	ccm-keybind.h \
+	ccm-keybind.c
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \
