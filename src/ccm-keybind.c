@@ -45,6 +45,7 @@ struct _CCMKeybindPrivate
 	gchar* keystring;
 	guint keycode;
 	guint modifiers;
+	gboolean pressed;
 };
 
 #define CCM_KEYBIND_GET_PRIVATE(o) \
@@ -61,6 +62,7 @@ ccm_keybind_init (CCMKeybind *self)
 	self->priv->keystring = NULL;
 	self->priv->keycode = 0;
 	self->priv->modifiers = 0;
+	self->priv->pressed = FALSE;
 }
 
 static void
@@ -142,7 +144,7 @@ ccm_keybind_grab (CCMKeybind* self)
 	{
 		XGrabKey (CCM_DISPLAY_XDISPLAY (display), self->priv->keycode, 
 				  self->priv->modifiers | CCM_KEYBIND_GET_CLASS(self)->mod_masks [cpt], 
-				  CCM_WINDOW_XWINDOW (root), False, 
+				  CCM_WINDOW_XWINDOW (root), True, 
 				  GrabModeAsync, GrabModeAsync);
 	}
 }
@@ -175,22 +177,47 @@ ccm_keybind_on_event(CCMKeybind* self, XEvent* event)
 	{
 		case KeyPress:
 		{
-			guint event_mods;
-	
-			event_mods = event->xkey.state & ~(CCM_KEYBIND_GET_CLASS(self)->mod_masks[7]);
-
-			if (self->priv->keycode == event->xkey.keycode && 
-				self->priv->modifiers == event_mods) 
+			if (!self->priv->pressed)
 			{
-				g_signal_emit (self, signals[KEY_PRESS], 0);
+				guint event_mods;
+	
+				event_mods = event->xkey.state & ~(CCM_KEYBIND_GET_CLASS(self)->mod_masks[7]);
+
+				if (self->priv->keycode == event->xkey.keycode && 
+					self->priv->modifiers == event_mods) 
+				{
+					self->priv->pressed = TRUE;
+					g_signal_emit (self, signals[KEY_PRESS], 0);
+				}
 			}
 		}
 		break;
 		case KeyRelease:
 		{
-			if (self->priv->keycode == event->xkey.keycode)
+			if (XPending (event->xkey.display))
 			{
-				g_signal_emit (self, signals[KEY_RELEASE], 0);
+	  			XEvent next_event;
+
+	  			XPeekEvent (event->xkey.display, &next_event);
+
+				if (next_event.type == KeyPress &&
+					next_event.xkey.keycode == event->xkey.keycode &&
+	      			next_event.xkey.time == event->xkey.time)
+				{
+	      			break;
+	    		}
+			}
+			if (self->priv->pressed)
+			{
+				guint event_mods;
+	
+				event_mods = event->xkey.state & ~(CCM_KEYBIND_GET_CLASS(self)->mod_masks[7]);
+				
+				if (self->priv->keycode == event->xkey.keycode)
+				{
+					self->priv->pressed = FALSE;
+					g_signal_emit (self, signals[KEY_RELEASE], 0);
+				}
 			}
 		}
 		break;
@@ -219,8 +246,8 @@ ccm_keybind_new (CCMScreen* screen, gchar* keystring)
 	
 	self->priv->screen = screen;
 	self->priv->keystring = g_strdup(keystring);
-	if (!egg_accelerator_parse_virtual (self->priv->keystring, &keysym, NULL,
-										&virtual_mods))
+	if (!egg_accelerator_parse_virtual (self->priv->keystring, &keysym, 
+										NULL, &virtual_mods))
 	{
 		g_warning("Error on parse %s", self->priv->keystring);
 		g_object_unref(self);

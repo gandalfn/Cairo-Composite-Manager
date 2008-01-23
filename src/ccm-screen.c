@@ -30,6 +30,7 @@
 #include "ccm-window.h"
 #include "ccm-drawable.h"
 #include "ccm-extension-loader.h"
+#include "ccm-keybind.h"
 
 enum
 {
@@ -691,11 +692,6 @@ on_event(CCMScreen* self, XEvent* event)
 	
 	switch (event->type)
 	{
-		case KeyPress:
-		{
-			g_print("%s KeyPress\n", __FUNCTION__);
-		}
-		break;
 		case CreateNotify:
 		{	
 			XCreateWindowEvent* create_event = ((XCreateWindowEvent*)event);
