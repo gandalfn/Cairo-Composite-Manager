@@ -434,8 +434,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 		
 		if (!window->is_input_only)
 		{
-			if (ccm_window_paint(window, self->priv->ctx))
-				ret = TRUE;
+			ret |= ccm_window_paint(window, self->priv->ctx);
 		}
 	}
 	
@@ -1168,4 +1167,20 @@ ccm_screen_damage_region(CCMScreen* self, CCMRegion* area)
 			break;
 		}
 	}
+}
+
+GList*
+ccm_screen_get_windows (CCMScreen *self)
+{
+	g_return_val_if_fail (self != NULL, NULL);
+
+	return self->priv->windows;
+}
+
+CCMRegion*
+ccm_screen_get_damaged (CCMScreen *self)
+{
+	g_return_val_if_fail (self != NULL, NULL);
+
+	return self->priv->damaged;
 }

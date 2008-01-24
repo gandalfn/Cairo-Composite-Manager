@@ -1,3 +1,21 @@
+2008-01-24  Carlos Diógenes  <cerdiogenes@gmail.com>
+
+Review Nicolas Bruguier  <gandalfn@club-internet.fr>:
+
+    * configure.ac:
+    * plugins/Makefile.am:
+    * plugins/magnifier/Makefile.am:
+    * plugins/magnifier/ccm-magnifier.c:
+    * plugins/magnifier/ccm-magnifier.h:
+    * plugins/magnifier/ccm-magnifier.plugin.desktop.in:
+    * plugins/magnifier/ccm-magnifier.schemas.in:
+    * plugins/shadow/ccm-shadow.c:
+    * po/Makefile.in.in:
+    * src/ccm-screen.c:
+    * src/ccm-window.c:
+    * src/ccm.h: First implementation of magnifier plugin, introduce a bug in 
+                 shadow plugin, but is pretty good, thanks Carlos.
+
 2008-01-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-screen.c:

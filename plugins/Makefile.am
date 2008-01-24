@@ -4,7 +4,8 @@ SUBDIRS = \
 	opacity\
     fade \
     freeze \
-    menu-animation
+    menu-animation \
+	magnifier
 
 ## File created by the gnome-build tools
 

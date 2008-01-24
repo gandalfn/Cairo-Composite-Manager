@@ -172,6 +172,7 @@ void            ccm_screen_damage_region        (CCMScreen* self,
 void            ccm_screen_restack              (CCMScreen* self, 
                                                  CCMWindow* above, 
                                                  CCMWindow* below);
+GList*           ccm_screen_get_windows         (CCMScreen *self);
 /******************************************************************************/
 
 /****************************** Drawable **************************************/
@@ -218,7 +219,7 @@ void			ccm_window_unredirect_subwindows 	(CCMWindow* self);
 CCMPixmap*		ccm_window_get_pixmap				(CCMWindow* self);
 cairo_format_t	ccm_window_get_format 				(CCMWindow* self);
 guint			ccm_window_get_depth 				(CCMWindow* self);
-gboolean		ccm_window_paint 					(CCMWindow* self, 
+gboolean		ccm_window_paint 					(CCMWindow* self,
                                                      cairo_t* ctx);
 void			ccm_window_map						(CCMWindow* self);
 void			ccm_window_unmap					(CCMWindow* self);

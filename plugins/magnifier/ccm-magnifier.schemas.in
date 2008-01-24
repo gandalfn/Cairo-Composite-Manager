@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<gconfschemafile>
+   <schemalist>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/magnifier/zoom-level</key>
+         <applyto>/apps/cairo-compmgr/default/magnifier/zoom-level</applyto>
+         <owner>gnome</owner>
+         <type>float</type>
+		 <default>2</default>
+         <locale name="C">
+            <short>Magnifier zoom level.</short>
+            <long>The magnifier zoom level determines how much the screen is magnified.</long>
+         </locale>
+      </schema>
+      <schema>
+	 <key>/schemas/apps/cairo-compmgr/default/magnifier/x</key>
+         <applyto>/apps/cairo-compmgr/default/magnifier/x</applyto>
+         <owner>gnome</owner>
+         <type>int</type>
+		 <default>512</default>
+         <locale name="C">
+            <short>Magnifier X position.</short>
+            <long>The magnifier position in the X axis.</long>
+         </locale>
+      </schema>
+      <schema>
+	 <key>/schemas/apps/cairo-compmgr/default/magnifier/y</key>
+         <applyto>/apps/cairo-compmgr/default/magnifier/y</applyto>
+         <owner>gnome</owner>
+         <type>int</type>
+		 <default>0</default>
+         <locale name="C">
+            <short>Magnifier Y position.</short>
+            <long>The magnifier position in the Y axis.</long>
+         </locale>
+      </schema>
+      <schema>
+	 <key>/schemas/apps/cairo-compmgr/default/magnifier/height</key>
+         <applyto>/apps/cairo-compmgr/default/magnifier/height</applyto>
+         <owner>gnome</owner>
+         <type>int</type>
+		 <default>384</default>
+         <locale name="C">
+            <short>Magnifier height.</short>
+            <long>Magnifier height.</long>
+         </locale>
+      </schema>
+      <schema>
+	 <key>/schemas/apps/cairo-compmgr/default/magnifier/width</key>
+         <applyto>/apps/cairo-compmgr/default/magnifier/width</applyto>
+         <owner>gnome</owner>
+         <type>int</type>
+		 <default>512</default>
+         <locale name="C">
+            <short>Magnifier width.</short>
+            <long>Magnifier width.</long>
+         </locale>
+      </schema>
+   </schemalist>
+</gconfschemafile>
