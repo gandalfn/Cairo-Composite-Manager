@@ -239,6 +239,30 @@ ccm_extension_get_type_object (CCMExtension* self)
 	return self->priv->type;
 }
 
+void
+_ccm_extension_insert_sorted (GSList** self, CCMExtension* in)
+
+{
+	gint most_far = -1;
+	int cpt;
+	GSList *tmp;
+
+	tmp = *self;
+
+	while (tmp) {
+		CCMExtension *on = CCM_EXTENSION (tmp->data);
+		for (cpt = 0; in->priv->depends[cpt]; cpt++) {
+			if (!g_ascii_strcasecmp (in->priv->depends[cpt],
+									 on->priv->label)) {
+				most_far = g_slist_index (*self, on);
+			}
+		}
+		tmp = tmp->next;
+	}
+
+	*self = g_slist_insert (*self, in, most_far + 1);
+}
+
 gint
 _ccm_extension_compare(CCMExtension* self, CCMExtension* other)
 {

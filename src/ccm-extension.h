@@ -58,6 +58,8 @@ GType 			ccm_extension_get_type_object 	(CCMExtension* self);
 const gchar*	ccm_extension_get_label			(CCMExtension* self);
 gint			_ccm_extension_compare			(CCMExtension* self, 
 												 CCMExtension* other);
+void            _ccm_extension_insert_sorted    (GSList** self,
+												 CCMExtension* in);
 
 G_END_DECLS
 
