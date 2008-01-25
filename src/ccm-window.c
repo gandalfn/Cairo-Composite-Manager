@@ -611,7 +611,7 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	
 	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
 	cairo_get_matrix (context, &matrix);
-	cairo_translate (context, geometry.x, geometry.y);
+	cairo_translate (context, geometry.x / matrix.xx, geometry.y / matrix.yy);
 	cairo_set_source_surface(context, surface, 0.0f, 0.0f);
 	cairo_paint_with_alpha(context, self->priv->opacity);
 		

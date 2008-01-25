@@ -121,6 +121,9 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	if (!self->priv->surface) 
 	{
 		cairo_t* ctx;
+		gfloat scale;
+			
+		scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
 		
 		self->priv->area.x = 0;
 		self->priv->area.y = 0;
@@ -130,9 +133,9 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT]);
 		
 		self->priv->surface = cairo_image_surface_create (
-													CAIRO_FORMAT_ARGB32, 
-													self->priv->area.width, 
-													self->priv->area.height);
+												CAIRO_FORMAT_RGB24, 
+												self->priv->area.width / scale, 
+												self->priv->area.height / scale);
 		ctx = cairo_create (self->priv->surface);
 		cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
 		cairo_paint(ctx);
@@ -145,10 +148,24 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 
 	if (ret) 
 	{
-		cairo_set_source_surface (context, self->priv->surface, 
-								  ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_X]), 
+		gfloat scale;
+			
+		cairo_save(context);
+		scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
+		
+		cairo_rectangle (context, 
+						 ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_X]), 
+						 ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_Y]),
+						 self->priv->area.width, self->priv->area.height);
+		cairo_clip(context);
+		
+		cairo_translate (context, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_X]), 
 								  ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_Y]));
+		cairo_scale(context, scale, scale);
+			
+		cairo_set_source_surface (context, self->priv->surface, 0, 0);
 		cairo_paint (context);
+		cairo_restore (context);
 	}
 
 	return ret;
@@ -174,11 +191,10 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			gfloat scale;
 			
 			scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
+		
 			cairo_rectangle (ctx, 0, 0,
-							 self->priv->area.width, self->priv->area.height);
+							 self->priv->area.width / scale, self->priv->area.height / scale);
 			cairo_clip(ctx);
-			
-			cairo_scale(ctx, scale, scale);
 			
 			damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(window), ctx);
 			cairo_clip (ctx);
