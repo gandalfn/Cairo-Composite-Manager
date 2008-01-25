@@ -1,3 +1,8 @@
+2008-01-25  Carlos Diógenes  <cerdiogenes@gmail.com>
+
+    * plugins/magnifier/ccm-magnifier.plugin.desktop.in: Add Shadow plugin 
+                                                         depends
+
 2008-01-25  Benoit Chauvin  <belou.bdc@gmail.com>
 
     * plugins/menu-animation/ccm-menu-animation.schemas.in: 
