@@ -1,3 +1,8 @@
+2008-01-25  Benoit Chauvin  <belou.bdc@gmail.com>
+
+    * plugins/menu-animation/ccm-menu-animation.schemas.in: 
+    * plugins/fade/ccm-fade.schemas.in: Change default plugins duration.
+
 2008-01-25  Carlos Diógenes  <cerdiogenes@gmail.com>
 
     * src/ccm-extension-loader.c:
