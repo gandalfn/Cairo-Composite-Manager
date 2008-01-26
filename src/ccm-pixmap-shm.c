@@ -138,10 +138,16 @@ ccm_pixmap_shm_release (CCMPixmap* pixmap)
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	
 	if (self->priv->pixmap) 
+	{
 		XFreePixmap(CCM_DISPLAY_XDISPLAY(display), self->priv->pixmap);
+		self->priv->pixmap = None;
+	}
 
 	if (self->priv->gc)
+	{
 		XFreeGC(CCM_DISPLAY_XDISPLAY(display), self->priv->gc);
+		self->priv->gc = NULL;
+	}
 	
 	if (self->priv->image)
 	{
@@ -149,6 +155,7 @@ ccm_pixmap_shm_release (CCMPixmap* pixmap)
 		XDestroyImage(self->priv->image);
 		shmdt (self->priv->shminfo.shmaddr);
 		shmctl (self->priv->shminfo.shmid, IPC_RMID, 0);
+		self->priv->image = NULL;
 	}
 }
 
@@ -192,12 +199,15 @@ ccm_pixmap_shm_get_surface (CCMDrawable* drawable)
 		ccm_drawable_is_damaged (CCM_DRAWABLE(self)))
 		ccm_drawable_repair(CCM_DRAWABLE(self));
 		
-	surface = cairo_image_surface_create_for_data(
+	if (self->priv->image)
+	{
+		surface = cairo_image_surface_create_for_data(
 									(unsigned char *)self->priv->image->data, 
 									ccm_window_get_format(CCM_PIXMAP(self)->window),
 									(int)self->priv->image->width, 
 									(int)self->priv->image->height, 
 									self->priv->image->bytes_per_line);
+	}
 	
 	return surface;
 }

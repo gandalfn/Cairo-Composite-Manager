@@ -1,3 +1,7 @@
+2008-01-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-shm.c: Check if image is created before create surface
+
 2008-01-25  Benoit Chauvin  <belou.bdc@gmail.com>
 
     * plugins/menu-animation/ccm-menu-animation.schemas.in: 
