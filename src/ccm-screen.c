@@ -79,6 +79,7 @@ struct _CCMScreenPrivate
 	CCMRegion*			damaged;
 	
 	GList*				windows;
+	gboolean			buffered;
 	
 	GTimer*				vblank;
 	guint				id_paint;
@@ -158,6 +159,7 @@ ccm_screen_finalize (GObject *object)
 	}
 	if (self->priv->damaged)
 		ccm_region_destroy(self->priv->damaged);
+	
 	if (self->priv->cow) 
 	{
 		XCompositeReleaseOverlayWindow(CCM_DISPLAY_XDISPLAY(self->priv->display),
@@ -208,6 +210,7 @@ ccm_screen_load_config(CCMScreen* self)
 		self->priv->options[cpt] = ccm_config_new(self->number, NULL, 
 												  CCMScreenOptions[cpt]);
 	}
+	self->priv->buffered = _ccm_screen_use_buffered(self);
 }
 
 static gboolean
@@ -434,7 +437,8 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 		
 		if (!window->is_input_only)
 		{
-			ret |= ccm_window_paint(window, self->priv->ctx);
+			ret |= ccm_window_paint(window, self->priv->ctx, 
+									self->priv->buffered);
 		}
 	}
 	
@@ -1015,6 +1019,12 @@ _ccm_screen_remove_animation(CCMScreen* self, CCMAnimation* animation)
 	self->priv->animations = g_slist_remove(self->priv->animations, animation);
 }
 
+void 
+_ccm_screen_set_buffered(CCMScreen* self, gboolean buffered)
+{
+	self->priv->buffered = buffered && _ccm_screen_use_buffered(self);
+}
+
 CCMScreen*
 ccm_screen_new(CCMDisplay* display, guint number)
 {
@@ -1108,7 +1118,8 @@ ccm_screen_get_root_window(CCMScreen* self)
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(self)), 
 				      root,
 				      SubstructureNotifyMask   |
-					  ExposureMask);
+					  ExposureMask 			   |
+					  PointerMotionMask);
 	}
 	
 	return self->priv->root;
@@ -1183,4 +1194,16 @@ ccm_screen_get_damaged (CCMScreen *self)
 	g_return_val_if_fail (self != NULL, NULL);
 
 	return self->priv->damaged;
+}
+
+void
+ccm_screen_add_damaged_region (CCMScreen *self, CCMRegion* region)
+{
+	g_return_if_fail (self != NULL);
+	g_return_if_fail (region != NULL);
+
+	if (self->priv->damaged)
+		ccm_region_union(self->priv->damaged, region);
+	else
+		self->priv->damaged = ccm_region_copy(region);
 }

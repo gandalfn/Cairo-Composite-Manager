@@ -13,28 +13,6 @@
          </locale>
       </schema>
       <schema>
-	 <key>/schemas/apps/cairo-compmgr/default/magnifier/x</key>
-         <applyto>/apps/cairo-compmgr/default/magnifier/x</applyto>
-         <owner>gnome</owner>
-         <type>int</type>
-		 <default>512</default>
-         <locale name="C">
-            <short>Magnifier X position.</short>
-            <long>The magnifier position in the X axis.</long>
-         </locale>
-      </schema>
-      <schema>
-	 <key>/schemas/apps/cairo-compmgr/default/magnifier/y</key>
-         <applyto>/apps/cairo-compmgr/default/magnifier/y</applyto>
-         <owner>gnome</owner>
-         <type>int</type>
-		 <default>0</default>
-         <locale name="C">
-            <short>Magnifier Y position.</short>
-            <long>The magnifier position in the Y axis.</long>
-         </locale>
-      </schema>
-      <schema>
 	 <key>/schemas/apps/cairo-compmgr/default/magnifier/height</key>
          <applyto>/apps/cairo-compmgr/default/magnifier/height</applyto>
          <owner>gnome</owner>
@@ -54,6 +32,17 @@
          <locale name="C">
             <short>Magnifier width.</short>
             <long>Magnifier width.</long>
+         </locale>
+      </schema>
+      <schema>
+      <key>/schemas/apps/cairo-compmgr/default/magnifier/shortcut</key>
+         <applyto>/apps/cairo-compmgr/default/magnifier/shortcut</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+		 <default>F12</default>
+         <locale name="C">
+            <short>Magnifier shortcut key.</short>
+            <long>The magnifier shortcut key.</long>
          </locale>
       </schema>
    </schemalist>

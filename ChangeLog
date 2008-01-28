@@ -1,3 +1,17 @@
+2008-01-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.schemas.in: 
+    * plugins/magnifier/ccm-magnifier.c: Activate magnifier when stroke F12 key
+                                         Add a border and shade desktop when
+                                         magnifier is activated.
+                                         Show mouse in magnifier and move area
+                                         on mouse move (need to be fixed)
+    * src/ccm-screen.c:
+    * src/ccm-screen.h:
+    * src/ccm-window.c:
+    * src/ccm.h: Add buffered option at ccm_window_paint to desactivate on fly 
+                 buffered pixmap (need to be fixed).
+
 2008-01-25  Carlos Diógenes  <cerdiogenes@gmail.com>
 
     * plugins/magnifier/ccm-magnifier.plugin.desktop.in: Add Shadow plugin 
