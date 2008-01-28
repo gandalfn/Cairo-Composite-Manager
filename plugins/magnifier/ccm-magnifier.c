@@ -37,6 +37,7 @@ enum
 	CCM_MAGNIFIER_HEIGHT,
 	CCM_MAGNIFIER_WIDTH,
 	CCM_MAGNIFIER_SHORTCUT,
+	CCM_MAGNIFIER_SHADE_DESKTOP,
 	CCM_MAGNIFIER_OPTION_N
 };
 
@@ -45,6 +46,7 @@ static gchar* CCMMagnifierOptions[CCM_MAGNIFIER_OPTION_N] = {
 	"height",
 	"width",
 	"shortcut",
+	"shade_desktop"
 };
 
 static void ccm_magnifier_screen_iface_init(CCMScreenPluginClass* iface);
@@ -230,18 +232,18 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 		self->priv->y_offset = self->priv->y_mouse;
 		ccm_screen_damage (self->priv->screen);
 	}
-	if (self->priv->x_offset + (self->priv->area.width / scale) < self->priv->x_mouse - 20)
+	if (self->priv->x_offset + (self->priv->area.width / scale) < self->priv->x_mouse)
 	{
 		self->priv->x_offset = self->priv->x_mouse + 20 - (self->priv->area.width / scale);
-		if (self->priv->x_offset + self->priv->area.width > self->priv->screen->xscreen->width)
-			self->priv->x_offset = self->priv->screen->xscreen->width - self->priv->area.width;
+		if (self->priv->x_offset + (self->priv->area.width / scale) > self->priv->screen->xscreen->width)
+			self->priv->x_offset = self->priv->screen->xscreen->width - (self->priv->area.width / scale);
 		ccm_screen_damage (self->priv->screen);
 	}
-	if (self->priv->y_offset + (self->priv->area.height / scale) < self->priv->y_mouse  - 20)
+	if (self->priv->y_offset + (self->priv->area.height / scale) < self->priv->y_mouse)
 	{
 		self->priv->y_offset = self->priv->y_mouse + 20 - (self->priv->area.height / scale);
-		if (self->priv->y_offset + self->priv->area.height > self->priv->screen->xscreen->height)
-			self->priv->y_offset = self->priv->screen->xscreen->height - self->priv->area.height;
+		if (self->priv->y_offset + (self->priv->area.height / scale) > self->priv->screen->xscreen->height)
+			self->priv->y_offset = self->priv->screen->xscreen->height - (self->priv->area.height / scale);
 		ccm_screen_damage (self->priv->screen);
 	}
 }
@@ -335,9 +337,12 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		ccm_screen_add_damaged_region(screen, area);
 		ccm_region_destroy(area);
 		
+		if (ccm_config_get_boolean (self->priv->options [CCM_MAGNIFIER_SHADE_DESKTOP]))
+		{
+			cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 0.6f);
+			cairo_paint(context);
+		}
 		cairo_save(context);
-		cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 0.6f);
-		cairo_paint(context);
 		cairo_set_source_rgba(context, 1.0f, 1.0f, 1.0f, 0.8f);
 		cairo_rectangle_round(context, x - 10, y - 10,
 							  self->priv->area.width + 20, 

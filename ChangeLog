@@ -1,5 +1,12 @@
 2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * configure.ac: add --enable-glitz-tfp option
+    * plugins/magnifier/ccm-magnifier.schemas.in: 
+    * plugins/magnifier/ccm-magnifier.c: Add shade desktop gconf options, fix 
+                                         move on border
+
+2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * plugins/magnifier/ccm-magnifier.c: Fix follow mouse move.
     
 2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>

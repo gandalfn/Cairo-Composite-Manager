@@ -45,5 +45,16 @@
             <long>The magnifier shortcut key.</long>
          </locale>
       </schema>
+      <schema>
+      <key>/schemas/apps/cairo-compmgr/default/magnifier/shade_desktop</key>
+         <applyto>/apps/cairo-compmgr/default/magnifier/shade_desktop</applyto>
+         <owner>gnome</owner>
+         <type>bool</type>
+		 <default>true</default>
+         <locale name="C">
+            <short>Magnifier shade desktop.</short>
+            <long>Shade desktop when magnifier is enabled.</long>
+         </locale>
+      </schema>
    </schemalist>
 </gconfschemafile>
