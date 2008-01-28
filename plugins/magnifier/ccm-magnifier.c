@@ -213,7 +213,7 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 	unsigned int m;
 	Window r, w;
 	gfloat scale;
-			
+	
 	scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
 			
 	XQueryPointer (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root),
@@ -230,14 +230,18 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 		self->priv->y_offset = self->priv->y_mouse;
 		ccm_screen_damage (self->priv->screen);
 	}
-	if (self->priv->x_offset + (self->priv->area.width / scale) < self->priv->x_mouse)
+	if (self->priv->x_offset + (self->priv->area.width / scale) < self->priv->x_mouse - 20)
 	{
-		self->priv->x_offset = self->priv->x_mouse - (self->priv->area.width / scale);
+		self->priv->x_offset = self->priv->x_mouse + 20 - (self->priv->area.width / scale);
+		if (self->priv->x_offset + self->priv->area.width > self->priv->screen->xscreen->width)
+			self->priv->x_offset = self->priv->screen->xscreen->width - self->priv->area.width;
 		ccm_screen_damage (self->priv->screen);
 	}
-	if (self->priv->y_offset + (self->priv->area.height / scale) < self->priv->y_mouse)
+	if (self->priv->y_offset + (self->priv->area.height / scale) < self->priv->y_mouse  - 20)
 	{
-		self->priv->y_offset = self->priv->y_mouse - (self->priv->area.height / scale);
+		self->priv->y_offset = self->priv->y_mouse + 20 - (self->priv->area.height / scale);
+		if (self->priv->y_offset + self->priv->area.height > self->priv->screen->xscreen->height)
+			self->priv->y_offset = self->priv->screen->xscreen->height - self->priv->area.height;
 		ccm_screen_damage (self->priv->screen);
 	}
 }
@@ -262,6 +266,9 @@ ccm_magnifier_paint_mouse(CCMMagnifier* self, cairo_t* context)
 	XFixesCursorImage *cursor_image;
 	cairo_surface_t* surface;
 	int x, y;
+	gfloat scale;
+			
+	scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
 	cursor_image = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(display));
 	ccm_magnifier_cursor_convert_to_rgba (self, cursor_image);
 	
@@ -270,7 +277,8 @@ ccm_magnifier_paint_mouse(CCMMagnifier* self, cairo_t* context)
 												   cursor_image->width, cursor_image->height,
 												   cursor_image->width * 4);
 	cairo_set_source_surface (context, surface, 
-							  self->priv->x_mouse, self->priv->y_mouse);
+							  self->priv->x_mouse - self->priv->x_offset, 
+							  self->priv->y_mouse - self->priv->y_offset);
 	cairo_paint(context);
 	cairo_surface_destroy (surface);
 	XFree(cursor_image);

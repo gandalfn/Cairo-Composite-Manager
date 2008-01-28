@@ -1,4 +1,8 @@
-2008-01-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.c: Fix follow mouse move.
+    
+2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/magnifier/ccm-magnifier.schemas.in: 
     * plugins/magnifier/ccm-magnifier.c: Activate magnifier when stroke F12 key
