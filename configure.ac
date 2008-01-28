@@ -84,8 +84,8 @@ AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
 
 AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 
-AC_ARG_ENABLE(glitz-ftp,
-  [  --enable-glitz-ftp        Enable glitz tfp],
+AC_ARG_ENABLE(glitz-tfp,
+  [  --enable-glitz-tfp        Enable glitz tfp],
   [glitztfpbackend=$enableval], [glitztfpbackend=no])
 
 if [ test x$glitzbackend = xyes ]; then

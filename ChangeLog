@@ -1,5 +1,11 @@
 2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * configure.ac: Nicolas stop beer :) isn't --enable-glitz-ftp but 
+                    --enable-glitz-tfp
+    * plugins/magnifier/ccm-magnifier.c: Hide pointer when magnifier is active
+
+2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * configure.ac: add --enable-glitz-tfp option
     * plugins/magnifier/ccm-magnifier.schemas.in: 
     * plugins/magnifier/ccm-magnifier.c: Add shade desktop gconf options, fix 

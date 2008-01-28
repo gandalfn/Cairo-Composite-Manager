@@ -179,11 +179,15 @@ static void
 ccm_magnifier_on_key_press(CCMMagnifier* self)
 {
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	CCMWindow* root = ccm_screen_get_overlay_window (self->priv->screen);
+	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
 	
 	self->priv->enabled = ~self->priv->enabled;
 	ccm_screen_damage(self->priv->screen);
 	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
+	if (self->priv->enabled)
+		XFixesHideCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
+	else
+		XFixesShowCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
 }
 
 static void
