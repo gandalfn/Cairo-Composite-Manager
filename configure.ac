@@ -84,16 +84,23 @@ AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
 
 AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 
+AC_ARG_ENABLE(glitz-tfp,
+  [  --enable-glitz-tfp        Enable glitz tfp],
+  [glitztfpbackend=$enableval], [glitztfpbackend=no])
+
 if [ test x$glitzbackend = xyes ]; then
-    cflags_save=$CFLAGS 
-    libs_save=$LIBS 
-    CFLAGS="$CFLAGS $CCM_GLITZ_BACKEND_CFLAGS" 
-    LIBS="$LIBS $CCM_GLITZ_BACKEND_LIBS" 
-    AC_CHECK_FUNC(glitz_glx_create_drawable_for_pixmap, 
-                  [glitztfpbackend="yes"],
-                  [glitztfpbackend="no"])
-    CFLAGS=$cflags_save 
- 	LIBS=$libs_save 
+    if [ test x$glitztfpbackend = xyes ]; then
+    	cflags_save=$CFLAGS 
+    	libs_save=$LIBS 
+	CFLAGS="$CFLAGS $CCM_GLITZ_BACKEND_CFLAGS" 
+	LIBS="$LIBS $CCM_GLITZ_BACKEND_LIBS" 
+
+	AC_CHECK_FUNC(glitz_glx_create_drawable_for_pixmap, 
+        	          [glitztfpbackend="yes"],
+	                  [glitztfpbackend="no"])
+	CFLAGS=$cflags_save 
+	LIBS=$libs_save 
+    fi
 fi                  
 AM_CONDITIONAL(HAVE_GLITZ_TFP_BACKEND, [test x$glitztfpbackend = xyes])
 
