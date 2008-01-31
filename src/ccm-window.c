@@ -1103,7 +1103,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context)
 		{
 			cairo_surface_t* surface;
 			
-			if (CCM_IS_PIXMAP_BUFFERED(self))
+			if (CCM_IS_PIXMAP_BUFFERED(pixmap))
 				g_object_set(pixmap, "buffered", self->is_viewable, NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
