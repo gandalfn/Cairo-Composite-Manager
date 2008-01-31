@@ -1,3 +1,11 @@
+2008-01-31  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.c:
+    * src/ccm-pixmap-buffered-shm.c:
+    * src/ccm-window.c: Fix offset of clipping when drawing in magnifier surface
+                        Clip screen when drawing shade desktop.
+                        Fix unset buffered pixmap in window paint.
+
 2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * configure.ac: Nicolas stop beer :) isn't --enable-glitz-ftp but 

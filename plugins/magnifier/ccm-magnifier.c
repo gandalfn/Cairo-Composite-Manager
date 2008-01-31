@@ -183,6 +183,7 @@ ccm_magnifier_on_key_press(CCMMagnifier* self)
 	
 	self->priv->enabled = ~self->priv->enabled;
 	ccm_screen_damage(self->priv->screen);
+	
 	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
 	if (self->priv->enabled)
 		XFixesHideCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
@@ -298,7 +299,7 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	
 	gboolean ret = FALSE;
 	
-	if (!self->priv->surface) 
+	if (self->priv->enabled && !self->priv->surface) 
 	{
 		cairo_t* ctx;
 		gfloat scale;
@@ -343,8 +344,20 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		
 		if (ccm_config_get_boolean (self->priv->options [CCM_MAGNIFIER_SHADE_DESKTOP]))
 		{
+			gint cpt, nb_rects;
+			cairo_rectangle_t* rects;
+			CCMRegion* region = ccm_screen_get_damaged (self->priv->screen);
+			
+			cairo_save(context);
+			ccm_region_get_rectangles(region, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+				cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
+								 rects[cpt].width, rects[cpt].height);
+			cairo_clip(context);
+			
 			cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 0.6f);
 			cairo_paint(context);
+			cairo_restore(context);
 		}
 		cairo_save(context);
 		cairo_set_source_rgba(context, 1.0f, 1.0f, 1.0f, 0.8f);
@@ -387,11 +400,13 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 	CCMMagnifier* self = CCM_MAGNIFIER(_ccm_screen_get_plugin (screen, 
 														CCM_TYPE_MAGNIFIER));
-	CCMRegion *area = ccm_region_rectangle (&self->priv->area);
 	CCMRegion *geometry = ccm_drawable_get_geometry (CCM_DRAWABLE (window));
 	
 	if (geometry && self->priv->enabled) 
 	{
+		CCMRegion *area = ccm_region_rectangle (&self->priv->area);
+	
+		ccm_region_offset (area, self->priv->x_offset, self->priv->y_offset);
 		ccm_region_intersect (area, geometry);
 		if (!ccm_region_empty (area)) 
 		{
@@ -402,7 +417,8 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
 		
 			cairo_rectangle (ctx, 0, 0,
-							 self->priv->area.width / scale, self->priv->area.height / scale);
+							 self->priv->area.width / scale, 
+							 self->priv->area.height / scale);
 			cairo_clip(ctx);
 			cairo_translate (ctx, -self->priv->x_offset, -self->priv->y_offset);
 			damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(window), ctx);

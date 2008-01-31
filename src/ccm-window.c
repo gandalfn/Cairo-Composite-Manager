@@ -1095,7 +1095,6 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 	
 	cairo_save(context);
 	/* cairo_reset_clip (context); */
-			
 	damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(self), context);
 	cairo_clip(context);
 	
@@ -1107,7 +1106,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 		{
 			cairo_surface_t* surface;
 			
-			if (CCM_IS_PIXMAP_BUFFERED(self))
+			if (CCM_IS_PIXMAP_BUFFERED(pixmap))
 				g_object_set(pixmap, "buffered", 
 							 buffered && self->is_viewable, NULL);
 			
