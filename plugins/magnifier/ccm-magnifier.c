@@ -2,6 +2,7 @@
 /*
  * cairo-compmgr
  * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * 				 Carlos Diógenes  2007 <cerdiogenes@gmail.com>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
