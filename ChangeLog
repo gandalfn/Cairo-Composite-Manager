@@ -1,3 +1,7 @@
+2008-02-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-screen.c: Remove refresh rate check on paint
+    
 2008-01-31  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/magnifier/ccm-magnifier.c:

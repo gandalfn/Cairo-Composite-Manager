@@ -513,41 +513,38 @@ ccm_screen_paint(CCMScreen* self)
 	
 	GSList* item;
 	
-	if (g_timer_elapsed (self->priv->vblank, NULL) >= 1/60)
-	{
-		for (item = self->priv->animations; item; item = item->next)
-		{	
-			if (!_ccm_animation_main (item->data))
-				_ccm_screen_remove_animation (self, item->data);
-		}
-				
-		if (self->priv->cow)
-		{
-			if (!self->priv->ctx)
-			{
-				self->priv->ctx = 
-					ccm_drawable_create_context(CCM_DRAWABLE(self->priv->cow));
-				cairo_identity_matrix (self->priv->ctx);
-				cairo_rectangle(self->priv->ctx, 0, 0, 
-								self->xscreen->width, self->xscreen->height);
-				cairo_clip(self->priv->ctx);
-			}
-			if (ccm_screen_plugin_paint(self->priv->plugin, self, 
-										self->priv->ctx))
-			{
-				if (self->priv->damaged)
-				{
-					ccm_drawable_flush_region(CCM_DRAWABLE(self->priv->cow), 
-											  self->priv->damaged);
-					ccm_region_destroy(self->priv->damaged);
-					self->priv->damaged = NULL;
-				}
-				else
-					ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
-			}
-		}
-		g_timer_start(self->priv->vblank);
+	for (item = self->priv->animations; item; item = item->next)
+	{	
+		if (!_ccm_animation_main (item->data))
+			_ccm_screen_remove_animation (self, item->data);
 	}
+			
+	if (self->priv->cow)
+	{
+		if (!self->priv->ctx)
+		{
+			self->priv->ctx = 
+				ccm_drawable_create_context(CCM_DRAWABLE(self->priv->cow));
+			cairo_identity_matrix (self->priv->ctx);
+			cairo_rectangle(self->priv->ctx, 0, 0, 
+							self->xscreen->width, self->xscreen->height);
+			cairo_clip(self->priv->ctx);
+		}
+		if (ccm_screen_plugin_paint(self->priv->plugin, self, 
+									self->priv->ctx))
+		{
+			if (self->priv->damaged)
+			{
+				ccm_drawable_flush_region(CCM_DRAWABLE(self->priv->cow), 
+										  self->priv->damaged);
+				ccm_region_destroy(self->priv->damaged);
+				self->priv->damaged = NULL;
+			}
+			else
+				ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
+		}
+	}
+	g_timer_start(self->priv->vblank);
 	
 	return TRUE;
 }
