@@ -261,7 +261,7 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			gint nb_rects, cpt;
 			cairo_matrix_t matrix;
 			int border, offset;
-	
+			
 			border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 			offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
 			

@@ -87,7 +87,7 @@ ccm_pixmap_buffered_shm_set_property(GObject *object,
 					}
 				}
 			}
-			self->priv->buffered = val;
+			self->priv->buffered = val;	
 		}
 		break;
 		default:

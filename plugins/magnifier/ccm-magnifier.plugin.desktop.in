@@ -1,0 +1,6 @@
+[CCMPlugin]
+Plugin=ccm-magnifier
+_Name=Magnifier
+_Description=Cairo Composite Manager Magnifier
+Backends=xrender;glitz
+Depends=Shadow

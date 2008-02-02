@@ -1,14 +1,50 @@
 2008-01-31  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
-    * src/ccm-window.c: Fix unset buffered pixmap in window paint.
+    * plugins/magnifier/ccm-magnifier.c:
+    * src/ccm-pixmap-buffered-shm.c:
+    * src/ccm-window.c: Fix offset of clipping when drawing in magnifier surface
+                        Clip screen when drawing shade desktop.
+                        Fix unset buffered pixmap in window paint.
 
 2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
-    * configure.ac: add enable-glitz-tfp option
-    
-2008-01-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+    * configure.ac: Nicolas stop beer :) isn't --enable-glitz-ftp but 
+                    --enable-glitz-tfp
+    * plugins/magnifier/ccm-magnifier.c: Hide pointer when magnifier is active
+
+2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * configure.ac: add --enable-glitz-tfp option
+    * plugins/magnifier/ccm-magnifier.schemas.in: 
+    * plugins/magnifier/ccm-magnifier.c: Add shade desktop gconf options, fix 
+                                         move on border
+
+2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.c: Fix follow mouse move.
+
+2008-01-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-shm.c: Check if image is created before create surface
+
+2008-01-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.schemas.in: 
+    * plugins/magnifier/ccm-magnifier.c: Activate magnifier when stroke F12 key
+                                         Add a border and shade desktop when
+                                         magnifier is activated.
+                                         Show mouse in magnifier and move area
+                                         on mouse move (need to be fixed)
+    * src/ccm-screen.c:
+    * src/ccm-screen.h:
+    * src/ccm-window.c:
+    * src/ccm.h: Add buffered option at ccm_window_paint to desactivate on fly 
+                 buffered pixmap (need to be fixed).
+
+2008-01-25  Carlos Diógenes  <cerdiogenes@gmail.com>
+
+    * plugins/magnifier/ccm-magnifier.plugin.desktop.in: Add Shadow plugin 
+                                                         depends
 
 2008-01-25  Benoit Chauvin  <belou.bdc@gmail.com>
 
@@ -20,6 +56,30 @@
     * src/ccm-extension-loader.c:
     * src/ccm-extension.c:
     * src/ccm-extension.h: Fix plugin sorting order
+
+2008-01-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.c:
+    * src/ccm-window.c: Scale magnifier on final surface paint, revert 
+                        ccm_window_paint offset, fix menu-animation bug.
+
+2008-01-24  Carlos Diógenes  <cerdiogenes@gmail.com>
+
+Review Nicolas Bruguier  <gandalfn@club-internet.fr>:
+
+    * configure.ac:
+    * plugins/Makefile.am:
+    * plugins/magnifier/Makefile.am:
+    * plugins/magnifier/ccm-magnifier.c:
+    * plugins/magnifier/ccm-magnifier.h:
+    * plugins/magnifier/ccm-magnifier.plugin.desktop.in:
+    * plugins/magnifier/ccm-magnifier.schemas.in:
+    * plugins/shadow/ccm-shadow.c:
+    * po/Makefile.in.in:
+    * src/ccm-screen.c:
+    * src/ccm-window.c:
+    * src/ccm.h: First implementation of magnifier plugin, introduce a bug in 
+                 shadow plugin, but is pretty good, thanks Carlos.
 
 2008-01-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
 

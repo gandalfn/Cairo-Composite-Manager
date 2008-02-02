@@ -70,6 +70,8 @@ void			 _ccm_screen_add_animation		(CCMScreen* self,
 												 CCMAnimation* animation);
 void			 _ccm_screen_remove_animation	(CCMScreen* self, 
 												 CCMAnimation* animation);
+void 			 _ccm_screen_set_buffered		(CCMScreen* self, 
+												 gboolean buffered);
 
 G_END_DECLS
 

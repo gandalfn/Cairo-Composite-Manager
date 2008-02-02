@@ -443,7 +443,10 @@ ccm_window_query_child(CCMWindow* self)
 	{
 		self->priv->child = windows[n_windows - 1];
 		XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
-					  self->priv->child, PropertyChangeMask);
+					  self->priv->child, 
+					  PropertyChangeMask | 
+					  SubstructureNotifyMask |
+					  PointerMotionMask);
 		XFree(windows);
 	}
 }
@@ -742,7 +745,8 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
 					  CCM_WINDOW_XWINDOW(self),
 					  PropertyChangeMask | 
-					  SubstructureNotifyMask);
+					  SubstructureNotifyMask |
+					  PointerMotionMask);
 	}
 	
 	return self;
@@ -1077,7 +1081,7 @@ ccm_window_set_opacity (CCMWindow* self, gfloat opacity)
 }
 
 gboolean
-ccm_window_paint (CCMWindow* self, cairo_t* context)
+ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	g_return_val_if_fail(context != NULL, FALSE);
@@ -1090,8 +1094,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context)
 		return ret;
 	
 	cairo_save(context);
-	cairo_reset_clip (context);
-			
+	
 	damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(self), context);
 	cairo_clip(context);
 	
@@ -1104,7 +1107,8 @@ ccm_window_paint (CCMWindow* self, cairo_t* context)
 			cairo_surface_t* surface;
 			
 			if (CCM_IS_PIXMAP_BUFFERED(pixmap))
-				g_object_set(pixmap, "buffered", self->is_viewable, NULL);
+				g_object_set(pixmap, "buffered", 
+							 buffered && self->is_viewable, NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
 				
