@@ -121,6 +121,7 @@ plugins/fade/Makefile
 plugins/freeze/Makefile
 plugins/menu-animation/Makefile
 plugins/magnifier/Makefile
+plugins/mosaic/Makefile
 data/Makefile
 data/cairo-compmgr.desktop.in
 ])

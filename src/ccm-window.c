@@ -899,6 +899,31 @@ ccm_window_make_output_only(CCMWindow* self)
 }
 
 void
+ccm_window_make_input_output(CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+	XserverRegion region;
+	cairo_rectangle_t geometry;
+	
+	if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry))
+	{
+		XRectangle rect;
+		rect.x = geometry.x;
+		rect.y = geometry.y;
+		rect.width = geometry.width;
+		rect.width = geometry.height;
+		region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY(display), 
+									&rect, 1);
+		XFixesSetWindowShapeRegion (CCM_DISPLAY_XDISPLAY(display),
+									CCM_WINDOW_XWINDOW(self),
+									ShapeInput, 0, 0, 
+									region);
+	}
+}
+
+void
 ccm_window_redirect (CCMWindow* self)
 {
     g_return_if_fail (self != NULL);

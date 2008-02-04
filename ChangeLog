@@ -1,3 +1,25 @@
+2008-02-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * configure.ac:
+    * plugins/Makefile.am:
+    * plugins/mosaic/Makefile.am:
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/mosaic/ccm-mosaic.h:
+    * plugins/mosaic/ccm-mosaic.plugin.desktop.in:
+    * plugins/mosaic/ccm-mosaic.schemas.in: First implementation of mosaic 
+                                            plugin.
+    
+    * src/ccm-pixmap-buffered-shm.c: Fix redraw when disable/enable buffering
+                                     pixmap.
+                                     
+    * src/ccm.h:
+    * src/ccm-screen.c: Add ccm_screen_set_filtered_damage which provide the 
+                        possibility to disable/enable the refresh of obscured
+                        area of window.
+                        
+    * src/ccm.h:
+    * src/ccm-window.c: Add ccm_window_make_input_output function.
+    
 2008-02-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-screen.c: Remove refresh rate check on paint

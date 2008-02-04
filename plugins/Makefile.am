@@ -5,7 +5,8 @@ SUBDIRS = \
     fade \
     freeze \
     menu-animation \
-	magnifier
+	magnifier \
+	mosaic
 
 ## File created by the gnome-build tools
 

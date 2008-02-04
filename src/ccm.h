@@ -176,6 +176,8 @@ GList*          ccm_screen_get_windows          (CCMScreen *self);
 CCMRegion*      ccm_screen_get_damaged          (CCMScreen *self);
 void            ccm_screen_add_damaged_region   (CCMScreen *self, 
                                                  CCMRegion* region);
+void            ccm_screen_set_filtered_damage  (CCMScreen* self, 
+                                                 gboolean filtered);
 /******************************************************************************/
 
 /****************************** Drawable **************************************/
@@ -215,6 +217,7 @@ CCMWindow*  	ccm_window_new          			(CCMScreen* screen,
 											 		 Window xwindow);
 gboolean		ccm_window_is_managed				(CCMWindow* self);
 void			ccm_window_make_output_only			(CCMWindow* self);
+void            ccm_window_make_input_output        (CCMWindow* self);
 void			ccm_window_redirect 				(CCMWindow* self);
 void			ccm_window_redirect_subwindows		(CCMWindow* self);
 void			ccm_window_unredirect 				(CCMWindow* self);

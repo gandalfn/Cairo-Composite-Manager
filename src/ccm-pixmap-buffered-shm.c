@@ -71,7 +71,7 @@ ccm_pixmap_buffered_shm_set_property(GObject *object,
 			{
 				if (val) 
 				{
-					ccm_drawable_damage(CCM_DRAWABLE(CCM_PIXMAP(self)->window));
+					self->priv->need_to_sync = ccm_region_copy(ccm_drawable_get_geometry (CCM_DRAWABLE(self)));
 				}
 				else 
 				{

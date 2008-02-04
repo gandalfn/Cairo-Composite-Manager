@@ -80,6 +80,7 @@ struct _CCMScreenPrivate
 	
 	GList*				windows;
 	gboolean			buffered;
+	gboolean			filtered_damage;
 	
 	GTimer*				vblank;
 	guint				id_paint;
@@ -116,6 +117,8 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->fullscreen = NULL;
 	self->priv->damaged = NULL;
 	self->priv->windows = NULL;
+	self->priv->buffered = FALSE;
+	self->priv->filtered_damage = TRUE;
 	self->priv->vblank = g_timer_new();
 	self->priv->id_paint = 0;
 	self->priv->plugin_loader = NULL;
@@ -449,36 +452,18 @@ static gboolean
 impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 						   CCMWindow* window)
 {
-	if (self->priv->root && 
-		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->root))
-		return FALSE;
-	
-	if (self->priv->cow && 
-		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->cow))
-		return FALSE;
-	
-	if (CCM_SCREEN_GET_CLASS(self)->selection_owner && 
-		CCM_WINDOW_XWINDOW(window) == CCM_SCREEN_GET_CLASS(self)->selection_owner)
-		return FALSE;
-	
-	if (!window->is_input_only &&
-		!ccm_screen_find_window(self, CCM_WINDOW_XWINDOW(window)))
-	{
-		CCMWindowType type = ccm_window_get_hint_type(window);
+	CCMWindowType type = ccm_window_get_hint_type(window);
 
-		if (type != CCM_WINDOW_TYPE_DESKTOP)
-			self->priv->windows = g_list_append(self->priv->windows, window);
-		else
-			self->priv->windows = g_list_prepend(self->priv->windows, window);
-		
-		g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
-		
-		if (window->is_viewable) ccm_window_map(window);
-		
-		return TRUE;
-	}
+	if (type != CCM_WINDOW_TYPE_DESKTOP)
+		self->priv->windows = g_list_append(self->priv->windows, window);
+	else
+		self->priv->windows = g_list_prepend(self->priv->windows, window);
 	
-	return FALSE;
+	g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
+	
+	if (window->is_viewable) ccm_window_map(window);
+	
+	return TRUE;
 }
 
 static void
@@ -569,7 +554,7 @@ on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
 		damage_below = ccm_region_copy(area);
 		
 		// Substract opaque region of window to damage region below
-		if (window->opaque && window->is_viewable)
+		if (self->priv->filtered_damage && window->opaque && window->is_viewable)
 		{
 			ccm_region_subtract(damage_below, window->opaque);
 		}
@@ -599,7 +584,7 @@ on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
 		}
 		
 		// Substract all obscured area to damage region
-		for (item = g_list_last(self->priv->windows); item; item = item->prev)
+		for (item = g_list_last(self->priv->windows); self->priv->filtered_damage && item; item = item->prev)
 		{
 			if (((CCMWindow*)item->data)->is_viewable && item->data != window)
 			{
@@ -1128,7 +1113,27 @@ ccm_screen_add_window(CCMScreen* self, CCMWindow* window)
 	g_return_val_if_fail(self != NULL, FALSE);
 	g_return_val_if_fail(window != NULL, FALSE);
 
-	return ccm_screen_plugin_add_window(self->priv->plugin, self, window);
+	gboolean ret = FALSE;
+	
+	if (self->priv->root && 
+		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->root))
+		return ret;
+	
+	if (self->priv->cow && 
+		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->cow))
+		return ret;
+	
+	if (CCM_SCREEN_GET_CLASS(self)->selection_owner && 
+		CCM_WINDOW_XWINDOW(window) == CCM_SCREEN_GET_CLASS(self)->selection_owner)
+		return ret;
+	
+	if (!window->is_input_only &&
+		!ccm_screen_find_window(self, CCM_WINDOW_XWINDOW(window)))
+	{
+		ret = ccm_screen_plugin_add_window(self->priv->plugin, self, window);
+	}
+	
+	return ret;
 }
 
 void
@@ -1203,4 +1208,11 @@ ccm_screen_add_damaged_region (CCMScreen *self, CCMRegion* region)
 		ccm_region_union(self->priv->damaged, region);
 	else
 		self->priv->damaged = ccm_region_copy(region);
+}
+
+void
+ccm_screen_set_filtered_damage(CCMScreen* self, gboolean filtered)
+{
+    g_return_if_fail(self != NULL);
+    self->priv->filtered_damage = filtered;
 }
