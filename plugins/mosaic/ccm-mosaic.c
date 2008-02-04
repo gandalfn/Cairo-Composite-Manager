@@ -356,11 +356,9 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 				((CCMWindow*)item->data)->is_viewable && 
 				!((CCMWindow*)item->data)->is_input_only &&
 				type != CCM_WINDOW_TYPE_DESKTOP && type != CCM_WINDOW_TYPE_DOCK) 
-			{
 				nb_windows++;
-			}
 		}
-		if (nb_windows != self->priv->nb_areas) ccm_mosaic_create_areas(self, nb_windows);
+		if (nb_windows) ccm_mosaic_create_areas(self, nb_windows);
 	}
 	
 	ret = ccm_screen_plugin_paint(CCM_SCREEN_PLUGIN_PARENT (plugin), screen, 
@@ -368,10 +366,20 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	
 	if (ret && self->priv->enabled)
 	{
+		cairo_rectangle_t* rects;
+		gint nb_rects, cpt;
+		
+		cairo_save(context);
+		ccm_region_get_rectangles (ccm_screen_get_damaged (screen), &rects, &nb_rects);
+		for (cpt = 0; cpt < nb_rects; cpt++)
+			cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
+							 rects[cpt].width, rects[cpt].height);
+		cairo_clip (context);
 		cairo_set_source_rgba (context, 0, 0, 0, 0.6);
 		cairo_paint(context);
 		cairo_set_source_surface (context, self->priv->surface, 0, 0);
 		cairo_paint(context);
+		cairo_restore (context);
 	}
 	
 	return ret;
@@ -419,6 +427,8 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 								 area->geometry.y + area->geometry.height / 2);
 				cairo_scale(ctx, scale, scale);
 				
+				cairo_set_source_rgba (ctx, 0, 0, 0, 0);
+				cairo_paint (ctx);
 				cairo_set_source_surface (ctx, surface, -(geometry.width / 2), 
 										  -(geometry.height / 2));
 				

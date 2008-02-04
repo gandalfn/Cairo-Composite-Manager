@@ -1,5 +1,12 @@
 2008-02-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * plugins/mosaic/ccm-mosaic.c: Clip with damaged screen areas on shade draw.
+                                   Create mosaic areas on each screen paint.
+                                   
+    * src/ccm-screen.c: Don't manage metacity allow event window.
+
+2008-02-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * configure.ac:
     * plugins/Makefile.am:
     * plugins/mosaic/Makefile.am:

@@ -1114,6 +1114,7 @@ ccm_screen_add_window(CCMScreen* self, CCMWindow* window)
 	g_return_val_if_fail(window != NULL, FALSE);
 
 	gboolean ret = FALSE;
+	cairo_rectangle_t geometry;
 	
 	if (self->priv->root && 
 		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->root))
@@ -1125,6 +1126,11 @@ ccm_screen_add_window(CCMScreen* self, CCMWindow* window)
 	
 	if (CCM_SCREEN_GET_CLASS(self)->selection_owner && 
 		CCM_WINDOW_XWINDOW(window) == CCM_SCREEN_GET_CLASS(self)->selection_owner)
+		return ret;
+	
+	if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(window), &geometry) &&
+		geometry.x == -100 && geometry.y == -100 && 
+		geometry.width == 1 && geometry.height == 1)
 		return ret;
 	
 	if (!window->is_input_only &&
