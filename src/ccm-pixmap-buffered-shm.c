@@ -110,8 +110,16 @@ ccm_pixmap_buffered_shm_finalize (GObject *object)
 {
 	CCMPixmapBufferedShm* self = CCM_PIXMAP_BUFFERED_SHM(object);
 	
-	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
-	if (self->priv->need_to_sync) ccm_region_destroy (self->priv->need_to_sync);
+	if (self->priv->surface) 
+	{
+		cairo_surface_destroy (self->priv->surface);
+		self->priv->surface = NULL;
+	}
+	if (self->priv->need_to_sync) 
+	{
+		ccm_region_destroy (self->priv->need_to_sync);
+		self->priv->need_to_sync = NULL;
+	}
 	
 	G_OBJECT_CLASS (ccm_pixmap_buffered_shm_parent_class)->finalize (object);
 }
@@ -187,7 +195,7 @@ ccm_pixmap_buffered_shm_sync(CCMPixmapBufferedShm* self, cairo_surface_t* surfac
 					content = CAIRO_CONTENT_COLOR_ALPHA;
 				else
 					content = CAIRO_CONTENT_COLOR;
-				
+			
 				self->priv->surface = cairo_surface_create_similar (target, 
 																	content,
 																	width, 

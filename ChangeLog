@@ -1,3 +1,13 @@
+2008-02-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/mosaic/ccm-mosaic.c: Some work around areas paint.
+    
+    * src/ccm-drawable.c:
+    * src/ccm-window.c: Fix crash on get geometry on resize.
+
+    * src/ccm-pixmap-buffered-shm.c:
+    * src/ccm-pixmap-shm.c: Fix crash if ccm can't create SHM ressource.
+    
 2008-02-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/mosaic/ccm-mosaic.c: Clip with damaged screen areas on shade draw.

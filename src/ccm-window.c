@@ -580,9 +580,8 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 {
 	cairo_rectangle_t geometry;
 	
-	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
-		
-	if (width != (int)geometry.width || height != (int)geometry.height)
+	if (!ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) ||
+		width != (int)geometry.width || height != (int)geometry.height)
 	{
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
 		

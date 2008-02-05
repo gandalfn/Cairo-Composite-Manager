@@ -19,6 +19,7 @@
  * 	51 Franklin Street, Fifth Floor
  * 	Boston, MA  02110-1301, USA.
  */
+#include <string.h>
 
 #include "ccm-drawable.h"
 #include "ccm-display.h"
@@ -208,8 +209,9 @@ __ccm_drawable_resize(CCMDrawable* self, int width, int height)
 	g_return_if_fail(self != NULL);
 	
 	cairo_rectangle_t geometry;
-	ccm_drawable_get_geometry_clipbox(self, &geometry);
-	if (width != (int)geometry.width || height != (int)geometry.height)
+	
+	if (!ccm_drawable_get_geometry_clipbox(self, &geometry) ||
+		width != (int)geometry.width || height != (int)geometry.height)
 	{
 		ccm_drawable_query_geometry(self);
 	}
