@@ -584,7 +584,8 @@ on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
 		}
 		
 		// Substract all obscured area to damage region
-		for (item = g_list_last(self->priv->windows); self->priv->filtered_damage && item; item = item->prev)
+		for (item = g_list_last(self->priv->windows); 
+			 self->priv->filtered_damage && item; item = item->prev)
 		{
 			if (((CCMWindow*)item->data)->is_viewable && item->data != window)
 			{
@@ -648,7 +649,7 @@ on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
 					g_signal_handlers_unblock_by_func(item->data, 
 													  on_window_damaged, 
 													  self);
-					if (((CCMWindow*)item->data)->opaque) 
+					if (self->priv->filtered_damage && ((CCMWindow*)item->data)->opaque) 
 						ccm_region_subtract (damage_below, 
 											 ((CCMWindow*)item->data)->opaque);
 					

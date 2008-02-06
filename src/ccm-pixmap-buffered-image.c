@@ -68,7 +68,7 @@ ccm_pixmap_buffered_image_set_property(GObject *object,
 			{
 				if (val) 
 				{
-					ccm_drawable_damage(CCM_DRAWABLE(CCM_PIXMAP(self)->window));
+					self->priv->need_to_sync = ccm_region_copy(ccm_drawable_get_geometry (CCM_DRAWABLE(self)));
 				}
 				else 
 				{
@@ -107,8 +107,16 @@ ccm_pixmap_buffered_image_finalize (GObject *object)
 {
 	CCMPixmapBufferedImage* self = CCM_PIXMAP_BUFFERED_IMAGE(object);
 	
-	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
-	if (self->priv->need_to_sync) ccm_region_destroy (self->priv->need_to_sync);
+	if (self->priv->surface) 
+	{
+		cairo_surface_destroy (self->priv->surface);
+		self->priv->surface = NULL;
+	}
+	if (self->priv->need_to_sync) 
+	{
+		ccm_region_destroy (self->priv->need_to_sync);
+		self->priv->need_to_sync = NULL;
+	}
 	
 	G_OBJECT_CLASS (ccm_pixmap_buffered_image_parent_class)->finalize (object);
 }

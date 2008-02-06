@@ -1,3 +1,12 @@
+2008-02-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/mosaic/ccm-mosaic.c: Some work around areas paint. 
+    * src/ccm-pixmap-buffered-image.c: Backport fixes from shm buffered
+    * src/ccm-pixmap-buffered-shm.c: Fixe typo
+    * src/ccm-screen.c: Disable subtract opaque region when filtered damage is
+                        disabled
+    * src/ccm-window.c: Check name of child window if fail for frame window.
+
 2008-02-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/mosaic/ccm-mosaic.c: Some work around areas paint.

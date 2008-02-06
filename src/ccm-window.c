@@ -380,6 +380,35 @@ ccm_window_get_utf8_property (CCMWindow* self, Atom atom)
 }
 
 static gchar*
+ccm_window_get_child_utf8_property (CCMWindow* self, Atom atom)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(atom != None, NULL);
+  
+	gchar *val;
+	guint32* data = NULL;
+	guint n_items;
+		
+	data = ccm_window_get_child_property(self, atom, 8, 
+								   CCM_WINDOW_GET_CLASS(self)->utf8_string_atom, 
+								   &n_items);
+  
+	if (!data) return NULL;
+	
+	if (!g_utf8_validate ((gchar*)data, n_items, NULL))
+    {
+		XFree (data);
+		return NULL;
+    }
+  
+  	val = g_strndup ((gchar*)data, n_items);
+  
+  	XFree (data);
+  
+  	return val;
+}
+
+static gchar*
 text_property_to_utf8 (const XTextProperty* prop)
 {
 	gchar **list;
@@ -420,6 +449,28 @@ ccm_window_get_text_property (CCMWindow* self, Atom atom)
   	text.nitems = 0;
   	if (XGetTextProperty(CCM_DISPLAY_XDISPLAY(display), 
 						 CCM_WINDOW_XWINDOW(self), &text, atom))
+    {
+      	retval = text_property_to_utf8 (&text);
+
+      	if (text.value) XFree (text.value);
+    }
+	
+	return retval;
+}
+
+static gchar*
+ccm_window_get_child_text_property (CCMWindow* self, Atom atom)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(atom != None, NULL);
+  
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
+	XTextProperty text;
+	gchar* retval = NULL;
+  
+  	text.nitems = 0;
+  	if (XGetTextProperty(CCM_DISPLAY_XDISPLAY(display), 
+						 self->priv->child, &text, atom))
     {
       	retval = text_property_to_utf8 (&text);
 
@@ -1303,6 +1354,18 @@ ccm_window_get_name(CCMWindow* self)
 			self->priv->name = ccm_window_get_text_property (self, XA_WM_NAME);
 	}
 	
+	if (self->priv->name == NULL)
+	{
+		self->priv->name = ccm_window_get_child_utf8_property (self, 
+								CCM_WINDOW_GET_CLASS(self)->visible_name_atom);
+		
+		if (!self->priv->name)
+			self->priv->name = ccm_window_get_child_utf8_property (self, 
+										CCM_WINDOW_GET_CLASS(self)->name_atom);
+		
+		if (!self->priv->name)
+			self->priv->name = ccm_window_get_child_text_property (self, XA_WM_NAME);
+	}
 	return self->priv->name;
 }
 

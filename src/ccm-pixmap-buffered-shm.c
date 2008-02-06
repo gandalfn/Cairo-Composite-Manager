@@ -155,7 +155,7 @@ ccm_pixmap_buffered_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 	CCMPixmapBufferedShm* self = CCM_PIXMAP_BUFFERED_SHM(drawable);
 	
 	CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_shm_parent_class)->repair(drawable, 
-																  area);
+																	 area);
 	
 	if (self->priv->buffered)
 	{
