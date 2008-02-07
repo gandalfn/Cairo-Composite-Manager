@@ -1,3 +1,9 @@
+2008-02-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/mosaic/ccm-mosaic.c: Don't draw window in mosaic, beginning of
+                                   event mouse proxy.
+    * plugins/mosaic/ccm-mosaic.plugin.desktop.in: Set shadow in depends.
+
 2008-02-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/mosaic/ccm-mosaic.c: Some work around areas paint. 

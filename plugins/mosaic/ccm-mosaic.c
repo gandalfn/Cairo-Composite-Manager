@@ -200,12 +200,72 @@ ccm_mosaic_create_window(CCMMosaic* self)
 				  ButtonPressMask);
 }
 
+static gboolean
+ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
+						 int* x_root, int* y_root)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(self->priv->areas[num].window != NULL, FALSE);
+	g_return_val_if_fail(x != NULL && y != NULL, FALSE);
+	g_return_val_if_fail(x_root != NULL && y_root != NULL, FALSE);
+	
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self->priv->areas[num].window));
+	XWindowAttributes attribs;
+	gfloat scale;
+	
+	scale = MIN(self->priv->areas[num].geometry.height / attribs.height,
+				self->priv->areas[num].geometry.width / attribs.width);
+				
+	XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+						  CCM_WINDOW_XWINDOW(self->priv->areas[num].window),
+						  &attribs);	
+			
+	*x -=  (self->priv->areas[num].geometry.width / 2) + 
+		    self->priv->areas[num].geometry.x;
+	*x += (attribs.width /  2);
+	*y -=  (self->priv->areas[num].geometry.height / 2) + 
+		    self->priv->areas[num].geometry.y;
+	*y += (attribs.height /  2);
+	*x_root = *x + attribs.x;
+	*y_root = *y + attribs.y;
+		
+	return TRUE;
+}
+
 static void
 ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 {
 	if (event->type == ButtonPress)
 	{
-		g_print("%s\n", __FUNCTION__);
+		XButtonEvent* button_event = (XButtonEvent*)event;
+		gint cpt;
+		
+		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
+		{
+			if (self->priv->areas[cpt].geometry.x <= button_event->x &&
+				self->priv->areas[cpt].geometry.y <= button_event->y &&
+				self->priv->areas[cpt].geometry.x +
+				self->priv->areas[cpt].geometry.width >= button_event->x &&
+				self->priv->areas[cpt].geometry.y +
+				self->priv->areas[cpt].geometry.height >= button_event->y)
+			{
+				g_print("%s %i,%i %i,%i\n", __FUNCTION__, button_event->x, 
+						button_event->y, button_event->x_root, button_event->y_root);
+				if (ccm_mosaic_recalc_coords(self, cpt,
+											 &button_event->x, &button_event->y,
+											 &button_event->x_root, &button_event->y_root))
+				{
+					button_event->window = CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window);
+					button_event->serial = 0;
+					button_event->send_event = True;
+					//XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
+						//		False, NoEventMask, event);
+					g_print("%s %i,%i %i,%i\n", __FUNCTION__, button_event->x, 
+							button_event->y, button_event->x_root, button_event->y_root);
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -424,9 +484,6 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMWindowType type = ccm_window_get_hint_type (window);
 	gboolean ret = FALSE;
 	
-	ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window,
-								  context, surface);
-	
 	if (ccm_drawable_is_damaged (CCM_DRAWABLE(window)) && self->priv->enabled)
 	{
 		if (CCM_WINDOW_XWINDOW(window) != self->priv->window &&
@@ -479,9 +536,12 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 				ccm_screen_add_damaged_region (self->priv->screen, damaged);
 				ccm_region_destroy (damaged);
 				cairo_destroy (ctx);
+				return TRUE;
 			}
 		}
 	}
+	ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window,
+								  context, surface);
 	
 	return ret;
 }

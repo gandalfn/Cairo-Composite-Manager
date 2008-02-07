@@ -3,4 +3,4 @@ Plugin=ccm-mosaic
 _Name=Mosaic
 _Description=Cairo Composite Manager Mosaic
 Backends=xrender;glitz
-Depends=
+Depends=shadow
