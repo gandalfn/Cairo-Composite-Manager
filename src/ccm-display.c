@@ -85,6 +85,7 @@ struct _CCMDisplayPrivate
 	CCMExtension composite;
 	CCMExtension damage;
 	CCMExtension shm;
+	gboolean	 shm_shared_pixmap;
 	CCMExtension dbe;
 	
 	GHashTable*	 damages;
@@ -104,6 +105,7 @@ ccm_display_init (CCMDisplay *self)
 	self->priv->nb_screens = 0;
 	self->priv->fd = 0;
 	self->priv->screens = NULL;
+	self->priv->shm_shared_pixmap = FALSE;
 	self->priv->damages = g_hash_table_new_full(g_direct_hash, g_direct_equal,
 												NULL, g_free);
 	self->priv->asyncprops = g_hash_table_new_full(g_direct_hash, g_direct_equal,
@@ -228,10 +230,13 @@ static gboolean
 ccm_display_init_shm(CCMDisplay *self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
+	int major,  minor;
 	
-	if (XShmQueryExtension (self->xdisplay))
+	if (XShmQueryExtension (self->xdisplay) && 
+		XShmQueryVersion(self->xdisplay, &major, &minor, 
+						 &self->priv->shm_shared_pixmap))
     {
-		self->priv->shm.available = TRUE;
+    	self->priv->shm.available = TRUE;
 		return TRUE;
     }
     
@@ -304,6 +309,15 @@ _ccm_display_use_xshm(CCMDisplay* self)
 	
 	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
 		   self->priv->shm.available;
+}
+
+gboolean
+_ccm_display_xshm_shared_pixmap(CCMDisplay* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
+		   self->priv->shm.available && self->priv->shm_shared_pixmap;
 }
 
 void

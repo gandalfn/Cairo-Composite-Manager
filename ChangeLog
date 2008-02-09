@@ -1,3 +1,11 @@
+2008-02-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-display.c:
+    * src/ccm-display.h: Check if shared pixmap is supported when intialize XSHM
+    * src/ccm-pixmap-image.c: Optimize image data refresh
+    * src/ccm-pixmap-shm.c: if shared pixmap isn't supported (EXA) don't use 
+                            pixmap copy only an XSHMGetImage                            
+
 2008-02-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/mosaic/ccm-mosaic.c: Don't draw window in mosaic, beginning of

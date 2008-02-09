@@ -101,25 +101,13 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 	gcv.graphics_exposures = FALSE;
 	gcv.subwindow_mode = IncludeInferiors;
 
-	self->priv->gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display),
-							   CCM_PIXMAP_XPIXMAP(self),
-							   GCGraphicsExposures | GCSubwindowMode,
-							   &gcv);
-	if (!self->priv->gc)
-		return;
-	
 	self->priv->image = XShmCreateImage(CCM_DISPLAY_XDISPLAY(display),
 										attribs.visual,
 										ccm_window_get_depth(CCM_PIXMAP(self)->window),
 										ZPixmap, NULL, &self->priv->shminfo,
 										attribs.width, 
 										attribs.height);
-	if (!self->priv->image)
-	{
-		XFreeGC(CCM_DISPLAY_XDISPLAY(display), self->priv->gc);
-		self->priv->gc = NULL;
-		return;
-	}
+	if (!self->priv->image) return;
 	
 	self->priv->shminfo.shmid = shmget (IPC_PRIVATE,
 										self->priv->image->bytes_per_line * 
@@ -127,8 +115,6 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 										IPC_CREAT | 0600);
 	if (self->priv->shminfo.shmid == -1)
 	{
-		XFreeGC(CCM_DISPLAY_XDISPLAY(display), self->priv->gc);
-		self->priv->gc = NULL;
 		XDestroyImage(self->priv->image);
 		self->priv->image = NULL;
 		return;
@@ -138,8 +124,6 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 	self->priv->shminfo.shmaddr = shmat (self->priv->shminfo.shmid, 0, 0);
 	if (self->priv->shminfo.shmaddr == (gpointer)-1)
 	{
-		XFreeGC(CCM_DISPLAY_XDISPLAY(display), self->priv->gc);
-		self->priv->gc = NULL;
 		XDestroyImage(self->priv->image);
 		self->priv->image = NULL;
 		return;
@@ -149,23 +133,40 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 	
 	XShmAttach(CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
 
-	self->priv->pixmap = XShmCreatePixmap(CCM_DISPLAY_XDISPLAY(display),
-										  CCM_PIXMAP_XPIXMAP(self),
-										  self->priv->image->data,
-										  &self->priv->shminfo,
-										  attribs.width, 
-										  attribs.height,
-										  ccm_window_get_depth(CCM_PIXMAP(self)->window));
-	if (!self->priv->pixmap)
+	if (_ccm_display_xshm_shared_pixmap(display))
 	{
-		XFreeGC(CCM_DISPLAY_XDISPLAY(display), self->priv->gc);
-		self->priv->gc = NULL;
-		XShmDetach (CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
-		XDestroyImage(self->priv->image);
-		self->priv->image = NULL;
-		shmdt (self->priv->shminfo.shmaddr);
-		shmctl (self->priv->shminfo.shmid, IPC_RMID, 0);
-		return;
+		self->priv->gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display),
+								   CCM_PIXMAP_XPIXMAP(self),
+								   GCGraphicsExposures | GCSubwindowMode,
+							   	&gcv);
+		if (!self->priv->gc)
+		{
+			XShmDetach (CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
+			XDestroyImage(self->priv->image);
+			self->priv->image = NULL;
+			shmdt (self->priv->shminfo.shmaddr);
+			shmctl (self->priv->shminfo.shmid, IPC_RMID, 0);
+			return;
+		}
+	
+		self->priv->pixmap = XShmCreatePixmap(CCM_DISPLAY_XDISPLAY(display),
+											  CCM_PIXMAP_XPIXMAP(self),
+											  self->priv->image->data,
+											  &self->priv->shminfo,
+											  attribs.width, 
+											  attribs.height,
+											  ccm_window_get_depth(CCM_PIXMAP(self)->window));
+		if (!self->priv->pixmap)
+		{
+			XFreeGC(CCM_DISPLAY_XDISPLAY(display), self->priv->gc);
+			self->priv->gc = NULL;
+			XShmDetach (CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
+			XDestroyImage(self->priv->image);
+			self->priv->image = NULL;
+			shmdt (self->priv->shminfo.shmaddr);
+			shmctl (self->priv->shminfo.shmid, IPC_RMID, 0);
+			return;
+		}
 	}
 }
 
@@ -209,24 +210,33 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 	if (self->priv->image)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(drawable);
-		XRectangle* rects;
-		gint nb_rects;
-		XserverRegion region;
 		
-		ccm_region_get_xrectangles (area, &rects, &nb_rects);
-		region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY(display), rects, nb_rects);
-		g_free(rects);
-		
-		XFixesSetGCClipRegion(CCM_DISPLAY_XDISPLAY (display), self->priv->gc,
-							  0, 0, region);
-		XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY (display), region);
-		
-		XCopyArea(CCM_DISPLAY_XDISPLAY(display),
-				  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
-				  self->priv->gc, 
-				  0, 0, self->priv->image->width, self->priv->image->height, 0, 0);
-		
-		ccm_display_sync(display);
+		if (self->priv->pixmap)
+		{
+			XRectangle* rects;
+			gint nb_rects;
+			XserverRegion region;
+			
+			ccm_region_get_xrectangles (area, &rects, &nb_rects);
+			region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY(display), rects, nb_rects);
+			g_free(rects);
+			
+			XFixesSetGCClipRegion(CCM_DISPLAY_XDISPLAY (display), self->priv->gc,
+								  0, 0, region);
+			XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY (display), region);
+			
+			XCopyArea(CCM_DISPLAY_XDISPLAY(display),
+					  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
+					  self->priv->gc, 
+					  0, 0, self->priv->image->width, self->priv->image->height, 0, 0);
+			
+			ccm_display_sync(display);
+		}
+		else
+		{
+			XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
+						  self->priv->image , 0, 0, AllPlanes);
+		}
 	}
 }
 
