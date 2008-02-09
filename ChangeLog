@@ -1,5 +1,10 @@
 2008-02-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-pixmap-shm.c: Minimize XSHMGetImage area when shared pixmaps are 
+                            disabled.
+
+2008-02-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/ccm-display.c:
     * src/ccm-display.h: Check if shared pixmap is supported when intialize XSHM
     * src/ccm-pixmap-image.c: Optimize image data refresh

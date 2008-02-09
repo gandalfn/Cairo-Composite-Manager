@@ -210,16 +210,15 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 	if (self->priv->image)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(drawable);
-		
+		XRectangle* rects;
+		gint nb_rects;
+			
+		ccm_region_get_xrectangles (area, &rects, &nb_rects);
 		if (self->priv->pixmap)
 		{
-			XRectangle* rects;
-			gint nb_rects;
 			XserverRegion region;
 			
-			ccm_region_get_xrectangles (area, &rects, &nb_rects);
 			region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY(display), rects, nb_rects);
-			g_free(rects);
 			
 			XFixesSetGCClipRegion(CCM_DISPLAY_XDISPLAY (display), self->priv->gc,
 								  0, 0, region);
@@ -234,9 +233,35 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 		}
 		else
 		{
-			XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
-						  self->priv->image , 0, 0, AllPlanes);
+			cairo_rectangle_t clipbox_geometry, clipbox_damaged;
+			
+			
+			ccm_region_get_clipbox (area, &clipbox_damaged);
+			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &clipbox_geometry);
+			if (clipbox_damaged.width == clipbox_geometry.width && 
+				clipbox_damaged.height == clipbox_geometry.height) 
+			{
+				XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
+							  self->priv->image , 0, 0, AllPlanes);
+			}
+			else
+			{
+				gint cpt;
+				
+				for (cpt = 0; cpt < nb_rects; cpt++)
+				{
+					XImage* fake_image;
+				
+					fake_image = g_memdup(self->priv->image, sizeof(XImage));
+					fake_image->data += rects[cpt].y * fake_image->bytes_per_line;
+					fake_image->height = rects[cpt].height;
+					XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
+								  fake_image , 0, rects[cpt].y, AllPlanes);
+					g_free(fake_image);
+				}
+			}
 		}
+		g_free(rects);
 	}
 }
 
