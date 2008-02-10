@@ -31,6 +31,10 @@
 #include "ccm-window-glitz.h"
 #endif
 
+#ifndef DISABLE_OPENVG_BACKEND
+#include "ccm-window-openvg.h"
+#endif
+
 #ifndef DISABLE_XRENDER_BACKEND
 #include "ccm-window-xrender.h"
 #endif
@@ -52,6 +56,9 @@ union _CCMWindowBackendClass
 #ifndef DISABLE_GLITZ_BACKEND
 	CCMWindowGlitzClass glitz_class;
 #endif
+#ifndef DISABLE_OPENVG_BACKEND
+	CCMWindowOpenVGClass openvg_class;
+#endif
 #ifndef DISABLE_XRENDER_BACKEND
 	CCMWindowXRenderClass xrender_class;
 #endif
@@ -61,6 +68,9 @@ union _CCMWindowBackend
 {
 #ifndef DISABLE_GLITZ_BACKEND
 	CCMWindowGlitz glitz;
+#endif
+#ifndef DISABLE_OPENVG_BACKEND
+	CCMWindowOpenVG openvg;
 #endif
 #ifndef DISABLE_XRENDER_BACKEND
 	CCMWindowXRender xrender;

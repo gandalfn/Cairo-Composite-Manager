@@ -12,6 +12,12 @@ else
 INCLUDES += -DDISABLE_XRENDER_BACKEND
 endif
 
+if HAVE_OPENVG_BACKEND    
+INCLUDES += $(CCM_OPENVG_BACKEND_CFLAGS)
+else
+INCLUDES += -DDISABLE_OPENVG_BACKEND
+endif
+
 if HAVE_GLITZ_BACKEND
 INCLUDES += $(CCM_GLITZ_BACKEND_CFLAGS)
 else
@@ -86,6 +92,12 @@ cairo_compmgr_SOURCES += \
 	ccm-window-xrender.c
 endif
 
+if HAVE_OPENVG_BACKEND    
+cairo_compmgr_SOURCES += \
+	ccm-window-openvg.h \
+	ccm-window-openvg.c
+endif
+
 if HAVE_GLITZ_BACKEND    
 cairo_compmgr_SOURCES += \
 	ccm-window-glitz.h \
@@ -104,6 +116,10 @@ cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS)
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_LDADD += $(CCM_XRENDER_BACKEND_LIBS)
+endif
+
+if HAVE_OPENVG_BACKEND    
+cairo_compmgr_LDADD += $(CCM_OPENVG_BACKEND_LIBS)
 endif
 
 if HAVE_GLITZ_BACKEND

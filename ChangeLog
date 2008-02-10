@@ -1,3 +1,27 @@
+2008-02-10  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-drawable.c:
+    * src/ccm-drawable.h:
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-buffered-shm.c:
+    * src/ccm-pixmap-image.c:
+    * src/ccm-pixmap-shm.c: Add return bool in ccm_drawable_repair to check
+                            if repair complete correctly and damaged zone.
+                            
+    * src/ccm-pixmap-shm.c: Do a complete XShmGetImage on first repair.
+
+    * configure.ac:
+    * src/Makefile.am:
+    * src/ccm-window-backend.c:
+    * src/ccm-window-backend.h:
+    * src/ccm-window-openvg.c:
+    * src/ccm-window-openvg.h: Add experimental cairo-openvg backend, not 
+                               working for now, missed some pieces in ShivaVG
+                               and cairo-openvg-surface specialy for get/set
+                               image and compositing. Implemented to follow
+                               dev of cairo-openvg and provide backend in ccm
+                               when is ready.
+    
 2008-02-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-shm.c: Minimize XSHMGetImage area when shared pixmaps are 

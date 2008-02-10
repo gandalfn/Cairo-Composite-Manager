@@ -40,13 +40,14 @@ struct _CCMPixmapShmPrivate
 	Pixmap 				pixmap;
 	GC 					gc;
 	XShmSegmentInfo		shminfo;
+	gboolean 			synced;
 };
 
 #define CCM_PIXMAP_SHM_GET_PRIVATE(o) \
 	((CCMPixmapShmPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_SHM, CCMPixmapShmClass))
 
 static cairo_surface_t* ccm_pixmap_shm_get_surface	  (CCMDrawable* drawable);
-static void		  		ccm_pixmap_shm_repair 		  (CCMDrawable* drawable, 
+static gboolean	  		ccm_pixmap_shm_repair 		  (CCMDrawable* drawable, 
 													   CCMRegion* area);
 static void		  		ccm_pixmap_shm_bind 		  (CCMPixmap* self);
 static void		  		ccm_pixmap_shm_release 		  (CCMPixmap* self);
@@ -59,6 +60,7 @@ ccm_pixmap_shm_init (CCMPixmapShm *self)
 	self->priv->image = 0;
 	self->priv->pixmap = None;
 	self->priv->gc = 0;
+	self->priv->synced = FALSE;
 }
 
 static void
@@ -97,10 +99,6 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 						  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
 						  &attribs);
 	
-	attribs.visual = DefaultVisualOfScreen(CCM_SCREEN_XSCREEN(screen));
-	gcv.graphics_exposures = FALSE;
-	gcv.subwindow_mode = IncludeInferiors;
-
 	self->priv->image = XShmCreateImage(CCM_DISPLAY_XDISPLAY(display),
 										attribs.visual,
 										ccm_window_get_depth(CCM_PIXMAP(self)->window),
@@ -132,9 +130,13 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 	self->priv->image->data = self->priv->shminfo.shmaddr;
 	
 	XShmAttach(CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
-
+	ccm_display_sync(display);
+	
 	if (_ccm_display_xshm_shared_pixmap(display))
 	{
+		gcv.graphics_exposures = FALSE;
+		gcv.subwindow_mode = IncludeInferiors;
+
 		self->priv->gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display),
 								   CCM_PIXMAP_XPIXMAP(self),
 								   GCGraphicsExposures | GCSubwindowMode,
@@ -200,13 +202,15 @@ ccm_pixmap_shm_release (CCMPixmap* pixmap)
 	}
 }
 
-static void
+static gboolean
 ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 {
-	g_return_if_fail(drawable != NULL);
-	g_return_if_fail(area != NULL);
+	g_return_val_if_fail(drawable != NULL, FALSE);
+	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapShm* self = CCM_PIXMAP_SHM(drawable);
+	gboolean ret = TRUE;
+	
 	if (self->priv->image)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(drawable);
@@ -228,41 +232,42 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 					  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
 					  self->priv->gc, 
 					  0, 0, self->priv->image->width, self->priv->image->height, 0, 0);
-			
-			ccm_display_sync(display);
 		}
 		else
 		{
-			cairo_rectangle_t clipbox_geometry, clipbox_damaged;
-			
-			
-			ccm_region_get_clipbox (area, &clipbox_damaged);
-			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &clipbox_geometry);
-			if (clipbox_damaged.width == clipbox_geometry.width && 
-				clipbox_damaged.height == clipbox_geometry.height) 
+			if (!self->priv->synced) 
 			{
-				XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
-							  self->priv->image , 0, 0, AllPlanes);
+				if (!XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
+								  self->priv->image , 0, 0, AllPlanes))
+					ret = FALSE;
+				else
+					self->priv->synced = TRUE;
 			}
 			else
 			{
 				gint cpt;
+				XImage* fake_image;
 				
+				fake_image = g_memdup(self->priv->image, sizeof(XImage));
 				for (cpt = 0; cpt < nb_rects; cpt++)
 				{
-					XImage* fake_image;
-				
-					fake_image = g_memdup(self->priv->image, sizeof(XImage));
-					fake_image->data += rects[cpt].y * fake_image->bytes_per_line;
+					fake_image->data = self->priv->image->data + rects[cpt].y * fake_image->bytes_per_line;
 					fake_image->height = rects[cpt].height;
-					XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
-								  fake_image , 0, rects[cpt].y, AllPlanes);
-					g_free(fake_image);
+					if (!XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
+									   fake_image , 0, rects[cpt].y, AllPlanes))
+					{
+						ret = FALSE;
+						break;
+					}
 				}
+				g_free(fake_image);
 			}
+			ccm_display_sync(display);
 		}
 		g_free(rects);
 	}
+	
+	return ret;
 }
 
 static cairo_surface_t*

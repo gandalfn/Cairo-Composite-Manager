@@ -40,6 +40,10 @@ ccm_window_backend_get_type(CCMScreen* screen)
 		if (!g_ascii_strcasecmp(backend, "glitz"))
 			type = ccm_window_glitz_get_type();
 #endif
+#ifndef DISABLE_OPENVG_BACKEND
+		if (!g_ascii_strcasecmp(backend, "openvg"))
+			type = ccm_window_openvg_get_type();
+#endif
 	}
 	
 	return type;

@@ -47,7 +47,7 @@ struct _CCMPixmapBufferedImagePrivate
 #define CCM_PIXMAP_BUFFERED_IMAGE_GET_PRIVATE(o) \
 	((CCMPixmapBufferedImagePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_BUFFERED_IMAGE, CCMPixmapBufferedImageClass))
 
-static void ccm_pixmap_buffered_image_repair (CCMDrawable* drawable, CCMRegion* area);
+static gboolean ccm_pixmap_buffered_image_repair (CCMDrawable* drawable, CCMRegion* area);
 static cairo_surface_t* ccm_pixmap_buffered_image_get_surface (CCMDrawable* drawable);
 
 static void
@@ -143,16 +143,16 @@ ccm_pixmap_buffered_image_class_init (CCMPixmapBufferedImageClass *klass)
     object_class->finalize = ccm_pixmap_buffered_image_finalize;
 }
 
-static void
+static gboolean
 ccm_pixmap_buffered_image_repair (CCMDrawable* drawable, CCMRegion* area)
 {
-	g_return_if_fail(drawable != NULL);
-	g_return_if_fail(area != NULL);
+	g_return_val_if_fail(drawable != NULL, FALSE);
+	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapBufferedImage* self = CCM_PIXMAP_BUFFERED_IMAGE(drawable);
+	gboolean ret;
 	
-	CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->repair(drawable, 
-																  area);
+	ret = CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->repair(drawable, area);
 	
 	if (self->priv->buffered)
 	{
@@ -161,6 +161,8 @@ ccm_pixmap_buffered_image_repair (CCMDrawable* drawable, CCMRegion* area)
 		else
 			self->priv->need_to_sync = ccm_region_copy (area);
 	}
+	
+	return ret;
 }
 
 static void

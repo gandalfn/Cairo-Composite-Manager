@@ -48,8 +48,10 @@ CAIRO_REQUIRED=1.4.10
 CAIRO_XLIB_REQUIRED=1.4.10
 CAIRO_XLIB_XRENDER_REQUIRED=1.4.10
 CAIRO_GLITZ_REQUIRED=1.4.10
+CAIRO_OPENVG_REQUIRED=1.5.7
 GLITZ_REQUIRED=0.5.6
 GLITZ_GLX_REQUIRED=0.5.6
+GL_PROTO_REQUIRED=1.4.9
 
 PKG_CHECK_MODULES(CAIRO_COMPMGR, 
        [xcomposite,
@@ -72,6 +74,17 @@ AC_SUBST(CCM_XRENDER_BACKEND_CFLAGS)
 AC_SUBST(CCM_XRENDER_BACKEND_LIBS)
 
 AM_CONDITIONAL(HAVE_XRENDER_BACKEND, [test x$xrenderbackend = xyes])
+
+PKG_CHECK_MODULES(CCM_OPENVG_BACKEND,
+ 		[xrender,
+		 cairo-openvg >= $CAIRO_OPENVG_REQUIRED,
+         glproto >= $GL_PROTO_REQUIRED],
+		 [openvgbackend="yes"],
+		 [openvgbackend="no"])
+AC_SUBST(CCM_OPENVG_BACKEND_CFLAGS)
+AC_SUBST(CCM_OPENVG_BACKEND_LIBS)
+
+AM_CONDITIONAL(HAVE_OPENVG_BACKEND, [test x$openvgbackend = xyes])
 
 PKG_CHECK_MODULES(CCM_GLITZ_BACKEND,
  		[glitz >= $GLITZ_REQUIRED,
@@ -133,6 +146,12 @@ if [ test x$xrenderbackend = xyes ]; then
         echo "Building XRender backend: ...................YES"
 else
         echo "Building XRender backend: ...................NO"
+fi
+
+if [ test x$openvgbackend = xyes ]; then
+        echo "Building OpenVG backend: .....................YES"
+else
+        echo "Building OpenVG backend: .....................NO"
 fi
 
 if [ test x$glitzbackend = xyes ]; then

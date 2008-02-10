@@ -591,10 +591,15 @@ ccm_drawable_repair(CCMDrawable* self)
 	
 	if (self->priv->damaged)
 	{
+		gboolean ret = TRUE;
+		
 		if (CCM_DRAWABLE_GET_CLASS(self)->repair)
-			CCM_DRAWABLE_GET_CLASS(self)->repair(self, self->priv->damaged);
-		ccm_region_destroy(self->priv->damaged);
-		self->priv->damaged = NULL;
+			ret = CCM_DRAWABLE_GET_CLASS(self)->repair(self, self->priv->damaged);
+		if (ret)
+		{
+			ccm_region_destroy(self->priv->damaged);
+			self->priv->damaged = NULL;
+		}
 	}
 }
 

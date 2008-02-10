@@ -42,7 +42,7 @@ struct _CCMPixmapImagePrivate
 	((CCMPixmapImagePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_IMAGE, CCMPixmapImageClass))
 
 static cairo_surface_t* ccm_pixmap_image_get_surface	(CCMDrawable* drawable);
-static void		  		ccm_pixmap_image_repair 		(CCMDrawable* drawable,
+static gboolean	  		ccm_pixmap_image_repair 		(CCMDrawable* drawable,
 														 CCMRegion* area);
 static void		  		ccm_pixmap_image_bind 		  	(CCMPixmap* self);
 static void		  		ccm_pixmap_image_release 		(CCMPixmap* self);
@@ -103,11 +103,11 @@ ccm_pixmap_image_release (CCMPixmap* pixmap)
 	if (self->priv->image) XDestroyImage(self->priv->image);
 }
 
-static void
+static gboolean
 ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 {
-	g_return_if_fail(drawable != NULL);
-	g_return_if_fail(area != NULL);
+	g_return_val_if_fail(drawable != NULL, FALSE);
+	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapImage* self = CCM_PIXMAP_IMAGE(drawable);
 	CCMDisplay* display = ccm_drawable_get_display(drawable);
@@ -137,6 +137,8 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 		}
 		g_free(rects);
 	}
+	
+	return TRUE;
 }
 
 static cairo_surface_t*
