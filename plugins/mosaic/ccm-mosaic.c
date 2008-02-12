@@ -197,7 +197,7 @@ ccm_mosaic_create_window(CCMMosaic* self)
 	XMapWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
 	XRaiseWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
 	XSelectInput (CCM_DISPLAY_XDISPLAY(display), self->priv->window,
-				  ButtonPressMask);
+				  ButtonPressMask | ButtonReleaseMask);
 }
 
 static gboolean
@@ -213,19 +213,23 @@ ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
 	XWindowAttributes attribs;
 	gfloat scale;
 	
-	scale = MIN(self->priv->areas[num].geometry.height / attribs.height,
-				self->priv->areas[num].geometry.width / attribs.width);
-				
 	XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
 						  CCM_WINDOW_XWINDOW(self->priv->areas[num].window),
 						  &attribs);	
-			
-	*x -=  (self->priv->areas[num].geometry.width / 2) + 
-		    self->priv->areas[num].geometry.x;
-	*x += (attribs.width /  2);
-	*y -=  (self->priv->areas[num].geometry.height / 2) + 
-		    self->priv->areas[num].geometry.y;
-	*y += (attribs.height /  2);
+	
+	scale = MIN((gfloat)self->priv->areas[num].geometry.height / (gfloat)attribs.height,
+				(gfloat)self->priv->areas[num].geometry.width / (gfloat)attribs.width);
+				
+	*x -= (gint)((gfloat)self->priv->areas[num].geometry.x + 
+		  ((gfloat)self->priv->areas[num].geometry.width / (gfloat)2) - 
+		  (((gfloat)attribs.width / 2) * scale));
+	*x = (gint)((gfloat)*x / scale);
+					
+	*y -= self->priv->areas[num].geometry.y + 
+		  (self->priv->areas[num].geometry.height / 2) - 
+		  (attribs.height / 2) * scale;
+	*y /= scale;
+	
 	*x_root = *x + attribs.x;
 	*y_root = *y + attribs.y;
 		
@@ -235,37 +239,46 @@ ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
 static void
 ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 {
-	if (event->type == ButtonPress)
+	switch (event->type)
 	{
-		XButtonEvent* button_event = (XButtonEvent*)event;
-		gint cpt;
-		
-		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
+		case ButtonPress:
+		case ButtonRelease:
+		case MotionNotify:
 		{
-			if (self->priv->areas[cpt].geometry.x <= button_event->x &&
-				self->priv->areas[cpt].geometry.y <= button_event->y &&
-				self->priv->areas[cpt].geometry.x +
-				self->priv->areas[cpt].geometry.width >= button_event->x &&
-				self->priv->areas[cpt].geometry.y +
-				self->priv->areas[cpt].geometry.height >= button_event->y)
+			XButtonEvent* button_event = (XButtonEvent*)event;
+			gint cpt;
+			
+			for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
 			{
-				g_print("%s %i,%i %i,%i\n", __FUNCTION__, button_event->x, 
-						button_event->y, button_event->x_root, button_event->y_root);
-				if (ccm_mosaic_recalc_coords(self, cpt,
-											 &button_event->x, &button_event->y,
-											 &button_event->x_root, &button_event->y_root))
+				if (self->priv->areas[cpt].geometry.x <= button_event->x &&
+					self->priv->areas[cpt].geometry.y <= button_event->y &&
+					self->priv->areas[cpt].geometry.x +
+					self->priv->areas[cpt].geometry.width >= button_event->x &&
+					self->priv->areas[cpt].geometry.y +
+					self->priv->areas[cpt].geometry.height >= button_event->y)
 				{
-					button_event->window = CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window);
-					button_event->serial = 0;
-					button_event->send_event = True;
-					//XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
-						//		False, NoEventMask, event);
-					g_print("%s %i,%i %i,%i\n", __FUNCTION__, button_event->x, 
-							button_event->y, button_event->x_root, button_event->y_root);
-					break;
+					if (ccm_mosaic_recalc_coords(self, cpt,
+												 &button_event->x, &button_event->y,
+												 &button_event->x_root, &button_event->y_root))
+					{
+						button_event->window = CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window);
+						XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
+									True, NoEventMask, event);
+						
+						button_event->window = _ccm_window_get_child(self->priv->areas[cpt].window);
+						if (button_event->window) 
+						{
+							XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
+										True, NoEventMask, event);
+						}
+						break;
+					}
 				}
 			}
 		}
+		break;
+		default:
+		break;
 	}
 }
 
