@@ -1,3 +1,8 @@
+2008-02-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-shm.c: Minimize repair rectangles with shm without shared
+                            pixmaps.
+
 2008-02-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/mosaic/ccm-mosaic.c: Fix coords calc on mouse event.

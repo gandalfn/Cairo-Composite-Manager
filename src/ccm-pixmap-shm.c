@@ -232,6 +232,8 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 					  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
 					  self->priv->gc, 
 					  0, 0, self->priv->image->width, self->priv->image->height, 0, 0);
+			
+			ccm_display_sync(display);
 		}
 		else
 		{
@@ -247,13 +249,31 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 			{
 				gint cpt;
 				XImage* fake_image;
+				CCMRegion* linear = ccm_region_new();
 				
-				fake_image = g_memdup(self->priv->image, sizeof(XImage));
+				/* XShm don't provide GetSubImage, to simulate we can shift in 
+				   the image data, but we need to keep the original width. 
+				   To minimize the number of rectangle, we must transform the 
+				   damaged area to horizontal bands. To do this, we recreate the 
+				   damaged region with horizontal rectangles, ccm_region performs 
+				   a compression then repairs with this new list of rectangles */
 				for (cpt = 0; cpt < nb_rects; cpt++)
 				{
-					fake_image->data = self->priv->image->data + rects[cpt].y * fake_image->bytes_per_line;
+					rects[cpt].x = 0;
+					rects[cpt].width = self->priv->image->width;
+					ccm_region_union_with_xrect (linear, &rects[cpt]);
+				}
+				g_free(rects);
+				
+				fake_image = g_memdup(self->priv->image, sizeof(XImage));
+				ccm_region_get_xrectangles (linear, &rects, &nb_rects);
+				for (cpt = 0; cpt < nb_rects; cpt++)
+				{
+					fake_image->data = self->priv->image->data + 
+									  rects[cpt].y * fake_image->bytes_per_line;
 					fake_image->height = rects[cpt].height;
-					if (!XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
+					if (!XShmGetImage (CCM_DISPLAY_XDISPLAY(display), 
+									   CCM_PIXMAP_XPIXMAP(self), 
 									   fake_image , 0, rects[cpt].y, AllPlanes))
 					{
 						ret = FALSE;
@@ -262,7 +282,6 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 				}
 				g_free(fake_image);
 			}
-			ccm_display_sync(display);
 		}
 		g_free(rects);
 	}
