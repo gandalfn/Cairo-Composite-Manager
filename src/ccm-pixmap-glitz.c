@@ -144,7 +144,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 	
 	return self->priv->gl_drawable ? TRUE : FALSE;
 }
-#define FLOAT_TO_FIXED(f) ((int) ((f) * 65536))
+
 static void
 ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 {
@@ -157,7 +157,6 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 		ccm_pixmap_glitz_create_gl_drawable(self))
 	{
 		XWindowAttributes attribs;
-		glitz_transform_t transform;
 		
 		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
 							  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
@@ -168,18 +167,7 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 											self->priv->gl_format,
 											attribs.width, attribs.height,
 											0, NULL);
-		transform.matrix[0][0] = FLOAT_TO_FIXED(1);
-		transform.matrix[0][1] = FLOAT_TO_FIXED(0);
-		transform.matrix[0][2] = FLOAT_TO_FIXED(0);
-		transform.matrix[1][0] = FLOAT_TO_FIXED(0);
-		transform.matrix[1][1] = FLOAT_TO_FIXED(-1);
-		transform.matrix[1][2] = FLOAT_TO_FIXED(attribs.height);
-		transform.matrix[2][0] = FLOAT_TO_FIXED(0);
-		transform.matrix[2][1] = FLOAT_TO_FIXED(0);
-		transform.matrix[2][2] = FLOAT_TO_FIXED(1);
 		
-		glitz_surface_set_transform (self->priv->gl_surface, &transform);
-									 
 		if (self->priv->gl_surface)
 		{
 			glitz_surface_attach (self->priv->gl_surface,

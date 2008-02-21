@@ -236,7 +236,7 @@ ccm_display_init_shm(CCMDisplay *self)
 		XShmQueryVersion(self->xdisplay, &major, &minor, 
 						 &self->priv->shm_shared_pixmap))
     {
-    	self->priv->shm.available = TRUE;
+		self->priv->shm.available = TRUE;
 		return TRUE;
     }
     

@@ -414,29 +414,12 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 	g_return_val_if_fail(self != NULL, FALSE);
 	g_return_val_if_fail(ctx != NULL, FALSE);
 	
-	static gboolean have_desktop = FALSE;
 	gboolean ret = FALSE;
 	GList* item;
 	
-	if (!have_desktop)
-	{
-		static gboolean screen_damaged = FALSE;
-	
-		cairo_set_source_rgb (self->priv->ctx, 0, 0, 0);
-		cairo_paint(self->priv->ctx);
-		if (!screen_damaged)
-		{
-			ccm_screen_damage (self);
-			screen_damaged = TRUE;
-		}
-	}
 	for (item = self->priv->windows; item; item = item->next)
 	{
 		CCMWindow* window = item->data;
-		
-		if (!have_desktop)
-			have_desktop = window->is_viewable &&
-						   ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP;
 		
 		if (!window->is_input_only)
 		{

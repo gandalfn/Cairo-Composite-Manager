@@ -1,3 +1,15 @@
+2008-02-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-display.c: Fix typo
+    * src/ccm-drawable.c:
+    * src/ccm-drawable.h: Add _ccm_drawable_get_damaged function
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-buffered-shm.c: Subtract obscured area when repair pixmap
+    * src/ccm-pixmap-glitz.c: Remove transform matrix
+    * src/ccm-pixmap-shm.c: Implement a pseudo XShmGetSubImage when shared 
+                            pixmap isn't supported
+    * src/ccm-screen.c: Remove stupid detect desktop window in paint
+
 2008-02-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-shm.c: Minimize repair rectangles with shm without shared

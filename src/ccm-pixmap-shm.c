@@ -21,6 +21,7 @@
  */
 
 #include <X11/Xlib.h>
+#include <X11/ImUtil.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <X11/extensions/XShm.h>
@@ -34,12 +35,22 @@
 
 G_DEFINE_TYPE (CCMPixmapShm, ccm_pixmap_shm, CCM_TYPE_PIXMAP);
 
+struct _CCMShmImage
+{
+	CCMDisplay* 		display;
+	Visual*				visual;
+	int 				depth;
+	XImage* 			image;
+	XShmSegmentInfo		shminfo;
+};
+
+typedef struct _CCMShmImage CCMShmImage;
+
 struct _CCMPixmapShmPrivate
 {
-	XImage* 			image;
+	CCMShmImage*		image;
 	Pixmap 				pixmap;
 	GC 					gc;
-	XShmSegmentInfo		shminfo;
 	gboolean 			synced;
 };
 
@@ -52,12 +63,110 @@ static gboolean	  		ccm_pixmap_shm_repair 		  (CCMDrawable* drawable,
 static void		  		ccm_pixmap_shm_bind 		  (CCMPixmap* self);
 static void		  		ccm_pixmap_shm_release 		  (CCMPixmap* self);
 
+static CCMShmImage*
+ccm_shm_image_new(CCMDisplay* display, Visual* visual,
+				  int width, int height, int depth)
+{
+	g_return_val_if_fail(display != NULL, NULL);
+	
+	CCMShmImage* image = g_new0(CCMShmImage, 1);
+	
+	image->display = display;
+	image->visual = visual;
+	image->depth = depth;
+	
+	image->image = XShmCreateImage(CCM_DISPLAY_XDISPLAY(image->display),
+								   image->visual, image->depth,
+								   ZPixmap, NULL, &image->shminfo,
+								   width, height);
+	if (!image->image) return NULL;
+	
+	image->shminfo.shmid = shmget (IPC_PRIVATE, image->image->bytes_per_line * 
+								   image->image->height, IPC_CREAT | 0600);
+	
+	if (image->shminfo.shmid == -1)
+	{
+		XDestroyImage(image->image);
+		image->image = NULL;
+		g_free(image);
+		return NULL;
+	}
+	
+	image->shminfo.readOnly = False;
+	image->shminfo.shmaddr = shmat (image->shminfo.shmid, 0, 0);
+	if (image->shminfo.shmaddr == (gpointer)-1)
+	{
+		XDestroyImage(image->image);
+		image->image = NULL;
+		g_free(image);
+		return NULL;
+	}
+	
+	image->image->data = image->shminfo.shmaddr;
+	
+	XShmAttach(CCM_DISPLAY_XDISPLAY(display), &image->shminfo);
+	
+	return image;
+}
+
+static void
+ccm_shm_image_destroy(CCMShmImage* image)
+{
+	g_return_if_fail(image != NULL);
+	
+	if (image->image)
+	{
+		XShmDetach (CCM_DISPLAY_XDISPLAY(image->display), &image->shminfo);
+		XDestroyImage(image->image);
+		shmdt (image->shminfo.shmaddr);
+		shmctl (image->shminfo.shmid, IPC_RMID, 0);
+		image->image = NULL;
+	}
+	g_free(image);
+}
+
+static gboolean
+ccm_shm_image_get_image(CCMShmImage* image, CCMPixmap* pixmap, int x, int y)
+{
+	g_return_val_if_fail(image != NULL, FALSE);
+	g_return_val_if_fail(pixmap != NULL, FALSE);
+	
+	return XShmGetImage (CCM_DISPLAY_XDISPLAY(image->display), 
+						 CCM_PIXMAP_XPIXMAP(pixmap), image->image, 
+						 x, y, AllPlanes);
+}
+
+static gboolean
+ccm_shm_image_get_sub_image(CCMShmImage* image, CCMPixmap* pixmap, 
+							int x, int y, int width, int height)
+{
+	g_return_val_if_fail(image != NULL, FALSE);
+	g_return_val_if_fail(pixmap != NULL, FALSE);
+	g_return_val_if_fail(width > 0 && height > 0, FALSE);
+	
+	gboolean ret = FALSE;
+	CCMShmImage* sub_image = ccm_shm_image_new (image->display, image->visual,
+												width, height, image->depth);
+	if (sub_image)
+	{
+		if (ccm_shm_image_get_image (sub_image, pixmap, x, y))
+		{
+			// FIXME: need to use pixman when cairo 1.6.0 is faster then _XSetImage
+			_XSetImage(sub_image->image, image->image, x, y);
+			ret = TRUE;
+		}
+		ccm_shm_image_destroy (sub_image);
+	}
+	
+	return ret;
+}
+
 static void
 ccm_pixmap_shm_init (CCMPixmapShm *self)
 {
 	self->priv = CCM_PIXMAP_SHM_GET_PRIVATE(self);
 	
-	self->priv->image = 0;
+	self->priv->image = NULL;
 	self->priv->pixmap = None;
 	self->priv->gc = 0;
 	self->priv->synced = FALSE;
@@ -99,38 +208,10 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 						  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
 						  &attribs);
 	
-	self->priv->image = XShmCreateImage(CCM_DISPLAY_XDISPLAY(display),
-										attribs.visual,
-										ccm_window_get_depth(CCM_PIXMAP(self)->window),
-										ZPixmap, NULL, &self->priv->shminfo,
-										attribs.width, 
-										attribs.height);
+	self->priv->image = ccm_shm_image_new (display, attribs.visual, 
+										   attribs.width, attribs.height,
+										   ccm_window_get_depth(CCM_PIXMAP(self)->window));
 	if (!self->priv->image) return;
-	
-	self->priv->shminfo.shmid = shmget (IPC_PRIVATE,
-										self->priv->image->bytes_per_line * 
-										self->priv->image->height, 
-										IPC_CREAT | 0600);
-	if (self->priv->shminfo.shmid == -1)
-	{
-		XDestroyImage(self->priv->image);
-		self->priv->image = NULL;
-		return;
-	}
-	
-	self->priv->shminfo.readOnly = False;
-	self->priv->shminfo.shmaddr = shmat (self->priv->shminfo.shmid, 0, 0);
-	if (self->priv->shminfo.shmaddr == (gpointer)-1)
-	{
-		XDestroyImage(self->priv->image);
-		self->priv->image = NULL;
-		return;
-	}
-	
-	self->priv->image->data = self->priv->shminfo.shmaddr;
-	
-	XShmAttach(CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
-	ccm_display_sync(display);
 	
 	if (_ccm_display_xshm_shared_pixmap(display))
 	{
@@ -143,18 +224,14 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 							   	&gcv);
 		if (!self->priv->gc)
 		{
-			XShmDetach (CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
-			XDestroyImage(self->priv->image);
-			self->priv->image = NULL;
-			shmdt (self->priv->shminfo.shmaddr);
-			shmctl (self->priv->shminfo.shmid, IPC_RMID, 0);
+			ccm_shm_image_destroy(self->priv->image);
 			return;
 		}
 	
 		self->priv->pixmap = XShmCreatePixmap(CCM_DISPLAY_XDISPLAY(display),
 											  CCM_PIXMAP_XPIXMAP(self),
-											  self->priv->image->data,
-											  &self->priv->shminfo,
+											  self->priv->image->image->data,
+											  &self->priv->image->shminfo,
 											  attribs.width, 
 											  attribs.height,
 											  ccm_window_get_depth(CCM_PIXMAP(self)->window));
@@ -162,11 +239,7 @@ ccm_pixmap_shm_bind (CCMPixmap* pixmap)
 		{
 			XFreeGC(CCM_DISPLAY_XDISPLAY(display), self->priv->gc);
 			self->priv->gc = NULL;
-			XShmDetach (CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
-			XDestroyImage(self->priv->image);
-			self->priv->image = NULL;
-			shmdt (self->priv->shminfo.shmaddr);
-			shmctl (self->priv->shminfo.shmid, IPC_RMID, 0);
+			ccm_shm_image_destroy(self->priv->image);
 			return;
 		}
 	}
@@ -193,13 +266,7 @@ ccm_pixmap_shm_release (CCMPixmap* pixmap)
 	}
 	
 	if (self->priv->image)
-	{
-		XShmDetach (CCM_DISPLAY_XDISPLAY(display), &self->priv->shminfo);
-		XDestroyImage(self->priv->image);
-		shmdt (self->priv->shminfo.shmaddr);
-		shmctl (self->priv->shminfo.shmid, IPC_RMID, 0);
-		self->priv->image = NULL;
-	}
+		ccm_shm_image_destroy (self->priv->image);
 }
 
 static gboolean
@@ -220,27 +287,25 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 		ccm_region_get_xrectangles (area, &rects, &nb_rects);
 		if (self->priv->pixmap)
 		{
-			XserverRegion region;
+			gint cpt;
 			
-			region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY(display), rects, nb_rects);
-			
-			XFixesSetGCClipRegion(CCM_DISPLAY_XDISPLAY (display), self->priv->gc,
-								  0, 0, region);
-			XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY (display), region);
-			
-			XCopyArea(CCM_DISPLAY_XDISPLAY(display),
-					  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
-					  self->priv->gc, 
-					  0, 0, self->priv->image->width, self->priv->image->height, 0, 0);
-			
+			for (cpt = 0; cpt < nb_rects; cpt++)
+			{
+				XCopyArea(CCM_DISPLAY_XDISPLAY(display),
+						  CCM_PIXMAP_XPIXMAP(self), self->priv->pixmap,
+						  self->priv->gc, 
+						  rects[cpt].x, rects[cpt].y, 
+						  rects[cpt].width, rects[cpt].height, 
+						  rects[cpt].x, rects[cpt].y);
+			}
 			ccm_display_sync(display);
 		}
 		else
 		{
 			if (!self->priv->synced) 
 			{
-				if (!XShmGetImage (CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self), 
-								  self->priv->image , 0, 0, AllPlanes))
+				if (!ccm_shm_image_get_image (self->priv->image, 
+											  CCM_PIXMAP(self), 0, 0))
 					ret = FALSE;
 				else
 					self->priv->synced = TRUE;
@@ -248,39 +313,18 @@ ccm_pixmap_shm_repair (CCMDrawable* drawable, CCMRegion* area)
 			else
 			{
 				gint cpt;
-				XImage* fake_image;
-				CCMRegion* linear = ccm_region_new();
 				
-				/* XShm don't provide GetSubImage, to simulate we can shift in 
-				   the image data, but we need to keep the original width. 
-				   To minimize the number of rectangle, we must transform the 
-				   damaged area to horizontal bands. To do this, we recreate the 
-				   damaged region with horizontal rectangles, ccm_region performs 
-				   a compression then repairs with this new list of rectangles */
 				for (cpt = 0; cpt < nb_rects; cpt++)
 				{
-					rects[cpt].x = 0;
-					rects[cpt].width = self->priv->image->width;
-					ccm_region_union_with_xrect (linear, &rects[cpt]);
-				}
-				g_free(rects);
-				
-				fake_image = g_memdup(self->priv->image, sizeof(XImage));
-				ccm_region_get_xrectangles (linear, &rects, &nb_rects);
-				for (cpt = 0; cpt < nb_rects; cpt++)
-				{
-					fake_image->data = self->priv->image->data + 
-									  rects[cpt].y * fake_image->bytes_per_line;
-					fake_image->height = rects[cpt].height;
-					if (!XShmGetImage (CCM_DISPLAY_XDISPLAY(display), 
-									   CCM_PIXMAP_XPIXMAP(self), 
-									   fake_image , 0, rects[cpt].y, AllPlanes))
+					if (!ccm_shm_image_get_sub_image (self->priv->image,
+										CCM_PIXMAP(self), 
+										rects[cpt].x, rects[cpt].y, 
+										rects[cpt].width, rects[cpt].height))
 					{
 						ret = FALSE;
 						break;
 					}
 				}
-				g_free(fake_image);
 			}
 		}
 		g_free(rects);
@@ -304,11 +348,11 @@ ccm_pixmap_shm_get_surface (CCMDrawable* drawable)
 	if (self->priv->image)
 	{
 		surface = cairo_image_surface_create_for_data(
-									(unsigned char *)self->priv->image->data, 
+									(unsigned char *)self->priv->image->image->data, 
 									ccm_window_get_format(CCM_PIXMAP(self)->window),
-									(int)self->priv->image->width, 
-									(int)self->priv->image->height, 
-									self->priv->image->bytes_per_line);
+									(int)self->priv->image->image->width, 
+									(int)self->priv->image->image->height, 
+									self->priv->image->image->bytes_per_line);
 	}
 	
 	return surface;

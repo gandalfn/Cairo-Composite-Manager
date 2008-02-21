@@ -67,6 +67,7 @@ struct _CCMDrawable
 };
 
 GType ccm_drawable_get_type (void) G_GNUC_CONST;
+CCMRegion* _ccm_drawable_get_damaged(CCMDrawable* self);
 
 G_END_DECLS
 

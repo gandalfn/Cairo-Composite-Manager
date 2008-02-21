@@ -217,6 +217,14 @@ __ccm_drawable_resize(CCMDrawable* self, int width, int height)
 	}
 }
 
+CCMRegion*
+_ccm_drawable_get_damaged(CCMDrawable* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	return self->priv->damaged;
+}
+
 /**
  * ccm_drawable_get_screen:
  * @self: #CCMDrawable

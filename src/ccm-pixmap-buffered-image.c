@@ -152,14 +152,26 @@ ccm_pixmap_buffered_image_repair (CCMDrawable* drawable, CCMRegion* area)
 	CCMPixmapBufferedImage* self = CCM_PIXMAP_BUFFERED_IMAGE(drawable);
 	gboolean ret;
 	
-	ret = CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->repair(drawable, area);
-	
 	if (self->priv->buffered)
 	{
+		CCMRegion* damaged = _ccm_drawable_get_damaged (CCM_DRAWABLE(CCM_PIXMAP(self)->window));
+		CCMRegion* tmp = ccm_region_copy(damaged);
+		cairo_rectangle_t geometry;
+		
+		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(CCM_PIXMAP(self)->window), &geometry);
+		ccm_region_offset (tmp, -geometry.x, -geometry.y);
+		ccm_region_intersect (tmp, area);
+		ret = CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->repair(drawable, tmp);
+		ccm_region_destroy (tmp);
+	
 		if (self->priv->need_to_sync)
 			ccm_region_union (self->priv->need_to_sync, area);
 		else
 			self->priv->need_to_sync = ccm_region_copy (area);
+	}
+	else
+	{
+		ret = CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->repair(drawable, area);
 	}
 	
 	return ret;
