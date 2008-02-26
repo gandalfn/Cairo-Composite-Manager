@@ -1,3 +1,36 @@
+2008-02-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * configure.ac: Add pixman 0.9.6 check.
+    * src/Makefile.am: 
+    * src/ccm-image.c:
+    * src/ccm-image.h: Get image object which replace _XSetImage by pixman_blt
+                       and add a pseudo XShmGetImage function.
+    * src/ccm-pixmap-backend.c:
+    * src/ccm-pixmap-backend.h:
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-image.c:
+    * src/ccm-pixmap.c: Merge ccm-pixmap-image and ccm-pixmap-shm, XGetImage and
+                        XShmGetImage is now managed in ccm-image.
+    
+    * src/ccm-pixmap-buffered-shm.c:
+    * src/ccm-pixmap-buffered-shm.h:
+    * src/ccm-pixmap-shm.c:
+    * src/ccm-pixmap-shm.h: Removed SHM is managed in ccm-image.
+    
+    * src/ccm-display.c:
+    * src/ccm-display.h: 
+    * src/ccm-pixmap.c: Use event instead a callback for damage.
+    
+    * src/ccm-screen.c: Remove timer check and force paint in event loop.
+    
+    * src/ccm-window.c: Remove sync display on query geometry.
+    
+    * plugins/mosaic/ccm-mosaic.c: Don't check event if plugin isn't enabled
+    
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/opacity/ccm-opacity.schemas.in: Add keybinding to increase/decrease 
+                                              opacity.
+
 2008-02-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-display.c: Fix typo

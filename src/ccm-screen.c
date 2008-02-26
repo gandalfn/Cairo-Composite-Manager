@@ -82,7 +82,6 @@ struct _CCMScreenPrivate
 	gboolean			buffered;
 	gboolean			filtered_damage;
 	
-	GTimer*				vblank;
 	guint				id_paint;
 	
 	CCMExtensionLoader* plugin_loader;
@@ -102,8 +101,8 @@ static gboolean impl_ccm_screen_add_window(CCMScreenPlugin* plugin,
 static void impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, 
 										  CCMScreen* self, 
 										  CCMWindow* window);
-static void on_window_damaged(CCMScreen* self, CCMRegion* area, 
-							  CCMWindow* window);
+static void ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, 
+										 CCMWindow* window);
 
 static void
 ccm_screen_init (CCMScreen *self)
@@ -119,7 +118,6 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->windows = NULL;
 	self->priv->buffered = FALSE;
 	self->priv->filtered_damage = TRUE;
-	self->priv->vblank = g_timer_new();
 	self->priv->id_paint = 0;
 	self->priv->plugin_loader = NULL;
 	self->priv->animations = NULL;
@@ -139,9 +137,6 @@ ccm_screen_finalize (GObject *object)
 	
 	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; cpt++)
 		g_object_unref(self->priv->options[cpt]);
-	
-	if (self->priv->vblank)
-		g_timer_destroy(self->priv->vblank);
 	
 	if (self->priv->id_paint)
 		g_source_remove(self->priv->id_paint);
@@ -442,7 +437,8 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	else
 		self->priv->windows = g_list_prepend(self->priv->windows, window);
 	
-	g_signal_connect_swapped(window, "damaged", G_CALLBACK(on_window_damaged), self);
+	g_signal_connect_swapped(window, "damaged", 
+							 G_CALLBACK(ccm_screen_on_window_damaged), self);
 	
 	if (window->is_viewable) ccm_window_map(window);
 	
@@ -458,7 +454,9 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	if (link)
 	{
 		self->priv->windows = g_list_remove(self->priv->windows, window);
-		
+		g_signal_handlers_disconnect_by_func(window, 
+											 ccm_screen_on_window_damaged, 
+											 self);
 		if (self->priv->fullscreen == window)
 			self->priv->fullscreen = NULL;
 		
@@ -498,6 +496,7 @@ ccm_screen_paint(CCMScreen* self)
 							self->xscreen->width, self->xscreen->height);
 			cairo_clip(self->priv->ctx);
 		}
+		
 		if (ccm_screen_plugin_paint(self->priv->plugin, self, 
 									self->priv->ctx))
 		{
@@ -512,13 +511,12 @@ ccm_screen_paint(CCMScreen* self)
 				ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
 		}
 	}
-	g_timer_start(self->priv->vblank);
 	
 	return TRUE;
 }
 
 static void
-on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
+ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(area != NULL);
@@ -615,22 +613,22 @@ on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
 				if (top)
 				{
 					g_signal_handlers_block_by_func(item->data, 
-													on_window_damaged, 
+													ccm_screen_on_window_damaged, 
 													self);
 					ccm_drawable_damage_region(item->data, damage_above);
 					g_signal_handlers_unblock_by_func(item->data, 
-													  on_window_damaged, 
+													  ccm_screen_on_window_damaged, 
 													  self);
 				}
 				else
 				{
 					g_signal_handlers_block_by_func(item->data, 
-													on_window_damaged, 
+													ccm_screen_on_window_damaged, 
 													self);
 					ccm_drawable_damage_region(CCM_DRAWABLE(item->data), 
 											   damage_below);
 					g_signal_handlers_unblock_by_func(item->data, 
-													  on_window_damaged, 
+													  ccm_screen_on_window_damaged, 
 													  self);
 					if (self->priv->filtered_damage && ((CCMWindow*)item->data)->opaque) 
 						ccm_region_subtract (damage_below, 
@@ -652,12 +650,10 @@ on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window)
 }
 
 static void
-on_event(CCMScreen* self, XEvent* event)
+ccm_screen_on_event(CCMScreen* self, XEvent* event)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(event != NULL);
-	
-	gint refresh_rate = ccm_config_get_integer(self->priv->options[CCM_SCREEN_REFRESH_RATE]);
 	
 	switch (event->type)
 	{
@@ -891,10 +887,6 @@ on_event(CCMScreen* self, XEvent* event)
 		default:
 		break;
 	}
-	
-	if (!refresh_rate) refresh_rate = 60;
-	if (g_timer_elapsed(self->priv->vblank, NULL) >= 1.0f / (gfloat)refresh_rate)
-		ccm_screen_paint(self);
 }
 
 gboolean
@@ -1027,7 +1019,7 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	ccm_screen_plugin_load_options(self->priv->plugin, self);
 	
 	g_signal_connect_swapped(self->priv->display, "event", 
-							 G_CALLBACK(on_event), self);
+							 G_CALLBACK(ccm_screen_on_event), self);
 	
 	if (!ccm_screen_create_overlay_window(self))
 	{
@@ -1050,7 +1042,6 @@ ccm_screen_new(CCMDisplay* display, guint number)
 											  1000/refresh_rate, 
 											  (GSourceFunc)ccm_screen_paint, 
 											  self, NULL);
-	g_timer_start(self->priv->vblank);
 	
 	return self;
 }
@@ -1084,8 +1075,7 @@ ccm_screen_get_root_window(CCMScreen* self)
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(self)), 
 				      root,
 				      SubstructureNotifyMask   |
-					  ExposureMask 			   |
-					  PointerMotionMask);
+					  ExposureMask);
 	}
 	
 	return self->priv->root;

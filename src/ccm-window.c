@@ -514,7 +514,7 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	XWindowAttributes attrs;
 	cairo_rectangle_t area;
 	
-	ccm_display_sync (display);
+	//ccm_display_sync (display);
 	
 	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
 							   CCM_WINDOW_XWINDOW(self), &attrs))
@@ -795,8 +795,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
 					  CCM_WINDOW_XWINDOW(self),
 					  PropertyChangeMask | 
-					  SubstructureNotifyMask |
-					  PointerMotionMask);
+					  SubstructureNotifyMask);
 	}
 	
 	return self;

@@ -41,7 +41,6 @@ G_BEGIN_DECLS
 
 #define CCM_DISPLAY_XDISPLAY(obj)    (CCM_DISPLAY(obj)->xdisplay)
 
-typedef void (* CCMDamageFunc) (CCMDisplay* self, gpointer data);
 typedef void (* CCMAsyncGetpropFunc) (CCMDisplay* self, AgGetPropertyTask* task,
 									  gpointer data);
 
@@ -64,9 +63,6 @@ struct _CCMDisplay
 GType 		ccm_display_get_type 			(void) G_GNUC_CONST;
 gboolean	_ccm_display_use_xshm			(CCMDisplay* self);
 gboolean	_ccm_display_xshm_shared_pixmap (CCMDisplay* self);
-void 		_ccm_display_register_damage    (CCMDisplay* self, XID damage, 
-											 CCMDamageFunc func, gpointer data);
-void  		_ccm_display_unregister_damage 	(CCMDisplay* self, XID damage); 
 void 		_ccm_display_get_property_async (CCMDisplay* self, 
 											 AgGetPropertyTask* task, 
 											 CCMAsyncGetpropFunc func,

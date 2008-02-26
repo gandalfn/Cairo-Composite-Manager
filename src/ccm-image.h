@@ -20,37 +20,29 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
-#include "ccm-pixmap-backend.h"
+#ifndef _CCM_IMAGE_H_
+#define _CCM_IMAGE_H_
+
 #include "ccm-display.h"
-#include "ccm-screen.h"
-#include "ccm.h"
+#include "ccm-pixmap.h"
 
-GType
-ccm_pixmap_backend_get_type(CCMScreen* screen)
-{
-	GType type = 0;
-	CCMDisplay* display = ccm_screen_get_display (screen);
-	
-	if (_ccm_screen_use_buffered (screen))
-		type = ccm_pixmap_buffered_image_get_type();
-	else
-		type = ccm_pixmap_image_get_type();
-	
-	if (_ccm_screen_native_pixmap_bind(screen))
-	{
-		gchar* backend;
-	
-		backend = _ccm_screen_get_window_backend(screen);
+G_BEGIN_DECLS
 
-#ifndef DISABLE_XRENDER_BACKEND
-		if (!g_ascii_strcasecmp(backend, "xrender"))
-			type = ccm_pixmap_xrender_get_type();
-#endif
-#ifdef ENABLE_GLITZ_TFP_BACKEND
-		if (!g_ascii_strcasecmp(backend, "glitz"))
-			type = ccm_pixmap_glitz_get_type();
-#endif
-	}
-	
-	return type;
-}
+typedef struct _CCMImage CCMImage;
+
+CCMImage* ccm_image_new				(CCMDisplay* display, Visual* visual, 
+									 cairo_format_t format, 
+									 int width, int height, int depth);
+void 	  ccm_image_destroy			(CCMImage* image);
+gboolean  ccm_image_get_image		(CCMImage* image, CCMPixmap* pixmap, 
+								 	 int x, int y);
+gboolean  ccm_image_get_sub_image	(CCMImage* image, CCMPixmap* pixmap, 
+								 	 int x, int y, int width, int height);
+guchar*   ccm_image_get_data		(CCMImage* image);
+gint 	  ccm_image_get_width		(CCMImage* image);
+gint	  ccm_image_get_height		(CCMImage* image);
+gint 	  ccm_image_get_stride		(CCMImage* image);
+
+G_END_DECLS
+
+#endif /* _CCM_IMAGE_H_ */

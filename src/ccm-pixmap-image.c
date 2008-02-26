@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <cairo.h>
 
+#include "ccm-image.h"
 #include "ccm-pixmap-image.h"
 #include "ccm-window.h"
 #include "ccm-screen.h"
@@ -33,9 +34,9 @@ G_DEFINE_TYPE (CCMPixmapImage, ccm_pixmap_image, CCM_TYPE_PIXMAP);
 
 struct _CCMPixmapImagePrivate
 {
-	XImage* 			image;
-	int 				width;
-	int 				height;
+	CCMImage* 			image;
+	cairo_surface_t*    surface;
+	gboolean			synced;
 };
 
 #define CCM_PIXMAP_IMAGE_GET_PRIVATE(o) \
@@ -52,7 +53,9 @@ ccm_pixmap_image_init (CCMPixmapImage *self)
 {
 	self->priv = CCM_PIXMAP_IMAGE_GET_PRIVATE(self);
 	
-	self->priv->image = 0;
+	self->priv->image = NULL;
+	self->priv->surface = NULL;
+	self->priv->synced = FALSE;
 }
 
 static void
@@ -83,14 +86,16 @@ ccm_pixmap_image_bind (CCMPixmap* pixmap)
 	
 	CCMPixmapImage* self = CCM_PIXMAP_IMAGE(pixmap);
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(pixmap));
+	cairo_format_t format = ccm_window_get_format (CCM_PIXMAP(self)->window);
+	gint depth = ccm_window_get_depth (CCM_PIXMAP(self)->window);
 	XWindowAttributes attribs;
 		
 	XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
 						  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
 						  &attribs);
 	
-	self->priv->width = attribs.width;
-	self->priv->height = attribs.height;
+	self->priv->image = ccm_image_new(display, attribs.visual, format, 
+									  attribs.width, attribs.height, depth);
 }
 
 static void
@@ -100,7 +105,8 @@ ccm_pixmap_image_release (CCMPixmap* pixmap)
 	
 	CCMPixmapImage* self = CCM_PIXMAP_IMAGE(pixmap);
 	
-	if (self->priv->image) XDestroyImage(self->priv->image);
+	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
+	if (self->priv->image) ccm_image_destroy (self->priv->image);
 }
 
 static gboolean
@@ -110,35 +116,41 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapImage* self = CCM_PIXMAP_IMAGE(drawable);
-	CCMDisplay* display = ccm_drawable_get_display(drawable);
+	gboolean ret = TRUE;
 	
-	if (!self->priv->image) 	
+	if (self->priv->image)
 	{
-		self->priv->image = XGetImage (CCM_DISPLAY_XDISPLAY(display),
-									   CCM_PIXMAP_XPIXMAP(self), 0, 0, 
-									   self->priv->width, 
-									   self->priv->height, 
-									   AllPlanes, ZPixmap);
-	}
-	else
-	{
-		XRectangle* rects;
-		gint nb_rects, cpt;
-	
-		ccm_region_get_xrectangles (area, &rects, &nb_rects);
-	
-		for (cpt = 0; cpt < nb_rects; cpt++)
+		if (!self->priv->synced) 
 		{
-			XGetSubImage (CCM_DISPLAY_XDISPLAY(display),
-					   	  CCM_PIXMAP_XPIXMAP(self), rects[cpt].x, rects[cpt].y, 
-						  rects[cpt].width, rects[cpt].height, 
-						  AllPlanes, ZPixmap, self->priv->image, 
-						  rects[cpt].x, rects[cpt].y);
+			if (!ccm_image_get_image (self->priv->image, 
+									  CCM_PIXMAP(self), 0, 0))
+				ret = FALSE;
+			else
+				self->priv->synced = TRUE;
 		}
-		g_free(rects);
+		else
+		{
+			XRectangle* rects;
+			gint nb_rects, cpt;
+				
+			ccm_region_get_xrectangles (area, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+			{
+				if (!ccm_image_get_sub_image (self->priv->image,
+											  CCM_PIXMAP(self), 
+											  rects[cpt].x, rects[cpt].y, 
+											  rects[cpt].width, 
+											  rects[cpt].height))
+				{
+					ret = FALSE;
+					break;
+				}
+			}
+			g_free(rects);
+		}
 	}
 	
-	return TRUE;
+	return ret;
 }
 
 static cairo_surface_t*
@@ -147,22 +159,22 @@ ccm_pixmap_image_get_surface (CCMDrawable* drawable)
 	g_return_val_if_fail(drawable != NULL, NULL);
 	
 	CCMPixmapImage *self = CCM_PIXMAP_IMAGE(drawable);
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(CCM_PIXMAP(self)->window));
 	cairo_surface_t* surface = NULL;
-	cairo_rectangle_t* rects;
-	gint nb_rects, cpt;
 	
 	if (CCM_PIXMAP(self)->window->is_viewable)
 		ccm_drawable_repair(CCM_DRAWABLE(self));
 		
-	if (self->priv->image)
-		surface = cairo_image_surface_create_for_data(
-									(unsigned char *)self->priv->image->data, 
-									ccm_window_get_format(CCM_PIXMAP(self)->window),
-									self->priv->width, 
-								    self->priv->height, 
-								    self->priv->image->bytes_per_line);
+	if (self->priv->image && ccm_image_get_data (self->priv->image) && 
+		!self->priv->surface)
+		self->priv->surface = cairo_image_surface_create_for_data(
+								ccm_image_get_data (self->priv->image), 
+								ccm_window_get_format(CCM_PIXMAP(self)->window),
+								ccm_image_get_width (self->priv->image), 
+								ccm_image_get_height (self->priv->image), 
+								ccm_image_get_stride (self->priv->image));
 	
-	return surface;
+	if (self->priv->surface) cairo_surface_reference (self->priv->surface);
+	
+	return self->priv->surface;
 }
 

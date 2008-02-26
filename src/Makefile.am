@@ -73,11 +73,9 @@ cairo_compmgr_SOURCES = \
 	ccm-tray-icon.c \
 	ccm-pixmap-backend.h \
 	ccm-pixmap-backend.c \
-	ccm-pixmap-shm.h \
-	ccm-pixmap-shm.c \
-    ccm-pixmap-buffered-shm.h \
-	ccm-pixmap-buffered-shm.c \
-	ccm-pixmap-image.h \
+	ccm-image.h \
+	ccm-image.c \
+    ccm-pixmap-image.h \
 	ccm-pixmap-image.c \
     ccm-pixmap-buffered-image.h \
 	ccm-pixmap-buffered-image.c \

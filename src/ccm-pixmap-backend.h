@@ -35,8 +35,6 @@
 #include "ccm-pixmap-xrender.h"
 #endif
 
-#include "ccm-pixmap-shm.h"
-#include "ccm-pixmap-buffered-shm.h"
 #include "ccm-pixmap-image.h"
 #include "ccm-pixmap-buffered-image.h"
 
@@ -48,15 +46,13 @@ G_BEGIN_DECLS
 #define CCM_IS_PIXMAP_BACKEND(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PIXMAP_BACKEND))
 #define CCM_IS_PIXMAP_BACKEND_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PIXMAP_BACKEND))
 #define CCM_PIXMAP_BACKEND_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PIXMAP_BACKEND, CCMPixmapBackendClass))
-#define CCM_IS_PIXMAP_BUFFERED(obj)			(CCM_IS_PIXMAP_BUFFERED_SHM (obj) || CCM_IS_PIXMAP_BUFFERED_IMAGE (obj))
+#define CCM_IS_PIXMAP_BUFFERED(obj)			(CCM_IS_PIXMAP_BUFFERED_IMAGE (obj))
 
 typedef union _CCMPixmapBackendClass CCMPixmapBackendClass;
 typedef union _CCMPixmapBackend CCMPixmapBackend;
 
 union _CCMPixmapBackendClass
 {
-	CCMPixmapShmClass		  	shm_class;
-	CCMPixmapBufferedShmClass 	buffered_shm_class;
 	CCMPixmapBufferedImageClass buffered_image_class;
 	CCMPixmapImageClass		  	image_class;
 #ifdef ENABLE_GLITZ_TFP_BACKEND
@@ -69,8 +65,6 @@ union _CCMPixmapBackendClass
 
 union _CCMPixmapBackend
 {
-	CCMPixmapShm			shm;
-	CCMPixmapBufferedShm    buffered_shm;
 	CCMPixmapImage			image;
 	CCMPixmapBufferedImage  buffered_image;
 #ifdef ENABLE_GLITZ_TFP_BACKEND

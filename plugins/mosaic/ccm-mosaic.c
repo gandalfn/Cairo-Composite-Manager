@@ -46,6 +46,7 @@ static gchar* CCMMosaicOptions[CCM_MOSAIC_OPTION_N] = {
 
 static void ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display);
 
 CCM_DEFINE_PLUGIN (CCMMosaic, ccm_mosaic, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_mosaic,
@@ -165,6 +166,11 @@ ccm_mosaic_finalize (GObject *object)
 		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 		XDestroyWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
 	}
+	if (self->priv->screen)
+	{
+		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
+		g_signal_handlers_disconnect_by_func(display, ccm_mosaic_on_event, self);
+	}
 	
 	G_OBJECT_CLASS (ccm_mosaic_parent_class)->finalize (object);
 }
@@ -239,46 +245,49 @@ ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
 static void
 ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 {
-	switch (event->type)
+	if (self->priv->enabled)
 	{
-		case ButtonPress:
-		case ButtonRelease:
-		case MotionNotify:
+		switch (event->type)
 		{
-			XButtonEvent* button_event = (XButtonEvent*)event;
-			gint cpt;
-			
-			for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
+			case ButtonPress:
+			case ButtonRelease:
+			case MotionNotify:
 			{
-				if (self->priv->areas[cpt].geometry.x <= button_event->x &&
-					self->priv->areas[cpt].geometry.y <= button_event->y &&
-					self->priv->areas[cpt].geometry.x +
-					self->priv->areas[cpt].geometry.width >= button_event->x &&
-					self->priv->areas[cpt].geometry.y +
-					self->priv->areas[cpt].geometry.height >= button_event->y)
+				XButtonEvent* button_event = (XButtonEvent*)event;
+				gint cpt;
+				
+				for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
 				{
-					if (ccm_mosaic_recalc_coords(self, cpt,
-												 &button_event->x, &button_event->y,
-												 &button_event->x_root, &button_event->y_root))
+					if (self->priv->areas[cpt].geometry.x <= button_event->x &&
+						self->priv->areas[cpt].geometry.y <= button_event->y &&
+						self->priv->areas[cpt].geometry.x +
+						self->priv->areas[cpt].geometry.width >= button_event->x &&
+						self->priv->areas[cpt].geometry.y +
+						self->priv->areas[cpt].geometry.height >= button_event->y)
 					{
-						button_event->window = CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window);
-						XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
-									True, NoEventMask, event);
-						
-						button_event->window = _ccm_window_get_child(self->priv->areas[cpt].window);
-						if (button_event->window) 
+						if (ccm_mosaic_recalc_coords(self, cpt,
+													 &button_event->x, &button_event->y,
+													 &button_event->x_root, &button_event->y_root))
 						{
+							button_event->window = CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window);
 							XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
 										True, NoEventMask, event);
+							
+							button_event->window = _ccm_window_get_child(self->priv->areas[cpt].window);
+							if (button_event->window) 
+							{
+								XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
+											True, NoEventMask, event);
+							}
+							break;
 						}
-						break;
 					}
 				}
 			}
+			break;
+			default:
+			break;
 		}
-		break;
-		default:
-		break;
 	}
 }
 

@@ -50,6 +50,7 @@ static gchar* CCMDisplayOptions[CCM_DISPLAY_OPTION_N] = {
 enum
 {
 	EVENT,
+	DAMAGE_EVENT,
     N_SIGNALS
 };
 
@@ -61,13 +62,6 @@ typedef struct
     int			event_base;
     int			error_base;
 } CCMExtension;
-
-typedef struct
-{
-    XID			  damage;
-    CCMDamageFunc callback;
-    gpointer 	  data;
-} CCMDamage;
 
 typedef struct
 {
@@ -88,7 +82,6 @@ struct _CCMDisplayPrivate
 	gboolean	 shm_shared_pixmap;
 	CCMExtension dbe;
 	
-	GHashTable*	 damages;
 	GHashTable*	 asyncprops;
 	
 	gint		 fd;
@@ -106,8 +99,6 @@ ccm_display_init (CCMDisplay *self)
 	self->priv->fd = 0;
 	self->priv->screens = NULL;
 	self->priv->shm_shared_pixmap = FALSE;
-	self->priv->damages = g_hash_table_new_full(g_direct_hash, g_direct_equal,
-												NULL, g_free);
 	self->priv->asyncprops = g_hash_table_new_full(g_direct_hash, g_direct_equal,
 												   NULL, g_free);
 }
@@ -137,7 +128,6 @@ ccm_display_finalize (GObject *object)
 		g_slice_free1(sizeof(CCMScreen*) * (self->priv->nb_screens + 1), 
 					  self->priv->screens);
 	}
-	g_hash_table_destroy(self->priv->damages);
 	g_hash_table_destroy(self->priv->asyncprops);
 	
 	for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; cpt++)
@@ -156,6 +146,12 @@ ccm_display_class_init (CCMDisplayClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMDisplayPrivate));
 	
 	signals[EVENT] = g_signal_new ("event",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__POINTER,
+								   G_TYPE_NONE, 1, G_TYPE_POINTER);
+	
+	signals[DAMAGE_EVENT] = g_signal_new ("damage-event",
 								   G_OBJECT_CLASS_TYPE (object_class),
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__POINTER,
@@ -279,10 +275,7 @@ ccm_display_process_events(CCMDisplay* self)
 		if (xevent.type == self->priv->damage.event_base + XDamageNotify)
 		{
 			XDamageNotifyEvent* event_damage = (XDamageNotifyEvent*)&xevent;
-			CCMDamage* damage = g_hash_table_lookup(self->priv->damages,
-													(gpointer)event_damage->damage);
-		
-			if (damage) damage->callback(self, damage->data);
+			g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage);
 		}
 		else
 		{
@@ -290,7 +283,7 @@ ccm_display_process_events(CCMDisplay* self)
 		}
 	}
 	
-	while ((task = ag_get_next_completed_task (CCM_DISPLAY_XDISPLAY(self))))
+	/*while ((task = ag_get_next_completed_task (CCM_DISPLAY_XDISPLAY(self))))
 	{
 		CCMAsyncGetprop* asyncprop = g_hash_table_lookup(self->priv->asyncprops,
 														 task);
@@ -299,7 +292,7 @@ ccm_display_process_events(CCMDisplay* self)
 			asyncprop->callback(self, task, asyncprop->data);
 			g_hash_table_remove (self->priv->asyncprops, task);
 		}
-	}
+	}*/
 }
 
 gboolean
@@ -318,33 +311,6 @@ _ccm_display_xshm_shared_pixmap(CCMDisplay* self)
 	
 	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
 		   self->priv->shm.available && self->priv->shm_shared_pixmap;
-}
-
-void
-_ccm_display_register_damage(CCMDisplay* self, XID damage, 
-							 CCMDamageFunc func, gpointer data)
-{
-	g_return_if_fail (self != NULL);
-    
-	CCMDamage* info;
-    
-    info = g_new (CCMDamage, 1);
-    
-    info->damage = damage;
-    info->callback = func;
-    info->data = data;
-
-	g_hash_table_insert (self->priv->damages, (gpointer)damage, info);
-}
-
-void
-_ccm_display_unregister_damage(CCMDisplay* self, XID damage)
-{
-	g_return_if_fail (self != NULL);
-    
-	CCMDamage* info = g_hash_table_lookup(self->priv->damages, (gpointer)damage);
-    
-	if (info) g_hash_table_remove (self->priv->damages, (gpointer)damage);
 }
 
 void 		

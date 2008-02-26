@@ -45,6 +45,7 @@ AM_GCONF_SOURCE_2
 
 GTK_REQUIRED=2.10.0
 CAIRO_REQUIRED=1.4.10
+PIXMAN_REQUIRED=0.9.6
 CAIRO_XLIB_REQUIRED=1.4.10
 CAIRO_XLIB_XRENDER_REQUIRED=1.4.10
 CAIRO_GLITZ_REQUIRED=1.4.10
@@ -58,6 +59,7 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         xdamage,
         xext,
         cairo >= $CAIRO_REQUIRED,
+        pixman-1 >= $PIXMAN_REQUIRED,
         gtk+-2.0 >= $GTK_REQUIRED,
         libgnomeui-2.0,
         gconf-2.0])

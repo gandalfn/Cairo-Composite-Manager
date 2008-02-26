@@ -237,7 +237,7 @@ ccm_pixmap_buffered_image_sync(CCMPixmapBufferedImage* self, cairo_surface_t* su
 				cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
 				cairo_paint (cr);
 			}
-			cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+			cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 			cairo_set_source_surface (cr, surface, 0, 0);
 			cairo_paint (cr);
 			cairo_destroy (cr);

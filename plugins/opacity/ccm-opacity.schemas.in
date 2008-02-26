@@ -12,5 +12,27 @@
             <long>Opacity of menu</long>
          </locale>
       </schema>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/opacity/increase</key>
+         <applyto>/apps/cairo-compmgr/default/opacity/increase</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+		 <default>&lt;Super&gt;Up</default>
+         <locale name="C">
+            <short>Increase opacity shortcut key.</short>
+            <long>The increase opacity shortcut key.</long>
+         </locale>
+      </schema>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/opacity/decrease</key>
+         <applyto>/apps/cairo-compmgr/default/opacity/decrease</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+		 <default>&lt;Super&gt;Down</default>
+         <locale name="C">
+            <short>Decrease opacity shortcut key.</short>
+            <long>The decrease opacity shortcut key.</long>
+         </locale>
+      </schema>
    </schemalist>
 </gconfschemafile>
