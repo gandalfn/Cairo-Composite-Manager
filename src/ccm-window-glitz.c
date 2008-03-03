@@ -114,7 +114,7 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 		}
 
 #ifdef ENABLE_GLITZ_TFP_BACKEND
-		format->indirect = _ccm_screen_native_pixmap_bind(screen);
+		format->indirect = _ccm_screen_indirect_rendering (screen);
 #endif
 		
 		self->priv->gl_drawable = glitz_glx_create_drawable_for_window(

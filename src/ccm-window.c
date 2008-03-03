@@ -54,7 +54,8 @@ static CCMRegion* 	impl_ccm_window_query_geometry(CCMWindowPlugin* plugin,
 static gboolean 	impl_ccm_window_paint		  (CCMWindowPlugin* plugin, 
 												   CCMWindow* self, 
 												   cairo_t* context,        
-												   cairo_surface_t* surface);
+												   cairo_surface_t* surface,
+												   gboolean y_invert);
 static void 		impl_ccm_window_map			  (CCMWindowPlugin* plugin, 
 												   CCMWindow* self);
 static void 		impl_ccm_window_unmap		  (CCMWindowPlugin* plugin, 
@@ -89,6 +90,7 @@ struct _CCMWindowPrivate
 	gboolean			has_format;
 	cairo_format_t		format;
 	gboolean			override_redirect;
+	XWindowAttributes   attribs;
 	
 	gboolean			unmap_pending;
 
@@ -368,13 +370,13 @@ ccm_window_get_utf8_property (CCMWindow* self, Atom atom)
 	
 	if (!g_utf8_validate ((gchar*)data, n_items, NULL))
     {
-		XFree (data);
+		g_free (data);
 		return NULL;
     }
   
   	val = g_strndup ((gchar*)data, n_items);
   
-  	XFree (data);
+  	g_free (data);
   
   	return val;
 }
@@ -403,7 +405,7 @@ ccm_window_get_child_utf8_property (CCMWindow* self, Atom atom)
   
   	val = g_strndup ((gchar*)data, n_items);
   
-  	XFree (data);
+  	g_free (data);
   
   	return val;
 }
@@ -486,7 +488,7 @@ ccm_window_query_child(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
-	Window* windows, w, p;
+	Window* windows = NULL, w, p;
 	guint n_windows;
 		
 	if (XQueryTree(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self), 
@@ -498,8 +500,8 @@ ccm_window_query_child(CCMWindow* self)
 					  PropertyChangeMask | 
 					  SubstructureNotifyMask |
 					  PointerMotionMask);
-		XFree(windows);
 	}
+	if (windows) XFree(windows);
 }
 
 static CCMRegion*
@@ -511,13 +513,12 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	int bx, by, cs, cx, cy, o; /* dummies */
 	unsigned int bw, bh, cw, ch; /* dummies */
-	XWindowAttributes attrs;
 	cairo_rectangle_t area;
 	
 	//ccm_display_sync (display);
 	
 	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
-							   CCM_WINDOW_XWINDOW(self), &attrs))
+							   CCM_WINDOW_XWINDOW(self), &self->priv->attribs))
 		return NULL;
 		
 	if (XShapeQueryExtents (CCM_DISPLAY_XDISPLAY(display), 
@@ -536,17 +537,18 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 			geometry = ccm_region_new();
 			for (cpt = 0; cpt < nb; cpt++)
 				ccm_region_union_with_xrect(geometry, &shapes[cpt]);
-			ccm_region_offset(geometry, attrs.x - attrs.border_width, 
-										attrs.y - attrs.border_width);
+			ccm_region_offset(geometry, 
+							  self->priv->attribs.x - self->priv->attribs.border_width, 
+							  self->priv->attribs.y - self->priv->attribs.border_width);
 		}
 		XFree(shapes);
 	}
 	else
 	{
-		area.x = attrs.x - attrs.border_width;
-		area.y = attrs.y - attrs.border_width;
-		area.width = attrs.width + attrs.border_width * 2;
-		area.height = attrs.height + attrs.border_width * 2;
+		area.x = self->priv->attribs.x - self->priv->attribs.border_width;
+		area.y = self->priv->attribs.y - self->priv->attribs.border_width;
+		area.width = self->priv->attribs.width + self->priv->attribs.border_width * 2;
+		area.height = self->priv->attribs.height + self->priv->attribs.border_width * 2;
 		geometry = ccm_region_rectangle(&area);
 	}
 	
@@ -655,7 +657,8 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 
 static gboolean
 impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self, 
-					  cairo_t* context, cairo_surface_t* surface)
+					  cairo_t* context, cairo_surface_t* surface, 
+					  gboolean y_invert)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
@@ -665,6 +668,11 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
 	cairo_get_matrix (context, &matrix);
 	cairo_translate (context, geometry.x / matrix.xx, geometry.y / matrix.yy);
+	if (y_invert)
+	{
+		cairo_scale (context, 1.0, -1.0);
+		cairo_translate (context, 0.0f, -self->priv->attribs.height);
+	}
 	cairo_set_source_surface(context, surface, 0.0f, 0.0f);
 	cairo_paint_with_alpha(context, self->priv->opacity);
 		
@@ -1170,29 +1178,33 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 	cairo_save(context);
 	
 	damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(self), context);
-	cairo_clip(context);
 	
 	if (damaged)
 	{
 		CCMPixmap* pixmap = ccm_window_get_pixmap(self);
-		
+		cairo_clip(context);
+	
 		if (pixmap)
 		{
 			cairo_surface_t* surface;
+			gboolean y_invert;
 			
 			if (CCM_IS_PIXMAP_BUFFERED(pixmap))
 				g_object_set(pixmap, "buffered", 
 							 buffered && self->is_viewable, NULL);
+			
+			g_object_get (pixmap, "y_invert", &y_invert, NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
 				
 			if (surface)
 			{
 				ret = ccm_window_plugin_paint(self->priv->plugin, self, 
-											  context, surface);
+											  context, surface, y_invert);
 				cairo_surface_destroy(surface);
 			}
 		}
+		cairo_reset_clip (context);
 		cairo_path_destroy(damaged);
 	}
 	cairo_restore(context);
@@ -1289,7 +1301,7 @@ ccm_window_query_hint_type(CCMWindow* self)
 		Atom atom;
 		
 		memcpy (&atom, data, sizeof (Atom));
-		XFree ((void *) data);
+		g_free ((void *) data);
 
 		if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
 			self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;

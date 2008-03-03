@@ -102,5 +102,16 @@
             <long>Sync redraw with vblank</long>
          </locale>
       </schema>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/screen/indirect</key>
+         <applyto>/apps/cairo-compmgr/default/screen/indirect</applyto>
+         <owner>gnome</owner>
+         <type>bool</type>
+		 <default>true</default>
+         <locale name="C">
+            <short>Use indirect rendering</short>
+            <long>Use indirect rendering</long>
+         </locale>
+      </schema>
    </schemalist>
 </gconfschemafile>

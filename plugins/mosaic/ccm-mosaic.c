@@ -499,7 +499,8 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 
 static gboolean
 ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
-						cairo_t* context, cairo_surface_t* surface)
+						cairo_t* context, cairo_surface_t* surface,
+						gboolean y_invert)
 {
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 	CCMMosaic* self = CCM_MOSAIC(_ccm_screen_get_plugin (screen, CCM_TYPE_MOSAIC));
@@ -563,7 +564,7 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		}
 	}
 	ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window,
-								  context, surface);
+								  context, surface, y_invert);
 	
 	return ret;
 }

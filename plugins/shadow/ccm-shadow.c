@@ -246,7 +246,8 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 
 static gboolean
 ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-				 cairo_t* context, cairo_surface_t* surface)
+				 cairo_t* context, cairo_surface_t* surface,
+				 gboolean y_invert)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
 	
@@ -290,7 +291,7 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	} 
 	
 	return ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
-								   window, context, surface);
+								   window, context, surface, y_invert);
 }
 
 static void 

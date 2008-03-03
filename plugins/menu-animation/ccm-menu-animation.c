@@ -249,7 +249,8 @@ ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 
 static gboolean
 ccm_menu_animation_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-						 cairo_t* context, cairo_surface_t* surface)
+						 cairo_t* context, cairo_surface_t* surface,
+						 gboolean y_invert)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
 	gboolean ret;
@@ -264,7 +265,7 @@ ccm_menu_animation_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		cairo_set_matrix (context, &matrix);
 	}
 	ret = ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT(plugin), window, 
-								   context, surface);
+								   context, surface, y_invert);
 	cairo_restore (context);
 	
 	return ret;

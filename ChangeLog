@@ -1,3 +1,28 @@
+2008-03-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-pixmap-image.c: Don't repair covered area.
+
+    * src/ccm-pixmap.c: Add y inverted property.
+    
+    * plugins/freeze/ccm-freeze.c:
+    * plugins/magnifier/ccm-magnifier.c:
+    * plugins/menu-animation/ccm-menu-animation.c:
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/shadow/ccm-shadow.c:
+    * src/ccm-pixmap-glitz.c:
+    * src/ccm-window-plugin.c:
+    * src/ccm-window-plugin.h:
+    * src/ccm-window.c: Add y invert parameter to ccm_window_paint plugin
+                        interface.
+    
+    * data/cairo-compmgr.schemas.in:
+    * src/ccm-screen.c:
+    * src/ccm-screen.h: Add indirect rendering gconf option.
+
+    * src/ccm-window-glitz.c: Check for indirect rendering and set y invert 
+                              pixmap option.
+
 2008-02-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * configure.ac: Add pixman 0.9.6 check.

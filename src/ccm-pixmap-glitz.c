@@ -35,8 +35,9 @@ G_DEFINE_TYPE (CCMPixmapGlitz, ccm_pixmap_glitz, CCM_TYPE_PIXMAP);
 
 struct _CCMPixmapGlitzPrivate
 {
-	glitz_drawable_t* gl_drawable;
-	glitz_surface_t*  gl_surface;
+	cairo_surface_t* 	surface;
+	glitz_drawable_t* 	gl_drawable;
+	glitz_surface_t*  	gl_surface;
 	glitz_format_t*		gl_format;
 };
 
@@ -53,6 +54,7 @@ ccm_pixmap_glitz_init (CCMPixmapGlitz *self)
 {
 	self->priv = CCM_PIXMAP_GLITZ_GET_PRIVATE(self);
 	
+	self->priv->surface = NULL;
 	self->priv->gl_drawable = NULL;
 	self->priv->gl_surface = NULL;
 	self->priv->gl_format = NULL;
@@ -63,6 +65,7 @@ ccm_pixmap_glitz_finalize (GObject *object)
 {
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(object);
 	
+	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
 	if (self->priv->gl_drawable) glitz_drawable_destroy(self->priv->gl_drawable);
 	if (self->priv->gl_surface) glitz_surface_destroy(self->priv->gl_surface);
 	
@@ -111,7 +114,9 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 			return FALSE;
 		}
 		
-		format->indirect = TRUE;
+		g_object_set(self, "y_invert", format->y_invert, NULL);
+		
+		format->indirect = _ccm_screen_indirect_rendering (screen);
 		self->priv->gl_drawable = glitz_glx_create_drawable_for_pixmap (
 											CCM_DISPLAY_XDISPLAY(display),
 											screen->number,
@@ -167,7 +172,6 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 											self->priv->gl_format,
 											attribs.width, attribs.height,
 											0, NULL);
-		
 		if (self->priv->gl_surface)
 		{
 			glitz_surface_attach (self->priv->gl_surface,
@@ -184,22 +188,9 @@ ccm_pixmap_glitz_repair (CCMDrawable* drawable, CCMRegion* area)
 	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(drawable);
-	cairo_rectangle_t* rects;
-	gint nb_rects, cpt;
+	glitz_surface_damage (self->priv->gl_surface, NULL,
+						  GLITZ_DAMAGE_TEXTURE_MASK);
 	
-	ccm_region_get_rectangles (area, &rects, &nb_rects);
-	for (cpt = 0; cpt < nb_rects; cpt++)
-	{
-		glitz_box_t box;
-		
-		box.x1 = rects[cpt].x;
-		box.y1 = rects[cpt].y;
-		box.x2 = rects[cpt].x + rects[cpt].width;
-		box.y2 = rects[cpt].y + rects[cpt].height;
-	
-		glitz_surface_damage (self->priv->gl_surface, &box, 
-							  GLITZ_DAMAGE_TEXTURE_MASK);
-	}
 	return TRUE;
 }
 
@@ -209,18 +200,16 @@ ccm_pixmap_glitz_get_surface (CCMDrawable* drawable)
 	g_return_val_if_fail(drawable != NULL, NULL);
 	
 	CCMPixmapGlitz *self = CCM_PIXMAP_GLITZ(drawable);
-	cairo_rectangle_t geometry;
 	cairo_surface_t* surface = NULL;
 	
-	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(CCM_PIXMAP(self)->window), 
-										  &geometry))
-	{
-		if (CCM_PIXMAP(self)->window->is_viewable)
-			ccm_drawable_repair (drawable);
+	if (CCM_PIXMAP(self)->window->is_viewable)
+		ccm_drawable_repair (drawable);
 		
-		surface = cairo_glitz_surface_create (self->priv->gl_surface);
-	}
+	if (!self->priv->surface)
+		self->priv->surface = cairo_glitz_surface_create (self->priv->gl_surface);
+		
+	if (self->priv->surface) cairo_surface_reference (self->priv->surface);
 	
-	return surface;
+	return self->priv->surface;
 }
 

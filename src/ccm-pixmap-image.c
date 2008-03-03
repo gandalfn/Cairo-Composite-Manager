@@ -132,8 +132,15 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 		{
 			XRectangle* rects;
 			gint nb_rects, cpt;
-				
-			ccm_region_get_xrectangles (area, &rects, &nb_rects);
+			CCMRegion* damaged = _ccm_drawable_get_damaged (CCM_DRAWABLE(CCM_PIXMAP(self)->window));
+			CCMRegion* tmp = ccm_region_copy(damaged);
+			cairo_rectangle_t geometry;
+		
+			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(CCM_PIXMAP(self)->window), &geometry);
+			ccm_region_offset (tmp, -geometry.x, -geometry.y);
+			ccm_region_intersect (tmp, area);
+		
+			ccm_region_get_xrectangles (tmp, &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{
 				if (!ccm_image_get_sub_image (self->priv->image,
@@ -147,6 +154,7 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 				}
 			}
 			g_free(rects);
+			ccm_region_destroy (tmp);
 		}
 	}
 	

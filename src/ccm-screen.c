@@ -54,6 +54,7 @@ enum
 	CCM_SCREEN_PLUGINS,
 	CCM_SCREEN_REFRESH_RATE,
 	CCM_SCREEN_SYNC_WITH_VBLANK,
+	CCM_SCREEN_INDIRECT,
 	CCM_SCREEN_OPTION_N
 };
 
@@ -63,7 +64,8 @@ static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 	"use_buffered_pixmap",
 	"plugins",
 	"refresh_rate",
-	"sync_with_vblank"
+	"sync_with_vblank",
+	"indirect"
 };
 
 struct _CCMScreenPrivate
@@ -83,6 +85,7 @@ struct _CCMScreenPrivate
 	gboolean			filtered_damage;
 	
 	guint				id_paint;
+	GTimer*				timer;
 	
 	CCMExtensionLoader* plugin_loader;
 	CCMScreenPlugin*	plugin;
@@ -121,6 +124,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->id_paint = 0;
 	self->priv->plugin_loader = NULL;
 	self->priv->animations = NULL;
+	self->priv->timer = g_timer_new();
 }
 
 static void
@@ -497,6 +501,7 @@ ccm_screen_paint(CCMScreen* self)
 			cairo_clip(self->priv->ctx);
 		}
 		
+		g_timer_start(self->priv->timer);
 		if (ccm_screen_plugin_paint(self->priv->plugin, self, 
 									self->priv->ctx))
 		{
@@ -509,6 +514,16 @@ ccm_screen_paint(CCMScreen* self)
 			}
 			else
 				ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
+			static int cpt = 0;
+			static gfloat elapsed = 0.0;
+			elapsed += g_timer_elapsed (self->priv->timer, NULL) * 1000;
+			cpt++;
+			if (cpt == 30)
+			{
+				g_print("elapsed = %f\n", elapsed / 30);
+				elapsed = 0.0f;
+				cpt = 0;
+			}
 		}
 	}
 	
@@ -916,6 +931,14 @@ _ccm_screen_native_pixmap_bind(CCMScreen* self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_PIXMAP]);
+}
+
+gboolean
+_ccm_screen_indirect_rendering(CCMScreen* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_INDIRECT]);
 }
 
 gboolean

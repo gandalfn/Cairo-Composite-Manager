@@ -50,7 +50,8 @@ struct _CCMWindowPluginClass
 	CCMRegion*		  (*query_geometry)		(CCMWindowPlugin* self, 
 											 CCMWindow* window);
 	gboolean (*paint) (CCMWindowPlugin* self, CCMWindow* window,
-					   cairo_t* ctx, cairo_surface_t* surface);
+					   cairo_t* ctx, cairo_surface_t* surface, 
+					   gboolean y_invert);
 	void 			  (*map)				(CCMWindowPlugin* self, 
 											 CCMWindow* window);
 	void 			  (*unmap)				(CCMWindowPlugin* self, 
@@ -78,7 +79,8 @@ CCMRegion* 	ccm_window_plugin_query_geometry(CCMWindowPlugin* self,
 gboolean 	ccm_window_plugin_paint 		(CCMWindowPlugin* self, 
 											 CCMWindow* window,
 								  			 cairo_t* ctx, 
-											 cairo_surface_t* surface);
+											 cairo_surface_t* surface,
+											 gboolean y_invert);
 void 		ccm_window_plugin_map			(CCMWindowPlugin* self, 
 											 CCMWindow* window);
 void 		ccm_window_plugin_unmap			(CCMWindowPlugin* self, 

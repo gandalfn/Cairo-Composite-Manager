@@ -35,9 +35,16 @@
 
 G_DEFINE_TYPE (CCMPixmap, ccm_pixmap, CCM_TYPE_DRAWABLE);
 
+enum
+{
+    PROP_0,
+	PROP_Y_INVERT
+};
+
 struct _CCMPixmapPrivate
 {
 	Damage				damage;
+	gboolean			y_invert;
 };
 
 #define CCM_PIXMAP_GET_PRIVATE(o)  \
@@ -49,12 +56,49 @@ static void ccm_pixmap_release (CCMPixmap* self);
 static void ccm_pixmap_on_damage(CCMPixmap* self, Damage damage, CCMDisplay* display);
 
 static void
+ccm_pixmap_set_property(GObject *object, guint prop_id, 
+						const GValue *value, GParamSpec *pspec)
+{
+	CCMPixmap* self = CCM_PIXMAP(object);
+    
+	switch (prop_id)
+    {
+    	case PROP_Y_INVERT:
+		{
+			self->priv->y_invert = g_value_get_boolean (value);
+		}
+		break;
+		default:
+		break;
+    }
+}
+
+static void
+ccm_pixmap_get_property(GObject *object, guint prop_id, 
+						GValue *value, GParamSpec *pspec)
+{
+	CCMPixmap* self = CCM_PIXMAP(object);
+    
+	switch (prop_id)
+    {
+    	case PROP_Y_INVERT:
+		{
+			g_value_set_boolean (value, self->priv->y_invert);
+		}
+		break;
+		default:
+		break;
+    }
+}
+
+static void
 ccm_pixmap_init (CCMPixmap *self)
 {
 	self->priv = CCM_PIXMAP_GET_PRIVATE(self);
 	
 	self->window = NULL;
 	self->priv->damage = 0;
+	self->priv->y_invert = FALSE;
 }
 
 static void
@@ -83,7 +127,17 @@ ccm_pixmap_class_init (CCMPixmapClass *klass)
 	
 	g_type_class_add_private (klass, sizeof (CCMPixmapPrivate));
 	
+	object_class->set_property = ccm_pixmap_set_property;
+	object_class->get_property = ccm_pixmap_get_property;
+	
 	CCM_DRAWABLE_CLASS(klass)->query_geometry = ccm_pixmap_query_geometry;
+	
+	g_object_class_install_property(object_class, PROP_Y_INVERT,
+		g_param_spec_boolean("y_invert",
+		 					 "Y Invert",
+			     			 "Get if pixmap is y inverted",
+							 FALSE,
+			     			 G_PARAM_READABLE | G_PARAM_WRITABLE));
 	
 	object_class->finalize = ccm_pixmap_finalize;
 }
