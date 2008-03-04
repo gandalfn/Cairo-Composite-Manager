@@ -114,7 +114,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 			return FALSE;
 		}
 		
-		g_object_set(self, "y_invert", format->y_invert, NULL);
+		g_object_set(self, "y_invert", format->y_invert ? TRUE : FALSE, NULL);
 		
 		format->indirect = _ccm_screen_indirect_rendering (screen);
 		self->priv->gl_drawable = glitz_glx_create_drawable_for_pixmap (
@@ -188,10 +188,8 @@ ccm_pixmap_glitz_repair (CCMDrawable* drawable, CCMRegion* area)
 	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(drawable);
-	glitz_surface_damage (self->priv->gl_surface, NULL,
-						  GLITZ_DAMAGE_TEXTURE_MASK);
 	
-	return TRUE;
+	return glitz_surface_bind_tex_image(self->priv->gl_surface);
 }
 
 static cairo_surface_t*

@@ -23,6 +23,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/shape.h>
+#include <gdk/gdk.h>
 
 #include "ccm-screen.h"
 #include "ccm-screen-plugin.h"
@@ -1061,10 +1062,10 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	refresh_rate = ccm_config_get_integer(self->priv->options[CCM_SCREEN_REFRESH_RATE]);
 	if (!refresh_rate) refresh_rate = 60;
 	
-	self->priv->id_paint = g_timeout_add_full(G_PRIORITY_HIGH, 
-											  1000/refresh_rate, 
-											  (GSourceFunc)ccm_screen_paint, 
-											  self, NULL);
+	self->priv->id_paint = gdk_threads_add_timeout_full (G_PRIORITY_HIGH,
+														 1000/refresh_rate, 
+														(GSourceFunc)ccm_screen_paint, 
+														self, NULL);
 	
 	return self;
 }

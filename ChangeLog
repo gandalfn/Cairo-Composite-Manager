@@ -1,3 +1,10 @@
+2008-03-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-glitz.c: Bind tex image directly instead damage texture.
+    
+    * src/ccm-screen.c: use gdk_threads_add_timeout_full instead g_timeout
+                        only fo testing for now
+
 2008-03-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-buffered-image.c:
