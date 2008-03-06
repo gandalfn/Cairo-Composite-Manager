@@ -35,8 +35,8 @@ G_DEFINE_TYPE (CCMPixmapGlitz, ccm_pixmap_glitz, CCM_TYPE_PIXMAP);
 
 struct _CCMPixmapGlitzPrivate
 {
-	cairo_surface_t* 	surface;
 	glitz_drawable_t* 	gl_drawable;
+	glitz_drawable_t* 	gl_pixmap;
 	glitz_surface_t*  	gl_surface;
 	glitz_format_t*		gl_format;
 };
@@ -54,8 +54,8 @@ ccm_pixmap_glitz_init (CCMPixmapGlitz *self)
 {
 	self->priv = CCM_PIXMAP_GLITZ_GET_PRIVATE(self);
 	
-	self->priv->surface = NULL;
 	self->priv->gl_drawable = NULL;
+	self->priv->gl_pixmap = NULL;
 	self->priv->gl_surface = NULL;
 	self->priv->gl_format = NULL;
 }
@@ -65,7 +65,12 @@ ccm_pixmap_glitz_finalize (GObject *object)
 {
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(object);
 	
-	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
+	if (self->priv->gl_pixmap) 
+	{
+		glitz_surface_release_tex_image(self->priv->gl_surface, 
+										self->priv->gl_pixmap);
+		glitz_drawable_destroy(self->priv->gl_pixmap);
+	}
 	if (self->priv->gl_drawable) glitz_drawable_destroy(self->priv->gl_drawable);
 	if (self->priv->gl_surface) glitz_surface_destroy(self->priv->gl_surface);
 	
@@ -103,7 +108,6 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
 							  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
 							  &attribs);
-		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
 				screen->number,
@@ -117,19 +121,38 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		g_object_set(self, "y_invert", format->y_invert ? TRUE : FALSE, NULL);
 		
 		format->indirect = _ccm_screen_indirect_rendering (screen);
-		self->priv->gl_drawable = glitz_glx_create_drawable_for_pixmap (
+		self->priv->gl_drawable = glitz_glx_create_pbuffer_drawable (
+											CCM_DISPLAY_XDISPLAY(display),
+											screen->number,
+											format,
+											attribs.width, attribs.height);
+		if (!self->priv->gl_drawable)
+		{
+			self->priv->gl_drawable = glitz_glx_create_drawable_for_window (
 											CCM_DISPLAY_XDISPLAY(display),
 											screen->number,
 											format,
 											CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
-											CCM_PIXMAP_XPIXMAP(self),
 											attribs.width, attribs.height);
-		if (!self->priv->gl_drawable)
-		{
-			g_warning("Error on create glitz drawable");
-			return FALSE;
+			if (!self->priv->gl_drawable)
+			{	
+				g_warning("Error on create glitz drawable");
+				return FALSE;
+			}
 		}
 				
+		self->priv->gl_pixmap = glitz_glx_create_drawable_for_pixmap (
+											CCM_DISPLAY_XDISPLAY(display),
+											screen->number,
+											format,
+											CCM_PIXMAP_XPIXMAP(self),
+											attribs.width, attribs.height);
+		if (!self->priv->gl_pixmap)
+		{	
+			g_warning("Error on create glitz pixmap");
+			return FALSE;
+		}
+		
 		templ.color = format->color;
 		templ.color.fourcc = GLITZ_FOURCC_RGB;
 		
@@ -189,7 +212,8 @@ ccm_pixmap_glitz_repair (CCMDrawable* drawable, CCMRegion* area)
 	
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(drawable);
 	
-	return glitz_surface_bind_tex_image(self->priv->gl_surface);
+	return glitz_surface_bind_tex_image(self->priv->gl_surface,
+										self->priv->gl_pixmap);
 }
 
 static cairo_surface_t*
@@ -203,11 +227,6 @@ ccm_pixmap_glitz_get_surface (CCMDrawable* drawable)
 	if (CCM_PIXMAP(self)->window->is_viewable)
 		ccm_drawable_repair (drawable);
 		
-	if (!self->priv->surface)
-		self->priv->surface = cairo_glitz_surface_create (self->priv->gl_surface);
-		
-	if (self->priv->surface) cairo_surface_reference (self->priv->surface);
-	
-	return self->priv->surface;
+	return cairo_glitz_surface_create (self->priv->gl_surface);
 }
 

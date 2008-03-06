@@ -1,3 +1,7 @@
+2008-03-06  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-glitz.c: Use new api for bind tex image.
+
 2008-03-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-glitz.c: Bind tex image directly instead damage texture.
