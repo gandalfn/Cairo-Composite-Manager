@@ -515,8 +515,6 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	unsigned int bw, bh, cw, ch; /* dummies */
 	cairo_rectangle_t area;
 	
-	//ccm_display_sync (display);
-	
 	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
 							   CCM_WINDOW_XWINDOW(self), &self->priv->attribs))
 		return NULL;
@@ -541,9 +539,12 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 							  self->priv->attribs.x - self->priv->attribs.border_width, 
 							  self->priv->attribs.y - self->priv->attribs.border_width);
 		}
+		else
+			self->priv->is_shaped = FALSE;
 		XFree(shapes);
 	}
-	else
+	
+	if (!self->priv->is_shaped)
 	{
 		area.x = self->priv->attribs.x - self->priv->attribs.border_width;
 		area.y = self->priv->attribs.y - self->priv->attribs.border_width;
@@ -552,15 +553,15 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 		geometry = ccm_region_rectangle(&area);
 	}
 	
+	ccm_window_set_alpha(self);
 	if (geometry &&
 		ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 && 
 		self->priv->opacity == 1.0f)
 	{
-		ccm_window_set_alpha(self);
 		self->opaque = ccm_region_copy(geometry);
 	}
 		
-	if (geometry && self->priv->pixmap)
+	if (self->priv->pixmap)
 	{
 		g_object_unref(self->priv->pixmap);
 		self->priv->pixmap = NULL;
@@ -597,9 +598,8 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 {
 	cairo_rectangle_t geometry;
 	
-	ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
-	
-	if (x != (int)geometry.x || y != (int)geometry.y)
+	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) &&
+		(x != (int)geometry.x || y != (int)geometry.y))
 	{
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
 		
@@ -607,9 +607,9 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 														  x, y);
 		if (self->opaque)
 			ccm_region_offset(self->opaque, x - geometry.x, y - geometry.y);
-		if (self->is_viewable || self->priv->unmap_pending)
+		if ((self->is_viewable || self->priv->unmap_pending) &&
+			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
 		{
-			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
 			ccm_region_union_with_rect (old_geometry, &geometry);
 			ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
 		}
@@ -663,20 +663,25 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	cairo_rectangle_t geometry;
-	cairo_matrix_t matrix;
+	gboolean ret = FALSE;
 	
-	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
-	cairo_get_matrix (context, &matrix);
-	cairo_translate (context, geometry.x / matrix.xx, geometry.y / matrix.yy);
-	if (y_invert)
+	if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry))
 	{
-		cairo_scale (context, 1.0, -1.0);
-		cairo_translate (context, 0.0f, -self->priv->attribs.height);
-	}
-	cairo_set_source_surface(context, surface, 0.0f, 0.0f);
-	cairo_paint_with_alpha(context, self->priv->opacity);
+		cairo_matrix_t matrix;
 		
-	return TRUE;
+		cairo_get_matrix (context, &matrix);
+		cairo_translate (context, geometry.x / matrix.xx, geometry.y / matrix.yy);
+		if (y_invert)
+		{
+			cairo_scale (context, 1.0, -1.0);
+			cairo_translate (context, 0.0f, -self->priv->attribs.height);
+		}
+		cairo_set_source_surface(context, surface, 0.0f, 0.0f);
+		cairo_paint_with_alpha(context, self->priv->opacity);
+		ret  = TRUE;
+	}		
+	
+	return ret;
 }
 
 static void
@@ -771,7 +776,6 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	g_return_val_if_fail(screen != NULL, NULL);
 	g_return_val_if_fail(xwindow != None, NULL);
 	
-	CCMRegion* geometry;
 	CCMWindow* self = g_object_new(CCM_TYPE_WINDOW_BACKEND(screen), 
 								   "screen", screen,
 								   "drawable", xwindow,
@@ -792,7 +796,11 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	
 	ccm_window_plugin_load_options(self->priv->plugin, self);
 	
-	geometry = ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+	if (!ccm_drawable_query_geometry(CCM_DRAWABLE(self)))
+	{
+		g_object_unref(self);
+		return NULL;
+	}
 	
 	if (!self->is_input_only)
 	{
@@ -1033,9 +1041,10 @@ on_pixmap_damaged(CCMWindow* self, CCMRegion* area)
 	cairo_rectangle_t geometry;
 	
 	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
+	{
 		ccm_region_offset(area, geometry.x, geometry.y);
-	
-	ccm_drawable_damage_region(CCM_DRAWABLE(self), area);
+		ccm_drawable_damage_region(CCM_DRAWABLE(self), area);
+	}
 }
 
 CCMPixmap*

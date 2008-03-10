@@ -90,12 +90,11 @@ ccm_pixmap_image_bind (CCMPixmap* pixmap)
 	gint depth = ccm_window_get_depth (CCM_PIXMAP(self)->window);
 	XWindowAttributes attribs;
 		
-	XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-						  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
-						  &attribs);
-	
-	self->priv->image = ccm_image_new(display, attribs.visual, format, 
-									  attribs.width, attribs.height, depth);
+	if (XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+							  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
+							  &attribs))
+		self->priv->image = ccm_image_new(display, attribs.visual, format, 
+										  attribs.width, attribs.height, depth);
 }
 
 static void
@@ -136,24 +135,26 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 			CCMRegion* tmp = ccm_region_copy(damaged);
 			cairo_rectangle_t geometry;
 		
-			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(CCM_PIXMAP(self)->window), &geometry);
-			ccm_region_offset (tmp, -geometry.x, -geometry.y);
-			ccm_region_intersect (tmp, area);
-		
-			ccm_region_get_xrectangles (tmp, &rects, &nb_rects);
-			for (cpt = 0; cpt < nb_rects; cpt++)
+			if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(CCM_PIXMAP(self)->window), &geometry))
 			{
-				if (!ccm_image_get_sub_image (self->priv->image,
-											  CCM_PIXMAP(self), 
-											  rects[cpt].x, rects[cpt].y, 
-											  rects[cpt].width, 
-											  rects[cpt].height))
+				ccm_region_offset (tmp, -geometry.x, -geometry.y);
+				ccm_region_intersect (tmp, area);
+			
+				ccm_region_get_xrectangles (tmp, &rects, &nb_rects);
+				for (cpt = 0; cpt < nb_rects; cpt++)
 				{
-					ret = FALSE;
-					break;
+					if (!ccm_image_get_sub_image (self->priv->image,
+												  CCM_PIXMAP(self), 
+												  rects[cpt].x, rects[cpt].y, 
+												  rects[cpt].width, 
+												  rects[cpt].height))
+					{
+						ret = FALSE;
+						break;
+					}
 				}
+				g_free(rects);
 			}
-			g_free(rects);
 			ccm_region_destroy (tmp);
 		}
 	}

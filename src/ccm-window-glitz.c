@@ -98,9 +98,10 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 		glitz_format_t templ;
 		XWindowAttributes attribs;
 		
-		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-							  CCM_WINDOW_XWINDOW(self),
-							  &attribs);	
+		if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+							  	   CCM_WINDOW_XWINDOW(self),
+								   &attribs))
+			return FALSE;
 		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
@@ -161,9 +162,10 @@ ccm_window_glitz_create_gl_surface(CCMWindowGlitz* self)
 	{
 		XWindowAttributes attribs;
 		
-		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-							  CCM_WINDOW_XWINDOW(self),
-							  &attribs);
+		if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+								   CCM_WINDOW_XWINDOW(self),
+								   &attribs))
+			return FALSE;
 		
 		self->priv->gl_surface = glitz_surface_create(
 											self->priv->gl_drawable,
@@ -291,7 +293,8 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 	{
 		static glXCopySubBufferMESAProc csb = NULL;
 		static gboolean supported = TRUE;
-		
+		cairo_rectangle_t geometry;
+			
 		if (_ccm_screen_sync_with_blank(screen)) 
 			ccm_window_glitz_vsync(self, 1);
 		else
@@ -304,13 +307,12 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 			supported = csb != NULL;
 		}
 		
-		if (csb)
+		if (csb && ccm_drawable_get_geometry_clipbox (drawable, &geometry))
 		{
-			cairo_rectangle_t* rects, geometry;
+			cairo_rectangle_t* rects;
 			gint cpt, nb_rects;
 			CCMDisplay* display = ccm_drawable_get_display (drawable);
 			
-			ccm_drawable_get_geometry_clipbox (drawable, &geometry);
 			ccm_region_get_rectangles(region, &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{

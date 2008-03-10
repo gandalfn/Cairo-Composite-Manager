@@ -219,9 +219,10 @@ ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
 	XWindowAttributes attribs;
 	gfloat scale;
 	
-	XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-						  CCM_WINDOW_XWINDOW(self->priv->areas[num].window),
-						  &attribs);	
+	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+							   CCM_WINDOW_XWINDOW(self->priv->areas[num].window),
+							   &attribs))
+		return FALSE;
 	
 	scale = MIN((gfloat)self->priv->areas[num].geometry.height / (gfloat)attribs.height,
 				(gfloat)self->priv->areas[num].geometry.width / (gfloat)attribs.width);
@@ -516,9 +517,11 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
 			XWindowAttributes attribs;
 		
-			XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-								  CCM_WINDOW_XWINDOW(window),
-								  &attribs);	
+			if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+									   CCM_WINDOW_XWINDOW(window),
+									   &attribs))
+				return FALSE;
+			
 			CCMMosaicArea* area = ccm_mosaic_find_area(self, window,
 													   attribs.width, 
 													   attribs.height);

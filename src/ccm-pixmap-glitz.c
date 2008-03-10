@@ -65,7 +65,7 @@ ccm_pixmap_glitz_finalize (GObject *object)
 {
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(object);
 	
-	if (self->priv->gl_pixmap) 
+	if (self->priv->gl_pixmap && self->priv->gl_surface) 
 	{
 		glitz_surface_release_tex_image(self->priv->gl_surface, 
 										self->priv->gl_pixmap);
@@ -105,9 +105,11 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		glitz_format_t templ;
 		XWindowAttributes attribs;
 		
-		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-							  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
-							  &attribs);
+		if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+								   CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
+								   &attribs))
+			return FALSE;
+		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
 				screen->number,
@@ -186,9 +188,10 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 	{
 		XWindowAttributes attribs;
 		
-		XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-							  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
-							  &attribs);
+		if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
+								  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
+								  &attribs))
+			return;
 		
 		self->priv->gl_surface = glitz_surface_create(
 											self->priv->gl_drawable,
@@ -211,9 +214,13 @@ ccm_pixmap_glitz_repair (CCMDrawable* drawable, CCMRegion* area)
 	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(drawable);
+	gboolean ret = FALSE;
 	
-	return glitz_surface_bind_tex_image(self->priv->gl_surface,
-										self->priv->gl_pixmap);
+	if (self->priv->gl_surface && self->priv->gl_pixmap)
+		ret = glitz_surface_bind_tex_image(self->priv->gl_surface,
+										   self->priv->gl_pixmap);
+	
+	return ret;
 }
 
 static cairo_surface_t*
@@ -226,7 +233,10 @@ ccm_pixmap_glitz_get_surface (CCMDrawable* drawable)
 	
 	if (CCM_PIXMAP(self)->window->is_viewable)
 		ccm_drawable_repair (drawable);
-		
-	return cairo_glitz_surface_create (self->priv->gl_surface);
+	
+	if (self->priv->gl_surface)
+		surface = cairo_glitz_surface_create (self->priv->gl_surface);
+	
+	return surface;
 }
 

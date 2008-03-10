@@ -502,7 +502,6 @@ ccm_screen_paint(CCMScreen* self)
 			cairo_clip(self->priv->ctx);
 		}
 		
-		g_timer_start(self->priv->timer);
 		if (ccm_screen_plugin_paint(self->priv->plugin, self, 
 									self->priv->ctx))
 		{
@@ -522,10 +521,12 @@ ccm_screen_paint(CCMScreen* self)
 			if (cpt == 30)
 			{
 				g_print("elapsed = %f\n", elapsed / 30);
+				g_print("FPS = %f\n", (30 / elapsed) * 1000);
 				elapsed = 0.0f;
 				cpt = 0;
 			}
 		}
+		g_timer_start(self->priv->timer);
 	}
 	
 	return TRUE;
@@ -684,8 +685,11 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				if (create_event->parent == CCM_WINDOW_XWINDOW(root))
 				{
 					window = ccm_window_new(self, create_event->window);
-					if (!ccm_screen_add_window(self, window))
-						g_object_unref(window);
+					if (window)
+					{
+						if (!ccm_screen_add_window(self, window))
+							g_object_unref(window);
+					}
 				}
 			}
 			break;	
@@ -725,8 +729,11 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				if (!window)
 				{
 					window = ccm_window_new(self, ((XReparentEvent*)event)->window);
-					if (!ccm_screen_add_window(self, window))
-						g_object_unref(window);
+					if (window)
+					{
+						if (!ccm_screen_add_window(self, window))
+							g_object_unref(window);
+					}
 				}
 			}
 			else if (window) ccm_screen_remove_window (self, window);
@@ -760,7 +767,6 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			if (window)
 			{
 				CCMWindow* below = NULL;
-				cairo_rectangle_t geometry;
 				
 				if (configure_event->above != None)
 				{
@@ -776,9 +782,6 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				}
 				else
 					ccm_screen_restack(self, window, NULL);
-				
-				ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), 
-												  &geometry);
 				
 				ccm_drawable_move(CCM_DRAWABLE(window),
 								  configure_event->x - configure_event->border_width, 
@@ -1062,10 +1065,10 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	refresh_rate = ccm_config_get_integer(self->priv->options[CCM_SCREEN_REFRESH_RATE]);
 	if (!refresh_rate) refresh_rate = 60;
 	
-	self->priv->id_paint = gdk_threads_add_timeout_full (G_PRIORITY_HIGH,
-														 1000/refresh_rate, 
-														(GSourceFunc)ccm_screen_paint, 
-														self, NULL);
+	self->priv->id_paint = g_timeout_add_full (G_PRIORITY_HIGH,
+											   1000/refresh_rate, 
+											   (GSourceFunc)ccm_screen_paint, 
+											   self, NULL);
 	
 	return self;
 }

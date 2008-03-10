@@ -113,8 +113,8 @@ ccm_window_xrender_get_surface(CCMDrawable* drawable)
 		Visual* visual = DefaultVisual(CCM_DISPLAY_XDISPLAY(display), 
 									   screen->number);
 		
-		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry);
-		surface = cairo_xlib_surface_create(CCM_DISPLAY_XDISPLAY(display),
+		if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
+			surface = cairo_xlib_surface_create(CCM_DISPLAY_XDISPLAY(display),
 											self->priv->back_buffer, 
 											visual,
 											(int)geometry.width, 

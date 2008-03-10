@@ -236,7 +236,11 @@ ccm_pixmap_new (CCMWindow* window, Pixmap xpixmap)
 								   "drawable", xpixmap,
 								   NULL);
 	self->window = window;
-	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+	if (!ccm_drawable_query_geometry(CCM_DRAWABLE(self)))
+	{
+		g_object_unref(self);
+		return NULL;
+	}
 	ccm_pixmap_register_damage(self, ccm_drawable_get_display(CCM_DRAWABLE(window)));
 	ccm_pixmap_bind(self);
 	ccm_drawable_damage(CCM_DRAWABLE(self));

@@ -258,6 +258,7 @@ ccm_display_init_dbe(CCMDisplay *self)
 static int
 ccm_display_error_handler(Display* dpy, XErrorEvent* evt)
 {
+	g_warning(__FUNCTION__);
 	return 0;
 }
 
