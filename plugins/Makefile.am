@@ -6,7 +6,8 @@ SUBDIRS = \
     freeze \
     menu-animation \
 	magnifier \
-	mosaic
+	mosaic \
+    perf
 
 ## File created by the gnome-build tools
 

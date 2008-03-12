@@ -86,7 +86,6 @@ struct _CCMScreenPrivate
 	gboolean			filtered_damage;
 	
 	guint				id_paint;
-	GTimer*				timer;
 	
 	CCMExtensionLoader* plugin_loader;
 	CCMScreenPlugin*	plugin;
@@ -125,7 +124,6 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->id_paint = 0;
 	self->priv->plugin_loader = NULL;
 	self->priv->animations = NULL;
-	self->priv->timer = g_timer_new();
 }
 
 static void
@@ -514,19 +512,7 @@ ccm_screen_paint(CCMScreen* self)
 			}
 			else
 				ccm_drawable_flush(CCM_DRAWABLE(self->priv->cow));
-			static int cpt = 0;
-			static gfloat elapsed = 0.0;
-			elapsed += g_timer_elapsed (self->priv->timer, NULL) * 1000;
-			cpt++;
-			if (cpt == 30)
-			{
-				g_print("elapsed = %f\n", elapsed / 30);
-				g_print("FPS = %f\n", (30 / elapsed) * 1000);
-				elapsed = 0.0f;
-				cpt = 0;
-			}
 		}
-		g_timer_start(self->priv->timer);
 	}
 	
 	return TRUE;

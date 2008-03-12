@@ -22,7 +22,7 @@ if test "x$GCC" = "xyes" ; then
 fi
 AM_PROG_CC_STDC
 AC_HEADER_STDC
-AC_PROG_CC_C99
+dnl AC_PROG_CC_C99
 
 dnl ***************************************************************************
 dnl Internatinalization
@@ -137,6 +137,7 @@ plugins/freeze/Makefile
 plugins/menu-animation/Makefile
 plugins/magnifier/Makefile
 plugins/mosaic/Makefile
+plugins/perf/Makefile
 data/Makefile
 data/cairo-compmgr.desktop.in
 ])

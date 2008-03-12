@@ -1,3 +1,15 @@
+2008-03-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * configure.ac: disable c99 check for now.
+    * plugins/Makefile.am:
+    * plugins/perf/Makefile.am:
+    * plugins/perf/ccm-perf.c:
+    * plugins/perf/ccm-perf.h:
+    * plugins/perf/ccm-perf.plugin.desktop.in:
+    * plugins/perf/ccm-perf.schemas.in:
+    * src/ccm-screen.c: Move performance check in a plugin, for now only check
+                        FPS.
+
 2008-03-10  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/mosaic/ccm-mosaic.c:

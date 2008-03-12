@@ -1,0 +1,6 @@
+[CCMPlugin]
+Plugin=ccm-perf
+_Name=Perf
+_Description=Cairo Composite Manager Perfomance
+Backends=xrender;glitz
+Depends=

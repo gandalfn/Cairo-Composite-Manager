@@ -1,0 +1,284 @@
+/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/*
+ * cairo-compmgr
+ * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * 
+ * cairo-compmgr is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ * 
+ * cairo-compmgr is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with cairo-compmgr.  If not, write to:
+ * 	The Free Software Foundation, Inc.,
+ * 	51 Franklin Street, Fifth Floor
+ * 	Boston, MA  02110-1301, USA.
+ */
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <pango/pango.h>
+#include <pango/pangocairo.h>
+
+#include "ccm-drawable.h"
+#include "ccm-window.h"
+#include "ccm-display.h"
+#include "ccm-screen.h"
+#include "ccm-extension-loader.h"
+#include "ccm-perf.h"
+#include "ccm-keybind.h"
+#include "ccm.h"
+
+#define CCM_LOGO_PIXMAP 	PACKAGE_PIXMAP_DIR "/cairo-compmgr.png"
+
+enum
+{
+	CCM_PERF_X,
+	CCM_PERF_Y,
+	CCM_PERF_SHORTCUT,
+	CCM_PERF_OPTION_N
+};
+
+static gchar* CCMPerfOptions[CCM_PERF_OPTION_N] = {
+	"x",
+	"y",
+	"shortcut"
+};
+
+static void ccm_perf_screen_iface_init(CCMScreenPluginClass* iface);
+
+CCM_DEFINE_PLUGIN (CCMPerf, ccm_perf, CCM_TYPE_PLUGIN, 
+				   CCM_IMPLEMENT_INTERFACE(ccm_perf,
+										   CCM_TYPE_SCREEN_PLUGIN,
+										   ccm_perf_screen_iface_init))
+
+struct _CCMPerfPrivate
+{	
+	gint 				frames;
+	gfloat				elapsed;
+	GTimer*				timer;
+	gfloat				fps;
+	
+	gboolean			enabled;
+	cairo_rectangle_t	area;
+	
+	CCMScreen*			screen;
+	CCMKeybind*			keybind;
+	CCMConfig*          options[CCM_PERF_OPTION_N];
+};
+
+#define CCM_PERF_GET_PRIVATE(o)  \
+   ((CCMPerfPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PERF, CCMPerfClass))
+
+static void
+cairo_rectangle_round (cairo_t *cr,
+                       double x0,    double y0,
+                       double width, double height,
+                       double radius)
+{
+  double x1,y1;
+
+  x1=x0+width;
+  y1=y0+height;
+
+  if (!width || !height)
+    return;
+  if (width/2<radius)
+    {
+      if (height/2<radius)
+        {
+          cairo_move_to  (cr, x0, (y0 + y1)/2);
+          cairo_curve_to (cr, x0 ,y0, x0, y0, (x0 + x1)/2, y0);
+          cairo_curve_to (cr, x1, y0, x1, y0, x1, (y0 + y1)/2);
+          cairo_curve_to (cr, x1, y1, x1, y1, (x1 + x0)/2, y1);
+          cairo_curve_to (cr, x0, y1, x0, y1, x0, (y0 + y1)/2);
+        }
+      else
+        {
+          cairo_move_to  (cr, x0, y0 + radius);
+          cairo_curve_to (cr, x0 ,y0, x0, y0, (x0 + x1)/2, y0);
+          cairo_curve_to (cr, x1, y0, x1, y0, x1, y0 + radius);
+          cairo_line_to (cr, x1 , y1 - radius);
+          cairo_curve_to (cr, x1, y1, x1, y1, (x1 + x0)/2, y1);
+          cairo_curve_to (cr, x0, y1, x0, y1, x0, y1- radius);
+        }
+    }
+  else
+    {
+      if (height/2<radius)
+        {
+          cairo_move_to  (cr, x0, (y0 + y1)/2);
+          cairo_curve_to (cr, x0 , y0, x0 , y0, x0 + radius, y0);
+          cairo_line_to (cr, x1 - radius, y0);
+          cairo_curve_to (cr, x1, y0, x1, y0, x1, (y0 + y1)/2);
+          cairo_curve_to (cr, x1, y1, x1, y1, x1 - radius, y1);
+          cairo_line_to (cr, x0 + radius, y1);
+          cairo_curve_to (cr, x0, y1, x0, y1, x0, (y0 + y1)/2);
+        }
+      else
+        {
+          cairo_move_to  (cr, x0, y0 + radius);
+          cairo_curve_to (cr, x0 , y0, x0 , y0, x0 + radius, y0);
+          cairo_line_to (cr, x1 - radius, y0);
+          cairo_curve_to (cr, x1, y0, x1, y0, x1, y0 + radius);
+          cairo_line_to (cr, x1 , y1 - radius);
+          cairo_curve_to (cr, x1, y1, x1, y1, x1 - radius, y1);
+          cairo_line_to (cr, x0 + radius, y1);
+          cairo_curve_to (cr, x0, y1, x0, y1, x0, y1- radius);
+        }
+    }
+
+  cairo_close_path (cr);
+}
+
+static void
+ccm_perf_init (CCMPerf *self)
+{
+	self->priv = CCM_PERF_GET_PRIVATE(self);
+	self->priv->frames = 0;
+	self->priv->elapsed = 0.0f;
+	self->priv->fps = 0.0f;
+	self->priv->enabled = FALSE;
+	self->priv->timer = g_timer_new();
+	self->priv->screen = NULL;
+	self->priv->keybind = NULL;
+}
+
+static void
+ccm_perf_finalize (GObject *object)
+{
+	CCMPerf* self = CCM_PERF(object);
+	
+	if (self->priv->timer) g_timer_destroy (self->priv->timer);
+	if (self->priv->keybind) g_object_unref (self->priv->keybind);
+	
+	G_OBJECT_CLASS (ccm_perf_parent_class)->finalize (object);
+}
+
+static void
+ccm_perf_class_init (CCMPerfClass *klass)
+{
+	GObjectClass* object_class = G_OBJECT_CLASS (klass);
+	
+	g_type_class_add_private (klass, sizeof (CCMPerfPrivate));
+
+	object_class->finalize = ccm_perf_finalize;
+}
+
+static void
+ccm_perf_on_key_press(CCMPerf* self)
+{
+	self->priv->enabled = ~self->priv->enabled;
+	if (!self->priv->enabled)
+	{
+		CCMRegion* area = ccm_region_rectangle(&self->priv->area);
+		
+		ccm_screen_damage_region (self->priv->screen, area);
+		ccm_region_destroy(area);
+	}
+}
+
+static void
+ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
+{
+	CCMPerf* self = CCM_PERF(plugin);
+	CCMDisplay* display = ccm_screen_get_display (screen);
+	cairo_rectangle_t rect;
+	gint cpt;
+	
+	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++)
+	{
+		self->priv->options[cpt] = ccm_config_new(screen->number, "perf", 
+												  CCMPerfOptions[cpt]);
+	}
+
+	self->priv->screen = screen;
+	self->priv->area.x = ccm_config_get_integer (self->priv->options[CCM_PERF_X]);
+	self->priv->area.y = ccm_config_get_integer (self->priv->options[CCM_PERF_Y]);
+	self->priv->area.width = 200;
+	self->priv->area.height = 100;
+		
+	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
+	self->priv->keybind = ccm_keybind_new(screen, 
+		ccm_config_get_string(self->priv->options [CCM_PERF_SHORTCUT]));
+	g_signal_connect_swapped(self->priv->keybind, "key_press", 
+							 G_CALLBACK(ccm_perf_on_key_press), self);
+}
+
+static gboolean
+ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
+                        cairo_t* context)
+{
+	CCMPerf* self = CCM_PERF (plugin);
+	gboolean ret = FALSE;
+	
+	ret = ccm_screen_plugin_paint(CCM_SCREEN_PLUGIN_PARENT (plugin), screen, 
+								  context);
+	
+	if (self->priv->enabled)
+	{
+		CCMRegion* area = ccm_region_rectangle(&self->priv->area);
+		cairo_surface_t* icon;
+		PangoLayout *layout;
+		PangoFontDescription *desc;
+		gchar* text;
+		
+		ccm_screen_damage_region (screen, area);
+		ccm_screen_add_damaged_region(screen, area);
+		ccm_region_destroy(area);
+		
+		if (ret)
+		{
+			self->priv->frames++;
+			self->priv->elapsed += g_timer_elapsed (self->priv->timer, NULL) * 1000;
+			if (self->priv->elapsed > 1000)
+			{
+				self->priv->fps = (self->priv->frames / self->priv->elapsed) * 1000;
+				self->priv->elapsed = 0.0f;
+				self->priv->frames = 0;
+			}
+		}
+		g_timer_start (self->priv->timer);
+		
+		cairo_save(context);
+		cairo_rectangle_round (context, self->priv->area.x, self->priv->area.y, 
+							   self->priv->area.width, self->priv->area.height, 
+							   20);
+		cairo_set_source_rgba (context, 1.0f, 1.0f, 1.0f, 0.6f);
+		cairo_fill(context);
+		icon = cairo_image_surface_create_from_png (CCM_LOGO_PIXMAP);
+		cairo_translate(context, self->priv->area.x + 16 , self->priv->area.y + 16);
+		cairo_set_source_surface (context, icon, 0, 0);
+		cairo_paint(context);
+		
+		layout = pango_cairo_create_layout(context);
+		text = g_strdup_printf("%i FPS", (int)self->priv->fps);
+		pango_layout_set_text (layout, text, -1);
+		g_free(text);
+		desc = pango_font_description_from_string("Sans Bold 15");
+  		pango_layout_set_font_description(layout, desc);
+  		pango_font_description_free(desc);
+		
+		cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 1.0f);
+		pango_cairo_update_layout (context, layout);
+		cairo_move_to(context, 80, 16);
+		pango_cairo_show_layout (context, layout);
+		cairo_restore(context);
+	}
+	
+	return ret;
+}
+
+static void
+ccm_perf_screen_iface_init(CCMScreenPluginClass* iface)
+{
+	iface->load_options 	= ccm_perf_screen_load_options;
+	iface->paint 			= ccm_perf_screen_paint;
+	iface->add_window 		= NULL;
+	iface->remove_window 	= NULL;
+}
