@@ -1,3 +1,7 @@
+2008-03-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-image.c: Repair all damage region on repair.
+    
 2008-03-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * configure.ac: disable c99 check for now.
