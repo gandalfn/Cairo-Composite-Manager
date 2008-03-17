@@ -142,13 +142,13 @@ ccm_image_destroy(CCMImage* image)
 	if (image->image)
 	{
 		pixman_image_unref(image->pimage);
-		XDestroyImage(image->image);
 		if (image->xshm)
 		{
 			XShmDetach (CCM_DISPLAY_XDISPLAY(image->display), &image->shminfo);
 			shmdt (image->shminfo.shmaddr);
 			shmctl (image->shminfo.shmid, IPC_RMID, 0);
 		}
+		XDestroyImage(image->image);
 		image->image = NULL;
 	}
 	g_free(image);

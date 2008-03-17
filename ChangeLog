@@ -1,3 +1,14 @@
+2008-03-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * configure.ac: Add libgtop depends
+    * plugins/perf/ccm-perf.c: Show cpu and memory load average.
+    * src/ccm-image.c: Fix a shm memory leak.
+    * src/ccm-region.c:
+    * src/ccm-region.h: Use _cairo_lround instead round and add debug function
+                        _ccm_region_print.
+    * src/ccm-window.c: Detroy pixmap when window is unmapped to preserve
+                        memory.
+
 2008-03-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-image.c: Repair all damage region on repair.

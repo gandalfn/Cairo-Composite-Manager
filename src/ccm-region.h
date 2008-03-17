@@ -75,6 +75,7 @@ SOFTWARE.
 
 #include "ccm.h"
 
+void _ccm_region_print(CCMRegion *self);
 
 #endif /* _CCM_REGION_H */
 

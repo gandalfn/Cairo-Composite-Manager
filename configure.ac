@@ -62,7 +62,8 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         pixman-1 >= $PIXMAN_REQUIRED,
         gtk+-2.0 >= $GTK_REQUIRED,
         libgnomeui-2.0,
-        gconf-2.0])
+        gconf-2.0,
+        libgtop-2.0])
 AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 

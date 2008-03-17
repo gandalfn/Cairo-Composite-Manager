@@ -699,6 +699,11 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	self->priv->unmap_pending = FALSE;
+	if (self->priv->pixmap)
+	{
+		g_object_unref(self->priv->pixmap);
+		self->priv->pixmap = NULL;
+	}
 }
 	
 static void
