@@ -232,7 +232,7 @@ ccm_screen_create_overlay_window(CCMScreen* self)
 	return self->priv->cow != NULL;
 }
 
-static CCMWindow*
+CCMWindow*
 ccm_screen_find_window(CCMScreen* self, Window xwindow)
 {
 	g_return_val_if_fail(self != NULL, NULL);
@@ -249,7 +249,7 @@ ccm_screen_find_window(CCMScreen* self, Window xwindow)
 	return NULL;
 }
 
-static CCMWindow*
+CCMWindow*
 ccm_screen_find_window_or_child(CCMScreen* self, Window xwindow)
 {
 	g_return_val_if_fail(self != NULL, NULL);
@@ -1208,4 +1208,36 @@ ccm_screen_set_filtered_damage(CCMScreen* self, gboolean filtered)
 {
     g_return_if_fail(self != NULL);
     self->priv->filtered_damage = filtered;
+}
+
+void
+ccm_screen_activate_window(CCMScreen* self, CCMWindow* window, Time timestamp)
+{
+	g_return_if_fail(self != NULL);
+    g_return_if_fail(window != NULL);
+	
+	static Atom net_active_atom = None;
+	XEvent event;
+    CCMDisplay* display = ccm_screen_get_display (self);
+	CCMWindow* root = ccm_screen_get_root_window (self);
+
+	if (!net_active_atom)
+		net_active_atom = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+									   "_NET_ACTIVE_WINDOW", False);
+	g_print("%s\n", __FUNCTION__);
+	event.xclient.type = ClientMessage;
+  	event.xclient.serial = 0;
+  	event.xclient.send_event = True;
+  	event.xclient.display = CCM_DISPLAY_XDISPLAY(display);
+  	event.xclient.window = CCM_WINDOW_XWINDOW(window);
+  	event.xclient.message_type = net_active_atom;
+	event.xclient.format = 32;
+	event.xclient.data.l[0] = 1;
+  	event.xclient.data.l[1] = timestamp;
+  	event.xclient.data.l[2] = 0;
+  	event.xclient.data.l[3] = 0;
+  	event.xclient.data.l[4] = 0;
+
+  	XSendEvent (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root), False,
+	      		NoEventMask, &event); 
 }

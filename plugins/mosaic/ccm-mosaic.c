@@ -271,6 +271,10 @@ ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 													 &button_event->x_root, &button_event->y_root))
 						{
 							button_event->window = CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window);
+							ccm_screen_activate_window (self->priv->screen, 
+														self->priv->areas[cpt].window,
+														button_event->time);
+							
 							XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
 										True, NoEventMask, event);
 							
@@ -406,7 +410,7 @@ ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window, int width, int height)
 	g_return_val_if_fail(window != NULL, NULL);
 	
 	CCMMosaicArea* area = NULL;
-	gfloat x_scale, y_scale;
+	gfloat scale;
 	gint width_scale = G_MAXINT;
 	gint cpt;
 	
@@ -425,13 +429,13 @@ ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window, int width, int height)
 		{
 			if (!self->priv->areas[cpt].window)
 			{
-				y_scale = self->priv->areas[cpt].geometry.height / height;
-				x_scale = self->priv->areas[cpt].geometry.width / width;
-				if (abs((width * y_scale) - (width * x_scale)) < width_scale)
+				scale = MIN(self->priv->areas[cpt].geometry.height / height,
+							self->priv->areas[cpt].geometry.width / width);
+				if (width * scale < width_scale)
 				{
 					area = &self->priv->areas[cpt];
 					self->priv->areas[cpt].window = window;
-					width_scale = abs((width * y_scale) - (width * x_scale));
+					width_scale = width * scale;
 				}
 			}
 		}
@@ -460,7 +464,7 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			if (CCM_WINDOW_XWINDOW(item->data) != self->priv->window &&
 				((CCMWindow*)item->data)->is_viewable && 
 				!((CCMWindow*)item->data)->is_input_only &&
-				type != CCM_WINDOW_TYPE_DESKTOP && type != CCM_WINDOW_TYPE_DOCK) 
+				type == CCM_WINDOW_TYPE_NORMAL) 
 				nb_windows++;
 		}
 		if (nb_windows != self->priv->nb_areas) 
@@ -469,8 +473,8 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 				
 			ccm_mosaic_create_areas(self, nb_windows);
 			cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
-			cairo_paint(ctx);
-			cairo_destroy (ctx);
+			cairo_paint(context);
+			cairo_destroy (ctx);			
 		}
 	}
 	
@@ -483,13 +487,9 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		gint nb_rects, cpt;
 		
 		cairo_save(context);
-		ccm_region_get_rectangles (ccm_screen_get_damaged (screen), &rects, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
-			cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
-							 rects[cpt].width, rects[cpt].height);
-		cairo_clip (context);
 		cairo_set_source_rgba (context, 0, 0, 0, 0.6);
 		cairo_paint(context);
+			
 		cairo_set_source_surface (context, self->priv->surface, 0, 0);
 		cairo_paint(context);
 		cairo_restore (context);
@@ -512,7 +512,7 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	{
 		if (CCM_WINDOW_XWINDOW(window) != self->priv->window &&
 			window->is_viewable && !window->is_input_only && 
-			type != CCM_WINDOW_TYPE_DESKTOP && type != CCM_WINDOW_TYPE_DOCK) 
+			type == CCM_WINDOW_TYPE_NORMAL) 
 		{
 			CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
 			XWindowAttributes attribs;

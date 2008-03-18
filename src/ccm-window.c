@@ -110,7 +110,7 @@ ccm_window_init (CCMWindow *self)
 	self->is_viewable = FALSE;
 	self->opaque = NULL;
 	self->priv = CCM_WINDOW_GET_PRIVATE(self);
-	self->priv->hint_type = CCM_WINDOW_TYPE_UNKNOWN;
+	self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
 	self->priv->name = NULL;
 	self->priv->class_name = NULL;
 	self->priv->child = None;
@@ -273,6 +273,10 @@ create_atoms(CCMWindow* self)
 											CCM_DISPLAY_XDISPLAY(display),
 											"_NET_FRAME_EXTENTS", 
 											False);
+		klass->transient_for_atom      = XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"WM_TRANSIENT_FOR", 
+											False);
 	}
 }
 
@@ -304,7 +308,7 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format,
 		if (property) XFree(property);
 		return NULL;
     }
-        
+	
     result = g_memdup (property, n_items_internal * (format / 8));
     XFree(property);
 	
@@ -1298,6 +1302,27 @@ ccm_window_query_mwm_hints(CCMWindow* self)
     }
 }
 
+gboolean
+ccm_window_query_transient_for(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	gboolean ret = FALSE;
+	guint32* data = NULL;
+	guint n_items;
+	
+	data = ccm_window_get_property(self, 
+								   CCM_WINDOW_GET_CLASS(self)->transient_for_atom,
+								   32, XA_ATOM, &n_items);
+	if (data) 
+	{
+		g_free ((void *) data);
+		ret = TRUE;
+	}
+	
+	return ret;
+}
+
 void
 ccm_window_query_hint_type(CCMWindow* self)
 {
@@ -1309,7 +1334,6 @@ ccm_window_query_hint_type(CCMWindow* self)
 	data = ccm_window_get_property(self, 
 								   CCM_WINDOW_GET_CLASS(self)->type_atom,
 								   32, XA_ATOM, &n_items);
-									  
 	if (data) 
 	{
 		Atom atom;
@@ -1346,6 +1370,10 @@ ccm_window_query_hint_type(CCMWindow* self)
 		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dnd_atom)
 			self->priv->hint_type = CCM_WINDOW_TYPE_DND;
 	}
+	
+	if (self->priv->hint_type == CCM_WINDOW_TYPE_NORMAL &&
+		ccm_window_query_transient_for (self))
+		self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
 }
 
 CCMWindowType

@@ -1,3 +1,11 @@
+2008-03-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-screen.c:
+    * src/ccm.h: Expose find window functions, add activate window function
+    * src/ccm-window.c:
+    * src/ccm-window.h: Set default window type to normal
+    * plugins/mosaic/ccm-mosaic.c: Include only normal window.
+    
 2008-03-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * configure.ac: Add libgtop depends

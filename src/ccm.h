@@ -178,6 +178,13 @@ void            ccm_screen_add_damaged_region   (CCMScreen *self,
                                                  CCMRegion* region);
 void            ccm_screen_set_filtered_damage  (CCMScreen* self, 
                                                  gboolean filtered);
+CCMWindow*      ccm_screen_find_window          (CCMScreen* self, 
+                                                 Window xwindow);
+CCMWindow*      ccm_screen_find_window_or_child (CCMScreen* self, 
+                                                 Window xwindow);
+void            ccm_screen_activate_window      (CCMScreen* self, 
+                                                 CCMWindow* window, 
+                                                 Time timestamp);
 /******************************************************************************/
 
 /****************************** Drawable **************************************/
@@ -231,6 +238,7 @@ gboolean		ccm_window_paint 					(CCMWindow* self,
 void			ccm_window_map						(CCMWindow* self);
 void			ccm_window_unmap					(CCMWindow* self);
 void 			ccm_window_query_opacity			(CCMWindow* self);
+gboolean        ccm_window_query_transient_for      (CCMWindow* self);
 void            ccm_window_query_hint_type          (CCMWindow* self);
 CCMWindowType	ccm_window_get_hint_type			(CCMWindow* self);
 const gchar*	ccm_window_get_name					(CCMWindow* self);
