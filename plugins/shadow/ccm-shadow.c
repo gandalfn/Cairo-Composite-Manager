@@ -219,7 +219,7 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
 												window);
 	if (geometry && 
-		(ccm_window_is_decorated (window) ||type != CCM_WINDOW_TYPE_NORMAL) &&
+		(ccm_window_is_decorated (window) || type != CCM_WINDOW_TYPE_NORMAL) &&
 		type != CCM_WINDOW_TYPE_DESKTOP && 
 		(type != CCM_WINDOW_TYPE_DOCK || window->opaque) &&
 		type != CCM_WINDOW_TYPE_DND &&

@@ -61,6 +61,8 @@ struct _CCMDisplay
 };
 
 GType 		ccm_display_get_type 			(void) G_GNUC_CONST;
+void		_ccm_display_trap_error			(CCMDisplay* self);
+gint		_ccm_display_pop_error			(CCMDisplay* self);
 gboolean	_ccm_display_use_xshm			(CCMDisplay* self);
 gboolean	_ccm_display_xshm_shared_pixmap (CCMDisplay* self);
 void 		_ccm_display_get_property_async (CCMDisplay* self, 

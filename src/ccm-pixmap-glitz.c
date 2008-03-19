@@ -217,8 +217,23 @@ ccm_pixmap_glitz_repair (CCMDrawable* drawable, CCMRegion* area)
 	gboolean ret = FALSE;
 	
 	if (self->priv->gl_surface && self->priv->gl_pixmap)
+	{
+		CCMDisplay* display = ccm_drawable_get_display (drawable);
+		
+		_ccm_display_trap_error (display);
 		ret = glitz_surface_bind_tex_image(self->priv->gl_surface,
 										   self->priv->gl_pixmap);
+		if (_ccm_display_pop_error (display))
+		{
+			glitz_surface_release_tex_image(self->priv->gl_surface,
+										    self->priv->gl_pixmap);
+			glitz_drawable_destroy(self->priv->gl_pixmap);
+			self->priv->gl_pixmap = NULL;
+			glitz_surface_destroy (self->priv->gl_surface);
+			self->priv->gl_surface = NULL;
+			ret = FALSE;
+		}
+	}
 	
 	return ret;
 }

@@ -190,20 +190,24 @@ ccm_pixmap_on_damage(CCMPixmap* self, Damage damage, CCMDisplay* display)
 	if (self->priv->damage == damage)
 	{
 		CCMRegion* damaged = ccm_region_new();
+		CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
 		XserverRegion region = XFixesCreateRegion(CCM_DISPLAY_XDISPLAY (display), NULL, 0);
 		XRectangle* rects;
 		gint nb_rects, cpt;
 		
+		_ccm_display_trap_error (display);
 		XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
 						 None, region);
-		
-		rects = XFixesFetchRegion(CCM_DISPLAY_XDISPLAY (display), region, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
-			ccm_region_union_with_xrect(damaged, &rects[cpt]);
-		
-		XFree(rects);
+		if (!_ccm_display_pop_error (display))
+		{
+			rects = XFixesFetchRegion(CCM_DISPLAY_XDISPLAY (display), region, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+				ccm_region_union_with_xrect(damaged, &rects[cpt]);
+			
+			XFree(rects);
+			ccm_drawable_damage_region (CCM_DRAWABLE(self), damaged);
+		}
 		XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY (display), region);
-		ccm_drawable_damage_region (CCM_DRAWABLE(self), damaged);
 		ccm_region_destroy (damaged);
 	}
 }

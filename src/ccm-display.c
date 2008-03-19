@@ -88,6 +88,8 @@ struct _CCMDisplayPrivate
 	CCMConfig*   options[CCM_DISPLAY_OPTION_N];
 };
 
+static gint   CCMLastXError = 0;
+
 #define CCM_DISPLAY_GET_PRIVATE(o)  \
    ((CCMDisplayPrivate *)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayClass))
 
@@ -258,7 +260,13 @@ ccm_display_init_dbe(CCMDisplay *self)
 static int
 ccm_display_error_handler(Display* dpy, XErrorEvent* evt)
 {
-	g_warning(__FUNCTION__);
+	gchar str[128];
+	
+	XGetErrorText (dpy, evt->error_code, str, 128);
+	g_warning("Xerror: %s", str);
+	
+	CCMLastXError = evt->error_code;
+	
 	return 0;
 }
 
@@ -294,6 +302,18 @@ ccm_display_process_events(CCMDisplay* self)
 			g_hash_table_remove (self->priv->asyncprops, task);
 		}
 	}*/
+}
+
+void
+_ccm_display_trap_error(CCMDisplay* self)
+{
+	CCMLastXError = 0;
+}
+
+gint
+_ccm_display_pop_error(CCMDisplay* self)
+{
+	return CCMLastXError;
 }
 
 gboolean

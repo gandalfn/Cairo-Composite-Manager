@@ -117,6 +117,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->is_shaped = FALSE;
 	self->priv->is_shaded = FALSE;
 	self->priv->is_fullscreen = FALSE;
+	self->priv->is_decorated = TRUE;
 	self->priv->has_format = FALSE;
 	self->priv->format = CAIRO_FORMAT_ARGB32;
 	self->priv->override_redirect = FALSE;
@@ -267,7 +268,7 @@ create_atoms(CCMWindow* self)
 											False);
 		klass->mwm_hints_atom          = XInternAtom (
 											CCM_DISPLAY_XDISPLAY(display),
-											"_XA_MOTIF_WM_HINTS", 
+											"_MOTIF_WM_HINTS", 
 											False);
 		klass->frame_extends_atom      = XInternAtom (
 											CCM_DISPLAY_XDISPLAY(display),
@@ -308,8 +309,7 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format,
 		if (property) XFree(property);
 		return NULL;
     }
-	
-    result = g_memdup (property, n_items_internal * (format / 8));
+	result = g_memdup (property, n_items_internal * (format / 8));
     XFree(property);
 	
     if (n_items) *n_items = n_items_internal;
@@ -519,10 +519,14 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	unsigned int bw, bh, cw, ch; /* dummies */
 	cairo_rectangle_t area;
 	
+	_ccm_display_trap_error (display);
 	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
 							   CCM_WINDOW_XWINDOW(self), &self->priv->attribs))
 		return NULL;
-		
+	
+	if (_ccm_display_pop_error (display))
+		return NULL;
+	
 	if (XShapeQueryExtents (CCM_DISPLAY_XDISPLAY(display), 
 							CCM_WINDOW_XWINDOW(self), 
 							&self->priv->is_shaped, &bx, &by, &bw, &bh, 
@@ -811,17 +815,14 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		return NULL;
 	}
 	
-	if (!self->is_input_only)
-	{
-		ccm_window_query_hint_type(self);
-		ccm_window_query_mwm_hints (self);
-		ccm_window_query_child (self);
+	ccm_window_query_hint_type(self);
+	ccm_window_query_mwm_hints (self);
+	ccm_window_query_child (self);
 		
-		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
-					  CCM_WINDOW_XWINDOW(self),
-					  PropertyChangeMask | 
-					  SubstructureNotifyMask);
-	}
+	XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
+				  CCM_WINDOW_XWINDOW(self),
+				  PropertyChangeMask | 
+				  SubstructureNotifyMask);
 	
 	return self;
 }
@@ -1284,21 +1285,33 @@ ccm_window_query_mwm_hints(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	guint32* data = NULL;
-	guint n_items;
-	
-	data = ccm_window_get_property(self, 
-								   CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom,
-								   sizeof (MotifWmHints) / sizeof(long), 
-								   AnyPropertyType, &n_items);
-									  
-	if (data) 
+	int ret;
+    Atom type;
+    int format;
+    gulong n_items_internal;
+    guchar *property = NULL;
+    gulong bytes_after;
+    CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+    
+    ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
+							  CCM_WINDOW_XWINDOW(self), 
+							  CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom, 
+							  0, 20L, False,
+							  CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom, 
+							  &type, &format, &n_items_internal, &bytes_after,
+							  &property);
+    
+    if (ret != Success)
+    {
+		if (property) XFree(property);
+		return;
+    }
+	if (property) 
 	{
-		MotifWmHints* hints = (MotifWmHints*)data;
-		
-      	if (hints->flags & MWM_HINTS_DECORATIONS)
+		MotifWmHints* hints = (MotifWmHints*)property;
+		if (hints->flags & MWM_HINTS_DECORATIONS)
 			self->priv->is_decorated = hints->decorations != 0;
-	  	g_free(data);
+	  	XFree(property);
     }
 }
 
