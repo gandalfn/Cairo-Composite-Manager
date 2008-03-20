@@ -32,6 +32,7 @@
 #include "ccm-screen.h"
 #include "ccm-watch.h"
 #include "ccm-config.h"
+#include "ccm-window.h"
 
 G_DEFINE_TYPE (CCMDisplay, ccm_display, G_TYPE_OBJECT);
 
@@ -260,10 +261,10 @@ ccm_display_init_dbe(CCMDisplay *self)
 static int
 ccm_display_error_handler(Display* dpy, XErrorEvent* evt)
 {
-	gchar str[128];
+	/*gchar str[128];
 	
 	XGetErrorText (dpy, evt->error_code, str, 128);
-	g_warning("Xerror: %s", str);
+	g_warning("Xerror: %s", str);*/
 	
 	CCMLastXError = evt->error_code;
 	
@@ -278,6 +279,17 @@ ccm_display_process_events(CCMDisplay* self)
 	XEvent xevent;
 	AgGetPropertyTask *task;
 	
+	while ((task = ag_get_next_completed_task (CCM_DISPLAY_XDISPLAY(self))))
+	{
+		CCMAsyncGetprop* asyncprop = g_hash_table_lookup(self->priv->asyncprops,
+														 task);
+		if (asyncprop && ag_task_have_reply (task))
+		{
+			asyncprop->callback(self, task, asyncprop->data);
+			g_hash_table_remove (self->priv->asyncprops, task);
+		}
+	}
+
 	while (XEventsQueued(CCM_DISPLAY_XDISPLAY(self), QueuedAfterReading))
 	{
 		XNextEvent(CCM_DISPLAY_XDISPLAY(self), &xevent);
@@ -291,17 +303,6 @@ ccm_display_process_events(CCMDisplay* self)
 			g_signal_emit (self, signals[EVENT], 0, &xevent);
 		}
 	}
-	
-	/*while ((task = ag_get_next_completed_task (CCM_DISPLAY_XDISPLAY(self))))
-	{
-		CCMAsyncGetprop* asyncprop = g_hash_table_lookup(self->priv->asyncprops,
-														 task);
-		if (asyncprop && ag_task_have_reply (task))
-		{
-			asyncprop->callback(self, task, asyncprop->data);
-			g_hash_table_remove (self->priv->asyncprops, task);
-		}
-	}*/
 }
 
 void
@@ -332,6 +333,31 @@ _ccm_display_xshm_shared_pixmap(CCMDisplay* self)
 	
 	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
 		   self->priv->shm.available && self->priv->shm_shared_pixmap;
+}
+
+static gboolean
+_ccm_display_remove_ag_async(AgGetPropertyTask* task, CCMAsyncGetprop info, 
+							 CCMWindow* window)
+{
+	gboolean ret = FALSE;
+		
+	if (ag_task_get_window (task) == CCM_WINDOW_XWINDOW(window))
+	{
+		ag_task_destroy(task);
+		ret = TRUE;
+	}
+	
+	return ret;
+}
+
+void
+_ccm_display_remove_async_property(CCMDisplay* self, CCMWindow* window)
+{
+	g_return_if_fail (self != NULL);
+    g_return_if_fail (window != NULL);
+	
+	g_hash_table_foreach_remove (self->priv->asyncprops, 
+								 (GHRFunc)_ccm_display_remove_ag_async, window);
 }
 
 void 		

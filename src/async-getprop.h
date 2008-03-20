@@ -53,6 +53,7 @@ Bool     ag_task_have_reply   (AgGetPropertyTask *task);
 Atom     ag_task_get_property (AgGetPropertyTask *task);
 Window   ag_task_get_window   (AgGetPropertyTask *task);
 Display* ag_task_get_display  (AgGetPropertyTask *task);
+void     ag_task_destroy      (AgGetPropertyTask *task);
 
 AgGetPropertyTask* ag_get_next_completed_task (Display *display);
 

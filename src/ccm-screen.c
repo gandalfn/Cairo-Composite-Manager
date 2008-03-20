@@ -429,6 +429,18 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 	return ret;
 }
 
+static void
+ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(window != NULL);
+	
+	CCMWindowType type = ccm_window_get_hint_type (window);
+	
+	if (type == CCM_WINDOW_TYPE_DESKTOP)
+		ccm_screen_restack (self, NULL, window);
+}
+
 static gboolean
 impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 						   CCMWindow* window)
@@ -442,6 +454,9 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	
 	g_signal_connect_swapped(window, "damaged", 
 							 G_CALLBACK(ccm_screen_on_window_damaged), self);
+	g_signal_connect_swapped(window, "property-changed", 
+							 G_CALLBACK(ccm_screen_on_window_property_changed), self);
+	
 	
 	if (window->is_viewable) ccm_window_map(window);
 	

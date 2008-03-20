@@ -580,6 +580,12 @@ free_task (AgGetPropertyTask *task)
   XFree (task);
 }
 
+void
+ag_task_destroy (AgGetPropertyTask *task)
+{
+    free_task (task);
+}
+
 Status
 ag_task_get_reply_and_free (AgGetPropertyTask  *task,
                             Atom               *actual_type,

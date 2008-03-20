@@ -1,3 +1,15 @@
+2008-03-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-display.c:
+    * src/ccm-screen.c:
+    * src/ccm-window.c: Use async get property for hint type and is_decorated.
+    
+    * plugins/opacity/ccm-opacity.c
+    * plugins/shadow/ccm-shadow.c: Fix get property handling.
+    
+    * src/async-getprop.c:
+    * src/async-getprop.h: Add ag_task_destroy method.
+    
 2008-03-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/shadow/ccm-shadow.c:

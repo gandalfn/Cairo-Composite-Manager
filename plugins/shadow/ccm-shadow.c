@@ -185,6 +185,13 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height,
     cairo_pattern_destroy (shadow);
 	cairo_destroy(cr);
 }
+static void
+ccm_shadow_on_property_changed(CCMShadow* self, CCMWindow* window)
+{
+	ccm_drawable_damage(CCM_DRAWABLE(window));
+	ccm_drawable_query_geometry(CCM_DRAWABLE(window));
+	ccm_drawable_damage(CCM_DRAWABLE(window));
+}
 
 static void
 ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
@@ -199,6 +206,8 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 												  CCMShadowOptions[cpt]);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+	g_signal_connect_swapped(window, "property-changed",
+							 G_CALLBACK(ccm_shadow_on_property_changed), self);
 }
 
 static CCMRegion*
@@ -219,10 +228,9 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
 												window);
 	if (geometry && 
-		(ccm_window_is_decorated (window) || type != CCM_WINDOW_TYPE_NORMAL) &&
-		type != CCM_WINDOW_TYPE_DESKTOP && 
+		(ccm_window_is_decorated (window) || (type != CCM_WINDOW_TYPE_NORMAL &&
+		 type != CCM_WINDOW_TYPE_DIALOG)) &&
 		(type != CCM_WINDOW_TYPE_DOCK || window->opaque) &&
-		type != CCM_WINDOW_TYPE_DND &&
 		!ccm_window_is_shaded (window) &&
 		(ccm_window_is_managed(window) || 
 		 type == CCM_WINDOW_TYPE_DROPDOWN_MENU || 

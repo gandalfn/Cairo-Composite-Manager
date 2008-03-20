@@ -176,6 +176,25 @@ ccm_opacity_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 }
 
 static void
+ccm_opacity_on_property_changed(CCMOpacity* self, CCMWindow* window)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(window != NULL);
+	
+	CCMWindowType type = ccm_window_get_hint_type(window);
+	
+	if (type == CCM_WINDOW_TYPE_MENU ||
+		type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
+		type == CCM_WINDOW_TYPE_POPUP_MENU)
+	{
+		gfloat opacity = 
+				ccm_config_get_float(self->priv->options[CCM_OPACITY_OPACITY]);
+		ccm_window_set_opacity(window, opacity);
+		ccm_drawable_damage(CCM_DRAWABLE(window));
+	}
+}
+
+static void
 ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMOpacity* self = CCM_OPACITY(plugin);
@@ -188,25 +207,10 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 												  CCMOpacityOptions[cpt]);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-}
-
-static CCMRegion*
-ccm_opacity_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	CCMOpacity* self = CCM_OPACITY(plugin);
-	CCMWindowType type = ccm_window_get_hint_type(window);
 	
-	if (type == CCM_WINDOW_TYPE_MENU ||
-		type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
-		type == CCM_WINDOW_TYPE_POPUP_MENU)
-	{
-		gfloat opacity = 
-				ccm_config_get_float(self->priv->options[CCM_OPACITY_OPACITY]);
-		ccm_window_set_opacity(window, opacity);
-	} 
-	
-	return ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin),
-											window);
+	g_signal_connect_swapped(window, "property-changed",
+							 G_CALLBACK(ccm_opacity_on_property_changed), self);
+	ccm_opacity_on_property_changed (self, window);
 }
 
 static void
@@ -222,7 +226,7 @@ static void
 ccm_opacity_window_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	= ccm_opacity_window_load_options;
-	iface->query_geometry 	= ccm_opacity_window_query_geometry;
+	iface->query_geometry 	= NULL;
 	iface->paint 			= NULL;
 	iface->map				= NULL;
 	iface->unmap			= NULL;
