@@ -77,6 +77,7 @@ struct _CCMScreenPrivate
 	
 	CCMWindow* 			root;
 	CCMWindow* 			cow;
+	Window				selection_owner;
 	CCMWindow*          fullscreen;
 	
 	CCMRegion*			damaged;
@@ -116,6 +117,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->ctx = NULL;
 	self->priv->root = NULL;
 	self->priv->cow = NULL;
+	self->priv->selection_owner = None;
 	self->priv->fullscreen = NULL;
 	self->priv->damaged = NULL;
 	self->priv->windows = NULL;
@@ -168,6 +170,9 @@ ccm_screen_finalize (GObject *object)
 		ccm_display_sync(self->priv->display);
 		g_object_unref(self->priv->cow);
 	}
+	if (self->priv->selection_owner)
+		XDestroyWindow (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+						self->priv->selection_owner);
 	
 	G_OBJECT_CLASS (ccm_screen_parent_class)->finalize (object);
 }
@@ -178,8 +183,6 @@ ccm_screen_class_init (CCMScreenClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 	
 	g_type_class_add_private (klass, sizeof (CCMScreenPrivate));
-	
-	klass->selection_owner = None;
 	
 	signals[TIMER] = g_signal_new ("timer",
 								   G_OBJECT_CLASS_TYPE (object_class),
@@ -272,7 +275,7 @@ ccm_screen_set_selection_owner(CCMScreen* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	if (CCM_SCREEN_GET_CLASS(self)->selection_owner == None)
+	if (self->priv->selection_owner == None)
 	{
 		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", self->number);
 		Atom cm_atom = XInternAtom(CCM_DISPLAY_XDISPLAY(self->priv->display), 
@@ -290,18 +293,18 @@ ccm_screen_set_selection_owner(CCMScreen* self)
 			return FALSE;
 		}
 		
-		CCM_SCREEN_GET_CLASS(self)->selection_owner = 
+		self->priv->selection_owner = 
 			XCreateSimpleWindow (CCM_DISPLAY_XDISPLAY(self->priv->display), 
 								 CCM_WINDOW_XWINDOW(root), 
 								 -100, -100, 10, 10, 0, None, None);
 
 		Xutf8SetWMProperties (CCM_DISPLAY_XDISPLAY(self->priv->display), 
-							  CCM_SCREEN_GET_CLASS(self)->selection_owner, "cairo-compmgr", 
+							  self->priv->selection_owner, "cairo-compmgr", 
 							  "cairo-compmgr", NULL, 0, 
 							  NULL, NULL, NULL);
 
 		XSetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
-							cm_atom, CCM_SCREEN_GET_CLASS(self)->selection_owner, 0);
+							cm_atom, self->priv->selection_owner, 0);
 		
 	}
 	
@@ -774,7 +777,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 					if (configure_event->above && 
 						configure_event->above != CCM_WINDOW_XWINDOW(self->priv->root) &&
 						configure_event->above != CCM_WINDOW_XWINDOW(self->priv->cow) &&
-						configure_event->above != CCM_SCREEN_GET_CLASS(self)->selection_owner)
+						configure_event->above != self->priv->selection_owner)
 					{
 						below = ccm_screen_find_window(self, configure_event->above);
 						if (below)
@@ -1126,8 +1129,8 @@ ccm_screen_add_window(CCMScreen* self, CCMWindow* window)
 		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->cow))
 		return ret;
 	
-	if (CCM_SCREEN_GET_CLASS(self)->selection_owner && 
-		CCM_WINDOW_XWINDOW(window) == CCM_SCREEN_GET_CLASS(self)->selection_owner)
+	if (self->priv->selection_owner && 
+		CCM_WINDOW_XWINDOW(window) == self->priv->selection_owner)
 		return ret;
 	
 	if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(window), &geometry) &&

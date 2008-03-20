@@ -120,12 +120,6 @@ ccm_display_finalize (GObject *object)
 		{
 			if (self->priv->screens[cpt])
 			{
-				if (CCM_SCREEN_GET_CLASS(self->priv->screens[cpt])->selection_owner != None)
-				{
-					XDestroyWindow (CCM_DISPLAY_XDISPLAY(self),
-									CCM_SCREEN_GET_CLASS(self->priv->screens[cpt])->selection_owner);
-					CCM_SCREEN_GET_CLASS(self->priv->screens[cpt])->selection_owner = None;
-				}
 				g_object_unref(self->priv->screens[cpt]);
 			}
 		}
@@ -340,11 +334,11 @@ _ccm_display_xshm_shared_pixmap(CCMDisplay* self)
 
 static gboolean
 _ccm_display_remove_ag_async(AgGetPropertyTask* task, CCMAsyncGetprop info, 
-							 CCMWindow* window)
+							 Window window)
 {
 	gboolean ret = FALSE;
 		
-	if (ag_task_get_window (task) == CCM_WINDOW_XWINDOW(window))
+	if (ag_task_get_window (task) == window)
 	{
 		ag_task_destroy(task);
 		ret = TRUE;
@@ -360,7 +354,8 @@ _ccm_display_remove_async_property(CCMDisplay* self, CCMWindow* window)
     g_return_if_fail (window != NULL);
 	
 	g_hash_table_foreach_remove (self->priv->asyncprops, 
-								 (GHRFunc)_ccm_display_remove_ag_async, window);
+								 (GHRFunc)_ccm_display_remove_ag_async, 
+								 (gpointer)CCM_WINDOW_XWINDOW(window));
 }
 
 void 		

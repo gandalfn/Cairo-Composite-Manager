@@ -1,5 +1,12 @@
 2008-03-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-display.c: Fix a crash on remove get_property handler.
+    * src/ccm-display.c: 
+    * src/ccm-screen.c:
+    * src/ccm-screen.h: Create one window selection owner for each screen.
+
+2008-03-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/ccm-display.c: Cache use_xshm option.
 
 2008-03-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
