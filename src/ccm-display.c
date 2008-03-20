@@ -84,6 +84,7 @@ struct _CCMDisplayPrivate
 	CCMExtension dbe;
 	
 	GHashTable*	 asyncprops;
+	gboolean 	 use_shm;
 	
 	gint		 fd;
 	CCMConfig*   options[CCM_DISPLAY_OPTION_N];
@@ -102,6 +103,7 @@ ccm_display_init (CCMDisplay *self)
 	self->priv->fd = 0;
 	self->priv->screens = NULL;
 	self->priv->shm_shared_pixmap = FALSE;
+	self->priv->use_shm = FALSE;
 	self->priv->asyncprops = g_hash_table_new_full(g_direct_hash, g_direct_equal,
 												   NULL, g_free);
 }
@@ -175,6 +177,8 @@ ccm_display_load_config(CCMDisplay* self)
 		self->priv->options[cpt] = ccm_config_new(-1, NULL, 
 												  CCMDisplayOptions[cpt]);
 	}
+	self->priv->use_shm = ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
+						  self->priv->shm.available;
 }
 
 static gboolean
@@ -322,8 +326,7 @@ _ccm_display_use_xshm(CCMDisplay* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
-		   self->priv->shm.available;
+	return self->priv->use_shm;
 }
 
 gboolean

@@ -1,5 +1,9 @@
 2008-03-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-display.c: Cache use_xshm option.
+
+2008-03-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/ccm-display.c:
     * src/ccm-screen.c:
     * src/ccm-window.c: Use async get property for hint type and is_decorated.
