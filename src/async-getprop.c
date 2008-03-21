@@ -140,8 +140,7 @@ remove_from_list (ListNode **head,
     }
 
   /* can't remove what's not there */
-  assert (node != NULL);
-
+  if (node != NULL)
   node->next = NULL;
 }
 

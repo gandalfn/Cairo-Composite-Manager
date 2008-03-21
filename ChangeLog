@@ -1,5 +1,10 @@
 2008-03-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/async-getprop.c: Return silently instead an assert if node not found
+                           on remove.
+
+2008-03-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/ccm-display.h:
     * src/ccm-display.c: Fix async get_property handler destruction
     
