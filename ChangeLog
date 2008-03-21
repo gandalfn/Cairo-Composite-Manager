@@ -1,3 +1,10 @@
+2008-03-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-display.h:
+    * src/ccm-display.c: Fix async get_property handler destruction
+    
+    * src/ccm-window.c: Check hint_type and mwm property on map
+
 2008-03-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-display.c: Fix a crash on remove get_property handler.

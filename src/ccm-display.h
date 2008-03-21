@@ -69,6 +69,8 @@ void 		_ccm_display_get_property_async (CCMDisplay* self,
 											 AgGetPropertyTask* task, 
 											 CCMAsyncGetpropFunc func,
 											 gpointer data);
+void		_ccm_display_remove_async_property(CCMDisplay* self, 
+											   gpointer data);
 									 
 G_END_DECLS
 

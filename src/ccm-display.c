@@ -333,12 +333,12 @@ _ccm_display_xshm_shared_pixmap(CCMDisplay* self)
 }
 
 static gboolean
-_ccm_display_remove_ag_async(AgGetPropertyTask* task, CCMAsyncGetprop info, 
-							 Window window)
+_ccm_display_remove_ag_async(AgGetPropertyTask* task, CCMAsyncGetprop* info, 
+							 gpointer data)
 {
 	gboolean ret = FALSE;
 		
-	if (ag_task_get_window (task) == window)
+	if (info->data == data)
 	{
 		ag_task_destroy(task);
 		ret = TRUE;
@@ -348,14 +348,14 @@ _ccm_display_remove_ag_async(AgGetPropertyTask* task, CCMAsyncGetprop info,
 }
 
 void
-_ccm_display_remove_async_property(CCMDisplay* self, CCMWindow* window)
+_ccm_display_remove_async_property(CCMDisplay* self, gpointer data)
 {
 	g_return_if_fail (self != NULL);
-    g_return_if_fail (window != NULL);
+    g_return_if_fail (data != NULL);
 	
 	g_hash_table_foreach_remove (self->priv->asyncprops, 
 								 (GHRFunc)_ccm_display_remove_ag_async, 
-								 (gpointer)CCM_WINDOW_XWINDOW(window));
+								 data);
 }
 
 void 		

@@ -1369,6 +1369,8 @@ ccm_window_map(CCMWindow* self)
 	{
 		self->is_viewable = TRUE;
 	
+		ccm_window_query_hint_type (self);
+		ccm_window_query_mwm_hints (self);
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
 	else
