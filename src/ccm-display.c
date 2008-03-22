@@ -281,9 +281,12 @@ ccm_display_process_events(CCMDisplay* self)
 	{
 		CCMAsyncGetprop* asyncprop = g_hash_table_lookup(self->priv->asyncprops,
 														 task);
-		if (asyncprop && ag_task_have_reply (task))
+		if (asyncprop)
 		{
-			asyncprop->callback(self, task, asyncprop->data);
+			if (asyncprop->callback)
+				asyncprop->callback(self, task, asyncprop->data);
+			else
+				ag_task_destroy (task);
 			g_hash_table_remove (self->priv->asyncprops, task);
 		}
 	}
@@ -332,19 +335,15 @@ _ccm_display_xshm_shared_pixmap(CCMDisplay* self)
 		   self->priv->shm.available && self->priv->shm_shared_pixmap;
 }
 
-static gboolean
-_ccm_display_remove_ag_async(AgGetPropertyTask* task, CCMAsyncGetprop* info, 
+static void
+_ccm_display_unset_ag_async(AgGetPropertyTask* task, CCMAsyncGetprop* info, 
 							 gpointer data)
 {
-	gboolean ret = FALSE;
-		
 	if (info->data == data)
 	{
-		ag_task_destroy(task);
-		ret = TRUE;
+		info->callback = 0;
+		info->data = 0;
 	}
-	
-	return ret;
 }
 
 void
@@ -353,9 +352,8 @@ _ccm_display_remove_async_property(CCMDisplay* self, gpointer data)
 	g_return_if_fail (self != NULL);
     g_return_if_fail (data != NULL);
 	
-	g_hash_table_foreach_remove (self->priv->asyncprops, 
-								 (GHRFunc)_ccm_display_remove_ag_async, 
-								 data);
+	g_hash_table_foreach (self->priv->asyncprops, 
+						  (GHFunc)_ccm_display_unset_ag_async, data);
 }
 
 void 		

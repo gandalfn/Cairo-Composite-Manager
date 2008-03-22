@@ -1,3 +1,7 @@
+2008-03-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-display.c: Fix crash on async get_property handler destruction.
+    
 2008-03-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/async-getprop.c: Return silently instead an assert if node not found
