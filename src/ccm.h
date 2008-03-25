@@ -52,20 +52,20 @@ typedef struct _CCMDrawable 	 CCMDrawable;
 typedef enum 
 {
 	CCM_WINDOW_TYPE_UNKNOWN,
-	CCM_WINDOW_TYPE_NORMAL,
 	CCM_WINDOW_TYPE_DESKTOP,
-	CCM_WINDOW_TYPE_DOCK,
-	CCM_WINDOW_TYPE_TOOLBAR,
-	CCM_WINDOW_TYPE_MENU,
-	CCM_WINDOW_TYPE_UTILITY,
+	CCM_WINDOW_TYPE_NORMAL,
+    CCM_WINDOW_TYPE_DIALOG,
 	CCM_WINDOW_TYPE_SPLASH,
-	CCM_WINDOW_TYPE_DIALOG,
-	CCM_WINDOW_TYPE_DROPDOWN_MENU,
-	CCM_WINDOW_TYPE_POPUP_MENU,
-	CCM_WINDOW_TYPE_TOOLTIP,
+	CCM_WINDOW_TYPE_UTILITY,
+	CCM_WINDOW_TYPE_DND,
+    CCM_WINDOW_TYPE_TOOLTIP,
 	CCM_WINDOW_TYPE_NOTIFICATION,
+	CCM_WINDOW_TYPE_TOOLBAR,
 	CCM_WINDOW_TYPE_COMBO,
-	CCM_WINDOW_TYPE_DND
+    CCM_WINDOW_TYPE_DROPDOWN_MENU,
+	CCM_WINDOW_TYPE_POPUP_MENU,
+	CCM_WINDOW_TYPE_MENU,
+    CCM_WINDOW_TYPE_DOCK
 } CCMWindowType;
 
 typedef struct _CCMWindowClass 	 CCMWindowClass;
@@ -170,7 +170,7 @@ void            ccm_screen_damage               (CCMScreen* self);
 void            ccm_screen_damage_region        (CCMScreen* self, 
                                                  CCMRegion* region);
 void            ccm_screen_restack              (CCMScreen* self, 
-                                                 CCMWindow* above, 
+                                                 CCMWindow* window, 
                                                  CCMWindow* below);
 GList*          ccm_screen_get_windows          (CCMScreen *self);
 CCMRegion*      ccm_screen_get_damaged          (CCMScreen *self);
@@ -239,6 +239,7 @@ void			ccm_window_map						(CCMWindow* self);
 void			ccm_window_unmap					(CCMWindow* self);
 void 			ccm_window_query_opacity			(CCMWindow* self);
 gboolean        ccm_window_query_transient_for      (CCMWindow* self);
+void            ccm_window_query_wm_hints           (CCMWindow* self);
 void            ccm_window_query_hint_type          (CCMWindow* self);
 CCMWindowType	ccm_window_get_hint_type			(CCMWindow* self);
 const gchar*	ccm_window_get_name					(CCMWindow* self);
@@ -262,6 +263,12 @@ gboolean        ccm_window_is_shaded                (CCMWindow* self);
 gboolean        ccm_window_is_fullscreen            (CCMWindow* self);
 void            ccm_window_query_mwm_hints          (CCMWindow* self);
 gboolean        ccm_window_is_decorated             (CCMWindow* self);
+gboolean        ccm_window_skip_taskbar             (CCMWindow* self);
+gboolean        ccm_window_skip_pager               (CCMWindow* self);
+gboolean        ccm_window_keep_above               (CCMWindow* self);
+gboolean        ccm_window_keep_below               (CCMWindow* self);
+CCMWindow*      ccm_window_transient_for            (CCMWindow* self);
+CCMWindow*      ccm_window_get_group_leader         (CCMWindow* self);
 gboolean        ccm_window_get_frame_extends        (CCMWindow* self, 
                                                      int* left_frame, 
                                                      int* right_frame, 

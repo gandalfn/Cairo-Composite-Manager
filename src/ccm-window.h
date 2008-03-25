@@ -72,6 +72,9 @@ struct _CCMWindowClass
 	Atom			 state_fullscreen_atom;
 	Atom			 state_above_atom;
 	Atom			 state_below_atom;
+	Atom			 state_is_modal;
+	Atom			 state_skip_taskbar;
+	Atom			 state_skip_pager;
 	
 	Atom			 mwm_hints_atom;
 	

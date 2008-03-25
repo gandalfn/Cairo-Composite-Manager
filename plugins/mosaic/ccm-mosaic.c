@@ -239,7 +239,7 @@ ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
 	
 	*x_root = *x + attribs.x;
 	*y_root = *y + attribs.y;
-		
+	
 	return TRUE;
 }
 
@@ -464,7 +464,8 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			if (CCM_WINDOW_XWINDOW(item->data) != self->priv->window &&
 				((CCMWindow*)item->data)->is_viewable && 
 				!((CCMWindow*)item->data)->is_input_only &&
-				type == CCM_WINDOW_TYPE_NORMAL) 
+				type == CCM_WINDOW_TYPE_NORMAL && 
+				ccm_window_is_decorated (item->data)) 
 				nb_windows++;
 		}
 		if (nb_windows != self->priv->nb_areas) 
@@ -474,7 +475,7 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			ccm_mosaic_create_areas(self, nb_windows);
 			cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
 			cairo_paint(context);
-			cairo_destroy (ctx);			
+			cairo_destroy (ctx);
 		}
 	}
 	
@@ -487,6 +488,12 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		gint nb_rects, cpt;
 		
 		cairo_save(context);
+		ccm_region_get_rectangles (ccm_screen_get_damaged (screen), &rects, &nb_rects);
+		for (cpt = 0; cpt < nb_rects; cpt++)
+			cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
+							 rects[cpt].width, rects[cpt].height);
+		cairo_clip (context);
+		
 		cairo_set_source_rgba (context, 0, 0, 0, 0.6);
 		cairo_paint(context);
 			

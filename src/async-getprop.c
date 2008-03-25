@@ -586,12 +586,12 @@ ag_task_destroy (AgGetPropertyTask *task)
 }
 
 Status
-ag_task_get_reply_and_free (AgGetPropertyTask  *task,
-                            Atom               *actual_type,
-                            int                *actual_format,
-                            unsigned long      *nitems,
-                            unsigned long      *bytesafter,
-                            char              **prop)
+ag_task_get_reply (AgGetPropertyTask  *task,
+                   Atom               *actual_type,
+                   int                *actual_format,
+                   unsigned long      *nitems,
+                   unsigned long      *bytesafter,
+                   char              **prop)
 {
   Display *dpy;
 
@@ -603,15 +603,11 @@ ag_task_get_reply_and_free (AgGetPropertyTask  *task,
     {
       Status s = task->error;
 
-      free_task (task);
-      
       return s;
     }
 
   if (!task->have_reply)
     {
-      free_task (task);
-
       return BadAlloc; /* not Success */
     }
 
@@ -624,8 +620,6 @@ ag_task_get_reply_and_free (AgGetPropertyTask  *task,
 
   SyncHandle ();
 
-  free_task (task);
-  
   return Success;
 }
 

@@ -25,6 +25,7 @@
 #include <X11/extensions/shape.h>
 #include <gdk/gdk.h>
 
+#include "ccm.h"
 #include "ccm-screen.h"
 #include "ccm-screen-plugin.h"
 #include "ccm-display.h"
@@ -235,6 +236,23 @@ ccm_screen_create_overlay_window(CCMScreen* self)
 	return self->priv->cow != NULL;
 }
 
+static void
+ccm_screen_print_stack(CCMScreen* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	GList* item;
+	
+	g_print("\n%s\n", __FUNCTION__);
+	for (item = self->priv->windows; item; item = item->next)
+	{
+		//if (CCM_WINDOW(item->data)->is_viewable)
+			g_print("\t0x%x %s - %i\n", CCM_WINDOW_XWINDOW(item->data), 
+					ccm_window_get_name (item->data), 
+					ccm_window_get_hint_type (item->data));
+	}
+}
+
 CCMWindow*
 ccm_screen_find_window(CCMScreen* self, Window xwindow)
 {
@@ -343,69 +361,99 @@ ccm_screen_query_stack(CCMScreen* self)
 	XFree(windows);
 }
 
+gint
+ccm_screen_stack_compare(CCMWindow* w1, CCMWindow* w2, GList* below_link)
+{
+	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(w1));
+	CCMWindow* root = ccm_screen_get_root_window (screen);
+	CCMWindowType t1, t2;
+	CCMWindow* transient1, *transient2;
+	CCMWindow* leader1, *leader2;
+	
+	t1 = ccm_window_get_hint_type (w1);
+	t2 = ccm_window_get_hint_type (w2);
+	
+	if (!ccm_window_is_managed  (w1))
+		return 1;
+	if (!ccm_window_is_managed (w2))
+		return -1;
+	
+	if (ccm_window_is_fullscreen (w1))
+		return 1;
+	if (ccm_window_is_fullscreen (w2))
+		return -1;
+	
+	if (ccm_window_keep_above (w1))
+		return 1;
+	if (ccm_window_keep_above (w2))
+		return -1;
+	
+	if ((t1 == CCM_WINDOW_TYPE_DESKTOP && t2 != CCM_WINDOW_TYPE_DESKTOP) ||
+		(t1 < CCM_WINDOW_TYPE_DIALOG && t2 == CCM_WINDOW_TYPE_DOCK))
+		return -1;
+	
+	if ((t1 != CCM_WINDOW_TYPE_DESKTOP && t2 == CCM_WINDOW_TYPE_DESKTOP) ||
+		(t1 == CCM_WINDOW_TYPE_DOCK && t2 < CCM_WINDOW_TYPE_DIALOG))
+		return 1;
+	
+	if ((t1 == CCM_WINDOW_TYPE_DESKTOP && t2 == CCM_WINDOW_TYPE_DESKTOP) ||
+		(t1 == CCM_WINDOW_TYPE_DOCK && t2 == CCM_WINDOW_TYPE_DOCK))
+		return 0;
+	
+	if (ccm_window_keep_below (w1))
+		return -1;
+	if (ccm_window_keep_below (w2))
+		return 1;
+	
+	if (below_link && below_link->next && w1 == below_link->next->data)
+		return 0;
+	if (below_link && below_link->next && w2 == below_link->next->data)
+		return 0;
+	
+	transient1 = ccm_window_transient_for (w1);
+	transient2 = ccm_window_transient_for (w2);
+	if (transient1 == w2)
+		return 1;
+	if (transient2 == w1)
+		return -1;
+	
+	leader1 = ccm_window_get_group_leader (w1);
+	leader2 = ccm_window_get_group_leader (w2);
+	
+	if ((transient1 == NULL || transient1 == root) && leader1 == leader2)
+		return 1;
+	if ((transient2 == NULL || transient2 == root) && leader2 == leader1)
+		return -1;
+	
+	return 1;
+}
+
 void
-ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
+ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(window != NULL);
 	
-	if (!above && !below)
-		return;
+	GList *item, *below_link = NULL;
+	GList *link = g_list_find(self->priv->windows, window);
+	gint index = g_list_index (self->priv->windows, window);
 	
-	if (!above)
-	{
-		GList* below_link = g_list_find(self->priv->windows, below);
-		GList* above_desktop =NULL, *item;
-		
-		if (below_link) 
-			self->priv->windows = g_list_remove_link (self->priv->windows,
-													  below_link);
-		for (item = g_list_first(self->priv->windows); item; item = item->next)
-		{
-			if (ccm_window_get_hint_type (item->data) == CCM_WINDOW_TYPE_DESKTOP)
-			{
-				above_desktop = item->next;
-				break;
-			}
-		}
-		if (above_desktop)
-			self->priv->windows = g_list_insert_before (self->priv->windows, 
-														above_desktop, below);
-		else
-			self->priv->windows = g_list_prepend (self->priv->windows, below);
-		return;
-	}
-		
-	if (!below)
-	{
-		GList* above_link = g_list_find(self->priv->windows, above);
-		if (above_link) 
-			self->priv->windows = g_list_remove_link (self->priv->windows,
-													  above_link);
-		self->priv->windows = g_list_append(self->priv->windows, above);
-		return;
-	}
+	CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(window));
+	if (link) 
+		self->priv->windows = g_list_remove_link (self->priv->windows, link);
 	
-	GList* below_link;
-	GList* above_link;
+	if (below)
+		below_link = g_list_find(self->priv->windows, below);
 	
-	below_link = g_list_find(self->priv->windows, below);
-	above_link = g_list_find(self->priv->windows, above);
+	self->priv->windows = g_list_insert_sorted_with_data (self->priv->windows,
+								window, 
+								(GCompareDataFunc)ccm_screen_stack_compare,
+							    below_link);
 	
-	if (!above_link || !below_link)
-		return;
+	if (index != g_list_index (self->priv->windows, window))
+		ccm_drawable_damage(CCM_DRAWABLE(window));
 	
-	if (below_link->next == above_link)
-		return;
-
-	self->priv->windows = g_list_remove(self->priv->windows, above);
-	
-	if (below_link->next)
-		self->priv->windows = g_list_insert_before(self->priv->windows, 
-												   below_link->next, above);
-	else
-		self->priv->windows = g_list_append(self->priv->windows, above);
-	
-	ccm_drawable_damage (CCM_DRAWABLE(above));
+	//ccm_screen_print_stack(self);
 }
 
 static gboolean
@@ -438,10 +486,21 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
 	
-	CCMWindowType type = ccm_window_get_hint_type (window);
+	ccm_screen_restack (self, window, NULL);
+}
+
+static void
+ccm_screen_on_window_state_changed(CCMScreen* self, CCMWindow* window)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(window != NULL);
 	
-	if (type == CCM_WINDOW_TYPE_DESKTOP)
-		ccm_screen_restack (self, NULL, window);
+	if (ccm_window_is_fullscreen (window))
+		self->priv->fullscreen = window;
+	else if (self->priv->fullscreen == window)
+		self->priv->fullscreen = NULL;
+	
+	ccm_screen_restack (self, window, NULL);
 }
 
 static gboolean
@@ -450,15 +509,14 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 {
 	CCMWindowType type = ccm_window_get_hint_type(window);
 
-	if (type != CCM_WINDOW_TYPE_DESKTOP)
-		self->priv->windows = g_list_append(self->priv->windows, window);
-	else
-		self->priv->windows = g_list_prepend(self->priv->windows, window);
+	ccm_screen_restack (self, window, NULL);
 	
 	g_signal_connect_swapped(window, "damaged", 
 							 G_CALLBACK(ccm_screen_on_window_damaged), self);
 	g_signal_connect_swapped(window, "property-changed", 
 							 G_CALLBACK(ccm_screen_on_window_property_changed), self);
+	g_signal_connect_swapped(window, "state-changed", 
+							 G_CALLBACK(ccm_screen_on_window_state_changed), self);
 	
 	
 	if (window->is_viewable) ccm_window_map(window);
@@ -756,8 +814,6 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			{
 				if (circulate_event->place == PlaceOnTop)
 					ccm_screen_restack (self, window, NULL);
-				else
-					ccm_screen_restack (self, NULL, window);
 			}
 		}
 		break;
@@ -770,8 +826,6 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			
 			if (window)
 			{
-				CCMWindow* below = NULL;
-				
 				if (configure_event->above != None)
 				{
 					if (configure_event->above && 
@@ -779,14 +833,12 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 						configure_event->above != CCM_WINDOW_XWINDOW(self->priv->cow) &&
 						configure_event->above != self->priv->selection_owner)
 					{
-						below = ccm_screen_find_window(self, configure_event->above);
-						if (below)
-							ccm_screen_restack(self, window, below);
+						CCMWindow* below = ccm_screen_find_window_or_child (self, configure_event->above);
+						
+						if (below) ccm_screen_restack(self, window, below);
 					}
 				}
-				else
-					ccm_screen_restack(self, window, NULL);
-				
+								
 				ccm_drawable_move(CCM_DRAWABLE(window),
 								  configure_event->x - configure_event->border_width, 
 								  configure_event->y - configure_event->border_width);
@@ -824,13 +876,6 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				{
 					ccm_window_query_hint_type(window);
 					ccm_window_query_state(window);
-					if (ccm_window_is_fullscreen (window))
-					{
-						self->priv->fullscreen = window;
-						ccm_screen_restack (self, window, NULL);
-					}
-					else if (self->priv->fullscreen == window)
-						self->priv->fullscreen = NULL;
 				}
 			}
 		}
@@ -889,13 +934,6 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 								break;
 						}
 					}
-					if (ccm_window_is_fullscreen (window))
-					{
-						ccm_screen_restack (self, window, NULL);
-						self->priv->fullscreen = window;
-					}
-					else if (self->priv->fullscreen == window)
-						self->priv->fullscreen = NULL;
 				}
 			}
 			else if (client_event->message_type == 

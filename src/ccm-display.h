@@ -41,9 +41,6 @@ G_BEGIN_DECLS
 
 #define CCM_DISPLAY_XDISPLAY(obj)    (CCM_DISPLAY(obj)->xdisplay)
 
-typedef void (* CCMAsyncGetpropFunc) (CCMDisplay* self, AgGetPropertyTask* task,
-									  gpointer data);
-
 struct _CCMDisplayClass
 {
 	GObjectClass parent_class;
@@ -65,12 +62,7 @@ void		_ccm_display_trap_error			(CCMDisplay* self);
 gint		_ccm_display_pop_error			(CCMDisplay* self);
 gboolean	_ccm_display_use_xshm			(CCMDisplay* self);
 gboolean	_ccm_display_xshm_shared_pixmap (CCMDisplay* self);
-void 		_ccm_display_get_property_async (CCMDisplay* self, 
-											 AgGetPropertyTask* task, 
-											 CCMAsyncGetpropFunc func,
-											 gpointer data);
-void		_ccm_display_remove_async_property(CCMDisplay* self, 
-											   gpointer data);
+
 									 
 G_END_DECLS
 

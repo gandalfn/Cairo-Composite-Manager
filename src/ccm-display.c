@@ -52,6 +52,7 @@ enum
 {
 	EVENT,
 	DAMAGE_EVENT,
+	GET_PROPERTY_EVENT,
     N_SIGNALS
 };
 
@@ -63,13 +64,6 @@ typedef struct
     int			event_base;
     int			error_base;
 } CCMExtension;
-
-typedef struct
-{
-    AgGetPropertyTask  *task;
-    CCMAsyncGetpropFunc callback;
-    gpointer 	  		data;
-} CCMAsyncGetprop;
 
 struct _CCMDisplayPrivate
 {
@@ -151,6 +145,12 @@ ccm_display_class_init (CCMDisplayClass *klass)
 								   G_TYPE_NONE, 1, G_TYPE_POINTER);
 	
 	signals[DAMAGE_EVENT] = g_signal_new ("damage-event",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__POINTER,
+								   G_TYPE_NONE, 1, G_TYPE_POINTER);
+	
+	signals[GET_PROPERTY_EVENT] = g_signal_new ("get-property-event",
 								   G_OBJECT_CLASS_TYPE (object_class),
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__POINTER,
@@ -279,16 +279,8 @@ ccm_display_process_events(CCMDisplay* self)
 	
 	while ((task = ag_get_next_completed_task (CCM_DISPLAY_XDISPLAY(self))))
 	{
-		CCMAsyncGetprop* asyncprop = g_hash_table_lookup(self->priv->asyncprops,
-														 task);
-		if (asyncprop)
-		{
-			if (asyncprop->callback)
-				asyncprop->callback(self, task, asyncprop->data);
-			else
-				ag_task_destroy (task);
-			g_hash_table_remove (self->priv->asyncprops, task);
-		}
+		g_signal_emit (self, signals[GET_PROPERTY_EVENT], 0, task);
+		ag_task_destroy (task);
 	}
 
 	while (XEventsQueued(CCM_DISPLAY_XDISPLAY(self), QueuedAfterReading))
@@ -333,45 +325,6 @@ _ccm_display_xshm_shared_pixmap(CCMDisplay* self)
 	
 	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
 		   self->priv->shm.available && self->priv->shm_shared_pixmap;
-}
-
-static void
-_ccm_display_unset_ag_async(AgGetPropertyTask* task, CCMAsyncGetprop* info, 
-							 gpointer data)
-{
-	if (info->data == data)
-	{
-		info->callback = 0;
-		info->data = 0;
-	}
-}
-
-void
-_ccm_display_remove_async_property(CCMDisplay* self, gpointer data)
-{
-	g_return_if_fail (self != NULL);
-    g_return_if_fail (data != NULL);
-	
-	g_hash_table_foreach (self->priv->asyncprops, 
-						  (GHFunc)_ccm_display_unset_ag_async, data);
-}
-
-void 		
-_ccm_display_get_property_async (CCMDisplay* self, AgGetPropertyTask* task, 
-								 CCMAsyncGetpropFunc func, gpointer data)
-{
-	g_return_if_fail (self != NULL);
-    g_return_if_fail (task != NULL);
-	
-	CCMAsyncGetprop* info;
-    
-    info = g_new (CCMAsyncGetprop, 1);
-    
-    info->task = task;
-    info->callback = func;
-    info->data = data;
-
-	g_hash_table_insert (self->priv->asyncprops, (gpointer)task, info);
 }
 
 CCMDisplay*

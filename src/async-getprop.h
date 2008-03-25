@@ -42,7 +42,7 @@ AgGetPropertyTask* ag_task_create             (Display            *display,
                                                long                length,
                                                Bool                delete,
                                                Atom                req_type);
-Status             ag_task_get_reply_and_free (AgGetPropertyTask  *task,
+Status             ag_task_get_reply          (AgGetPropertyTask  *task,
                                                Atom               *actual_type,
                                                int                *actual_format,
                                                unsigned long      *nitems,

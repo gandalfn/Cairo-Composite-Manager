@@ -1,3 +1,23 @@
+2008-03-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/async-getprop.c:
+    * src/async-getprop.h: Don't free task on get reply.
+    
+    * src/ccm-display.c:
+    * src/ccm-display.h: Use signal instead callback on ag_task reply.
+    
+    * src/ccm-window.c:
+    * src/ccm-window.h:
+    * src/ccm.h: Add get transient for, get group leader and keep_above/below
+                 interface.
+    
+    * src/ccm-screen.c: Restack rework to be more conformant to EWMH.
+
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/shadow/ccm-shadow.c: Change policy to filter window with new 
+                                   property check.    
+
 2008-03-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-display.c: Fix crash on async get_property handler destruction.
