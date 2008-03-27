@@ -437,10 +437,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dnd_atom)
 				self->priv->hint_type = CCM_WINDOW_TYPE_DND;
 			
-			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
-			if (self->priv->hint_type > CCM_WINDOW_TYPE_DIALOG && 
-				self->priv->hint_type < CCM_WINDOW_TYPE_DOCK)
-				ccm_window_get_property_async (self, 
+			ccm_window_get_property_async (self, 
 							CCM_WINDOW_GET_CLASS(self)->transient_for_atom,
 							XA_WINDOW, G_MAXLONG);
 		}
@@ -451,12 +448,12 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				Window window = self->priv->transient_for;
 				
 				memcpy (&self->priv->transient_for, result, sizeof (Window));
-				ccm_window_query_wm_hints (self);
 				if (self->priv->transient_for != None && 
 					self->priv->hint_type == CCM_WINDOW_TYPE_NORMAL)
 					self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 			}
+			ccm_window_query_wm_hints (self);
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 		}
 		if (property == CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom)
 		{
@@ -1030,6 +1027,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	{
 		ccm_window_query_hint_type(self);
 		ccm_window_query_mwm_hints (self);
+		ccm_window_query_state (self);
 		ccm_window_query_child (self);
 		
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 

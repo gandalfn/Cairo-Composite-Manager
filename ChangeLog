@@ -1,3 +1,8 @@
+2008-03-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-window.c:
+    * src/ccm-screen.c: Fix restack issues for transient window.
+
 2008-03-25  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/async-getprop.c:

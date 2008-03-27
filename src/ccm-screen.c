@@ -25,6 +25,9 @@
 #include <X11/extensions/shape.h>
 #include <gdk/gdk.h>
 
+#define DEBUG
+#undef DEBUG
+
 #include "ccm.h"
 #include "ccm-screen.h"
 #include "ccm-screen-plugin.h"
@@ -243,13 +246,22 @@ ccm_screen_print_stack(CCMScreen* self)
 	
 	GList* item;
 	
-	g_print("\n%s\n", __FUNCTION__);
+	g_print("XID\tVisible\tType\tManaged\tFullscreen\tKA\tKB\tTransient\tGroup\tName\n");
 	for (item = self->priv->windows; item; item = item->next)
 	{
-		//if (CCM_WINDOW(item->data)->is_viewable)
-			g_print("\t0x%x %s - %i\n", CCM_WINDOW_XWINDOW(item->data), 
-					ccm_window_get_name (item->data), 
-					ccm_window_get_hint_type (item->data));
+		CCMWindow* transient = ccm_window_transient_for (item->data);
+		CCMWindow* leader = ccm_window_get_group_leader (item->data);
+		g_print("0x%x\t%i\t%i\t%i\t%i\t%i\t%i\t0x%x\t0x%x\t%s\n", 
+				CCM_WINDOW_XWINDOW(item->data), 
+				CCM_WINDOW(item->data)->is_viewable,
+				ccm_window_get_hint_type (item->data),
+				ccm_window_is_managed (item->data),
+				ccm_window_is_fullscreen (item->data),
+				ccm_window_keep_above (item->data),
+				ccm_window_keep_below (item->data),
+				transient ? CCM_WINDOW_XWINDOW(transient) : 0,
+				leader ? CCM_WINDOW_XWINDOW(leader) : 0,
+				ccm_window_get_name (item->data));
 	}
 }
 
@@ -373,57 +385,139 @@ ccm_screen_stack_compare(CCMWindow* w1, CCMWindow* w2, GList* below_link)
 	t1 = ccm_window_get_hint_type (w1);
 	t2 = ccm_window_get_hint_type (w2);
 	
-	if (!ccm_window_is_managed  (w1))
+	transient1 = ccm_window_transient_for (w1);
+	transient2 = ccm_window_transient_for (w2);
+	if (transient1 && transient1 == w2)
+	{
+#ifdef DEBUG
+		g_print("transient1 0x%x - 0x%x\n", CCM_WINDOW_XWINDOW(transient1), 
+				CCM_WINDOW_XWINDOW(w2));
+#endif
 		return 1;
-	if (!ccm_window_is_managed (w2))
+	}
+	if (transient2 && transient2 == w1)
+	{
+#ifdef DEBUG
+		g_print("transient2 0x%x - 0x%x\n", CCM_WINDOW_XWINDOW(transient2), 
+				CCM_WINDOW_XWINDOW(w1));
+#endif
 		return -1;
+	}
+	
+	if (!ccm_window_is_managed  (w1))
+	{
+#ifdef DEBUG
+		g_print("w1 not managed 0x%x\n", CCM_WINDOW_XWINDOW(w1));
+#endif
+		return 1;
+	}
+	if (!ccm_window_is_managed (w2))
+	{
+#ifdef DEBUG
+		g_print("w2 not managed 0x%x\n", CCM_WINDOW_XWINDOW(w2));
+#endif
+		return -1;
+	}
 	
 	if (ccm_window_is_fullscreen (w1))
+	{
+#ifdef DEBUG
+		g_print("w1 is fullscreen 0x%x\n", CCM_WINDOW_XWINDOW(w1));
+#endif
 		return 1;
+	}
 	if (ccm_window_is_fullscreen (w2))
+	{
+#ifdef DEBUG
+		g_print("w2 is fullscreen 0x%x\n", CCM_WINDOW_XWINDOW(w2));
+#endif
 		return -1;
+	}
 	
 	if (ccm_window_keep_above (w1))
+	{
+#ifdef DEBUG
+		g_print("w1 keep above 0x%x\n", CCM_WINDOW_XWINDOW(w1));
+#endif
 		return 1;
+	}
 	if (ccm_window_keep_above (w2))
+	{
+#ifdef DEBUG
+		g_print("w2 keep above 0x%x\n", CCM_WINDOW_XWINDOW(w2));
+#endif
 		return -1;
+	}
 	
 	if ((t1 == CCM_WINDOW_TYPE_DESKTOP && t2 != CCM_WINDOW_TYPE_DESKTOP) ||
 		(t1 < CCM_WINDOW_TYPE_DIALOG && t2 == CCM_WINDOW_TYPE_DOCK))
+	{
+#ifdef DEBUG
+		g_print("type w1 0x%x : %i %i\n", CCM_WINDOW_XWINDOW(w1), t1, t2);
+#endif
 		return -1;
+	}
 	
 	if ((t1 != CCM_WINDOW_TYPE_DESKTOP && t2 == CCM_WINDOW_TYPE_DESKTOP) ||
 		(t1 == CCM_WINDOW_TYPE_DOCK && t2 < CCM_WINDOW_TYPE_DIALOG))
+	{
+#ifdef DEBUG
+		g_print("type w2 0x%x : %i %i\n", CCM_WINDOW_XWINDOW(w2), t1, t2);
+#endif
 		return 1;
-	
-	if ((t1 == CCM_WINDOW_TYPE_DESKTOP && t2 == CCM_WINDOW_TYPE_DESKTOP) ||
-		(t1 == CCM_WINDOW_TYPE_DOCK && t2 == CCM_WINDOW_TYPE_DOCK))
-		return 0;
+	}
 	
 	if (ccm_window_keep_below (w1))
+	{
+#ifdef DEBUG
+		g_print("w1 keep below 0x%x\n", CCM_WINDOW_XWINDOW(w1));
+#endif
 		return -1;
+	}
 	if (ccm_window_keep_below (w2))
+	{
+#ifdef DEBUG
+		g_print("w2 keep below 0x%x\n", CCM_WINDOW_XWINDOW(w2));
+#endif
 		return 1;
-	
-	if (below_link && below_link->next && w1 == below_link->next->data)
-		return 0;
-	if (below_link && below_link->next && w2 == below_link->next->data)
-		return 0;
-	
-	transient1 = ccm_window_transient_for (w1);
-	transient2 = ccm_window_transient_for (w2);
-	if (transient1 == w2)
-		return 1;
-	if (transient2 == w1)
-		return -1;
-	
+	}
+/*	
 	leader1 = ccm_window_get_group_leader (w1);
 	leader2 = ccm_window_get_group_leader (w2);
 	
-	if ((transient1 == NULL || transient1 == root) && leader1 == leader2)
+	if ((transient1 == NULL || transient1 == root) && leader1 && leader1 == leader2)
+	{
+#ifdef DEBUG
+		g_print("leader1: 0x%x - 0x%x\n", CCM_WINDOW_XWINDOW(w1), CCM_WINDOW_XWINDOW(leader1));
+#endif
 		return 1;
-	if ((transient2 == NULL || transient2 == root) && leader2 == leader1)
+	}
+	if ((transient2 == NULL || transient2 == root) && leader2 && leader2 == leader1)
+	{
+#ifdef DEBUG
+		g_print("leader2: 0x%x - 0x%x\n", CCM_WINDOW_XWINDOW(w2), CCM_WINDOW_XWINDOW(leader2));
+#endif
 		return -1;
+	}*/
+	
+	if (below_link && below_link->next && w1 == below_link->next->data)
+	{
+#ifdef DEBUG
+		g_print("below1 0x%x - 0x%x - 0x%x\n", CCM_WINDOW_XWINDOW(w1), 
+				CCM_WINDOW_XWINDOW(below_link->data), 
+				CCM_WINDOW_XWINDOW(below_link->next->data));
+#endif
+		return 0;
+	}
+	if (below_link && below_link->next && w2 == below_link->next->data)
+	{
+#ifdef DEBUG
+		g_print("below2 0x%x - 0x%x - 0x%x\n", CCM_WINDOW_XWINDOW(w2), 
+				CCM_WINDOW_XWINDOW(below_link->data), 
+				CCM_WINDOW_XWINDOW(below_link->next->data));
+#endif
+		return 0;
+	}
 	
 	return 1;
 }
@@ -452,8 +546,14 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 	
 	if (index != g_list_index (self->priv->windows, window))
 		ccm_drawable_damage(CCM_DRAWABLE(window));
-	
-	//ccm_screen_print_stack(self);
+#ifdef DEBUG	
+	g_print("Restack 0x%x - %s", CCM_WINDOW_XWINDOW(window), ccm_window_get_name(window));
+	if (below)
+		g_print(" : below 0x%x - %s\n", CCM_WINDOW_XWINDOW(below), ccm_window_get_name(below));
+	else
+		g_print("\n");
+	ccm_screen_print_stack(self);
+#endif
 }
 
 static gboolean
