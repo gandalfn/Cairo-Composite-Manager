@@ -226,7 +226,7 @@ ccm_image_get_data(CCMImage* image)
 {
 	g_return_val_if_fail(image != NULL, NULL);
 	
-	return image->image ? image->image->data : NULL;
+	return image->image ? (guchar*)image->image->data : NULL;
 }
 
 gint

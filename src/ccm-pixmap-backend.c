@@ -29,7 +29,6 @@ GType
 ccm_pixmap_backend_get_type(CCMScreen* screen)
 {
 	GType type = 0;
-	CCMDisplay* display = ccm_screen_get_display (screen);
 	
 	if (_ccm_screen_use_buffered (screen))
 		type = ccm_pixmap_buffered_image_get_type();

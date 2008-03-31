@@ -12,9 +12,7 @@ IT_PROG_INTLTOOL
 AC_ISC_POSIX
 AC_PROG_CC
 if test "x$GCC" = "xyes" ; then
-    if test "x$CFLAGS" != "x" ; then
-    	CFLAGS=$CFLAGS
-    elif test "x$use_debug" = "xno"; then
+    if test "x$use_debug" = "xno"; then
         CFLAGS="-O2 -Wall -fPIC -fomit-frame-pointer -ffast-math -fno-strict-aliasing"
     else
         CFLAGS="-g -O2 -Wall -fPIC"

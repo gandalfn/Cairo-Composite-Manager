@@ -217,7 +217,7 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 {
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
-	int x, y, cursor_size;
+	int x, y;
 	unsigned int m;
 	Window r, w;
 	gfloat scale;
@@ -273,7 +273,6 @@ ccm_magnifier_paint_mouse(CCMMagnifier* self, cairo_t* context)
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	XFixesCursorImage *cursor_image;
 	cairo_surface_t* surface;
-	int x, y;
 	gfloat scale;
 			
 	scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);

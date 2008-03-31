@@ -239,6 +239,7 @@ ccm_screen_create_overlay_window(CCMScreen* self)
 	return self->priv->cow != NULL;
 }
 
+#ifdef DEBUG
 static void
 ccm_screen_print_stack(CCMScreen* self)
 {
@@ -251,7 +252,7 @@ ccm_screen_print_stack(CCMScreen* self)
 	{
 		CCMWindow* transient = ccm_window_transient_for (item->data);
 		CCMWindow* leader = ccm_window_get_group_leader (item->data);
-		g_print("0x%x\t%i\t%i\t%i\t%i\t%i\t%i\t0x%x\t0x%x\t%s\n", 
+		g_print("0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t0x%lx\t0x%lx\t%s\n", 
 				CCM_WINDOW_XWINDOW(item->data), 
 				CCM_WINDOW(item->data)->is_viewable,
 				ccm_window_get_hint_type (item->data),
@@ -264,6 +265,7 @@ ccm_screen_print_stack(CCMScreen* self)
 				ccm_window_get_name (item->data));
 	}
 }
+#endif 
 
 CCMWindow*
 ccm_screen_find_window(CCMScreen* self, Window xwindow)
@@ -376,11 +378,9 @@ ccm_screen_query_stack(CCMScreen* self)
 gint
 ccm_screen_stack_compare(CCMWindow* w1, CCMWindow* w2, GList* below_link)
 {
-	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(w1));
-	CCMWindow* root = ccm_screen_get_root_window (screen);
 	CCMWindowType t1, t2;
 	CCMWindow* transient1, *transient2;
-	CCMWindow* leader1, *leader2;
+	//CCMWindow* leader1, *leader2;
 	
 	t1 = ccm_window_get_hint_type (w1);
 	t2 = ccm_window_get_hint_type (w2);
@@ -528,11 +528,10 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
 	
-	GList *item, *below_link = NULL;
+	GList *below_link = NULL;
 	GList *link = g_list_find(self->priv->windows, window);
 	gint index = g_list_index (self->priv->windows, window);
 	
-	CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(window));
 	if (link) 
 		self->priv->windows = g_list_remove_link (self->priv->windows, link);
 	
@@ -607,8 +606,6 @@ static gboolean
 impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 						   CCMWindow* window)
 {
-	CCMWindowType type = ccm_window_get_hint_type(window);
-
 	ccm_screen_restack (self, window, NULL);
 	
 	g_signal_connect_swapped(window, "damaged", 

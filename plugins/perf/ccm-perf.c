@@ -280,8 +280,6 @@ static void
 ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMPerf* self = CCM_PERF(plugin);
-	CCMDisplay* display = ccm_screen_get_display (screen);
-	cairo_rectangle_t rect;
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++)
@@ -362,10 +360,10 @@ ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			g_free(text);
 			
 			ccm_perf_get_mem_info(self);
-			text = g_strdup_printf("Mem : %i Kb", self->priv->mem_size / 1024);
+			text = g_strdup_printf("Mem : %lli Kb", self->priv->mem_size / 1024);
 			ccm_perf_show_text(self, context, text, 2);
 			g_free(text);
-			text = g_strdup_printf("Shared : %i Kb", self->priv->mem_shared / 1024);
+			text = g_strdup_printf("Shared : %lli Kb", self->priv->mem_shared / 1024);
 			ccm_perf_show_text(self, context, text, 3);
 			g_free(text);
 			

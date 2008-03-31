@@ -154,7 +154,6 @@ static void
 ccm_opacity_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMOpacity* self = CCM_OPACITY(plugin);
-	CCMDisplay* display = ccm_screen_get_display (screen);
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)

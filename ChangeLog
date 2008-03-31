@@ -1,3 +1,20 @@
+2008-03-31  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-window.c: Bufferize only on move.
+    
+    * configure.ac: Ignore CFLAGS passed on command line.
+    
+    * plugins/magnifier/ccm-magnifier.c:
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/perf/ccm-perf.c:
+    * src/ccm-image.c:
+    * src/ccm-pixmap-backend.c:
+    * src/ccm-pixmap-image.c:
+    * src/ccm-screen.c:
+    * src/ccm-window.c: Fixes some warnings.
+
 2008-03-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-window.c:

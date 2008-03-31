@@ -393,14 +393,14 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
     int format;
     gulong n_items_internal;
     gulong bytes_after;
-    guint32 *result;
+    gchar *result;
     Atom property = ag_task_get_property (task);
 	
 	if (ag_task_get_window (task) != CCM_WINDOW_XWINDOW(self))
 		return;
 	
 	if (ag_task_get_reply (task, &type, &format, &n_items_internal, 
-						   &bytes_after, (gchar **)&result) == Success 
+						   &bytes_after, &result) == Success 
 		&& type != None)
 	{
 		if (property == CCM_WINDOW_GET_CLASS(self)->type_atom)
@@ -445,8 +445,6 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 		{
 			if (result)
 			{
-				Window window = self->priv->transient_for;
-				
 				memcpy (&self->priv->transient_for, result, sizeof (Window));
 				if (self->priv->transient_for != None && 
 					self->priv->hint_type == CCM_WINDOW_TYPE_NORMAL)
@@ -500,10 +498,8 @@ ccm_window_get_property_async(CCMWindow* self, Atom property_atom,
 	g_return_if_fail(property_atom != None);
 	
     CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-	AgGetPropertyTask* task = ag_task_create (CCM_DISPLAY_XDISPLAY(display),
-											  CCM_WINDOW_XWINDOW(self),
-											  property_atom,
-											  0, length, False, req_type);
+	ag_task_create (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
+					property_atom, 0, length, False, req_type);
 }
 
 static void
@@ -516,10 +512,8 @@ ccm_window_get_child_property_async(CCMWindow* self, Atom property_atom,
 	if (self->priv->child == None) return;
 	
     CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-	AgGetPropertyTask* task = ag_task_create (CCM_DISPLAY_XDISPLAY(display),
-											  self->priv->child,
-											  property_atom,
-											  0, length, False, req_type);
+	ag_task_create (CCM_DISPLAY_XDISPLAY(display), self->priv->child,
+					property_atom, 0, length, False, req_type);
 }
 
 static guint32 *
@@ -814,7 +808,17 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 		(x != (int)geometry.x || y != (int)geometry.y))
 	{
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
+		CCMPixmap* pixmap = ccm_window_get_pixmap(self);
+		CCMWindowType type = ccm_window_get_hint_type (self);
 		
+		if (pixmap && !ccm_drawable_is_damaged (CCM_DRAWABLE(pixmap)) &&
+			CCM_IS_PIXMAP_BUFFERED(pixmap) &&
+			ccm_window_is_managed (self) && ccm_window_is_decorated (self) &&
+			(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG))
+			g_object_set(pixmap, "buffered", TRUE, NULL);
+		else
+			g_object_set(pixmap, "buffered", FALSE, NULL);
+			
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
 		if (self->opaque)
@@ -1069,8 +1073,6 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
 	
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
-	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
 		self->priv->is_shaded = TRUE;
@@ -1112,8 +1114,6 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
 	
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
-	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
 		self->priv->is_shaded = FALSE;
@@ -1154,8 +1154,6 @@ void
 ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
-	
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
 	
 	if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_shade_atom)
 	{
@@ -1523,11 +1521,10 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			cairo_surface_t* surface;
 			gboolean y_invert;
 			
-			if (CCM_IS_PIXMAP_BUFFERED(pixmap))
-				g_object_set(pixmap, "buffered", 
-							 buffered && self->is_viewable, NULL);
-			
 			g_object_get (pixmap, "y_invert", &y_invert, NULL);
+			
+			if (CCM_IS_PIXMAP_BUFFERED(pixmap) && !buffered)
+				g_object_set(pixmap, "buffered", FALSE, NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
 				
@@ -1537,6 +1534,9 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 											  context, surface, y_invert);
 				cairo_surface_destroy(surface);
 			}
+			
+			if (CCM_IS_PIXMAP_BUFFERED(pixmap))
+				g_object_set(pixmap, "buffered", FALSE, NULL);
 		}
 		cairo_reset_clip (context);
 		cairo_path_destroy(damaged);

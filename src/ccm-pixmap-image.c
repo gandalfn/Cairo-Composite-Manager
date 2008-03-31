@@ -158,7 +158,6 @@ ccm_pixmap_image_get_surface (CCMDrawable* drawable)
 	g_return_val_if_fail(drawable != NULL, NULL);
 	
 	CCMPixmapImage *self = CCM_PIXMAP_IMAGE(drawable);
-	cairo_surface_t* surface = NULL;
 	
 	if (CCM_PIXMAP(self)->window->is_viewable)
 		ccm_drawable_repair(CCM_DRAWABLE(self));

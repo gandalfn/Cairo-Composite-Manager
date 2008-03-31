@@ -81,67 +81,6 @@ struct _CCMMosaicPrivate
    ((CCMMosaicPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MOSAIC, CCMMosaicClass))
 
 static void
-cairo_rectangle_round (cairo_t *cr,
-                       double x0,    double y0,
-                       double width, double height,
-                       double radius)
-{
-  double x1,y1;
-
-  x1=x0+width;
-  y1=y0+height;
-
-  if (!width || !height)
-    return;
-  if (width/2<radius)
-    {
-      if (height/2<radius)
-        {
-          cairo_move_to  (cr, x0, (y0 + y1)/2);
-          cairo_curve_to (cr, x0 ,y0, x0, y0, (x0 + x1)/2, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, (y0 + y1)/2);
-          cairo_curve_to (cr, x1, y1, x1, y1, (x1 + x0)/2, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, (y0 + y1)/2);
-        }
-      else
-        {
-          cairo_move_to  (cr, x0, y0 + radius);
-          cairo_curve_to (cr, x0 ,y0, x0, y0, (x0 + x1)/2, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, y0 + radius);
-          cairo_line_to (cr, x1 , y1 - radius);
-          cairo_curve_to (cr, x1, y1, x1, y1, (x1 + x0)/2, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, y1- radius);
-        }
-    }
-  else
-    {
-      if (height/2<radius)
-        {
-          cairo_move_to  (cr, x0, (y0 + y1)/2);
-          cairo_curve_to (cr, x0 , y0, x0 , y0, x0 + radius, y0);
-          cairo_line_to (cr, x1 - radius, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, (y0 + y1)/2);
-          cairo_curve_to (cr, x1, y1, x1, y1, x1 - radius, y1);
-          cairo_line_to (cr, x0 + radius, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, (y0 + y1)/2);
-        }
-      else
-        {
-          cairo_move_to  (cr, x0, y0 + radius);
-          cairo_curve_to (cr, x0 , y0, x0 , y0, x0 + radius, y0);
-          cairo_line_to (cr, x1 - radius, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, y0 + radius);
-          cairo_line_to (cr, x1 , y1 - radius);
-          cairo_curve_to (cr, x1, y1, x1, y1, x1 - radius, y1);
-          cairo_line_to (cr, x0 + radius, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, y1- radius);
-        }
-    }
-
-  cairo_close_path (cr);
-}
-
-static void
 ccm_mosaic_init (CCMMosaic *self)
 {
 	self->priv = CCM_MOSAIC_GET_PRIVATE(self);
@@ -352,20 +291,6 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 }
 
 static void
-ccm_mosaic_cursor_get_position(CCMMosaic*self)
-{
-	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
-	int x, y, cursor_size;
-	unsigned int m;
-	Window r, w;
-			
-	XQueryPointer (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root),
-				   &r, &w, &self->priv->x_mouse, &self->priv->y_mouse,
-				   &x, &y, &m);
-}
-
-static void
 ccm_mosaic_create_areas(CCMMosaic* self, gint nb_windows)
 {
 	g_return_if_fail(self != NULL);
@@ -455,8 +380,6 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	if (self->priv->enabled) 
 	{
 		GList* item = ccm_screen_get_windows(screen);
-		gint cpt;
-		cairo_rectangle_t screen_geo;
 		
 		for (;item; item = item->next)
 		{

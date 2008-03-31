@@ -62,29 +62,7 @@ ccm_pixmap_buffered_image_set_property(GObject *object,
     {
     	case PROP_BUFFERED:
 		{
-			gboolean val = g_value_get_boolean (value);
-			
-			if (self->priv->buffered != val)
-			{
-				if (val) 
-				{
-					self->priv->need_to_sync = ccm_region_copy(ccm_drawable_get_geometry (CCM_DRAWABLE(self)));
-				}
-				else 
-				{
-					if (self->priv->need_to_sync) 
-					{
-						ccm_region_destroy (self->priv->need_to_sync);
-						self->priv->need_to_sync = NULL;
-					}
-					if (self->priv->surface)
-					{
-						cairo_surface_destroy (self->priv->surface);
-						self->priv->surface = NULL;
-					}
-				}
-			}
-			self->priv->buffered = val;
+			self->priv->buffered = g_value_get_boolean (value);
 		}
 		break;
 		default:
@@ -152,19 +130,12 @@ ccm_pixmap_buffered_image_repair (CCMDrawable* drawable, CCMRegion* area)
 	CCMPixmapBufferedImage* self = CCM_PIXMAP_BUFFERED_IMAGE(drawable);
 	gboolean ret;
 	
-	if (self->priv->buffered)
-	{
-		ret = CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->repair(drawable, area);
+	ret = CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->repair(drawable, area);
 		
-		if (self->priv->need_to_sync)
-			ccm_region_union (self->priv->need_to_sync, area);
-		else
-			self->priv->need_to_sync = ccm_region_copy (area);
-	}
+	if (self->priv->need_to_sync)
+		ccm_region_union (self->priv->need_to_sync, area);
 	else
-	{
-		ret = CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->repair(drawable, area);
-	}
+		self->priv->need_to_sync = ccm_region_copy (area);
 	
 	return ret;
 }
@@ -175,66 +146,64 @@ ccm_pixmap_buffered_image_sync(CCMPixmapBufferedImage* self, cairo_surface_t* su
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(surface != NULL);
 	
-	if (self->priv->buffered && self->priv->need_to_sync)
-	{
-		gdouble width, height;
-		gboolean sync_all = FALSE;
-		
-		width = cairo_image_surface_get_width (surface);
-		height = cairo_image_surface_get_height (surface);
+	gdouble width, height;
+	gboolean sync_all = FALSE;
+	
+	width = cairo_image_surface_get_width (surface);
+	height = cairo_image_surface_get_height (surface);
 
-		if (!self->priv->surface)
+	if (!self->priv->surface)
+	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+		CCMWindow* overlay = ccm_screen_get_overlay_window (screen);
+			
+		cairo_surface_t* target = ccm_drawable_get_surface (CCM_DRAWABLE(overlay));
+			
+		if (target)
 		{
-			CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
-			CCMWindow* overlay = ccm_screen_get_overlay_window (screen);
-				
-			cairo_surface_t* target = ccm_drawable_get_surface (CCM_DRAWABLE(overlay));
-				
-			if (target)
-			{
-				cairo_content_t content;
-				
-				if (ccm_window_get_format(CCM_PIXMAP(self)->window) == CAIRO_FORMAT_ARGB32) 
-					content = CAIRO_CONTENT_COLOR_ALPHA;
-				else
-					content = CAIRO_CONTENT_COLOR;
-				
-				self->priv->surface = cairo_surface_create_similar (target, 
-																	content,
-																	width, 
-																	height);
-				cairo_surface_destroy (target);
-				sync_all = TRUE;
-			}
+			cairo_content_t content;
+			
+			if (ccm_window_get_format(CCM_PIXMAP(self)->window) == CAIRO_FORMAT_ARGB32) 
+				content = CAIRO_CONTENT_COLOR_ALPHA;
+			else
+				content = CAIRO_CONTENT_COLOR;
+			
+			self->priv->surface = cairo_surface_create_similar (target, 
+																content,
+																width, 
+																height);
+			cairo_surface_destroy (target);
+			sync_all = TRUE;
 		}
-		if (self->priv->surface)
+	}
+	
+	if (self->priv->surface && (self->priv->need_to_sync || sync_all))
+	{
+		cairo_t* cr;
+		cairo_rectangle_t clipbox;
+		
+		cr = cairo_create(self->priv->surface);
+		
+		if (!sync_all)
 		{
-			cairo_t* cr;
-			cairo_rectangle_t clipbox;
-			
-			cr = cairo_create(self->priv->surface);
-			
-			if (!sync_all)
-			{
-				ccm_region_get_clipbox (self->priv->need_to_sync, &clipbox);
-				cairo_rectangle (cr, clipbox.x, clipbox.y, 
-								 clipbox.width, clipbox.height);
-				cairo_clip(cr);
-			}
-			ccm_region_destroy (self->priv->need_to_sync);
-			self->priv->need_to_sync = NULL;
-			
-			if (ccm_window_get_format (CCM_PIXMAP(self)->window) == CAIRO_FORMAT_ARGB32)
-			{
-				cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
-				cairo_paint (cr);
-			}
-			cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-			cairo_set_source_surface (cr, surface, 0, 0);
+			ccm_region_get_clipbox (self->priv->need_to_sync, &clipbox);
+			cairo_rectangle (cr, clipbox.x, clipbox.y, 
+							 clipbox.width, clipbox.height);
+			cairo_clip(cr);
+		}
+		ccm_region_destroy (self->priv->need_to_sync);
+		self->priv->need_to_sync = NULL;
+		
+		if (ccm_window_get_format (CCM_PIXMAP(self)->window) == CAIRO_FORMAT_ARGB32)
+		{
+			cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
 			cairo_paint (cr);
-			cairo_destroy (cr);
-			cairo_surface_flush (self->priv->surface);
 		}
+		cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_source_surface (cr, surface, 0, 0);
+		cairo_paint (cr);
+		cairo_destroy (cr);
+		cairo_surface_flush (self->priv->surface);
 	}
 }
 
@@ -249,8 +218,7 @@ ccm_pixmap_buffered_image_get_surface (CCMDrawable* drawable)
 	if (self->priv->buffered && !ccm_drawable_is_damaged (drawable))
 	{
 		surface = CCM_DRAWABLE_CLASS(ccm_pixmap_buffered_image_parent_class)->get_surface(drawable);
-		if (surface && CCM_PIXMAP(self)->window->is_viewable)
-			ccm_pixmap_buffered_image_sync(self, surface);
+		if (surface) ccm_pixmap_buffered_image_sync(self, surface);
 		if (self->priv->surface)
 		{
 			cairo_surface_destroy (surface);	
