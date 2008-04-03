@@ -265,6 +265,42 @@ ccm_screen_print_stack(CCMScreen* self)
 				ccm_window_get_name (item->data));
 	}
 }
+
+static void
+ccm_screen_print_real_stack(CCMScreen* self)
+{
+	CCMWindow* root;
+	Window* windows, w, p;
+	guint n_windows, cpt;
+
+	root = ccm_screen_get_root_window(self);
+	XQueryTree(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+			   CCM_WINDOW_XWINDOW(root), &w, &p, 
+			   &windows, &n_windows);
+	g_print("XID\tVisible\tType\tManaged\tFullscreen\tKA\tKB\tTransient\tGroup\tName\n");
+	for (cpt = 0; cpt < n_windows; cpt++)
+	{
+		CCMWindow *window = ccm_screen_find_window_or_child (self, windows[cpt]);
+		if (window)
+		{
+			CCMWindow* transient = ccm_window_transient_for (window);
+			CCMWindow* leader = ccm_window_get_group_leader (window);
+			g_print("0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t0x%lx\t0x%lx\t%s\n", 
+				CCM_WINDOW_XWINDOW(window), 
+				CCM_WINDOW(window)->is_viewable,
+				ccm_window_get_hint_type (window),
+				ccm_window_is_managed (window),
+				ccm_window_is_fullscreen (window),
+				ccm_window_keep_above (window),
+				ccm_window_keep_below (window),
+				transient ? CCM_WINDOW_XWINDOW(transient) : 0,
+				leader ? CCM_WINDOW_XWINDOW(leader) : 0,
+				ccm_window_get_name (window));
+		}
+	}
+	XFree(windows);
+}
+
 #endif 
 
 CCMWindow*
@@ -381,6 +417,11 @@ ccm_screen_stack_compare(CCMWindow* w1, CCMWindow* w2, GList* below_link)
 	CCMWindowType t1, t2;
 	CCMWindow* transient1, *transient2;
 	//CCMWindow* leader1, *leader2;
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(w1));
+	CCMWindow* root = ccm_screen_get_root_window(screen);
+	
+	if (w1 == root) return -1;
+	if (w2 == root) return 1;
 	
 	t1 = ccm_window_get_hint_type (w1);
 	t2 = ccm_window_get_hint_type (w2);
@@ -551,7 +592,10 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 		g_print(" : below 0x%x - %s\n", CCM_WINDOW_XWINDOW(below), ccm_window_get_name(below));
 	else
 		g_print("\n");
+	g_print("Stack\n");
 	ccm_screen_print_stack(self);
+	g_print("Real stack\n");
+	ccm_screen_print_real_stack(self);
 #endif
 }
 
@@ -1256,9 +1300,9 @@ ccm_screen_add_window(CCMScreen* self, CCMWindow* window)
 	gboolean ret = FALSE;
 	cairo_rectangle_t geometry;
 	
-	if (self->priv->root && 
+	/*if (self->priv->root && 
 		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->root))
-		return ret;
+		return ret;*/
 	
 	if (self->priv->cow && 
 		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->cow))

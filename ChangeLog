@@ -1,3 +1,18 @@
+2008-04-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * data/cairo-compmgr.schemas.in: set native_pixmap_bind as default.
+    
+    * plugins/mosaic/ccm-mosaic.c: Don't clip on draw mosaic.
+    
+    * plugins/shadow/ccm-shadow.c: Use image surface instead similar to draw
+                                   shadow.
+
+    * src/ccm-pixmap-glitz.c: Attach to back buffer instead front.
+    
+    * src/ccm-screen.c:
+    * src/ccm-window.c: Send signal property changed and state changed only if
+                        really changed and then restack only in this case.
+
 2008-03-31  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-buffered-image.c:

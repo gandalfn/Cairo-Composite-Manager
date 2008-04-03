@@ -202,7 +202,7 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 		{
 			glitz_surface_attach (self->priv->gl_surface,
 								  self->priv->gl_drawable,
-								  GLITZ_DRAWABLE_BUFFER_FRONT_COLOR);
+								  GLITZ_DRAWABLE_BUFFER_BACK_COLOR);
 		}
 	}
 }

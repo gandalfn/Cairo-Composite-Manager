@@ -97,9 +97,6 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height,
 	cairo_t* cr;
 	cairo_pattern_t *shadow;
 	int border, offset;
-	cairo_surface_t* surface = ccm_drawable_get_surface (CCM_DRAWABLE(window));
-	
-	if (!surface) return;
 	
 	if (self->priv->shadow_right)
 		cairo_surface_destroy(self->priv->shadow_right);
@@ -109,11 +106,10 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height,
 	border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 	offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
 	
-	self->priv->shadow_right = cairo_surface_create_similar (surface, CAIRO_CONTENT_COLOR_ALPHA, 
-													   		 border * 2, height - offset + border);
-	self->priv->shadow_bottom = cairo_surface_create_similar (surface, CAIRO_CONTENT_COLOR_ALPHA, 
-													   		  width - offset, border);
-	cairo_surface_destroy (surface);
+	self->priv->shadow_right = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 
+														   border * 2, height - offset + border);
+	self->priv->shadow_bottom = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 
+															width - offset, border);
 	
     cr = cairo_create(self->priv->shadow_right);
 	

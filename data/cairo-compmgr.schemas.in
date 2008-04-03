@@ -51,7 +51,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/native_pixmap_bind</applyto>
          <owner>gnome</owner>
          <type>bool</type>
-         <default>false</default>
+         <default>true</default>
          <locale name="C">
             <short>Use pixmap bind associated to backend</short>
             <long>Use pixmap bind associated to backend</long>
@@ -107,7 +107,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/indirect</applyto>
          <owner>gnome</owner>
          <type>bool</type>
-		 <default>true</default>
+		 <default>false</default>
          <locale name="C">
             <short>Use indirect rendering</short>
             <long>Use indirect rendering</long>

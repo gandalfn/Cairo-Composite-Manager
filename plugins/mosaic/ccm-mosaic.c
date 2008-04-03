@@ -411,11 +411,11 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		gint nb_rects, cpt;
 		
 		cairo_save(context);
-		ccm_region_get_rectangles (ccm_screen_get_damaged (screen), &rects, &nb_rects);
+		/*ccm_region_get_rectangles (ccm_screen_get_damaged (screen), &rects, &nb_rects);
 		for (cpt = 0; cpt < nb_rects; cpt++)
 			cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
 							 rects[cpt].width, rects[cpt].height);
-		cairo_clip (context);
+		cairo_clip (context);*/
 		
 		cairo_set_source_rgba (context, 0, 0, 0, 0.6);
 		cairo_paint(context);
@@ -472,6 +472,11 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 				ccm_region_offset(damaged, -(attribs.width / 2) * scale,
 								  -(attribs.height / 2) * scale);
 				
+				if (y_invert)
+				{
+					cairo_scale (ctx, 1.0, -1.0);
+					cairo_translate (ctx, 0.0f, - area->geometry.y - area->geometry.height);
+				}
 				cairo_translate (ctx, area->geometry.x + area->geometry.width / 2, 
 								 area->geometry.y + area->geometry.height / 2);
 				cairo_scale(ctx, scale, scale);
@@ -486,7 +491,6 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 				cairo_paint (ctx);
 				cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
 				cairo_set_source_surface (ctx, surface, attribs.x, attribs.y);
-				
 				cairo_paint (ctx);
 				
 				ccm_screen_add_damaged_region (self->priv->screen, damaged);
