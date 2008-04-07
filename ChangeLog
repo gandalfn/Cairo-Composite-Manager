@@ -1,3 +1,12 @@
+2008-04-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/shadow/ccm-shadow.c:
+    * src/ccm-screen.c:
+    * src/ccm-screen.h:
+    * src/ccm-window.c:
+    * src/ccm-window.h:
+    * src/ccm.h: Implement stacking layer filter.
+
 2008-04-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * data/cairo-compmgr.schemas.in: set native_pixmap_bind as default.

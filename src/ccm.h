@@ -68,6 +68,18 @@ typedef enum
     CCM_WINDOW_TYPE_DOCK
 } CCMWindowType;
 
+typedef enum
+{
+    CCM_STACK_LAYER_DESKTOP = 0,
+    CCM_STACK_LAYER_BOTTOM = 1,
+    CCM_STACK_LAYER_NORMAL = 2,
+    CCM_STACK_LAYER_TOP = 4,
+    CCM_STACK_LAYER_DOCK = 4,
+    CCM_STACK_LAYER_FULLSCREEN = 5,
+    CCM_STACK_LAYER_FOCUSED = 6,
+    CCM_STACK_LAYER_LAST = 7
+} CCMStackLayer;
+
 typedef struct _CCMWindowClass 	 CCMWindowClass;
 typedef struct _CCMWindow 		 CCMWindow;
 /******************************************************************************/
@@ -238,7 +250,7 @@ gboolean		ccm_window_paint 					(CCMWindow* self,
 void			ccm_window_map						(CCMWindow* self);
 void			ccm_window_unmap					(CCMWindow* self);
 void 			ccm_window_query_opacity			(CCMWindow* self);
-gboolean        ccm_window_query_transient_for      (CCMWindow* self);
+void            ccm_window_query_transient_for      (CCMWindow* self);
 void            ccm_window_query_wm_hints           (CCMWindow* self);
 void            ccm_window_query_hint_type          (CCMWindow* self);
 CCMWindowType	ccm_window_get_hint_type			(CCMWindow* self);
