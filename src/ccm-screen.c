@@ -454,14 +454,7 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 	if (below && index > g_list_index(self->priv->windows, below))
 		return;
 	
-	if (ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP)
-	{
-		if (link) 
-				self->priv->windows = g_list_remove_link (self->priv->windows, 
-														  link);
-		self->priv->windows = g_list_prepend (self->priv->windows, window);
-	}
-	else if (below)
+	if (below)
 	{
 		GList *below_link;
 		if (link) 
@@ -494,8 +487,9 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 		CCMWindow* leader = ccm_window_get_group_leader (window);
 		GList* item;
 		
-		if (leader && (g_list_index(self->priv->windows, leader) > 
-			           g_list_index(self->priv->windows, window)))
+		if (leader && link &&
+			(g_list_index(self->priv->windows, leader) > 
+			 g_list_index(self->priv->windows, window)))
 		{
 			GList* link_leader = g_list_find(self->priv->windows, leader);
 			GList* top_group = link_leader;
@@ -503,12 +497,14 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 			if (link)
 			self->priv->windows = g_list_remove_link (self->priv->windows, 
 													  link);
-			for (item = link_leader; item; item = item->next)
+			for (item = link_leader; item && CCM_WINDOW(item->data)->layer <= window->layer; item = item->next)
 			{
 				CCMWindow* item_leader = ccm_window_get_group_leader (item->data);
 				
 				if (item_leader == leader)
+				{
 					top_group = item;
+				}
 			}
 			self->priv->windows = g_list_insert_before (self->priv->windows,
 														top_group->next,
@@ -516,16 +512,34 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 		}
 		else
 		{
-			if (link) 
-				self->priv->windows = g_list_remove_link (self->priv->windows, 
-														  link);
+			GList* begin_layer = NULL,* end_layer = self->priv->windows;
+			gboolean found = FALSE;
+			
 			for (item = self->priv->windows; item; item = item->next)
 			{
-				if (CCM_WINDOW(item->data)->layer >  window->layer)
+				if (!begin_layer && CCM_WINDOW(item->data)->layer == window->layer)
+					begin_layer = item;
+				
+				if (link && begin_layer)
+				{
+					found = TRUE;
 					break;
+				}
+				if (CCM_WINDOW(item->data)->layer >  window->layer)
+				{
+					end_layer = item;
+					break;
+				}
 			}
-			self->priv->windows = g_list_insert_before (self->priv->windows,
-														item, window);
+			
+			if (!found)
+			{
+				if (link)
+					self->priv->windows = g_list_remove_link (self->priv->windows, 
+															  link);
+				self->priv->windows = g_list_insert_before (self->priv->windows,
+															end_layer, window);
+			}
 		}
 	}
 	
@@ -539,6 +553,8 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 		g_print("\n");
 	g_print("Stack\n");
 	ccm_screen_print_stack(self);
+	g_print("Real stack\n");
+	ccm_screen_print_real_stack(self);
 #endif
 }
 
