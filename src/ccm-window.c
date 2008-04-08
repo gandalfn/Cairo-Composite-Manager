@@ -943,6 +943,7 @@ impl_ccm_window_map(CCMWindowPlugin* plugin, CCMWindow* self)
 {
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
+
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
 }
 
@@ -953,8 +954,6 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	self->priv->unmap_pending = FALSE;
-	self->priv->keep_above = FALSE;
-	self->priv->keep_below = FALSE;
 	if (self->priv->pixmap)
 	{
 		g_object_unref(self->priv->pixmap);
