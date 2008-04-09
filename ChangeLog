@@ -1,5 +1,9 @@
 2008-04-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-window.c: Set default type to NORMAL.
+
+2008-04-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/ccm-screen.c:
     * src/ccm-window.c:
     * src/ccm.h: Send state and property changed only if modified, fix restack

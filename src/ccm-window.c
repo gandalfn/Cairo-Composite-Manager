@@ -143,7 +143,7 @@ ccm_window_init (CCMWindow *self)
 	self->opaque = NULL;
 	self->layer = CCM_STACK_LAYER_NORMAL;
 	self->priv = CCM_WINDOW_GET_PRIVATE(self);
-	self->priv->hint_type = CCM_WINDOW_TYPE_UNKNOWN;
+	self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
 	self->priv->name = NULL;
 	self->priv->class_name = NULL;
 	self->priv->child = None;
