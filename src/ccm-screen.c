@@ -453,6 +453,9 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 		
 	if (below && index > g_list_index(self->priv->windows, below))
 		return;
+#ifdef DEBUG
+	g_print("%s %s\n", __FUNCTION__, ccm_window_get_name(window));
+#endif
 	
 	if (window->layer == CCM_STACK_LAYER_DESKTOP)
 	{
@@ -464,12 +467,21 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 	else if (below)
 	{
 		GList *below_link;
-		if (link) 
-				self->priv->windows = g_list_remove_link (self->priv->windows, 
-														  link);
-		below_link = g_list_find (self->priv->windows, below);
-		self->priv->windows = g_list_insert_before(self->priv->windows, 
-												   below_link->next, window);
+		if (link && !below->is_viewable)
+		{
+			self->priv->windows = g_list_remove (self->priv->windows, below);
+			self->priv->windows = g_list_insert_before(self->priv->windows, 
+													   link, below);
+		}
+		else
+		{
+			if (link) 
+					self->priv->windows = g_list_remove_link (self->priv->windows, 
+															  link);
+			below_link = g_list_find (self->priv->windows, below);
+			self->priv->windows = g_list_insert_before(self->priv->windows, 
+													   below_link->next, window);
+		}
 	}
 	else if (transient)
 	{
@@ -621,7 +633,6 @@ static gboolean
 impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 						   CCMWindow* window)
 {
-	//self->priv->windows = g_list_append (self->priv->windows, window);
 	ccm_screen_restack (self, window, NULL);
 	
 	g_signal_connect_swapped(window, "damaged", 
@@ -877,30 +888,26 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			CCMWindow* window = ccm_screen_find_window(self,
 										((XCreateWindowEvent*)event)->window);
 			if (window) ccm_screen_remove_window(self, window);
-			break;	
 		}
+		break;
 		case MapNotify:
 		{	
 			CCMWindow* window = ccm_screen_find_window(self,
 											((XMapEvent*)event)->window);
-			if (window)
-				ccm_window_map(window);
+			if (window) ccm_window_map(window);
 		}
 		break;
 		case UnmapNotify:
 		{	
 			CCMWindow* window = ccm_screen_find_window(self,
 											((XUnmapEvent*)event)->window);
-			if (window) 
-				ccm_window_unmap(window);
+			if (window) ccm_window_unmap(window);
 		}
 		break;
 		case ReparentNotify:
 		{
 			CCMWindow* window = ccm_screen_find_window(self,
 											((XReparentEvent*)event)->window);
-			CCMWindow* parent = ccm_screen_find_window(self,
-											((XReparentEvent*)event)->parent);
 			
 			if (((XReparentEvent*)event)->parent == CCM_WINDOW_XWINDOW(self->priv->root))
 			{
@@ -914,7 +921,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 					}
 				}
 			}
-			else if (window && parent) ccm_screen_remove_window (self, window);
+			else if (window) ccm_screen_remove_window (self, window);
 		}
 		break;
 		case CirculateNotify:

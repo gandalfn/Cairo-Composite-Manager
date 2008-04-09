@@ -265,7 +265,7 @@ gfloat			ccm_window_get_opacity 				(CCMWindow* self);
 void			ccm_window_set_opacity 				(CCMWindow* self, 
 													 gfloat opacity);
 void            ccm_window_query_state              (CCMWindow* self);
-void            ccm_window_set_state                (CCMWindow* self, 
+gboolean        ccm_window_set_state                (CCMWindow* self, 
                                                      Atom state_atom);
 void            ccm_window_unset_state              (CCMWindow* self, 
                                                      Atom state_atom);
