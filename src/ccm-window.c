@@ -370,7 +370,8 @@ ccm_window_update_stack_layer(CCMWindow* self)
 				self->layer = CCM_STACK_LAYER_BOTTOM;
 			else if (self->priv->is_fullscreen)
 				self->layer = CCM_STACK_LAYER_FULLSCREEN;
-			else if (self->priv->keep_above)
+			else if (self->priv->keep_above || 
+					 self->priv->override_redirect)
         		self->layer = CCM_STACK_LAYER_TOP;
       		else
         		self->layer = CCM_STACK_LAYER_NORMAL;
@@ -427,7 +428,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
     int format;
     gulong n_items_internal;
     gulong bytes_after;
-    gchar *result;
+    gchar *result = NULL;
     Atom property = ag_task_get_property (task);
 	
 	if (ag_task_get_window (task) != CCM_WINDOW_XWINDOW(self))
@@ -984,11 +985,6 @@ impl_ccm_window_map(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 
-	ccm_window_query_hint_type (self);
-	ccm_window_query_transient_for (self);
-	ccm_window_query_mwm_hints (self);
-	ccm_window_query_wm_hints (self);
-	ccm_window_query_state (self);
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
 }
 
@@ -998,15 +994,6 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	
-	self->priv->is_fullscreen = FALSE;
-	self->priv->override_redirect = FALSE;
-	self->priv->is_decorated = TRUE;
-	self->priv->keep_above = FALSE;
-	self->priv->keep_below = FALSE;
-	self->priv->transient_for = None;
-	self->priv->group_leader = None;
-	self->layer = CCM_STACK_LAYER_NORMAL;
-		
 	self->priv->unmap_pending = FALSE;
 	if (self->priv->pixmap)
 	{

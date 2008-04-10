@@ -425,6 +425,10 @@ _ccm_screen_get_window_layer(CCMScreen* self, CCMWindow* window)
 	CCMWindow* leader = ccm_window_get_group_leader (window);
 	CCMStackLayer layer = window->layer;
 	
+	if (transient && transient != root && transient->layer > layer)
+	{
+		layer = transient->layer;
+	}
 	if (leader && (transient == NULL || transient == root))
 	{
 		GList* item;
@@ -432,7 +436,8 @@ _ccm_screen_get_window_layer(CCMScreen* self, CCMWindow* window)
 		{
 			CCMWindow* item_leader = ccm_window_get_group_leader (item->data);
 			
-			if ((item->data == leader || item_leader == leader) &&
+			if ((item->data == leader || item_leader == leader || 
+				 item_leader == window) &&
 				CCM_WINDOW(item->data)->layer > layer)
 				layer = CCM_WINDOW(item->data)->layer;
 		}
@@ -457,15 +462,18 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 	g_print("%s %s\n", __FUNCTION__, ccm_window_get_name(window));
 #endif
 	
-	if (window->layer == CCM_STACK_LAYER_DESKTOP)
+    if (window->layer == CCM_STACK_LAYER_DESKTOP)
 	{
 		if (link) 
-				self->priv->windows = g_list_remove_link (self->priv->windows, 
-														  link);
+			self->priv->windows = g_list_remove_link (self->priv->windows, 
+													  link);
 		self->priv->windows = g_list_prepend (self->priv->windows, window);
 	}
 	else if (below)
 	{
+#ifdef DEBUG
+	g_print("BELOW %s %s\n", __FUNCTION__, ccm_window_get_name(window));
+#endif
 		GList *below_link;
 		if (link && !below->is_viewable)
 		{
@@ -485,6 +493,9 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 	}
 	else if (transient)
 	{
+#ifdef DEBUG
+	g_print("TRANSIENT %s %s\n", __FUNCTION__, ccm_window_get_name(window));
+#endif
 		GList *transient_link;
 		if (link) 
 				self->priv->windows = g_list_remove_link (self->priv->windows, 
@@ -496,6 +507,9 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 	}
 	else if (!ccm_window_is_managed (window))
 	{
+#ifdef DEBUG
+	g_print("MANAGED %s %s\n", __FUNCTION__, ccm_window_get_name(window));
+#endif
 		if (link) 
 				self->priv->windows = g_list_remove_link (self->priv->windows, 
 														  link);
@@ -531,11 +545,12 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 		}
 		else
 		{
-			GList* begin_layer = NULL,* end_layer = self->priv->windows;
+			GList* begin_layer = NULL,* end_layer = NULL;
 			gboolean found = FALSE;
 			
-			if (end_layer && CCM_WINDOW(end_layer->data)->layer > window->layer)
-				begin_layer = end_layer;
+			if (self->priv->windows && 
+				CCM_WINDOW(self->priv->windows->data)->layer > window->layer)
+				begin_layer = self->priv->windows;
 			
 			for (item = self->priv->windows; item; item = item->next)
 			{
@@ -549,7 +564,7 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
 					break;
 				}
 				
-				if (link && begin_layer)
+				if (link && begin_layer && link->data == item->data)
 				{
 					found = TRUE;
 					break;
@@ -1263,7 +1278,8 @@ ccm_screen_get_root_window(CCMScreen* self)
 		self->priv->root = ccm_window_new(self, root);
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(self)), 
 				      root,
-				      SubstructureNotifyMask   |
+				      SubstructureRedirectMask |
+					  SubstructureNotifyMask   |
 					  ExposureMask);
 	}
 	
@@ -1279,9 +1295,9 @@ ccm_screen_add_window(CCMScreen* self, CCMWindow* window)
 	gboolean ret = FALSE;
 	cairo_rectangle_t geometry;
 	
-	/*if (self->priv->root && 
+	if (self->priv->root && 
 		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->root))
-		return ret;*/
+		return ret;
 	
 	if (self->priv->cow && 
 		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->cow))
