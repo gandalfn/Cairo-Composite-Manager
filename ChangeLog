@@ -1,3 +1,10 @@
+2008-04-11  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-screen.c:
+    * src/ccm-window.c:
+    * src/ccm-window.h:
+    * src/ccm.h: Try an another way to check stack.
+    
 2008-04-10  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-screen.c:

@@ -353,30 +353,44 @@ ccm_window_update_stack_layer(CCMWindow* self)
 	
 	CCMWindowType type = ccm_window_get_hint_type (self);
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	cairo_rectangle_t geometry;
+
+	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
 	
-	switch (type)
+	if (self->priv->keep_below)
+		self->layer = CCM_STACK_LAYER_BOTTOM;
+	else if (self->priv->is_fullscreen ||
+			 (!type != CCM_WINDOW_TYPE_DESKTOP &&
+			  geometry.x == 0 && geometry.y == 0 && 
+			  geometry.width == CCM_SCREEN_XSCREEN(screen)->width &&
+			  geometry.height == CCM_SCREEN_XSCREEN(screen)->height))
+		self->layer = CCM_STACK_LAYER_FULLSCREEN;
+	else if (self->priv->keep_above ||
+			 self->priv->override_redirect)
+		self->layer = CCM_STACK_LAYER_TOP;
+	else
 	{
-		case CCM_WINDOW_TYPE_DESKTOP:
-			self->layer = CCM_STACK_LAYER_DESKTOP;
-		break;
-		case CCM_WINDOW_TYPE_DOCK:
-			if (self->priv->keep_below)
-				self->layer = CCM_STACK_LAYER_BOTTOM;
-			else
-				self->layer = CCM_STACK_LAYER_DOCK;
-		break;
-		default:
-			if (self->priv->keep_below)
-				self->layer = CCM_STACK_LAYER_BOTTOM;
-			else if (self->priv->is_fullscreen)
-				self->layer = CCM_STACK_LAYER_FULLSCREEN;
-			else if (self->priv->keep_above || 
-					 self->priv->override_redirect)
-        		self->layer = CCM_STACK_LAYER_TOP;
-      		else
-        		self->layer = CCM_STACK_LAYER_NORMAL;
-			self->layer = _ccm_screen_get_window_layer (screen, self);
-		break;
+		switch (type)
+		{
+			case CCM_WINDOW_TYPE_DESKTOP:
+			{
+				self->layer = CCM_STACK_LAYER_DESKTOP;
+			}
+			break;
+			case CCM_WINDOW_TYPE_DOCK:
+			{
+				if (self->priv->keep_below)
+					self->layer = CCM_STACK_LAYER_BOTTOM;
+				else
+					self->layer = CCM_STACK_LAYER_DOCK;
+			}
+			break;
+			default:
+			{
+				self->layer = CCM_STACK_LAYER_NORMAL;
+			}
+			break;
+		}
 	}
 }
 
@@ -1053,6 +1067,15 @@ _ccm_window_set_child(CCMWindow* self, Window child)
 	g_return_if_fail(self != NULL);
 	
 	self->priv->child = child;
+}
+
+gint
+_ccm_window_compare_layer(CCMWindow* self, CCMWindow* other)
+{
+	g_return_val_if_fail(self != NULL, -1);
+	g_return_val_if_fail(other != NULL, 1);
+	
+	return self->layer - other->layer;
 }
 
 CCMWindow *

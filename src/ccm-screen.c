@@ -390,7 +390,11 @@ ccm_screen_query_stack(CCMScreen* self)
 	CCMWindow* root;
 	Window* windows, w, p;
 	guint n_windows, cpt;
-		
+
+#ifdef DEBUG
+	g_print("BEGIN %s\n", __FUNCTION__);
+#endif
+	
 	if (self->priv->windows)
 	{
 		g_list_foreach(self->priv->windows, (GFunc)g_object_unref, NULL);
@@ -412,6 +416,9 @@ ccm_screen_query_stack(CCMScreen* self)
 		}
 	}
 	XFree(windows);
+#ifdef DEBUG
+	g_print("END %s\n", __FUNCTION__);
+#endif
 }
 
 CCMStackLayer
@@ -447,145 +454,100 @@ _ccm_screen_get_window_layer(CCMScreen* self, CCMWindow* window)
 }
 
 void
-ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* below)
+ccm_screen_check_stack(CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
-	g_return_if_fail(window != NULL);
 	
-	gint index = g_list_index (self->priv->windows, window);
-	CCMWindow* transient = ccm_window_transient_for (window);
-	GList* link = g_list_find(self->priv->windows, window);
-		
-	if (below && index > g_list_index(self->priv->windows, below))
+	self->priv->windows = g_list_sort (self->priv->windows, 
+									   (GCompareFunc)_ccm_window_compare_layer);
+}
+
+void
+ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
+{
+	g_return_if_fail(self != NULL);
+	
+	GList *link_above = NULL, *link_below = NULL;
+	
+	if (below == NULL && above == NULL)
 		return;
-#ifdef DEBUG
-	g_print("%s %s\n", __FUNCTION__, ccm_window_get_name(window));
-#endif
 	
-    if (window->layer == CCM_STACK_LAYER_DESKTOP)
+	if (above) link_above = g_list_find(self->priv->windows, above);
+	if (below) link_below = g_list_find(self->priv->windows, below);
+	
+	if (!below)
 	{
-		if (link) 
-			self->priv->windows = g_list_remove_link (self->priv->windows, 
-													  link);
-		self->priv->windows = g_list_prepend (self->priv->windows, window);
+		GList* item, *pos = NULL;
+		
+		self->priv->windows = g_list_remove (self->priv->windows, above);
+		
+		for (item = g_list_first(self->priv->windows); item; item = item->next)
+		{
+			CCMWindow* window = CCM_WINDOW(item->data);
+			CCMWindow* above = CCM_WINDOW(item->data);
+			
+			if (window->layer == above->layer)
+			{
+				pos = item;
+			}
+		}
+		if (pos)
+			self->priv->windows = g_list_insert_before (self->priv->windows, 
+														pos->next, above);
+		else
+			self->priv->windows = g_list_append (self->priv->windows, above);
+		
+		ccm_drawable_damage (CCM_DRAWABLE(above));
 	}
-	else if (below)
+	else if (!above)
 	{
-#ifdef DEBUG
-	g_print("BELOW %s %s\n", __FUNCTION__, ccm_window_get_name(window));
-#endif
-		GList *below_link;
-		if (link && !below->is_viewable)
+		GList* item, *pos = NULL;
+		
+		self->priv->windows = g_list_remove (self->priv->windows, below);
+	
+		for (item = g_list_last(self->priv->windows); item; item = item->prev)
+		{
+			CCMWindow* window = CCM_WINDOW(item->data);
+			CCMWindow* below = CCM_WINDOW(item->data);
+			
+			if (window->layer == below->layer)
+			{
+				pos = item;
+			}
+		}
+		if (pos)
+			self->priv->windows = g_list_insert_before (self->priv->windows, 
+														pos, below);
+		else
+			self->priv->windows = g_list_prepend (self->priv->windows, below);
+		
+		ccm_drawable_damage (CCM_DRAWABLE(below));
+	}
+	else 
+	{
+		if (link_below && link_above && link_below->next == link_above)
+			return;
+		
+		if (!below->is_viewable)
 		{
 			self->priv->windows = g_list_remove (self->priv->windows, below);
 			self->priv->windows = g_list_insert_before(self->priv->windows, 
-													   link, below);
+													   link_above, below);
 		}
 		else
 		{
-			if (link) 
-					self->priv->windows = g_list_remove_link (self->priv->windows, 
-															  link);
-			below_link = g_list_find (self->priv->windows, below);
+			self->priv->windows = g_list_remove (self->priv->windows, above);
 			self->priv->windows = g_list_insert_before(self->priv->windows, 
-													   below_link->next, window);
+													   link_below->next, above);
 		}
-	}
-	else if (transient)
-	{
-#ifdef DEBUG
-	g_print("TRANSIENT %s %s\n", __FUNCTION__, ccm_window_get_name(window));
-#endif
-		GList *transient_link;
-		if (link) 
-				self->priv->windows = g_list_remove_link (self->priv->windows, 
-														  link);
-		transient_link = g_list_find (self->priv->windows, transient);
-		self->priv->windows = g_list_insert_before(self->priv->windows, 
-												   transient_link->next, 
-												   window);
-	}
-	else if (!ccm_window_is_managed (window))
-	{
-#ifdef DEBUG
-	g_print("MANAGED %s %s\n", __FUNCTION__, ccm_window_get_name(window));
-#endif
-		if (link) 
-				self->priv->windows = g_list_remove_link (self->priv->windows, 
-														  link);
-		self->priv->windows = g_list_append (self->priv->windows, window);
-	}
-	else
-	{
-		CCMWindow* leader = ccm_window_get_group_leader (window);
-		GList* item;
-		
-		if (leader && link &&
-			(g_list_index(self->priv->windows, leader) > 
-			 g_list_index(self->priv->windows, window)))
-		{
-			GList* link_leader = g_list_find(self->priv->windows, leader);
-			GList* top_group = link_leader;
-			
-			if (link)
-			self->priv->windows = g_list_remove_link (self->priv->windows, 
-													  link);
-			for (item = link_leader; item && CCM_WINDOW(item->data)->layer <= window->layer; item = item->next)
-			{
-				CCMWindow* item_leader = ccm_window_get_group_leader (item->data);
-				
-				if (item_leader == leader)
-				{
-					top_group = item;
-				}
-			}
-			self->priv->windows = g_list_insert_before (self->priv->windows,
-														top_group->next,
-														window);
-		}
-		else
-		{
-			GList* begin_layer = NULL,* end_layer = NULL;
-			gboolean found = FALSE;
-			
-			if (self->priv->windows && 
-				CCM_WINDOW(self->priv->windows->data)->layer > window->layer)
-				begin_layer = self->priv->windows;
-			
-			for (item = self->priv->windows; item; item = item->next)
-			{
-				if (!begin_layer && CCM_WINDOW(item->data)->layer == window->layer)
-					begin_layer = item;
-				
-				if (CCM_WINDOW(item->data)->layer >  window->layer)
-				{
-					if (!begin_layer) begin_layer = item;
-					end_layer = item;
-					break;
-				}
-				
-				if (link && begin_layer && link->data == item->data)
-				{
-					found = TRUE;
-					break;
-				}
-			}
-			
-			if (!found)
-			{
-				if (link)
-					self->priv->windows = g_list_remove_link (self->priv->windows, 
-															  link);
-				self->priv->windows = g_list_insert_before (self->priv->windows,
-															end_layer, window);
-			}
-		}
+		ccm_drawable_damage (CCM_DRAWABLE(above));
 	}
 	
-	if (index != g_list_index (self->priv->windows, window))
-		ccm_drawable_damage(CCM_DRAWABLE(window));
 #ifdef DEBUG	
-	g_print("Restack 0x%x - %s", CCM_WINDOW_XWINDOW(window), ccm_window_get_name(window));
+	if (above)
+		g_print("above 0x%x - %s", CCM_WINDOW_XWINDOW(above), ccm_window_get_name(above));
+	else
+		g_print("\n");
 	if (below)
 		g_print(" : below 0x%x - %s\n", CCM_WINDOW_XWINDOW(below), ccm_window_get_name(below));
 	else
@@ -627,7 +589,7 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
 	
-	ccm_screen_restack (self, window, NULL);
+	ccm_screen_check_stack (self);
 }
 
 static void
@@ -641,13 +603,16 @@ ccm_screen_on_window_state_changed(CCMScreen* self, CCMWindow* window)
 	else if (self->priv->fullscreen == window)
 		self->priv->fullscreen = NULL;
 	
-	ccm_screen_restack (self, window, NULL);
+	ccm_screen_check_stack (self);
 }
 
 static gboolean
 impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 						   CCMWindow* window)
 {
+#ifdef DEBUG
+	g_print("ADD %s %s\n", __FUNCTION__, ccm_window_get_name(window));
+#endif
 	ccm_screen_restack (self, window, NULL);
 	
 	g_signal_connect_swapped(window, "damaged", 
@@ -671,6 +636,9 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	
 	if (link)
 	{
+#ifdef DEBUG
+		g_print("REMOVE %s %s\n", __FUNCTION__, ccm_window_get_name(window));
+#endif
 		self->priv->windows = g_list_remove(self->priv->windows, window);
 		g_signal_handlers_disconnect_by_func(window, 
 											 ccm_screen_on_window_damaged, 
@@ -907,16 +875,28 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		break;
 		case MapNotify:
 		{	
-			CCMWindow* window = ccm_screen_find_window(self,
+			CCMWindow* window = ccm_screen_find_window_or_child (self,
 											((XMapEvent*)event)->window);
-			if (window) ccm_window_map(window);
+			if (window) 
+			{
+#ifdef DEBUG
+				g_print("MAP %s\n", ccm_window_get_name(window));
+#endif
+				ccm_window_map(window);
+			}
 		}
 		break;
 		case UnmapNotify:
 		{	
-			CCMWindow* window = ccm_screen_find_window(self,
+			CCMWindow* window = ccm_screen_find_window_or_child (self,
 											((XUnmapEvent*)event)->window);
-			if (window) ccm_window_unmap(window);
+			if (window) 
+			{
+#ifdef DEBUG
+				g_print("UNMAP %s\n", ccm_window_get_name(window));
+#endif
+				ccm_window_unmap(window);
+			}
 		}
 		break;
 		case ReparentNotify:
@@ -949,6 +929,8 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			{
 				if (circulate_event->place == PlaceOnTop)
 					ccm_screen_restack (self, window, NULL);
+				else
+					ccm_screen_restack (self, NULL, window);
 			}
 		}
 		break;
