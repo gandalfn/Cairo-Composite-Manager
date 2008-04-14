@@ -43,6 +43,9 @@
 #include "ccm-pixmap-backend.h"
 #include "async-getprop.h"
 
+#define DEBUG
+#undef DEBUG
+
 #define MWM_HINTS_DECORATIONS (1L << 1)
 
 typedef struct {
@@ -233,8 +236,11 @@ create_atoms(CCMWindow* self)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 		
-		klass->none_atom  = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
-										 "NONE", False);
+		klass->atom  			 = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+												"ATOM", False);
+		
+		klass->none_atom  		 = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+										 		"NONE", False);
 		
 		klass->utf8_string_atom  = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 										        "UTF8_STRING", 
@@ -248,6 +254,12 @@ create_atoms(CCMWindow* self)
 		klass->opacity_atom      = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 										        "_NET_WM_WINDOW_OPACITY", 
 											    False);
+		klass->client_list_atom  = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+									            "_NET_CLIENT_LIST", 
+												False);
+		klass->client_stacking_list_atom = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+									            "_NET_CLIENT_LIST_STACKING", 
+												False);
 		klass->type_atom         = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 									            "_NET_WM_WINDOW_TYPE", 
 												False);
@@ -387,7 +399,12 @@ ccm_window_update_stack_layer(CCMWindow* self)
 			break;
 			default:
 			{
-				self->layer = CCM_STACK_LAYER_NORMAL;
+				CCMWindow* transient = ccm_window_transient_for (self);
+					
+				if (transient)
+					self->layer = transient->layer;
+				else
+					self->layer = CCM_STACK_LAYER_NORMAL;
 			}
 			break;
 		}
@@ -449,48 +466,50 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 		return;
 	
 	if (ag_task_get_reply (task, &type, &format, &n_items_internal, 
-						   &bytes_after, &result) == Success 
-		&& type != None)
+						   &bytes_after, &result) == Success)
 	{
 		if (property == CCM_WINDOW_GET_CLASS(self)->type_atom)
 		{
-			CCMWindowType old = self->priv->hint_type;
-			Atom atom;
-			memcpy (&atom, result, sizeof (Atom));
-				
-			if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_menu_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_MENU;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_desktop_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DESKTOP;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dock_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DOCK;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_toolbar_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_TOOLBAR;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_util_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_UTILITY;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_splash_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_SPLASH;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dialog_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dropdown_menu_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DROPDOWN_MENU;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_popup_menu_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_POPUP_MENU;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_tooltip_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_TOOLTIP;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_notification_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_NOTIFICATION;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_combo_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_COMBO;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dnd_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DND;
-			
-			if (old != self->priv->hint_type)
+			if (result)
 			{
-				ccm_window_update_stack_layer(self);
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+				CCMWindowType old = self->priv->hint_type;
+				Atom atom;
+				memcpy (&atom, result, sizeof (Atom));
+					
+				if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_menu_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_MENU;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_desktop_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_DESKTOP;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dock_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_DOCK;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_toolbar_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_TOOLBAR;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_util_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_UTILITY;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_splash_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_SPLASH;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dialog_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dropdown_menu_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_DROPDOWN_MENU;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_popup_menu_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_POPUP_MENU;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_tooltip_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_TOOLTIP;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_notification_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_NOTIFICATION;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_combo_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_COMBO;
+				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dnd_atom)
+					self->priv->hint_type = CCM_WINDOW_TYPE_DND;
+				
+				if (old != self->priv->hint_type)
+				{
+					ccm_window_update_stack_layer(self);
+					g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+				}
 			}
 		}
 		if (property == CCM_WINDOW_GET_CLASS(self)->transient_for_atom)
@@ -513,6 +532,9 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 			}
 			if (updated)
 			{
+#ifdef DEBUG
+				g_print("TRANSIENT FOR %s\n", ccm_window_get_name(self));
+#endif
 				ccm_window_update_stack_layer(self);
 				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 			}
@@ -551,6 +573,10 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				
 				for (cpt = 0; cpt < n_items_internal; cpt++)
 				{
+#ifdef DEBUG
+					g_print("STATE %s\n", XGetAtomName (CCM_DISPLAY_XDISPLAY(display),
+														atom[cpt]));
+#endif
 					updated |= ccm_window_set_state (self, atom[cpt]);
 				}
 				if (updated) 
@@ -794,7 +820,7 @@ ccm_window_query_child(CCMWindow* self)
 		XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
 					  self->priv->child, 
 					  PropertyChangeMask | 
-					  SubstructureNotifyMask);
+					  StructureNotifyMask);
 	}
 	if (windows) XFree(windows);
 }
@@ -1069,15 +1095,6 @@ _ccm_window_set_child(CCMWindow* self, Window child)
 	self->priv->child = child;
 }
 
-gint
-_ccm_window_compare_layer(CCMWindow* self, CCMWindow* other)
-{
-	g_return_val_if_fail(self != NULL, -1);
-	g_return_val_if_fail(other != NULL, 1);
-	
-	return self->layer - other->layer;
-}
-
 CCMWindow *
 ccm_window_new (CCMScreen* screen, Window xwindow)
 {
@@ -1123,7 +1140,8 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
 					  CCM_WINDOW_XWINDOW(self),
-					  PropertyChangeMask | 
+					  PropertyChangeMask  | 
+					  StructureNotifyMask |
 					  SubstructureNotifyMask);
 	}
 	
@@ -1167,6 +1185,7 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 		gboolean old = self->priv->is_shaded;
 		self->priv->is_shaded = TRUE;
 		updated = old != self->priv->is_shaded;
+		g_print("IS_SHADED %i\n", self->priv->is_shaded);
 		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
@@ -1224,6 +1243,7 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 		gboolean old = self->priv->is_shaded;
 		self->priv->is_shaded = FALSE;
 		updated = old != self->priv->is_shaded;
+		g_print("IS_SHADED %i\n", self->priv->is_shaded);
 		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
@@ -1278,6 +1298,7 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 	{
 		updated = TRUE;
 		self->priv->is_shaded = !self->priv->is_shaded;
+		g_print("IS_SHADED %i\n", self->priv->is_shaded);
 		ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
@@ -1631,7 +1652,8 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 	
 	cairo_path_t* damaged;
 			
-	if (!self->is_viewable && !self->priv->unmap_pending)
+	if (!self->is_viewable && !self->priv->unmap_pending &&
+		!self->priv->is_shaded)
 		return ret;
 	
 	cairo_save(context);
@@ -1686,8 +1708,7 @@ ccm_window_map(CCMWindow* self)
 	
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
-	else
-		ccm_drawable_damage (CCM_DRAWABLE(self));
+	ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void
@@ -1702,8 +1723,7 @@ ccm_window_unmap(CCMWindow* self)
 		
 		ccm_window_plugin_unmap(self->priv->plugin, self);
 	}
-	else
-		ccm_drawable_damage (CCM_DRAWABLE(self));
+	ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void 

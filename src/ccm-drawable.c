@@ -117,8 +117,16 @@ ccm_drawable_finalize (GObject *object)
 	CCMDrawable* self = CCM_DRAWABLE(object);
 	
 	self->priv->drawable = 0;
-	if (self->priv->geometry) ccm_region_destroy(self->priv->geometry);
-	if (self->priv->damaged) ccm_region_destroy(self->priv->damaged);
+	if (self->priv->geometry) 
+	{
+		ccm_region_destroy(self->priv->geometry);
+		self->priv->geometry = NULL;
+	}
+	if (self->priv->damaged) 
+	{
+		ccm_region_destroy(self->priv->damaged);
+		self->priv->damaged = NULL;
+	}
 	
 	G_OBJECT_CLASS (ccm_drawable_parent_class)->finalize (object);
 }

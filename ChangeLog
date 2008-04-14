@@ -1,3 +1,15 @@
+2008-04-14  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/menu-animation/ccm-menu-animation.c:
+    * src/ccm-drawable.c:
+    * src/ccm-screen.c:
+    * src/ccm-screen.h:
+    * src/ccm-window.c:
+    * src/ccm-window.h: After some experimentation it's the more reasonably way
+                        to get stack for many window manager it's get stacking
+                        list with XQueryTree, but this method can slow down 
+                        redraw.
+
 2008-04-11  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-screen.c:

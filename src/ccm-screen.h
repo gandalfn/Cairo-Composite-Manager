@@ -71,8 +71,6 @@ void			 _ccm_screen_remove_animation	(CCMScreen* self,
 												 CCMAnimation* animation);
 void 			 _ccm_screen_set_buffered		(CCMScreen* self, 
 												 gboolean buffered);
-CCMStackLayer	 _ccm_screen_get_window_layer   (CCMScreen* self, 
-												 CCMWindow* window);
 G_END_DECLS
 
 #endif /* _CCM_SCREEN_H_ */

@@ -44,10 +44,14 @@ struct _CCMWindowClass
 {
 	CCMDrawableClass parent_class;
 	
+	Atom			 atom;
 	Atom			 none_atom;
 	Atom			 utf8_string_atom;
 	Atom			 name_atom;
 	Atom			 visible_name_atom;
+	
+	Atom		 	 client_list_atom;
+	Atom		 	 client_stacking_list_atom;
 	
 	Atom	 		 opacity_atom;
 	
@@ -102,7 +106,6 @@ GType ccm_window_get_type (void) G_GNUC_CONST;
 CCMWindowPlugin* _ccm_window_get_plugin(CCMWindow *self, GType type);
 Window _ccm_window_get_child(CCMWindow* self);
 void _ccm_window_set_child(CCMWindow* self, Window child);
-gint _ccm_window_compare_layer(CCMWindow* self, CCMWindow* other);
 
 G_END_DECLS
 

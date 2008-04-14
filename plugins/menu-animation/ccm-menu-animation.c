@@ -161,6 +161,7 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 				ccm_window_plugin_unmap ((CCMWindowPlugin*)self->priv->window, 
 										 self->priv->window);
 			}
+			self->priv->scale = 1.0f;
 			self->priv->way = CCM_MENU_ANIMATION_NONE;
 			ret = FALSE;
 		}
