@@ -1,3 +1,14 @@
+2008-04-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/Makefile.am:
+    * src/ccm-debug.c:
+    * src/ccm-debug.h: Add debug functions
+
+    * src/ccm-screen.c:
+    * src/ccm-window.c:
+    * src/ccm-window.h:
+    * src/ccm.h: Fix damage on window switch + code cleanup
+
 2008-04-14  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/menu-animation/ccm-menu-animation.c:

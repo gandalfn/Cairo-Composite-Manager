@@ -68,18 +68,6 @@ typedef enum
     CCM_WINDOW_TYPE_DOCK
 } CCMWindowType;
 
-typedef enum
-{
-    CCM_STACK_LAYER_DESKTOP = 0,
-    CCM_STACK_LAYER_BOTTOM = 1,
-    CCM_STACK_LAYER_NORMAL = 2,
-    CCM_STACK_LAYER_DOCK = 4,
-    CCM_STACK_LAYER_TOP = 4,
-    CCM_STACK_LAYER_FULLSCREEN = 5,
-    CCM_STACK_LAYER_FOCUSED = 6,
-    CCM_STACK_LAYER_LAST = 7
-} CCMStackLayer;
-
 typedef struct _CCMWindowClass 	 CCMWindowClass;
 typedef struct _CCMWindow 		 CCMWindow;
 /******************************************************************************/
@@ -181,9 +169,6 @@ void			ccm_screen_remove_window		(CCMScreen* self,
 void            ccm_screen_damage               (CCMScreen* self);
 void            ccm_screen_damage_region        (CCMScreen* self, 
                                                  CCMRegion* region);
-void            ccm_screen_restack              (CCMScreen* self, 
-                                                 CCMWindow* window, 
-                                                 CCMWindow* below);
 GList*          ccm_screen_get_windows          (CCMScreen *self);
 CCMRegion*      ccm_screen_get_damaged          (CCMScreen *self);
 void            ccm_screen_add_damaged_region   (CCMScreen *self, 

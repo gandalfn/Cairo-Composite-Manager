@@ -34,6 +34,7 @@
 #include <gdk/gdkx.h>
 #include <gdk/gdk.h>
 
+#include "ccm-debug.h"
 #include "ccm-window.h"
 #include "ccm-window-backend.h"
 #include "ccm-window-plugin.h"
@@ -42,9 +43,6 @@
 #include "ccm-pixmap.h"
 #include "ccm-pixmap-backend.h"
 #include "async-getprop.h"
-
-#define DEBUG
-#undef DEBUG
 
 #define MWM_HINTS_DECORATIONS (1L << 1)
 
@@ -144,7 +142,6 @@ ccm_window_init (CCMWindow *self)
 	self->is_input_only = FALSE;
 	self->is_viewable = FALSE;
 	self->opaque = NULL;
-	self->layer = CCM_STACK_LAYER_NORMAL;
 	self->priv = CCM_WINDOW_GET_PRIVATE(self);
 	self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
 	self->priv->name = NULL;
@@ -358,59 +355,6 @@ create_atoms(CCMWindow* self)
 	}
 }
 
-static void
-ccm_window_update_stack_layer(CCMWindow* self)
-{
-	g_return_if_fail(self != NULL);
-	
-	CCMWindowType type = ccm_window_get_hint_type (self);
-	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
-	cairo_rectangle_t geometry;
-
-	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry);
-	
-	if (self->priv->keep_below)
-		self->layer = CCM_STACK_LAYER_BOTTOM;
-	else if (self->priv->is_fullscreen ||
-			 (!type != CCM_WINDOW_TYPE_DESKTOP &&
-			  geometry.x == 0 && geometry.y == 0 && 
-			  geometry.width == CCM_SCREEN_XSCREEN(screen)->width &&
-			  geometry.height == CCM_SCREEN_XSCREEN(screen)->height))
-		self->layer = CCM_STACK_LAYER_FULLSCREEN;
-	else if (self->priv->keep_above ||
-			 self->priv->override_redirect)
-		self->layer = CCM_STACK_LAYER_TOP;
-	else
-	{
-		switch (type)
-		{
-			case CCM_WINDOW_TYPE_DESKTOP:
-			{
-				self->layer = CCM_STACK_LAYER_DESKTOP;
-			}
-			break;
-			case CCM_WINDOW_TYPE_DOCK:
-			{
-				if (self->priv->keep_below)
-					self->layer = CCM_STACK_LAYER_BOTTOM;
-				else
-					self->layer = CCM_STACK_LAYER_DOCK;
-			}
-			break;
-			default:
-			{
-				CCMWindow* transient = ccm_window_transient_for (self);
-					
-				if (transient)
-					self->layer = transient->layer;
-				else
-					self->layer = CCM_STACK_LAYER_NORMAL;
-			}
-			break;
-		}
-	}
-}
-
 static guint32 *
 ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format, 
 						Atom req_type, guint *n_items)
@@ -507,7 +451,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				
 				if (old != self->priv->hint_type)
 				{
-					ccm_window_update_stack_layer(self);
+					ccm_debug_window(self, "HINT TYPE %i", self->priv->hint_type);
 					g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 				}
 			}
@@ -532,10 +476,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 			}
 			if (updated)
 			{
-#ifdef DEBUG
-				g_print("TRANSIENT FOR %s\n", ccm_window_get_name(self));
-#endif
-				ccm_window_update_stack_layer(self);
+				ccm_debug_window(self, "TRANSIENT FOR 0x%lx", self->priv->transient_for);
 				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 			}
 		}
@@ -557,7 +498,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 					self->priv->is_decorated = hints->decorations != 0;
 				if (old != self->priv->is_decorated)
 				{
-					ccm_window_update_stack_layer(self);
+					ccm_debug_window(self, "IS_DECORATED %i", self->priv->is_decorated);
 					g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 				}
 				XFree(hints);
@@ -573,15 +514,11 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				
 				for (cpt = 0; cpt < n_items_internal; cpt++)
 				{
-#ifdef DEBUG
-					g_print("STATE %s\n", XGetAtomName (CCM_DISPLAY_XDISPLAY(display),
-														atom[cpt]));
-#endif
+					ccm_debug_atom(display, atom[cpt], "STATE");
 					updated |= ccm_window_set_state (self, atom[cpt]);
 				}
 				if (updated) 
 				{
-					ccm_window_update_stack_layer(self);
 					g_signal_emit(self, signals[STATE_CHANGED], 0);
 				}
 			}
@@ -1168,9 +1105,9 @@ ccm_window_query_state(CCMWindow* self)
 	ccm_window_get_property_async(self, CCM_WINDOW_GET_CLASS(self)->state_atom,
 								  XA_ATOM, G_MAXLONG);
 	
-	ccm_window_get_child_property_async(self, 
+	/*ccm_window_get_child_property_async(self, 
 										CCM_WINDOW_GET_CLASS(self)->state_atom,
-										XA_ATOM, G_MAXLONG);
+										XA_ATOM, G_MAXLONG);*/
 }
 
 gboolean
@@ -1185,7 +1122,7 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 		gboolean old = self->priv->is_shaded;
 		self->priv->is_shaded = TRUE;
 		updated = old != self->priv->is_shaded;
-		g_print("IS_SHADED %i\n", self->priv->is_shaded);
+		ccm_debug_window(self, "IS_SHADED %i", self->priv->is_shaded);
 		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
@@ -1195,6 +1132,7 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 		
 		self->priv->is_fullscreen = TRUE;
 		updated = old != self->priv->is_fullscreen;
+		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
 		if (updated) ccm_screen_damage (screen);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
@@ -1202,30 +1140,35 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 		gboolean old = self->priv->is_modal;
 		self->priv->is_modal = TRUE;
 		updated = old != self->priv->is_modal;
+		ccm_debug_window(self, "IS_MODAL %i", self->priv->is_modal);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_skip_taskbar)
 	{
 		gboolean old = self->priv->skip_taskbar;
 		self->priv->skip_taskbar = TRUE;
 		updated = old != self->priv->skip_taskbar;
+		ccm_debug_window(self, "SKIP_TASKBAR %i", self->priv->skip_taskbar);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_skip_pager)
 	{
 		gboolean old = self->priv->skip_pager;
 		self->priv->skip_pager = TRUE;
 		updated = old != self->priv->skip_pager;
+		ccm_debug_window(self, "SKIP_PAGER %i", self->priv->skip_pager);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_above_atom)
 	{
 		gboolean old = self->priv->keep_above;
 		self->priv->keep_above = TRUE;
 		updated = old != self->priv->keep_above;
+		ccm_debug_window(self, "KEEP_ABOVE %i", self->priv->keep_above);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_below_atom)
 	{
 		gboolean old = self->priv->keep_below;
 		self->priv->keep_below = TRUE;
 		updated = old != self->priv->keep_below;
+		ccm_debug_window(self, "KEEP_BELOW %i", self->priv->keep_below);
 	}
 	
 	return updated;
@@ -1243,7 +1186,7 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 		gboolean old = self->priv->is_shaded;
 		self->priv->is_shaded = FALSE;
 		updated = old != self->priv->is_shaded;
-		g_print("IS_SHADED %i\n", self->priv->is_shaded);
+		ccm_debug_window(self, "IS_SHADED %i", self->priv->is_shaded);
 		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
@@ -1252,6 +1195,7 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 		gboolean old = self->priv->is_fullscreen;
 		self->priv->is_fullscreen = FALSE;
 		updated = old != self->priv->is_fullscreen;
+		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
 		if (updated) ccm_screen_damage (screen);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
@@ -1259,30 +1203,35 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 		gboolean old = self->priv->is_modal;
 		self->priv->is_modal = FALSE;
 		updated = old != self->priv->is_modal;
+		ccm_debug_window(self, "IS_MODAL %i", self->priv->is_modal);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_skip_taskbar)
 	{
 		gboolean old = self->priv->skip_taskbar;
 		self->priv->skip_taskbar = FALSE;
 		updated = old != self->priv->skip_taskbar;
+		ccm_debug_window(self, "SKIP_TASKBAR %i", self->priv->skip_taskbar);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_skip_pager)
 	{
 		gboolean old = self->priv->skip_pager;
 		self->priv->skip_pager = FALSE;
 		updated = old != self->priv->skip_pager;
+		ccm_debug_window(self, "SKIP_PAGER %i", self->priv->skip_pager);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_above_atom)
 	{
 		gboolean old = self->priv->keep_above;
 		self->priv->keep_above = FALSE;
 		updated = old != self->priv->keep_above;
+		ccm_debug_window(self, "KEEP_ABOVE %i", self->priv->keep_above);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_below_atom)
 	{
 		gboolean old = self->priv->keep_below;
 		self->priv->keep_below = FALSE;
 		updated = old != self->priv->keep_below;
+		ccm_debug_window(self, "KEEP_BELOW %i", self->priv->keep_below);
 	}
 	if (updated) g_signal_emit(self, signals[STATE_CHANGED], 0);
 }
@@ -1298,7 +1247,7 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 	{
 		updated = TRUE;
 		self->priv->is_shaded = !self->priv->is_shaded;
-		g_print("IS_SHADED %i\n", self->priv->is_shaded);
+		ccm_debug_window(self, "IS_SHADED %i", self->priv->is_shaded);
 		ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
@@ -1307,32 +1256,38 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 	
 		updated = TRUE;
 		self->priv->is_fullscreen = !self->priv->is_fullscreen;
+		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
 		ccm_screen_damage (screen);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
 	{
 		updated = TRUE;
 		self->priv->is_modal = !self->priv->is_modal;
+		ccm_debug_window(self, "IS_MODAL %i", self->priv->is_modal);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_skip_taskbar)
 	{
 		updated = TRUE;
 		self->priv->skip_taskbar = !self->priv->skip_taskbar;
+		ccm_debug_window(self, "SKIP_TASKBAR %i", self->priv->skip_taskbar);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_skip_pager)
 	{
 		updated = TRUE;
 		self->priv->skip_pager = !self->priv->skip_pager;
+		ccm_debug_window(self, "SKIP_PAGER %i", self->priv->skip_pager);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_above_atom)
 	{
 		updated = TRUE;
 		self->priv->keep_above = !self->priv->keep_above;
+		ccm_debug_window(self, "KEEP_ABOVE %i", self->priv->keep_above);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_below_atom)
 	{
 		updated = TRUE;
 		self->priv->keep_below = !self->priv->keep_below;
+		ccm_debug_window(self, "KEEP_BELOW %i", self->priv->keep_below);
 	}
 	
 	if (updated) g_signal_emit(self, signals[STATE_CHANGED], 0);
@@ -1780,7 +1735,7 @@ ccm_window_query_wm_hints(CCMWindow* self)
 		if (hints->flags & WindowGroupHint)
 			self->priv->group_leader = hints->window_group;
 		if (old != self->priv->group_leader)
-			ccm_window_update_stack_layer(self);
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 		
 		XFree (hints);
 	}

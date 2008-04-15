@@ -95,7 +95,6 @@ struct _CCMWindow
 	
 	gboolean 		  is_viewable;
 	gboolean 		  is_input_only;
-	CCMStackLayer	  layer;
 	
 	CCMRegion*		  opaque;
 	

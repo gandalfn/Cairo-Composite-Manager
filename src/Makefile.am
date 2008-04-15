@@ -35,7 +35,9 @@ cairo_compmgr_SOURCES = \
     eggaccelerators.h \
     async-getprop.c \
 	async-getprop.h \
-	ccm-region.c \
+	ccm-debug.h \
+    ccm-debug.c \
+    ccm-region.c \
 	ccm-region.h \
 	ccm-drawable.h \
 	ccm-drawable.c \

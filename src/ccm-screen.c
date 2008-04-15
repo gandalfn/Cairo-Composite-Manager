@@ -25,10 +25,8 @@
 #include <X11/extensions/shape.h>
 #include <gdk/gdk.h>
 
-#define DEBUG
-#undef DEBUG
-
 #include "ccm.h"
+#include "ccm-debug.h"
 #include "ccm-screen.h"
 #include "ccm-screen-plugin.h"
 #include "ccm-display.h"
@@ -414,9 +412,7 @@ ccm_screen_query_stack(CCMScreen* self)
 	
 	guint cpt;
 	
-#ifdef DEBUG
-	g_print("BEGIN %s\n", __FUNCTION__);
-#endif
+	ccm_debug("QUERY_STACK");
 	
 	if (self->priv->windows)
 	{
@@ -435,10 +431,6 @@ ccm_screen_query_stack(CCMScreen* self)
 				g_object_unref(window);
 		}
 	}
-	
-#ifdef DEBUG
-	g_print("END %s\n", __FUNCTION__);
-#endif
 }
 
 static void
@@ -448,6 +440,9 @@ ccm_screen_check_stack(CCMScreen* self)
 
 	guint cpt;
 	GList* stack = NULL, *item;
+	GList* damaged = NULL;
+	
+	ccm_debug("CHECK_STACK");
 	
 	ccm_screen_update_stack (self);
 	
@@ -465,23 +460,24 @@ ccm_screen_check_stack(CCMScreen* self)
 		
 			if (!link) 
 			{
-#ifdef DEBUG
-				g_print("NOT FOUND %s\n", ccm_window_get_name(item->data));
-#endif
+				ccm_debug_window(item->data, "NOT FOUND");
 				ccm_screen_remove_window (self, item->data);
 			}
 			else if (g_list_index(self->priv->windows, item->data) !=
 					 g_list_index(stack, item->data))
 			{
-#ifdef DEBUG
-				g_print("DAMAGE %s\n", ccm_window_get_name(item->data));
-#endif
-				ccm_drawable_damage (link->data);
+				ccm_debug_window(item->data, "DAMAGE");
+				damaged = g_list_append (damaged, item->data);
 			}
 		}
 	}
 	g_list_free(self->priv->windows);
 	self->priv->windows = stack;
+	
+	for (item = damaged; item; item = item->next)
+		ccm_drawable_damage (item->data);
+	
+	g_list_free(damaged);
 	
 #if 0
 	g_print("Stack\n");
@@ -515,6 +511,8 @@ ccm_screen_check_stack_position(CCMScreen* self, CCMWindow* window)
 	if (below_link && below_link->next && below_link->next->data == window) 
 		return;
 	
+	ccm_debug_window(window, "CHECK_STACK_POSITION");
+	
 	self->priv->windows = g_list_remove(self->priv->windows, window);
 	if (below)
 	{
@@ -532,105 +530,6 @@ ccm_screen_check_stack_position(CCMScreen* self, CCMWindow* window)
 	ccm_screen_print_stack (self);
 	g_print("Real stack\n");
 	ccm_screen_print_real_stack (self);
-#endif
-}
-
-void
-ccm_screen_restack(CCMScreen* self, CCMWindow* above, CCMWindow* below)
-{
-	g_return_if_fail(self != NULL);
-	
-	GList *link_above = NULL, *link_below = NULL;
-	
-	if (below == NULL && above == NULL)
-		return;
-	
-	if (above) link_above = g_list_find(self->priv->windows, above);
-	if (below) link_below = g_list_find(self->priv->windows, below);
-	
-	if (!below)
-	{
-		GList* item, *pos = NULL;
-		
-		self->priv->windows = g_list_remove (self->priv->windows, above);
-		
-		for (item = g_list_first(self->priv->windows); 
-			 item && above->is_viewable; item = item->next)
-		{
-			CCMWindow* window = CCM_WINDOW(item->data);
-			
-			if (window->is_viewable && window->layer > above->layer)
-			{
-				pos = item;
-				break;
-			}
-		}
-		if (pos)
-			self->priv->windows = g_list_insert_before (self->priv->windows, 
-														pos, above);
-		else
-			self->priv->windows = g_list_append (self->priv->windows, above);
-		
-		ccm_drawable_damage (CCM_DRAWABLE(above));
-	}
-	else if (!above)
-	{
-		GList* item, *pos = NULL;
-		
-		self->priv->windows = g_list_remove (self->priv->windows, below);
-	
-		for (item = g_list_last(self->priv->windows); item; item = item->prev)
-		{
-			CCMWindow* window = CCM_WINDOW(item->data);
-			
-			if (window->is_viewable && window->layer < below->layer)
-			{
-				pos = item;
-				break;
-			}
-		}
-		if (pos)
-			self->priv->windows = g_list_insert_before (self->priv->windows, 
-														pos->next, below);
-		else
-			self->priv->windows = g_list_prepend (self->priv->windows, below);
-		
-		ccm_drawable_damage (CCM_DRAWABLE(below));
-	}
-	else 
-	{
-		if (link_below && link_above && link_below->next == link_above)
-			return;
-		
-		if (!below->is_viewable && !above->is_viewable)
-		{
-			self->priv->windows = g_list_remove (self->priv->windows, below);
-			self->priv->windows = g_list_insert_before(self->priv->windows, 
-													   link_above, below);
-		}
-		else
-		{
-			self->priv->windows = g_list_remove (self->priv->windows, above);
-			self->priv->windows = g_list_insert_before(self->priv->windows, 
-													   link_below->next, above);
-		}
-		ccm_drawable_damage (CCM_DRAWABLE(above));
-		ccm_drawable_damage (CCM_DRAWABLE(below));
-	}
-	
-#ifdef DEBUG	
-	if (above)
-		g_print("above 0x%x - %s", CCM_WINDOW_XWINDOW(above), ccm_window_get_name(above));
-	else
-		g_print("\n");
-	if (below)
-		g_print(" : below 0x%x - %s\n", CCM_WINDOW_XWINDOW(below), ccm_window_get_name(below));
-	else
-		g_print("\n");
-	g_print("Stack\n");
-	ccm_screen_print_stack(self);
-	g_print("Real stack\n");
-	ccm_screen_print_real_stack(self);
 #endif
 }
 
@@ -664,6 +563,8 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
 	
+	ccm_debug_window(window, "PROPERTY_CHANGED");
+	
 	CCMWindow* transient = ccm_window_transient_for (window);
 	
 	if (transient)
@@ -683,6 +584,8 @@ ccm_screen_on_window_state_changed(CCMScreen* self, CCMWindow* window)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
 	
+	ccm_debug_window(window, "STATE_CHANGED");
+	
 	if (ccm_window_is_fullscreen (window))
 		self->priv->fullscreen = window;
 	else if (self->priv->fullscreen == window)
@@ -695,11 +598,9 @@ static gboolean
 impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 						   CCMWindow* window)
 {
-#ifdef DEBUG
-	g_print("ADD %s %s\n", __FUNCTION__, ccm_window_get_name(window));
-#endif
+	ccm_debug_window(window, "ADD");
+
 	self->priv->windows = g_list_append (self->priv->windows, window);
-	//ccm_screen_restack (self, window, NULL);
 	
 	g_signal_connect_swapped(window, "damaged", 
 							 G_CALLBACK(ccm_screen_on_window_damaged), self);
@@ -722,9 +623,8 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	
 	if (link)
 	{
-#ifdef DEBUG
-		g_print("REMOVE %s %s\n", __FUNCTION__, ccm_window_get_name(window));
-#endif
+		ccm_debug_window(window, "REMOVE");
+
 		self->priv->windows = g_list_remove(self->priv->windows, window);
 		g_signal_handlers_disconnect_by_func(window, 
 											 ccm_screen_on_window_damaged, 
@@ -945,6 +845,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 					window = ccm_window_new(self, create_event->window);
 					if (window)
 					{
+						ccm_debug_window(window, "CREATE");
 						if (!ccm_screen_add_window(self, window))
 							g_object_unref(window);
 					}
@@ -956,7 +857,11 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		{	
 			CCMWindow* window = ccm_screen_find_window(self,
 										((XCreateWindowEvent*)event)->window);
-			if (window) ccm_screen_remove_window(self, window);
+			if (window) 
+			{
+				ccm_debug_window(window, "REMOVE");
+				ccm_screen_remove_window(self, window);
+			}
 		}
 		break;
 		case MapNotify:
@@ -965,9 +870,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 											((XMapEvent*)event)->window);
 			if (window) 
 			{
-#ifdef DEBUG
-				g_print("MAP %s\n", ccm_window_get_name(window));
-#endif
+				ccm_debug_window(window, "MAP");
 				ccm_window_map(window);
 			}
 		}
@@ -978,9 +881,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 											((XUnmapEvent*)event)->window);
 			if (window) 
 			{
-#ifdef DEBUG
-				g_print("UNMAP %s\n", ccm_window_get_name(window));
-#endif
+				ccm_debug_window(window, "UNMAP");
 				ccm_window_unmap(window);
 			}
 		}
@@ -997,12 +898,17 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 					window = ccm_window_new(self, ((XReparentEvent*)event)->window);
 					if (window)
 					{
+						ccm_debug_window(window, "REPARENT ADD");
 						if (!ccm_screen_add_window(self, window))
 							g_object_unref(window);
 					}
 				}
 			}
-			else if (window) ccm_screen_remove_window (self, window);
+			else if (window) 
+			{
+				ccm_debug_window(window, "REPARENT REMOVE");
+				ccm_screen_remove_window (self, window);
+			}
 		}
 		break;
 		case CirculateNotify:
@@ -1011,7 +917,12 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			
 			CCMWindow* window = ccm_screen_find_window(self,
 													   circulate_event->window);
-			if (window) ccm_screen_check_stack_position (self, window);
+			
+			if (window) 
+			{
+				ccm_debug_window(window,"CIRCULATE");
+				ccm_screen_check_stack_position (self, window);
+			}
 		}
 		break;
 		case ConfigureNotify:
@@ -1048,10 +959,10 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		{
 			XPropertyEvent* property_event = (XPropertyEvent*)event;
 			CCMWindow* window;
-#ifdef DEBUG			
-			g_print("PROPERTY_NOTIFY %s\n", XGetAtomName (CCM_DISPLAY_XDISPLAY(self->priv->display),
-														 property_event->atom));
-#endif		
+
+			ccm_debug_atom(self->priv->display, property_event->atom, 
+						   "PROPERTY_NOTIFY");
+
 			if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom)
 			{
 				ccm_screen_check_stack (self);
@@ -1096,6 +1007,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				cairo_rectangle_t area;
 				CCMRegion* damaged;
 				
+				ccm_debug_window(window, "EXPOSE");
 				area.x = expose_event->x;
  				area.y = expose_event->y;
  				area.width = expose_event->width;
@@ -1110,10 +1022,9 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		{
 			XClientMessageEvent* client_event = (XClientMessageEvent*)event;
 			
-#ifdef DEBUG			
-			g_print("CLIENT MESSAGE %s\n", XGetAtomName (CCM_DISPLAY_XDISPLAY(self->priv->display),
-														 client_event->message_type));
-#endif
+			ccm_debug_atom(self->priv->display, client_event->message_type, 
+						   "CLIENT MESSAGE");
+			
 			if (client_event->message_type == 
 							CCM_WINDOW_GET_CLASS(self->priv->root)->state_atom)
 			{
@@ -1128,26 +1039,23 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 						switch (client_event->data.l[0])
 						{
 							case 0:
-#ifdef DEBUG			
-			g_print("UNSET STATE %s\n", XGetAtomName (CCM_DISPLAY_XDISPLAY(self->priv->display),
-														 client_event->data.l[cpt]));
-#endif
+								ccm_debug_atom(self->priv->display,
+											   client_event->data.l[cpt],
+											   "UNSET STATE");
 								ccm_window_unset_state(window, 
 													 client_event->data.l[cpt]);
 								break;
 							case 1:
-#ifdef DEBUG			
-			g_print("SET STATE %s\n", XGetAtomName (CCM_DISPLAY_XDISPLAY(self->priv->display),
-														 client_event->data.l[cpt]));
-#endif
+								ccm_debug_atom(self->priv->display,
+											   client_event->data.l[cpt],
+											   "SET STATE");
 								ccm_window_set_state(window, 
 													 client_event->data.l[cpt]);
 								break;
 							case 2:
-#ifdef DEBUG			
-			g_print("SWITCH STATE %s\n", XGetAtomName (CCM_DISPLAY_XDISPLAY(self->priv->display),
-														 client_event->data.l[cpt]));
-#endif
+								ccm_debug_atom(self->priv->display,
+											   client_event->data.l[cpt],
+											   "SWITCH STATE");
 								ccm_window_switch_state(window, 
 													 client_event->data.l[cpt]);
 								break;
