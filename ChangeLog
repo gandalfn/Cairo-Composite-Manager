@@ -1,3 +1,9 @@
+2008-04-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-screen.c:
+    * src/ccm-window.c: Fix a crash if XQueryTree fail, fix some forgotten 
+                        damage.
+
 2008-04-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/Makefile.am:

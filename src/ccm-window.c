@@ -556,20 +556,10 @@ ccm_window_get_property_async(CCMWindow* self, Atom property_atom,
     CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	ag_task_create (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
 					property_atom, 0, length, False, req_type);
-}
-
-static void
-ccm_window_get_child_property_async(CCMWindow* self, Atom property_atom, 
-									Atom req_type, long length)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(property_atom != None);
 	
-	if (self->priv->child == None) return;
-	
-    CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-	ag_task_create (CCM_DISPLAY_XDISPLAY(display), self->priv->child,
-					property_atom, 0, length, False, req_type);
+	if (self->priv->child != None)
+		ag_task_create (CCM_DISPLAY_XDISPLAY(display), self->priv->child,
+						property_atom, 0, length, False, req_type);
 }
 
 static guint32 *
@@ -1104,10 +1094,6 @@ ccm_window_query_state(CCMWindow* self)
 	
 	ccm_window_get_property_async(self, CCM_WINDOW_GET_CLASS(self)->state_atom,
 								  XA_ATOM, G_MAXLONG);
-	
-	/*ccm_window_get_child_property_async(self, 
-										CCM_WINDOW_GET_CLASS(self)->state_atom,
-										XA_ATOM, G_MAXLONG);*/
 }
 
 gboolean
@@ -1127,13 +1113,12 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
-		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		gboolean old = self->priv->is_fullscreen;
 		
 		self->priv->is_fullscreen = TRUE;
 		updated = old != self->priv->is_fullscreen;
 		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
-		if (updated) ccm_screen_damage (screen);
+		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
 	{
@@ -1162,6 +1147,7 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 		self->priv->keep_above = TRUE;
 		updated = old != self->priv->keep_above;
 		ccm_debug_window(self, "KEEP_ABOVE %i", self->priv->keep_above);
+		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_below_atom)
 	{
@@ -1191,12 +1177,11 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
-		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		gboolean old = self->priv->is_fullscreen;
 		self->priv->is_fullscreen = FALSE;
 		updated = old != self->priv->is_fullscreen;
 		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
-		if (updated) ccm_screen_damage (screen);
+		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
 	{
@@ -1225,6 +1210,7 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 		self->priv->keep_above = FALSE;
 		updated = old != self->priv->keep_above;
 		ccm_debug_window(self, "KEEP_ABOVE %i", self->priv->keep_above);
+		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_below_atom)
 	{
@@ -1252,12 +1238,10 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
-		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
-	
 		updated = TRUE;
 		self->priv->is_fullscreen = !self->priv->is_fullscreen;
 		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
-		ccm_screen_damage (screen);
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
 	{
@@ -1282,6 +1266,7 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 		updated = TRUE;
 		self->priv->keep_above = !self->priv->keep_above;
 		ccm_debug_window(self, "KEEP_ABOVE %i", self->priv->keep_above);
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_below_atom)
 	{
@@ -1663,6 +1648,7 @@ ccm_window_map(CCMWindow* self)
 	
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
+	else
 	ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
@@ -1678,6 +1664,7 @@ ccm_window_unmap(CCMWindow* self)
 		
 		ccm_window_plugin_unmap(self->priv->plugin, self);
 	}
+	else
 	ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 

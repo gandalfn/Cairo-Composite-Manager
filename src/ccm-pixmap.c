@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <cairo.h>
 
+#include "ccm-debug.h"
 #include "ccm-pixmap.h"
 #include "ccm-pixmap-backend.h"
 #include "ccm-window.h"

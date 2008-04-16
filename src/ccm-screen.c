@@ -157,7 +157,7 @@ ccm_screen_finalize (GObject *object)
 	
 	if (self->priv->stack)
 	{
-		XFree(self->priv->stack);
+		g_free(self->priv->stack);
 		self->priv->stack = NULL;
 		self->priv->n_windows = 0;
 	}
@@ -395,14 +395,21 @@ ccm_screen_update_stack(CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
 	
+	Window* stack = NULL;
 	Window w, p;
+	guint n_windows = 0;
 	CCMWindow* root = ccm_screen_get_root_window(self);
 	
-	if (self->priv->stack) XFree(self->priv->stack);
-		
-	XQueryTree(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+	if (XQueryTree(CCM_DISPLAY_XDISPLAY(self->priv->display), 
 			   CCM_WINDOW_XWINDOW(root), &w, &p, 
-			   &self->priv->stack, &self->priv->n_windows);
+			   &stack, &n_windows) && stack && n_windows)
+	{
+		if (self->priv->stack) g_free(self->priv->stack);
+		
+		self->priv->n_windows = n_windows;
+		self->priv->stack = g_memdup(stack, sizeof(Window) * n_windows);
+		XFree(stack);
+	}
 }
 
 static void
@@ -518,12 +525,14 @@ ccm_screen_check_stack_position(CCMScreen* self, CCMWindow* window)
 	{
 		self->priv->windows = g_list_insert_before (self->priv->windows, 
 													below_link->next, window);
-		ccm_drawable_damage (CCM_DRAWABLE(below));
+		if (CCM_WINDOW(below)->is_viewable)
+			ccm_drawable_damage (CCM_DRAWABLE(below));
 	}
 	else
 		self->priv->windows = g_list_append (self->priv->windows, window);
 	
-	ccm_drawable_damage (CCM_DRAWABLE(window));
+	if (CCM_WINDOW(window)->is_viewable)
+		ccm_drawable_damage (CCM_DRAWABLE(window));
 	
 #if 0
 	g_print("Stack\n");
@@ -712,7 +721,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 			ccm_region_subtract(damage_below, window->opaque);
 		}
 		
-		if (self->priv->fullscreen && self->priv->fullscreen != window &&
+		if (0 && self->priv->fullscreen && self->priv->fullscreen != window &&
 			self->priv->fullscreen->is_viewable && 
 			!self->priv->fullscreen->is_input_only)
 		{
@@ -797,25 +806,33 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 				}
 				else
 				{
-					g_signal_handlers_block_by_func(item->data, 
-													ccm_screen_on_window_damaged, 
-													self);
-					ccm_drawable_damage_region(CCM_DRAWABLE(item->data), 
-											   damage_below);
-					g_signal_handlers_unblock_by_func(item->data, 
-													  ccm_screen_on_window_damaged, 
-													  self);
-					if (self->priv->filtered_damage && ((CCMWindow*)item->data)->opaque) 
-						ccm_region_subtract (damage_below, 
-											 ((CCMWindow*)item->data)->opaque);
+					if (self->priv->filtered_damage && window->is_viewable &&
+						window->opaque && !ccm_region_empty(window->opaque))
+						ccm_drawable_undamage_region(CCM_DRAWABLE(item->data), 
+													 window->opaque);
 					
-					if (ccm_region_empty(damage_below)) break;
+					if (!ccm_region_empty(damage_below))
+					{
+						g_signal_handlers_block_by_func(item->data, 
+														ccm_screen_on_window_damaged, 
+														self);
+						ccm_drawable_damage_region(CCM_DRAWABLE(item->data), 
+												   damage_below);
+						g_signal_handlers_unblock_by_func(item->data, 
+														  ccm_screen_on_window_damaged, 
+														  self);
+						if (self->priv->filtered_damage && ((CCMWindow*)item->data)->opaque) 
+							ccm_region_subtract (damage_below, 
+												 ((CCMWindow*)item->data)->opaque);
+					}
 				}
 			}
 			else if (item->data == window)
 			{
 				top = FALSE;
-				if (ccm_region_empty(damage_below)) break;
+				if (self->priv->filtered_damage &&
+					ccm_region_empty(damage_below) && 
+					ccm_region_empty(window->opaque)) break;
 			}
 		}
 		
