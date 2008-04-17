@@ -650,7 +650,7 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		else if (!window->is_input_only)
 		{
 			CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(window));
-			if (geometry && !ccm_region_empty (geometry))
+			if (0 && geometry && !ccm_region_empty (geometry))
 				ccm_screen_damage_region(self, geometry);
 			else
 				ccm_screen_damage (self);

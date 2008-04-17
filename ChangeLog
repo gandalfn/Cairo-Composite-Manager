@@ -1,5 +1,10 @@
 2008-04-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-screen.c: Damage all screen on window unmap since we don't found
+                        why window geometry is invalidon unmap.
+
+2008-04-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/async-getprop.c:
     * src/ccm-debug.c:
     * src/ccm-debug.h:
