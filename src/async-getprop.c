@@ -236,8 +236,6 @@ async_get_property_handler (Display *dpy,
 
   if (rep->generic.type == X_Error)
     {
-      xError errbuf;
-
       task->error = rep->error.errorCode;
       
 #ifdef DEBUG_SPEW
@@ -246,24 +244,7 @@ async_get_property_handler (Display *dpy,
               rep->generic.length);
 #endif
 
-      /* We return True (meaning we consumed the reply)
-       * because otherwise it would invoke the X error handler,
-       * and an async API is useless if you have to synchronously
-       * trap X errors. Also GetProperty can always fail, pretty
-       * much, so trapping errors is always what you want.
-       *
-       * We have to eat all the error reply data here.
-       * (kind of a charade as we know sizeof(xError) == sizeof(xReply))
-       *
-       * Passing discard = True seems to break things; I don't understand
-       * why, because there should be no extra data in an error reply,
-       * right?
-       */
-      _XGetAsyncReply (dpy, (char *)&errbuf, rep, buf, len,
-                       (SIZEOF (xError) - bytes_read) >> 2, /* in 32-bit words */
-                       False); /* really seems like it should be True */
-      
-      return True;
+      return False;
     }
 
 #ifdef DEBUG_SPEW
@@ -276,7 +257,7 @@ async_get_property_handler (Display *dpy,
   reply = (xGetPropertyReply *)
     _XGetAsyncReply (dpy, (char *)&replbuf, rep, buf, len,
                      (SIZEOF (xGetPropertyReply) - bytes_read) >> 2, /* in 32-bit words */
-                     False); /* False means expecting more data to follow,
+                     True); /* False means expecting more data to follow,
                               * don't eat the rest of the reply
                               */
 

@@ -125,8 +125,6 @@ struct _CCMWindowPrivate
 	gboolean			override_redirect;
 	XWindowAttributes   attribs;
 	
-	gboolean			unmap_pending;
-
 	CCMPixmap*			pixmap;
 	
 	CCMWindowPlugin*	plugin;
@@ -141,6 +139,7 @@ ccm_window_init (CCMWindow *self)
 {
 	self->is_input_only = FALSE;
 	self->is_viewable = FALSE;
+	self->unmap_pending = FALSE;
 	self->opaque = NULL;
 	self->priv = CCM_WINDOW_GET_PRIVATE(self);
 	self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
@@ -161,7 +160,6 @@ ccm_window_init (CCMWindow *self)
 	self->priv->has_format = FALSE;
 	self->priv->format = CAIRO_FORMAT_ARGB32;
 	self->priv->override_redirect = FALSE;
-	self->priv->unmap_pending = FALSE;
 	self->priv->opacity = 1.0f;
 	self->priv->pixmap = NULL;
 	self->priv->plugin = NULL;
@@ -869,7 +867,7 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 														  x, y);
 		if (self->opaque)
 			ccm_region_offset(self->opaque, x - geometry.x, y - geometry.y);
-		if ((self->is_viewable || self->priv->unmap_pending) &&
+		if ((self->is_viewable || self->unmap_pending) &&
 			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
 		{
 			ccm_region_union_with_rect (old_geometry, &geometry);
@@ -898,11 +896,25 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 	if (!ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) ||
 		width != (int)geometry.width || height != (int)geometry.height)
 	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
+		
+		ccm_debug_window(self, "RESIZE %i,%i", width, height);
 		
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->resize(CCM_DRAWABLE(self), 
 															width, height);
-		if (self->is_viewable || self->priv->unmap_pending)
+		
+		if (self->priv->hint_type != CCM_WINDOW_TYPE_DESKTOP &&
+			((ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) &&
+			 geometry.x <= 0 && geometry.y <= 0 && 
+			 geometry.width >= CCM_SCREEN_XSCREEN(screen)->width &&
+			 geometry.height >= CCM_SCREEN_XSCREEN(screen)->height) || 
+			 self->priv->is_fullscreen))
+		{
+			self->priv->is_fullscreen = !self->priv->is_fullscreen;
+			ccm_screen_damage (screen);
+		}
+		else
 		{
 			ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
 			ccm_drawable_damage (CCM_DRAWABLE(self));
@@ -961,7 +973,7 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	
-	self->priv->unmap_pending = FALSE;
+	self->unmap_pending = FALSE;
 	if (self->priv->pixmap)
 	{
 		g_object_unref(self->priv->pixmap);
@@ -1118,7 +1130,12 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 		self->priv->is_fullscreen = TRUE;
 		updated = old != self->priv->is_fullscreen;
 		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
-		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
+		if (updated) 
+		{
+			CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+			ccm_drawable_query_geometry (CCM_DRAWABLE(self));
+			ccm_screen_damage (screen);
+		}
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
 	{
@@ -1181,7 +1198,12 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 		self->priv->is_fullscreen = FALSE;
 		updated = old != self->priv->is_fullscreen;
 		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
-		if (updated) ccm_drawable_damage (CCM_DRAWABLE(self));
+		if (updated) 
+		{
+			CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+			ccm_drawable_query_geometry (CCM_DRAWABLE(self));
+			ccm_screen_damage (screen);
+		}
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
 	{
@@ -1238,10 +1260,12 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom)
 	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		updated = TRUE;
 		self->priv->is_fullscreen = !self->priv->is_fullscreen;
 		ccm_debug_window(self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
-		ccm_drawable_damage (CCM_DRAWABLE(self));
+		ccm_drawable_query_geometry (CCM_DRAWABLE(self));
+		ccm_screen_damage (screen);
 	}
 	else if (state_atom == CCM_WINDOW_GET_CLASS(self)->state_is_modal)
 	{
@@ -1592,7 +1616,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 	
 	cairo_path_t* damaged;
 			
-	if (!self->is_viewable && !self->priv->unmap_pending &&
+	if (!self->is_viewable && !self->unmap_pending &&
 		!self->priv->is_shaded)
 		return ret;
 	
@@ -1660,12 +1684,14 @@ ccm_window_unmap(CCMWindow* self)
 	if (self->is_viewable)
 	{
 		self->is_viewable = FALSE;
-		self->priv->unmap_pending = TRUE;
+		self->unmap_pending = TRUE;
 		
+		if (self->priv->is_fullscreen)
+			ccm_window_switch_state (self, CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom);
 		ccm_window_plugin_unmap(self->priv->plugin, self);
 	}
 	else
-	ccm_drawable_damage (CCM_DRAWABLE(self));
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void 

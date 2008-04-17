@@ -94,6 +94,7 @@ struct _CCMWindow
 	CCMDrawable       parent_instance;
 	
 	gboolean 		  is_viewable;
+	gboolean		  unmap_pending;
 	gboolean 		  is_input_only;
 	
 	CCMRegion*		  opaque;

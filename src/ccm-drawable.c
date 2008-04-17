@@ -21,6 +21,7 @@
  */
 #include <string.h>
 
+#include "ccm-debug.h"
 #include "ccm-drawable.h"
 #include "ccm-display.h"
 
@@ -551,6 +552,7 @@ ccm_drawable_damage_region(CCMDrawable* self, CCMRegion* area)
 			ccm_region_destroy (self->priv->damaged);
 			self->priv->damaged = NULL;
 		}
+		ccm_debug_region(self, "DAMAGE_REGION:");
 		g_signal_emit(self, signals[DAMAGED], 0, area);
 	 }
 }
@@ -591,6 +593,7 @@ ccm_drawable_undamage_region(CCMDrawable* self, CCMRegion* region)
 			ccm_region_destroy(self->priv->damaged);
 			self->priv->damaged = NULL;
 		}
+		ccm_debug_region(self, "UNDAMAGE_REGION:");
 	}
 }
 

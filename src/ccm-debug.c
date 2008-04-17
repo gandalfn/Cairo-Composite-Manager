@@ -24,6 +24,7 @@
 #include <glib.h>
 
 #include "ccm-debug.h"
+#include "ccm-drawable.h"
 #include "ccm-window.h"
 #include "ccm-display.h"
 
@@ -68,5 +69,45 @@ ccm_log_atom (CCMDisplay* display, Atom atom, const char *format, ...)
 	
 	g_print("%s: %s\n", formatted, 
 			XGetAtomName (CCM_DISPLAY_XDISPLAY(display), atom));
+	g_free(formatted);
+} 
+
+void
+ccm_log_region (CCMDrawable* drawable, const char *format, ...)
+{
+	va_list args;
+	gchar* formatted;
+	CCMRegion* damaged,* geometry;
+	va_start (args, format);
+	formatted = g_strdup_vprintf (format, args);
+	va_end (args);
+	cairo_rectangle_t* rects;
+	gint cpt, nb_rects;
+	
+	g_print("%s: 0x%lx\n", formatted, ccm_drawable_get_xid(drawable));
+	geometry = ccm_drawable_get_geometry (drawable);
+	if (geometry)
+	{
+		g_print("-> geometry : \n");
+		ccm_region_get_rectangles (geometry, &rects, &nb_rects);
+	
+		for (cpt = 0; cpt < nb_rects; cpt++)
+			g_print("--> %i, %i, %i, %i\n", (int)rects[cpt].x, (int)rects[cpt].y,
+					(int)rects[cpt].width, (int)rects[cpt].height);
+		g_free(rects);
+	}	
+	
+	damaged = _ccm_drawable_get_damaged (drawable);
+	if (damaged)
+	{
+		g_print("-> damaged : \n");
+		ccm_region_get_rectangles (damaged, &rects, &nb_rects);
+		
+		for (cpt = 0; cpt < nb_rects; cpt++)
+			g_print("--> %i, %i, %i, %i\n", (int)rects[cpt].x, (int)rects[cpt].y,
+					(int)rects[cpt].width, (int)rects[cpt].height);
+		g_free(rects);
+	}
+	
 	g_free(formatted);
 } 
