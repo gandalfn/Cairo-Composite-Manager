@@ -639,6 +639,7 @@ ccm_drawable_get_damage_path(CCMDrawable* self, cairo_t* context)
 	
 	cairo_path_t* path = NULL;
 		
+	ccm_debug_region(self, "GET_DAMAGE_PATH");
 	if (self->priv->damaged && !ccm_region_empty(self->priv->damaged))
 	{
 		cairo_rectangle_t* rectangles;

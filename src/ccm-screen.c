@@ -322,7 +322,7 @@ ccm_screen_find_window(CCMScreen* self, Window xwindow)
 	
 	GList* item;
 	
-	for (item = self->priv->windows; item; item = item->next)
+	for (item = g_list_first(self->priv->windows); item; item = item->next)
 	{
 		if (CCM_WINDOW_XWINDOW(item->data) == xwindow)
 			return CCM_WINDOW(item->data);
@@ -339,7 +339,7 @@ ccm_screen_find_window_or_child(CCMScreen* self, Window xwindow)
 	
 	GList* item;
 	
-	for (item = self->priv->windows; item; item = item->next)
+	for (item = g_list_first(self->priv->windows); item; item = item->next)
 	{
 		if (CCM_WINDOW_XWINDOW(item->data) == xwindow ||
 			_ccm_window_get_child (item->data) == xwindow)
@@ -459,7 +459,7 @@ ccm_screen_check_stack(CCMScreen* self)
 		if (window)	stack = g_list_append(stack, window);
 	}
 	
-	for (item = self->priv->windows; item; item = item->next)
+	for (item = g_list_first(self->priv->windows); item; item = item->next)
 	{
 		if (CCM_WINDOW(item->data)->is_viewable || 
 			CCM_WINDOW(item->data)->unmap_pending)
@@ -479,14 +479,14 @@ ccm_screen_check_stack(CCMScreen* self)
 			}
 		}
 	}
-	for (item = removed; item; item = item->next)
+	for (item = g_list_first(removed); item; item = item->next)
 		ccm_screen_remove_window (self, item->data);
 	g_list_free(removed);
 	
 	g_list_free(self->priv->windows);
 	self->priv->windows = stack;
 	
-	for (item = damaged; item; item = item->next)
+	for (item = g_list_first(damaged); item; item = item->next)
 		ccm_drawable_damage (item->data);
 	g_list_free(damaged);
 	
@@ -556,7 +556,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 	gboolean ret = FALSE;
 	GList* item;
 	
-	for (item = self->priv->windows; item; item = item->next)
+	for (item = g_list_first(self->priv->windows); item; item = item->next)
 	{
 		CCMWindow* window = item->data;
 		
@@ -578,17 +578,7 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
 	
 	ccm_debug_window(window, "PROPERTY_CHANGED");
 	
-	CCMWindow* transient = ccm_window_transient_for (window);
-	
-	if (transient)
-	{
-		GList* link = g_list_find(self->priv->windows, transient);
-		self->priv->windows = g_list_remove (self->priv->windows, window);
-		self->priv->windows = g_list_insert_before (self->priv->windows , 
-													link->next, window);
-	}
-	else
-		ccm_screen_check_stack_position (self, window);
+	ccm_screen_check_stack_position (self, window);
 }
 
 static void
@@ -721,7 +711,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 		damage_above = ccm_region_copy(area);
 		damage_below = ccm_region_copy(area);
 		
-		ccm_debug_window(window, "ON_DAMAGE");
+		ccm_debug_region(window, "ON_DAMAGE");
 		
 		// Substract opaque region of window to damage region below
 		if (self->priv->filtered_damage && window->opaque && 

@@ -408,7 +408,8 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 		return;
 	
 	if (ag_task_get_reply (task, &type, &format, &n_items_internal, 
-						   &bytes_after, &result) == Success)
+						   &bytes_after, &result) == Success &&
+		type != None)
 	{
 		if (property == CCM_WINDOW_GET_CLASS(self)->type_atom)
 		{
@@ -1643,6 +1644,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 				
 			if (surface)
 			{
+				ccm_debug_window(self, "PAINT");
 				ret = ccm_window_plugin_paint(self->priv->plugin, self, 
 											  context, surface, y_invert);
 				cairo_surface_destroy(surface);

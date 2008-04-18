@@ -28,6 +28,24 @@
 #include "ccm-window.h"
 #include "ccm-display.h"
 
+static GTimer* timer = NULL;
+
+static void
+ccm_print_log(const char* format, ...)
+{
+	va_list args;
+	gchar* formatted;
+
+	if (!timer) timer = g_timer_new ();
+	
+	va_start (args, format);
+	formatted = g_strdup_vprintf (format, args);
+	va_end (args);
+	
+	g_print("%f: %s", g_timer_elapsed (timer, NULL), formatted);
+	g_free (formatted);
+}
+		 
 void
 ccm_log (const char *format, ...)
 {
@@ -38,7 +56,7 @@ ccm_log (const char *format, ...)
 	formatted = g_strdup_vprintf (format, args);
 	va_end (args);
 	
-	g_print("%s\n", formatted);
+	ccm_print_log("%s\n", formatted);
 	g_free(formatted);
 } 
 
@@ -52,8 +70,8 @@ ccm_log_window (CCMWindow* window, const char *format, ...)
 	formatted = g_strdup_vprintf (format, args);
 	va_end (args);
 	
-	g_print("%s: 0x%lx %s\n", formatted, CCM_WINDOW_XWINDOW(window), 
-			ccm_window_get_name(window));
+	ccm_print_log("%s: 0x%lx %s\n", formatted, CCM_WINDOW_XWINDOW(window), 
+				  ccm_window_get_name(window));
 	g_free(formatted);
 } 
 
@@ -67,8 +85,8 @@ ccm_log_atom (CCMDisplay* display, Atom atom, const char *format, ...)
 	formatted = g_strdup_vprintf (format, args);
 	va_end (args);
 	
-	g_print("%s: %s\n", formatted, 
-			XGetAtomName (CCM_DISPLAY_XDISPLAY(display), atom));
+	ccm_print_log("%s: %s\n", formatted, 
+				  XGetAtomName (CCM_DISPLAY_XDISPLAY(display), atom));
 	g_free(formatted);
 } 
 
@@ -84,7 +102,7 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 	cairo_rectangle_t* rects;
 	gint cpt, nb_rects;
 	
-	g_print("%s: 0x%lx\n", formatted, ccm_drawable_get_xid(drawable));
+	ccm_print_log("%s: 0x%lx\n", formatted, ccm_drawable_get_xid(drawable));
 	geometry = ccm_drawable_get_geometry (drawable);
 	if (geometry)
 	{
