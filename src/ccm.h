@@ -271,7 +271,10 @@ gboolean        ccm_window_get_frame_extends        (CCMWindow* self,
                                                      int* right_frame, 
                                                      int* top_frame, 
                                                      int* bottom_frame);
-
+guint32*        ccm_window_get_property             (CCMWindow* self, 
+                                                     Atom property_atom, 
+                                                     Atom req_type, 
+                                                     guint *n_items);
 /******************************************************************************/
 
 /******************************** Config **************************************/

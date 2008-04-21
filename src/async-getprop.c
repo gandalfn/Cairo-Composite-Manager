@@ -536,6 +536,7 @@ ag_task_create (Display *dpy,
   task->window = window;
   task->property = property;
   task->request_seq = dpy->request;
+  task->data = NULL;
 
   append_to_list (&dd->pending_tasks,
                   &dd->pending_tasks_tail,
@@ -552,6 +553,11 @@ ag_task_create (Display *dpy,
 static void
 free_task (AgGetPropertyTask *task)
 {
+  if (task->data) 
+  {
+    XFree(task->data);
+    task->data = NULL;
+  }
   remove_from_list (&task->dd->completed_tasks,
                     &task->dd->completed_tasks_tail,
                     &task->node);

@@ -286,9 +286,11 @@ ccm_display_process_events(CCMDisplay* self)
 	while (XEventsQueued(CCM_DISPLAY_XDISPLAY(self), QueuedAfterReading))
 	{
 		XNextEvent(CCM_DISPLAY_XDISPLAY(self), &xevent);
+		
 		if (xevent.type == self->priv->damage.event_base + XDamageNotify)
 		{
 			XDamageNotifyEvent* event_damage = (XDamageNotifyEvent*)&xevent;
+			
 			g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage);
 		}
 		else

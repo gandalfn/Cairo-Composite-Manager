@@ -26,6 +26,7 @@
 #include <glitz-glx.h>
 #include <cairo-glitz.h>
 
+#include "ccm-debug.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-display.h"
@@ -317,15 +318,14 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{
 				gint x = rects[cpt].x > 0 ? rects[cpt].x : 0;
-				gint y = geometry.height - (rects[cpt].height + rects[cpt].y);
-				gint width = rects[cpt].width + x > screen->xscreen->width ? 
-							 screen->xscreen->width - x : rects[cpt].width;
-				gint height = rects[cpt].height + y > screen->xscreen->height ? 
-							  screen->xscreen->height - y : rects[cpt].height;
-				
+				gint y = rects[cpt].y > 0 ? rects[cpt].y : 0;
+				y = geometry.height - (rects[cpt].height + y);
+				gint width = rects[cpt].width;
+				gint height = rects[cpt].height;
+				ccm_debug("FLUSH: %i,%i %i,%i", x, y, width, height);
 				if (width > 0 && height > 0)
 					csb(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
-						x, y > 0 ? y : 0, width, height);
+						x, y, width, height);
 			}
 			g_free(rects);
 		}

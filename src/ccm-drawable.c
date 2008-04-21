@@ -616,6 +616,7 @@ ccm_drawable_repair(CCMDrawable* self)
 			ret = CCM_DRAWABLE_GET_CLASS(self)->repair(self, self->priv->damaged);
 		if (ret)
 		{
+			ccm_debug_region(self, "REPAIR");
 			ccm_region_destroy(self->priv->damaged);
 			self->priv->damaged = NULL;
 		}

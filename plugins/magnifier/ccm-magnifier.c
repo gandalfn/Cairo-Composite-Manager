@@ -350,13 +350,13 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			
 			cairo_save(context);
 			ccm_region_get_rectangles(region, &rects, &nb_rects);
+			cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 0.6f);
 			for (cpt = 0; cpt < nb_rects; cpt++)
+			{
 				cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
 								 rects[cpt].width, rects[cpt].height);
-			cairo_clip(context);
-			
-			cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 0.6f);
-			cairo_paint(context);
+				cairo_fill(context);
+			}
 			cairo_restore(context);
 		}
 		cairo_save(context);

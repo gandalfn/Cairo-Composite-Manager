@@ -50,6 +50,8 @@ struct _CCMWindowClass
 	Atom			 name_atom;
 	Atom			 visible_name_atom;
 	
+	Atom			 active_atom;
+	
 	Atom		 	 client_list_atom;
 	Atom		 	 client_stacking_list_atom;
 	
@@ -106,6 +108,7 @@ GType ccm_window_get_type (void) G_GNUC_CONST;
 CCMWindowPlugin* _ccm_window_get_plugin(CCMWindow *self, GType type);
 Window _ccm_window_get_child(CCMWindow* self);
 void _ccm_window_set_child(CCMWindow* self, Window child);
+XWindowAttributes* _ccm_window_get_attribs(CCMWindow* self);
 
 G_END_DECLS
 

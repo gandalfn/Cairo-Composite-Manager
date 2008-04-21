@@ -1,3 +1,21 @@
+2008-04-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.c:
+    * plugins/menu-animation/ccm-menu-animation.c:
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/shadow/ccm-shadow.c:
+    * src/async-getprop.c:
+    * src/cairo-compmgr.c:
+    * src/ccm-display.c:
+    * src/ccm-drawable.c:
+    * src/ccm-screen.c:
+    * src/ccm-window-glitz.c:
+    * src/ccm-window.c:
+    * src/ccm-window.h
+    * src/ccm.h: Merge with test and debug branches, fix many redraw, perfomance
+                 and crash issues and add support for openbox window manager, 
+                 start the road for 0.2.0 release :).
+
 2008-04-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/async-getprop.c:

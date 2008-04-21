@@ -70,7 +70,7 @@ main(gint argc, gchar **argv)
 
 	gnome_program_init (PACKAGE_NAME, VERSION,
 						LIBGNOMEUI_MODULE, argc, argv,
-						GNOME_PARAM_NONE);
+                        GNOME_PARAM_NONE);
 	client = gnome_master_client();
 	gnome_client_set_restart_style(client, GNOME_RESTART_IF_RUNNING);
 	g_signal_connect (client, "save_yourself", G_CALLBACK (gtk_true), NULL);

@@ -87,10 +87,16 @@ ccm_menu_animation_finalize (GObject *object)
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(object);
 	
 	if (self->priv->opaque)
+	{
 		ccm_region_destroy (self->priv->opaque);
+		self->priv->opaque = NULL;
+	}
 	
 	if (self->priv->animation) 
+	{
 		g_object_unref (self->priv->animation);
+		self->priv->animation = NULL;
+	}
 	
 	G_OBJECT_CLASS (ccm_menu_animation_parent_class)->finalize (object);
 }
@@ -121,30 +127,48 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 		gfloat duration = ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION]);
 		gfloat step = elapsed / duration;
 		CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self->priv->window));
+		CCMRegion* damage = NULL;
 		
 		if (geometry && (self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP))
 		{
-			CCMRegion* damage = ccm_region_copy (geometry);
+			damage = ccm_region_copy (geometry);
 			ccm_region_scale(damage, self->priv->scale, self->priv->scale);
-			
-			ccm_drawable_damage_region (CCM_DRAWABLE(self->priv->window), 
-										damage);
-			ccm_region_destroy (damage);
 		}
 				
 		self->priv->scale = self->priv->way & CCM_MENU_ANIMATION_ON_MAP ? 
 					interpolate(step, 0.1, 1.0, 1) : interpolate(step, 1.0, 0.1, 1);
 		
+		if (self->priv->window->opaque)
+		{
+			if (!self->priv->opaque)
+			{
+				self->priv->opaque = ccm_region_copy(self->priv->window->opaque);
+			}
+			else
+			{
+				ccm_region_destroy (self->priv->window->opaque);
+				self->priv->window->opaque = ccm_region_copy(self->priv->opaque);
+			}
+			ccm_region_scale(self->priv->window->opaque, 
+							 self->priv->scale, self->priv->scale);
+		} 
+		else if (self->priv->opaque)
+		{
+			ccm_region_destroy (self->priv->opaque);
+			self->priv->opaque = NULL;
+		}
+			
 		if (geometry && (self->priv->way & CCM_MENU_ANIMATION_ON_MAP))
 		{
-			CCMRegion* damage = ccm_region_copy (geometry);
+			damage = ccm_region_copy (geometry);
 			ccm_region_scale(damage, self->priv->scale, self->priv->scale);
-			
+		}
+		if (damage)
+		{
 			ccm_drawable_damage_region (CCM_DRAWABLE(self->priv->window), 
-										damage);
+											damage);
 			ccm_region_destroy (damage);
 		}
-		
 		if (((self->priv->way & CCM_MENU_ANIMATION_ON_MAP) && 
 			 self->priv->scale >= 1.0f) ||
 			((self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP) && 
@@ -160,6 +184,7 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 			{
 				ccm_window_plugin_unmap ((CCMWindowPlugin*)self->priv->window, 
 										 self->priv->window);
+				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 			}
 			self->priv->scale = 1.0f;
 			self->priv->way = CCM_MENU_ANIMATION_NONE;
@@ -172,6 +197,18 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 	}
 	
 	return ret;
+}
+
+static void
+ccm_menu_animation_on_property_changed(CCMMenuAnimation* self, CCMWindow* window)
+{
+	if (self->priv->opaque) 
+	{
+		ccm_region_destroy (self->priv->opaque);
+		self->priv->opaque = NULL;
+	}
+	if (window->opaque)	self->priv->opaque = ccm_region_copy(window->opaque);
+	self->priv->type = ccm_window_get_hint_type (window);
 }
 
 static void
@@ -188,20 +225,19 @@ ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* windo
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
+	self->priv->window = window;
+	if (self->priv->opaque) 
+	{
+		ccm_region_destroy (self->priv->opaque);
+		self->priv->opaque = NULL;
+	}
+	if (window->opaque)	self->priv->opaque = ccm_region_copy(window->opaque);
+	self->priv->type = ccm_window_get_hint_type (window);
+	g_signal_connect_swapped(window, "property-changed",
+							 G_CALLBACK(ccm_menu_animation_on_property_changed), 
+							 self);
+	
 	self->priv->animation = ccm_animation_new(screen, (CCMAnimationFunc)ccm_menu_animation_animation, self);
-}
-
-static CCMRegion*
-ccm_menu_animation_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
-	CCMRegion* region;
-	
-	region = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin),
-											  window);
-	self->priv->type = ccm_window_get_hint_type(window);
-	
-	return region;
 }
 
 static void
@@ -209,13 +245,10 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
 	
-	self->priv->type = ccm_window_get_hint_type(window);
-		
 	if (self->priv->type == CCM_WINDOW_TYPE_MENU ||
 		self->priv->type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
 		self->priv->type == CCM_WINDOW_TYPE_POPUP_MENU)
 	{
-		self->priv->window = window;
 		if (self->priv->way == CCM_MENU_ANIMATION_NONE)
 		{
 			self->priv->scale = 0.1f;
@@ -276,7 +309,7 @@ static void
 ccm_menu_animation_window_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	= ccm_menu_animation_window_load_options;
-	iface->query_geometry 	= ccm_menu_animation_query_geometry;
+	iface->query_geometry 	= NULL;
 	iface->paint 			= ccm_menu_animation_paint;
 	iface->map				= ccm_menu_animation_map;
 	iface->unmap			= ccm_menu_animation_unmap;

@@ -240,6 +240,9 @@ create_atoms(CCMWindow* self)
 		klass->utf8_string_atom  = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 										        "UTF8_STRING", 
 											    False);
+		klass->active_atom 	 	 = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+												"_NET_ACTIVE_WINDOW", 
+												False);
 		klass->name_atom         = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 										        "_NET_WM_NAME", 
 											    False);
@@ -353,8 +356,8 @@ create_atoms(CCMWindow* self)
 	}
 }
 
-static guint32 *
-ccm_window_get_property(CCMWindow* self, Atom property_atom, int req_format, 
+guint32 *
+ccm_window_get_property(CCMWindow* self, Atom property_atom, 
 						Atom req_type, guint *n_items)
 {
 	g_return_val_if_fail(self != NULL, NULL);
@@ -404,12 +407,12 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
     gchar *result = NULL;
     Atom property = ag_task_get_property (task);
 	
-	if (ag_task_get_window (task) != CCM_WINDOW_XWINDOW(self))
+	if ((self->priv->child != None && ag_task_get_window (task) != self->priv->child) ||
+		(self->priv->child == None && ag_task_get_window (task) != CCM_WINDOW_XWINDOW(self)))
 		return;
 	
 	if (ag_task_get_reply (task, &type, &format, &n_items_internal, 
-						   &bytes_after, &result) == Success &&
-		type != None)
+						   &bytes_after, &result) == Success)
 	{
 		if (property == CCM_WINDOW_GET_CLASS(self)->type_atom)
 		{
@@ -418,7 +421,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				CCMWindowType old = self->priv->hint_type;
 				Atom atom;
 				memcpy (&atom, result, sizeof (Atom));
-					
+								
 				if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
 					self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
 				else if (atom == CCM_WINDOW_GET_CLASS(self)->type_menu_atom)
@@ -450,12 +453,15 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				
 				if (old != self->priv->hint_type)
 				{
-					ccm_debug_window(self, "HINT TYPE %i", self->priv->hint_type);
+					ccm_debug_atom(display, atom, "HINT TYPE 0x%lx %s %i", 
+								   CCM_WINDOW_XWINDOW(self),
+								   ccm_window_get_name (self),
+								   self->priv->hint_type);
 					g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 				}
 			}
 		}
-		if (property == CCM_WINDOW_GET_CLASS(self)->transient_for_atom)
+		else if (property == CCM_WINDOW_GET_CLASS(self)->transient_for_atom)
 		{
 			gboolean updated = FALSE;
 			
@@ -479,7 +485,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 			}
 		}
-		if (property == CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom)
+		else if (property == CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom)
 		{
 #define MAX_ITEMS sizeof (MotifWmHints)/sizeof (gulong)
 			if (result)
@@ -492,7 +498,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				real_size = n_items_internal * sizeof (gulong);
   				max_size = MAX_ITEMS * sizeof (gulong);
   				memcpy (hints, result, MIN (real_size, max_size));
-			
+				
 				if (hints->flags & MWM_HINTS_DECORATIONS)
 					self->priv->is_decorated = hints->decorations != 0;
 				if (old != self->priv->is_decorated)
@@ -503,7 +509,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				XFree(hints);
 			}
 		}
-		if (property == CCM_WINDOW_GET_CLASS(self)->state_atom)
+		else if (property == CCM_WINDOW_GET_CLASS(self)->state_atom)
 		{
 			if (result) 
 			{
@@ -522,7 +528,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 				}
 			}
 		}
-		if (property == CCM_WINDOW_GET_CLASS(self)->opacity_atom)
+		else if (property == CCM_WINDOW_GET_CLASS(self)->opacity_atom)
 		{
 			if (result) 
 			{
@@ -541,7 +547,6 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 					ccm_drawable_damage(CCM_DRAWABLE(self));
 			}
 		}
-		if (result) XFree(result);
 	}		
 }
 								 
@@ -555,10 +560,9 @@ ccm_window_get_property_async(CCMWindow* self, Atom property_atom,
     CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	ag_task_create (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
 					property_atom, 0, length, False, req_type);
-	
 	if (self->priv->child != None)
 		ag_task_create (CCM_DISPLAY_XDISPLAY(display), self->priv->child,
-						property_atom, 0, length, False, req_type);
+						property_atom, 0, length, False, req_type);		
 }
 
 static guint32 *
@@ -610,7 +614,7 @@ ccm_window_get_utf8_property (CCMWindow* self, Atom atom)
 	guint32* data = NULL;
 	guint n_items;
 	
-	data = ccm_window_get_property(self, atom, 8, 
+	data = ccm_window_get_property(self, atom, 
 								   CCM_WINDOW_GET_CLASS(self)->utf8_string_atom, 
 								   &n_items);
   
@@ -736,17 +740,42 @@ ccm_window_query_child(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 	Window* windows = NULL, w, p;
 	guint n_windows;
-		
-	if (XQueryTree(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self), 
+	
+	if (CCM_WINDOW_XWINDOW(self) == RootWindowOfScreen(CCM_SCREEN_XSCREEN(screen)))
+		return;
+	
+	if (!self->priv->override_redirect &&
+		XQueryTree(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self), 
 				   &w, &p, &windows, &n_windows) && n_windows > 0)
 	{
-		self->priv->child = windows[n_windows - 1];
-		XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
-					  self->priv->child, 
-					  PropertyChangeMask | 
-					  StructureNotifyMask);
+		CCMWindow* root = ccm_screen_get_root_window (screen);
+		guint n_managed = 0;
+		Window* managed = (Window *)ccm_window_get_property (root, 
+						CCM_WINDOW_GET_CLASS(root)->client_stacking_list_atom,
+						XA_WINDOW, &n_managed);
+		
+		if (managed && n_managed)
+		{
+			guint cpt;
+			
+			for (cpt = 0; cpt < n_managed; cpt++)
+			{
+				if (managed[cpt] == windows[n_windows - 1])
+				{
+					self->priv->child = windows[n_windows - 1];
+					ccm_debug_window(self, "FOUND CHILD 0x%lx", self->priv->child);
+					XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
+								  self->priv->child, 
+								  PropertyChangeMask | 
+								  StructureNotifyMask);
+					break;
+				}
+			}
+		}
+		if (managed) g_free(managed);
 	}
 	if (windows) XFree(windows);
 }
@@ -875,6 +904,8 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 			ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
 		}
 		ccm_region_destroy (old_geometry);
+		self->priv->attribs.x = x;
+		self->priv->attribs.y = y;
 	}
 }
 
@@ -1027,6 +1058,14 @@ _ccm_window_get_child(CCMWindow* self)
 	return self->priv->child;
 }
 
+XWindowAttributes*
+_ccm_window_get_attribs(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, None);
+	
+	return &self->priv->attribs;
+}
+
 void
 _ccm_window_set_child(CCMWindow* self, Window child)
 {
@@ -1071,12 +1110,12 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	
 	if (!self->is_input_only)
 	{
+		ccm_window_query_child (self);
+		ccm_window_query_mwm_hints(self);
 		ccm_window_query_hint_type(self);
 		ccm_window_query_transient_for(self);
-		ccm_window_query_mwm_hints(self);
 		ccm_window_query_wm_hints(self);
 		ccm_window_query_state (self);
-		ccm_window_query_child (self);
 		
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
 					  CCM_WINDOW_XWINDOW(self),
@@ -1619,7 +1658,10 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			
 	if (!self->is_viewable && !self->unmap_pending &&
 		!self->priv->is_shaded)
+	{
+		ccm_drawable_repair(CCM_DRAWABLE(self));
 		return ret;
+	}
 	
 	cairo_save(context);
 	
@@ -1658,7 +1700,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 	}
 	cairo_restore(context);
 	
-	if (ret) ccm_drawable_repair(CCM_DRAWABLE(self));
+	ccm_drawable_repair(CCM_DRAWABLE(self));
 	
 	return ret;
 }
@@ -1672,10 +1714,11 @@ ccm_window_map(CCMWindow* self)
 	{
 		self->is_viewable = TRUE;
 	
+		ccm_window_query_hint_type (self);
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
 	else
-	ccm_drawable_damage (CCM_DRAWABLE(self));
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void
@@ -1870,7 +1913,7 @@ ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame,
 	else
 		data = ccm_window_get_property(self, 
 								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
-								32, XA_CARDINAL, &n_items);
+								XA_CARDINAL, &n_items);
 	if (data)
 	{
 		guint32* extends = (guint32*)data;
