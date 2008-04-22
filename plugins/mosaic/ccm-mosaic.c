@@ -182,6 +182,67 @@ ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
 	
 	return TRUE;
 }
+static void
+ccm_mosaic_broadcast_event(Window window, int x, int y, 
+						   int x_parent, int y_parent, XEvent* evt)
+{
+	g_return_if_fail(window != None);
+	g_return_if_fail(evt != NULL);
+	
+	Window* windows = NULL;
+	Window w, p;
+	guint n_windows = 0;
+	
+	XSendEvent(evt->xany.display, window, True, NoEventMask, evt);
+	
+	if (XQueryTree(evt->xany.display, window, &w, &p, 
+				   &windows, &n_windows) && windows && n_windows)
+	{
+		while (n_windows--)
+        {
+            XWindowAttributes attribs;
+            gboolean send = FALSE;
+			
+            XGetWindowAttributes(evt->xany.display, windows[n_windows], &attribs);
+            
+			send = (x >= x_parent + attribs.x && x <= x_parent + attribs.x + attribs.width &&
+					y >= y_parent + attribs.y && y <= y_parent + attribs.y + attribs.height);
+			
+			ccm_mosaic_broadcast_event (windows[n_windows], x, y, 
+										x_parent + attribs.x,
+										y_parent + attribs.y, evt);
+			ccm_debug("BROADCAST: 0x%lx %i, %i %i, %i %i, %i %i\n", 
+					  windows[n_windows], x, y, x_parent, y_parent, 
+					  attribs.x, attribs.y, send);
+			
+			if (send)
+			{
+                evt->xany.window = windows[n_windows];
+				if (evt->type == ButtonPress || evt->type == ButtonRelease)
+                {
+                    XButtonEvent* button_evt = (XButtonEvent*)evt;
+                    
+                    button_evt->x = x - (x_parent + attribs.x);
+                    button_evt->y = y - (y_parent + attribs.y);
+                    button_evt->x_root = x;
+                    button_evt->y_root = y;
+                }
+				if (evt->type == MotionNotify)
+                {
+                    XMotionEvent* motion_evt = (XMotionEvent*)evt;
+                    
+                    motion_evt->x = x - (x_parent + attribs.x);
+                    motion_evt->y = y - (y_parent + attribs.y);
+                    motion_evt->x_root = x;
+                    motion_evt->y_root = y;
+                }
+				XSendEvent(evt->xany.display, windows[n_windows], False, 
+						   NoEventMask, evt);
+			}
+        }
+        XFree(windows);
+	}
+}
 
 static void
 ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
@@ -210,20 +271,21 @@ ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 													 &button_event->x, &button_event->y,
 													 &button_event->x_root, &button_event->y_root))
 						{
+							XWindowAttributes attribs;
+            
+							XGetWindowAttributes(button_event->display, 
+							CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window), 
+							&attribs);
 							button_event->window = CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window);
 							ccm_screen_activate_window (self->priv->screen, 
 														self->priv->areas[cpt].window,
 														button_event->time);
 						
-							XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
-										True, NoEventMask, event);
-							
-							button_event->window = _ccm_window_get_child(self->priv->areas[cpt].window);
-							if (button_event->window) 
-							{
-								XSendEvent (CCM_DISPLAY_XDISPLAY(display), button_event->window,
-											True, NoEventMask, event);
-							}
+							ccm_mosaic_broadcast_event(button_event->window, 
+													   button_event->x_root, 
+													   button_event->y_root,
+													   attribs.x, attribs.y, 
+													   event);
 							break;
 						}
 					}
