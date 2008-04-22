@@ -238,6 +238,7 @@ ccm_mosaic_broadcast_event(Window window, int x, int y,
                 }
 				XSendEvent(evt->xany.display, windows[n_windows], False, 
 						   NoEventMask, evt);
+				break;
 			}
         }
         XFree(windows);

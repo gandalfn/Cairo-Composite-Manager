@@ -1,5 +1,9 @@
 2008-04-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * plugins/mosaic/ccm-mosaic.c: Stop send event when a window accept it.
+
+2008-04-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * plugins/mosaic/ccm-mosaic.c: Add broadcast send event.
     * src/async-getprop.c: Fix crash, data must be eaten on each reply.
 
