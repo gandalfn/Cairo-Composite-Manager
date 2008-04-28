@@ -225,6 +225,7 @@ static void
 create_atoms(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	CCMWindowClass* klass = CCM_WINDOW_GET_CLASS(self);
 	if (!klass->opacity_atom)
@@ -399,6 +400,7 @@ ccm_window_on_get_property_async(CCMWindow* self, AgGetPropertyTask* task,
 	g_return_if_fail(display != NULL);
 	g_return_if_fail(task != NULL);
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
     Atom type;
     int format;
@@ -738,6 +740,7 @@ static void
 ccm_window_query_child(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
@@ -1018,6 +1021,7 @@ impl_ccm_window_query_opacity(CCMWindowPlugin* plugin, CCMWindow* self)
 {
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 
 	ccm_window_get_property_async(self, CCM_WINDOW_GET_CLASS(self)->opacity_atom,
 								  XA_CARDINAL, 32);
@@ -1143,6 +1147,7 @@ void
 ccm_window_query_state(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	ccm_window_get_property_async(self, CCM_WINDOW_GET_CLASS(self)->state_atom,
 								  XA_ATOM, G_MAXLONG);
@@ -1152,6 +1157,7 @@ gboolean
 ccm_window_set_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL, FALSE);
 	
 	gboolean updated = FALSE;
 	
@@ -1221,6 +1227,7 @@ void
 ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	gboolean updated = FALSE;
 	
@@ -1288,6 +1295,7 @@ void
 ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	gboolean updated = FALSE;
 	
@@ -1725,6 +1733,7 @@ void
 ccm_window_unmap(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	if (self->is_viewable)
 	{
@@ -1751,6 +1760,7 @@ void
 ccm_window_query_mwm_hints(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	ccm_window_get_property_async(self, 
 								  CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom,
@@ -1761,6 +1771,7 @@ void
 ccm_window_query_transient_for (CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	ccm_window_get_property_async (self, 
 								   CCM_WINDOW_GET_CLASS(self)->transient_for_atom,
@@ -1771,6 +1782,7 @@ void
 ccm_window_query_hint_type(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	ccm_window_get_property_async (self, CCM_WINDOW_GET_CLASS(self)->type_atom,
 								   XA_ATOM, G_MAXLONG);
@@ -1811,6 +1823,7 @@ const gchar*
 ccm_window_get_name(CCMWindow* self)
 {
 	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL, NULL);
 	
 	if (self->priv->name == NULL)
 	{
@@ -1902,6 +1915,9 @@ gboolean
 ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame, 
 							 int* top_frame, int* bottom_frame)
 {
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL, FALSE);
+	
 	guint32* data = NULL;
 	guint n_items;
 	gboolean ret = FALSE;

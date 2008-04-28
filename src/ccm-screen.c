@@ -515,6 +515,15 @@ ccm_screen_check_stack_position(CCMScreen* self, CCMWindow* window)
 	GList* below_link;
 	guint cpt;
 	
+	if (ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP)
+	{
+		self->priv->windows = g_list_remove(self->priv->windows, window);
+		self->priv->windows = g_list_prepend (self->priv->windows, window);
+		if (CCM_WINDOW(window)->is_viewable || CCM_WINDOW(window)->unmap_pending)
+			ccm_drawable_damage (CCM_DRAWABLE(window));
+		return;
+	}
+	
 	for (cpt = 0; cpt < self->priv->n_windows; cpt++)
 	{
 		if (self->priv->stack[cpt] == CCM_WINDOW_XWINDOW(window)) 
@@ -1053,23 +1062,17 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		case Expose:
 		{
 			XExposeEvent* expose_event = (XExposeEvent*)event;
-			CCMWindow* window = ccm_screen_find_window(self,
-													   expose_event->window);
-			if (window || 
-				expose_event->window == CCM_WINDOW_XWINDOW(self->priv->root))
-			{
-				cairo_rectangle_t area;
-				CCMRegion* damaged;
-				
-				ccm_debug_window(window, "EXPOSE");
-				area.x = expose_event->x;
- 				area.y = expose_event->y;
- 				area.width = expose_event->width;
- 				area.height = expose_event->height;
-				damaged = ccm_region_rectangle (&area);
-				ccm_screen_damage_region (self, damaged);
-				ccm_region_destroy (damaged);
-			}
+			cairo_rectangle_t area;
+			CCMRegion* damaged;
+			
+			ccm_debug("EXPOSE");
+			area.x = expose_event->x;
+ 			area.y = expose_event->y;
+ 			area.width = expose_event->width;
+ 			area.height = expose_event->height;
+			damaged = ccm_region_rectangle (&area);
+			ccm_screen_damage_region (self, damaged);
+			ccm_region_destroy (damaged);
 		}
 		break;
 		case ClientMessage:

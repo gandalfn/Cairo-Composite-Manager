@@ -1,3 +1,11 @@
+2008-04-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-screen.c: (ccm_screen_check_stack_position) force window with type
+                        desktop in bottom of stack.
+                        (ccm_screen_on_event) Don't check window in expose event.
+    * src/ccm-window.c: Add assert when use CCM_WINDOW_GET_CLASS avoid some
+                        crash.
+
 2008-04-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/mosaic/ccm-mosaic.c: Stop send event when a window accept it.
