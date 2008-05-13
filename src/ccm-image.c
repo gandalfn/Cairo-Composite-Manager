@@ -123,7 +123,7 @@ ccm_image_new(CCMDisplay* display, Visual* visual, cairo_format_t format,
 		image->image->data = image->shminfo.shmaddr;
 		
 		XShmAttach(CCM_DISPLAY_XDISPLAY(display), &image->shminfo);
-	
+		
 		pformat = ccm_image_get_pixman_format (format);
 	
 		image->pimage = pixman_image_create_bits (pformat, width, height,

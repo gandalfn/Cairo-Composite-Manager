@@ -181,6 +181,7 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height,
     cairo_pattern_destroy (shadow);
 	cairo_destroy(cr);
 }
+
 static void
 ccm_shadow_on_property_changed(CCMShadow* self, CCMWindow* window)
 {
@@ -204,6 +205,14 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	g_signal_connect_swapped(window, "property-changed",
 							 G_CALLBACK(ccm_shadow_on_property_changed), self);
+}
+
+static void
+ccm_shadow_map(CCMWindowPlugin* plugin, CCMWindow* window)
+{
+	ccm_drawable_damage(CCM_DRAWABLE(window));
+	ccm_drawable_query_geometry(CCM_DRAWABLE(window));
+	ccm_drawable_damage(CCM_DRAWABLE(window));
 }
 
 static CCMRegion*
@@ -350,7 +359,7 @@ ccm_shadow_iface_init(CCMWindowPluginClass* iface)
 	iface->load_options 	= ccm_shadow_load_options;
 	iface->query_geometry 	= ccm_shadow_query_geometry;
 	iface->paint 			= ccm_shadow_paint;
-	iface->map				= NULL;
+	iface->map				= ccm_shadow_map;
 	iface->unmap			= NULL;
 	iface->query_opacity  	= NULL;
 	iface->set_opaque		= ccm_shadow_set_opaque;

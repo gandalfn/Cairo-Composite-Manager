@@ -33,8 +33,6 @@ bin_PROGRAMS = cairo-compmgr
 cairo_compmgr_SOURCES = \
     eggaccelerators.c \
     eggaccelerators.h \
-    async-getprop.c \
-	async-getprop.h \
 	ccm-debug.h \
     ccm-debug.c \
     ccm-region.c \
@@ -82,7 +80,9 @@ cairo_compmgr_SOURCES = \
     ccm-pixmap-buffered-image.h \
 	ccm-pixmap-buffered-image.c \
 	ccm-keybind.h \
-	ccm-keybind.c
+	ccm-keybind.c \
+	ccm-property-async.h \
+	ccm-property-async.c
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

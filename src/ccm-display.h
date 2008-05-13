@@ -27,7 +27,6 @@
 #include <X11/X.h>
 #include <X11/extensions/Xdamage.h>
 
-#include "async-getprop.h"
 #include "ccm.h"
 
 G_BEGIN_DECLS

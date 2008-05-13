@@ -123,7 +123,11 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 		{
 			if (!ccm_image_get_image (self->priv->image, 
 									  CCM_PIXMAP(self), 0, 0))
+			{
 				ret = FALSE;
+				ccm_image_destroy (self->priv->image);
+				self->priv->image = NULL;
+			}
 			else
 				self->priv->synced = TRUE;
 		}
@@ -162,6 +166,11 @@ ccm_pixmap_image_get_surface (CCMDrawable* drawable)
 	if (CCM_PIXMAP(self)->window->is_viewable)
 		ccm_drawable_repair(CCM_DRAWABLE(self));
 		
+	if (!self->priv->image && self->priv->surface)
+	{
+		cairo_surface_destroy (self->priv->surface);
+		self->priv->surface = NULL;
+	}
 	if (self->priv->image && ccm_image_get_data (self->priv->image) && 
 		!self->priv->surface)
 		self->priv->surface = cairo_image_surface_create_for_data(

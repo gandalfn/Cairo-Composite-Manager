@@ -28,6 +28,7 @@
 #include <X11/extensions/shape.h>
 #include <gtk/gtk.h>
 
+#include "ccm-debug.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-watch.h"
@@ -52,8 +53,7 @@ enum
 {
 	EVENT,
 	DAMAGE_EVENT,
-	GET_PROPERTY_EVENT,
-    N_SIGNALS
+	N_SIGNALS
 };
 
 static guint signals[N_SIGNALS] = { 0 };
@@ -77,7 +77,6 @@ struct _CCMDisplayPrivate
 	gboolean	 shm_shared_pixmap;
 	CCMExtension dbe;
 	
-	GHashTable*	 asyncprops;
 	gboolean 	 use_shm;
 	
 	gint		 fd;
@@ -98,8 +97,6 @@ ccm_display_init (CCMDisplay *self)
 	self->priv->screens = NULL;
 	self->priv->shm_shared_pixmap = FALSE;
 	self->priv->use_shm = FALSE;
-	self->priv->asyncprops = g_hash_table_new_full(g_direct_hash, g_direct_equal,
-												   NULL, g_free);
 }
 
 static void
@@ -108,6 +105,7 @@ ccm_display_finalize (GObject *object)
 	CCMDisplay* self = CCM_DISPLAY(object);
 	gint cpt;
 	
+	ccm_debug("DISPLAY FINALIZE");
 	if (self->priv->nb_screens) 
 	{
 		for (cpt = 0; cpt < self->priv->nb_screens; cpt++)
@@ -121,7 +119,6 @@ ccm_display_finalize (GObject *object)
 		g_slice_free1(sizeof(CCMScreen*) * (self->priv->nb_screens + 1), 
 					  self->priv->screens);
 	}
-	g_hash_table_destroy(self->priv->asyncprops);
 	
 	for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; cpt++)
 		g_object_unref(self->priv->options[cpt]);
@@ -145,12 +142,6 @@ ccm_display_class_init (CCMDisplayClass *klass)
 								   G_TYPE_NONE, 1, G_TYPE_POINTER);
 	
 	signals[DAMAGE_EVENT] = g_signal_new ("damage-event",
-								   G_OBJECT_CLASS_TYPE (object_class),
-								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-								   g_cclosure_marshal_VOID__POINTER,
-								   G_TYPE_NONE, 1, G_TYPE_POINTER);
-	
-	signals[GET_PROPERTY_EVENT] = g_signal_new ("get-property-event",
 								   G_OBJECT_CLASS_TYPE (object_class),
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__POINTER,
@@ -259,10 +250,10 @@ ccm_display_init_dbe(CCMDisplay *self)
 static int
 ccm_display_error_handler(Display* dpy, XErrorEvent* evt)
 {
-	/*gchar str[128];
+	gchar str[128];
 	
 	XGetErrorText (dpy, evt->error_code, str, 128);
-	g_warning("Xerror: %s", str);*/
+	g_warning("Xerror: %s", str);
 	
 	CCMLastXError = evt->error_code;
 	
@@ -275,14 +266,7 @@ ccm_display_process_events(CCMDisplay* self)
 	g_return_if_fail(self != NULL);
 	
 	XEvent xevent;
-	AgGetPropertyTask *task;
 	
-	while ((task = ag_get_next_completed_task (CCM_DISPLAY_XDISPLAY(self))))
-	{
-		g_signal_emit (self, signals[GET_PROPERTY_EVENT], 0, task);
-		ag_task_destroy (task);
-	}
-
 	while (XEventsQueued(CCM_DISPLAY_XDISPLAY(self), QueuedAfterReading))
 	{
 		XNextEvent(CCM_DISPLAY_XDISPLAY(self), &xevent);

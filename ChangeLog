@@ -1,3 +1,23 @@
+2008-05-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/Makefile.am:
+    * src/async-getprop.c: (Remove)
+    * src/async-getprop.h: (Remove)
+    * src/ccm-property-async.c:
+    * src/ccm-property-async.h: Rewrite of async get property.
+    
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/shadow/ccm-shadow.c:
+    * src/ccm-debug.h:
+    * src/ccm-display.c:
+    * src/ccm-display.h:
+    * src/ccm-image.c:
+    * src/ccm-pixmap-image.c:
+    * src/ccm-pixmap.c:
+    * src/ccm-screen.c:
+    * src/ccm-tray-menu.c:
+    * src/ccm-window.c: Fix some redraw issue.
+
 2008-04-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-screen.c: (ccm_screen_check_stack_position) force window with type

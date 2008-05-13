@@ -141,6 +141,8 @@ ccm_screen_finalize (GObject *object)
 	CCMScreen *self = CCM_SCREEN(object);
 	gint cpt;
 	
+	ccm_debug("FINALIZE SCREEN");
+	
 	if (self->priv->animations)
 		g_slist_free(self->priv->animations);
 	
@@ -183,9 +185,19 @@ ccm_screen_finalize (GObject *object)
 		ccm_display_sync(self->priv->display);
 		g_object_unref(self->priv->cow);
 	}
-	if (self->priv->selection_owner)
+	if (self->priv->selection_owner != None)
+	{
+		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", self->number);
+		Atom cm_atom = XInternAtom(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+								   cm_atom_name, 0);
+		
+		g_free(cm_atom_name);
 		XDestroyWindow (CCM_DISPLAY_XDISPLAY(self->priv->display), 
 						self->priv->selection_owner);
+		ccm_debug("UNSET SELECTION OWNER");
+		XSetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+							cm_atom, None, CurrentTime);
+	}
 	
 	G_OBJECT_CLASS (ccm_screen_parent_class)->finalize (object);
 }
@@ -363,7 +375,7 @@ ccm_screen_set_selection_owner(CCMScreen* self)
 		
 		g_free(cm_atom_name);
 		 
-		if (XGetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+		if (0 && XGetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
 								cm_atom) != None)
 		{
 			g_critical("\nScreen %d already has a composite manager running, \n"
@@ -511,25 +523,16 @@ ccm_screen_check_stack_position(CCMScreen* self, CCMWindow* window)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
 	
-	CCMWindow* below= NULL;
+	CCMWindow* below = NULL;
 	GList* below_link;
 	guint cpt;
-	
-	if (ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP)
-	{
-		self->priv->windows = g_list_remove(self->priv->windows, window);
-		self->priv->windows = g_list_prepend (self->priv->windows, window);
-		if (CCM_WINDOW(window)->is_viewable || CCM_WINDOW(window)->unmap_pending)
-			ccm_drawable_damage (CCM_DRAWABLE(window));
-		return;
-	}
 	
 	for (cpt = 0; cpt < self->priv->n_windows; cpt++)
 	{
 		if (self->priv->stack[cpt] == CCM_WINDOW_XWINDOW(window)) 
 		{
 			if (cpt > 0)
-				below = ccm_screen_find_window (self, self->priv->stack[cpt - 1]);
+				below = ccm_screen_find_window_or_child (self, self->priv->stack[cpt - 1]);
 			break;
 		}
 	}
@@ -541,15 +544,17 @@ ccm_screen_check_stack_position(CCMScreen* self, CCMWindow* window)
 	ccm_debug_window(window, "CHECK_STACK_POSITION");
 	
 	self->priv->windows = g_list_remove(self->priv->windows, window);
-	if (below)
+	if (below_link)
 	{
 		self->priv->windows = g_list_insert_before (self->priv->windows, 
 													below_link->next, window);
 		if (CCM_WINDOW(below)->is_viewable || CCM_WINDOW(below)->unmap_pending)
 			ccm_drawable_damage (CCM_DRAWABLE(below));
 	}
-	else
+	else if (cpt > 0)
 		self->priv->windows = g_list_append (self->priv->windows, window);
+	else
+		self->priv->windows = g_list_prepend (self->priv->windows, window);
 	
 	if (CCM_WINDOW(window)->is_viewable || CCM_WINDOW(window)->unmap_pending)
 		ccm_drawable_damage (CCM_DRAWABLE(window));
@@ -604,19 +609,7 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
 	
 	ccm_debug_window(window, "PROPERTY_CHANGED");
 	
-	CCMWindow* transient = ccm_window_transient_for (window);
-	
-	if (transient)
-	{
-		GList* link = g_list_find(self->priv->windows, transient);
-		
-		ccm_screen_paint(self);
-		self->priv->windows = g_list_remove (self->priv->windows, window);
-		self->priv->windows = g_list_insert_before (self->priv->windows , 
-													link->next, window);
-	}
-	else
-		ccm_screen_check_stack_position (self, window);	
+	ccm_screen_check_stack (self);
 }
 
 static void
@@ -631,8 +624,6 @@ ccm_screen_on_window_state_changed(CCMScreen* self, CCMWindow* window)
 		self->priv->fullscreen = window;
 	else if (self->priv->fullscreen == window)
 		self->priv->fullscreen = NULL;
-		
-	ccm_screen_check_stack_position (self, window);
 }
 
 static gboolean
@@ -669,6 +660,12 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		self->priv->windows = g_list_remove(self->priv->windows, window);
 		g_signal_handlers_disconnect_by_func(window, 
 											 ccm_screen_on_window_damaged, 
+											 self);
+		g_signal_handlers_disconnect_by_func(window, 
+											 ccm_screen_on_window_property_changed, 
+											 self);
+		g_signal_handlers_disconnect_by_func(window, 
+											 ccm_screen_on_window_state_changed, 
 											 self);
 		if (self->priv->fullscreen == window)
 		{
@@ -763,7 +760,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 			 self->priv->filtered_damage && item; item = item->prev)
 		{
 			if (!((CCMWindow*)item->data)->is_input_only &&
-				(((CCMWindow*)item->data)->is_viewable || 
+				(((CCMWindow*)item->data)->is_viewable ||
 				 ((CCMWindow*)item->data)->unmap_pending) && 
 				CCM_WINDOW_XWINDOW(item->data) != CCM_WINDOW_XWINDOW(window))
 			{
@@ -804,8 +801,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 		for (; item; item = item->prev)
 		{
 			if (!((CCMWindow*)item->data)->is_input_only &&
-				(((CCMWindow*)item->data)->is_viewable ||
-				 ((CCMWindow*)item->data)->unmap_pending) && 
+				((CCMWindow*)item->data)->is_viewable && 
 				item->data != window)
 			{
 				if (top)
@@ -987,7 +983,28 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 						configure_event->above != CCM_WINDOW_XWINDOW(self->priv->root) &&
 						configure_event->above != CCM_WINDOW_XWINDOW(self->priv->cow) &&
 						configure_event->above != self->priv->selection_owner)
-						ccm_screen_check_stack_position (self, window);
+					{
+						CCMWindow* above;
+						above = ccm_screen_find_window_or_child (self,
+														configure_event->above);
+						if (above)
+						{
+							GList* above_link = g_list_find(self->priv->windows, 
+															above);
+							
+							if (above_link && above_link->next && 
+								above_link->next->data != window)
+							{
+								self->priv->windows = 
+									g_list_remove(self->priv->windows, window);
+								self->priv->windows = 
+									g_list_insert_before (self->priv->windows, 
+														  above_link->next,
+														  window);
+								ccm_drawable_damage (CCM_DRAWABLE(window));
+							}
+						}
+					}
 				}
 								
 				ccm_drawable_move(CCM_DRAWABLE(window),

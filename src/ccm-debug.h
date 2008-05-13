@@ -37,7 +37,7 @@ void ccm_log_region (CCMDrawable* drawable, const char *format, ...);
 #define ccm_debug(...) ccm_log(__VA_ARGS__)
 #define ccm_debug_window(window, format...) ccm_log_window(window, format)
 #define ccm_debug_atom(display, atom, format...) ccm_log_atom(display, atom, format)
-#define ccm_debug_region(drawable, format...) ccm_log_region(drawable, format)
+#define ccm_debug_region(drawable, format...) // ccm_log_region(drawable, format)
 
 #else
 

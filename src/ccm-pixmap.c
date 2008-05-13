@@ -218,15 +218,20 @@ ccm_pixmap_register_damage(CCMPixmap* self, CCMDisplay* display)
 {
 	g_return_if_fail(self != NULL);
 	
+	_ccm_display_trap_error (display);
 	self->priv->damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (display),
 								  		CCM_PIXMAP_XPIXMAP (self),
 								  		XDamageReportDeltaRectangles);
-
-    XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
-					 None, None);
+	if (!_ccm_display_pop_error (display))
+	{
+    	XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
+						 None, None);
 	
-	g_signal_connect_swapped(display, "damage-event", 
-							 G_CALLBACK(ccm_pixmap_on_damage), self);
+		g_signal_connect_swapped(display, "damage-event", 
+								 G_CALLBACK(ccm_pixmap_on_damage), self);
+	}
+	else
+		self->priv->damage = None;
 }
 
 CCMPixmap*
@@ -247,6 +252,11 @@ ccm_pixmap_new (CCMWindow* window, Pixmap xpixmap)
 		return NULL;
 	}
 	ccm_pixmap_register_damage(self, ccm_drawable_get_display(CCM_DRAWABLE(window)));
+	if (!self->priv->damage)
+	{
+		g_object_unref(self);
+		return NULL;
+	}
 	ccm_pixmap_bind(self);
 	ccm_drawable_damage(CCM_DRAWABLE(self));
 	

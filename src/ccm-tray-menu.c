@@ -23,6 +23,7 @@
 #include <config.h>
 
 #include "ccm.h"
+#include "ccm-debug.h"
 #include "ccm-display.h"
 #include "ccm-tray-menu.h"
 
@@ -104,6 +105,8 @@ ccm_tray_menu_ccm_menu_activate (CCMTrayMenu* self, GtkWidget* ccm_menu)
 {
 	gboolean val = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(ccm_menu));
 	
+	ccm_debug("CCM ACTIVATE %i", val);
+	
 	ccm_config_set_boolean (self->priv->config, val);
 }
 
@@ -139,12 +142,15 @@ ccm_tray_menu_enable_ccm_changed (CCMTrayMenu * self, CCMConfig* config)
 {
 	gboolean val = ccm_config_get_boolean (config);
 	
+	ccm_debug("CCM ENABLE %i", val);
+		
 	if (val)
 	{
 		if (!self->priv->display) self->priv->display = ccm_display_new(NULL);
 	}
 	else if (self->priv->display) 
 	{
+		ccm_debug("UNSET CCM");
 		g_object_unref(self->priv->display);
 		self->priv->display = NULL;
 	}
