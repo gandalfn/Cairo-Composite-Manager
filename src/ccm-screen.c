@@ -630,6 +630,10 @@ static gboolean
 impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 						   CCMWindow* window)
 {
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(window != NULL, FALSE);
+	g_return_val_if_fail(plugin != NULL, FALSE);
+	
 	ccm_debug_window(window, "ADD");
 
 	self->priv->windows = g_list_append (self->priv->windows, window);

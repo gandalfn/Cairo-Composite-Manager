@@ -739,6 +739,68 @@ ccm_window_get_child_text_property (CCMWindow* self, Atom atom)
 }
 
 static void
+ccm_window_query_hint_type_sync(CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
+	guint32* result = NULL;
+	guint n_items;
+	
+	ccm_debug_window(self, "QUERY HINT TYPE");
+	result = ccm_window_get_property (self, 
+									  CCM_WINDOW_GET_CLASS(self)->type_atom,
+									  XA_ATOM, &n_items);
+	
+	if (result)
+	{
+		CCMWindowType old = self->priv->hint_type;
+		Atom atom;
+		memcpy (&atom, result, sizeof (Atom));
+		ccm_debug_atom(display, atom, "DATA HINT TYPE");
+		
+		if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_menu_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_MENU;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_desktop_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_DESKTOP;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dock_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_DOCK;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_toolbar_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_TOOLBAR;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_util_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_UTILITY;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_splash_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_SPLASH;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dialog_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dropdown_menu_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_DROPDOWN_MENU;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_popup_menu_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_POPUP_MENU;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_tooltip_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_TOOLTIP;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_notification_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_NOTIFICATION;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_combo_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_COMBO;
+		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dnd_atom)
+			self->priv->hint_type = CCM_WINDOW_TYPE_DND;
+		
+		if (old != self->priv->hint_type)
+		{
+			ccm_debug_atom(display, atom, "HINT TYPE 0x%lx %s %i", 
+						   CCM_WINDOW_XWINDOW(self),
+						   ccm_window_get_name (self),
+						   self->priv->hint_type);
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+		}
+		
+		g_free(result);
+	}
+}
+
+static void
 ccm_window_query_child(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
@@ -990,7 +1052,7 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 		}
 		cairo_set_source_surface(context, surface, 0.0f, 0.0f);
 		cairo_paint_with_alpha(context, self->priv->opacity);
-		ret  = TRUE;
+		ret = cairo_status (context) == CAIRO_STATUS_SUCCESS;
 	}		
 	
 	return ret;
@@ -1119,7 +1181,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	if (!self->is_input_only)
 	{
 		ccm_window_query_child (self);
-		ccm_window_query_hint_type(self);
+		ccm_window_query_hint_type_sync (self);
 		ccm_window_query_transient_for(self);
 		ccm_window_query_wm_hints(self);
 		ccm_window_query_mwm_hints(self);

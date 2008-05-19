@@ -1,3 +1,9 @@
+2008-05-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-window.c: Get hint type in sync on window creation.
+    * src/ccm-screen.c: Add assert.
+    * plugins/menu-animation/ccm-menu-animation.c: Enhance animation.
+
 2008-05-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/Makefile.am:

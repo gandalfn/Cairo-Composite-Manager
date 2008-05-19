@@ -58,6 +58,7 @@ struct _CCMMenuAnimationPrivate
 	
 	CCMWindowType  type;
 	CCMRegion*	   opaque;
+	gfloat		   opacity;
 	gfloat		   scale;
 	gint 		   way;
 	
@@ -132,7 +133,9 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 		if (geometry && (self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP))
 		{
 			damage = ccm_region_copy (geometry);
-			ccm_region_scale(damage, self->priv->scale, self->priv->scale);
+			ccm_region_scale(damage, self->priv->scale > 0.5f ? 1.0f : 
+								     self->priv->scale  * 2, 
+							 self->priv->scale);
 		}
 				
 		self->priv->scale = self->priv->way & CCM_MENU_ANIMATION_ON_MAP ? 
@@ -150,7 +153,9 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 				self->priv->window->opaque = ccm_region_copy(self->priv->opaque);
 			}
 			ccm_region_scale(self->priv->window->opaque, 
-							 self->priv->scale, self->priv->scale);
+							 self->priv->scale > 0.5f ? 1.0f : 
+								     self->priv->scale  * 2, 
+							 self->priv->scale);
 		} 
 		else if (self->priv->opaque)
 		{
@@ -161,7 +166,9 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 		if (geometry && (self->priv->way & CCM_MENU_ANIMATION_ON_MAP))
 		{
 			damage = ccm_region_copy (geometry);
-			ccm_region_scale(damage, self->priv->scale, self->priv->scale);
+			ccm_region_scale(damage, self->priv->scale > 0.5f ? 1.0f : 
+								     self->priv->scale  * 2, 
+							 self->priv->scale);
 		}
 		if (damage)
 		{
@@ -187,6 +194,7 @@ ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAni
 				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 			}
 			self->priv->scale = 1.0f;
+			ccm_window_set_opacity (self->priv->window, self->priv->opacity);
 			self->priv->way = CCM_MENU_ANIMATION_NONE;
 			ret = FALSE;
 		}
@@ -208,6 +216,7 @@ ccm_menu_animation_on_property_changed(CCMMenuAnimation* self, CCMWindow* window
 		self->priv->opaque = NULL;
 	}
 	if (window->opaque)	self->priv->opaque = ccm_region_copy(window->opaque);
+	self->priv->opacity = ccm_window_get_opacity (window);
 	self->priv->type = ccm_window_get_hint_type (window);
 }
 
@@ -290,14 +299,19 @@ ccm_menu_animation_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	gboolean ret;
 	
 	cairo_save(context);
-	if (self->priv->scale < 1.0f) 
+	if (self->priv->scale < 1.0f && self->priv->scale > 0.0f) 
 	{
 		cairo_matrix_t matrix;
 		
 		cairo_get_matrix (context, &matrix);
-		cairo_matrix_scale (&matrix, self->priv->scale, self->priv->scale);
+		cairo_matrix_scale (&matrix, 
+							self->priv->scale > 0.5f ? 1.0f : 
+								self->priv->scale  * 2, 
+							self->priv->scale);
 		cairo_set_matrix (context, &matrix);
+		ccm_window_set_opacity (window, self->priv->opacity * self->priv->scale / 2);
 	}
+	
 	ret = ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT(plugin), window, 
 								   context, surface, y_invert);
 	cairo_restore (context);
