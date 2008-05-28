@@ -924,7 +924,7 @@ ccm_timeline_list_markers (CCMTimeline *self,
     gchar **retval = NULL;
     gint i;
 
-    g_return_val_if_fail (CCM_IS_TIMELINE (self), NULL);
+	g_return_val_if_fail (CCM_IS_TIMELINE (self), NULL);
 
     if (frame_num < 0)
     {

@@ -30,8 +30,14 @@ enum
 };
 
 typedef struct {
-	gpointer func;
-	gint	 count;
+	CCMPluginUnlockFunc	callback;
+	gpointer			data;
+} CCMPluginLockCallback;
+
+typedef struct {
+	gpointer 			func;
+	gint	 			count;
+	GSList*				callbacks;
 } CCMPluginLock;
 
 struct _CCMPluginPrivate
@@ -118,6 +124,19 @@ ccm_plugin_class_init (CCMPluginClass *klass)
 							  G_PARAM_READWRITE));
 }
 
+static void
+_ccm_plugin_lock_free(CCMPluginLock* lock)
+{
+	g_return_if_fail(lock != NULL);
+	
+	if (lock->callbacks != NULL)
+	{
+		g_slist_foreach (lock->callbacks, (GFunc)g_free, NULL);
+		g_slist_free (lock->callbacks);
+	}
+	g_free(lock);
+}
+
 static GHashTable*
 _ccm_plugin_get_lock_table(GObject* obj, gboolean create)
 {
@@ -128,7 +147,7 @@ _ccm_plugin_get_lock_table(GObject* obj, gboolean create)
 	if (create && !lock_table)
 	{
 		lock_table = g_hash_table_new_full (g_str_hash, g_str_equal, 
-											NULL, g_free);
+											NULL, (GDestroyNotify)_ccm_plugin_lock_free);
 		g_object_set_qdata_full (obj, CCMPLuginLockTable, (gpointer)lock_table,
 								 (GDestroyNotify)g_hash_table_destroy);
 	}
@@ -151,7 +170,8 @@ _ccm_plugin_method_locked(GObject* obj, gpointer func)
 }
 
 void
-_ccm_plugin_lock_method(GObject* obj, gpointer func)
+_ccm_plugin_lock_method(GObject* obj, gpointer func, 
+						CCMPluginUnlockFunc callback, gpointer data)
 {
 	g_return_if_fail(obj != NULL);
 	
@@ -167,43 +187,58 @@ _ccm_plugin_lock_method(GObject* obj, gpointer func)
 	}
 	else
 	{
-		lock = g_new(CCMPluginLock, 1);
+		lock = g_new0(CCMPluginLock, 1);
 		lock->func = func;
 		lock->count = 1;
 		g_hash_table_insert(lock_table, func, lock);
 	}
+	
+	if (callback)
+	{
+		CCMPluginLockCallback* cb = g_new(CCMPluginLockCallback, 1);
+	
+		cb->callback = callback;
+		cb->data = data;
+		lock->callbacks = g_slist_append(lock->callbacks, cb);
+	}
+		
 	ccm_debug("LOCK COUNT %i", lock->count);
 }
 
-gboolean
+void
 _ccm_plugin_unlock_method(GObject* obj, gpointer func)
 {
-	g_return_val_if_fail(obj != NULL, FALSE);
-	g_return_val_if_fail(func != NULL, FALSE);
+	g_return_if_fail(obj != NULL);
+	g_return_if_fail(func != NULL);
 	
 	GHashTable* lock_table = _ccm_plugin_get_lock_table (obj, TRUE);
 	
-	if (lock_table == NULL || func == NULL) return FALSE;
+	if (lock_table == NULL || func == NULL) return;
 	
 	CCMPluginLock* lock = g_hash_table_lookup (lock_table, func);
 	
-	gboolean ret = FALSE;
-	
 	if (!lock)
 	{
-		ret = TRUE;
 		ccm_debug("UNLOCK NOTLOCKED");
 	}
 	else if (!(--lock->count))
 	{
+		if (lock->callbacks)
+		{
+			GSList* item;
+			
+			for (item = lock->callbacks; item; item = item->next)
+			{
+				CCMPluginLockCallback* cb = (CCMPluginLockCallback*)item->data;
+				
+				if (cb->callback) cb->callback(cb->data);
+			}
+		}
 		g_hash_table_remove (lock_table, func);
 		ccm_debug("UNLOCK");
-		ret = TRUE;
 	}
 	else
 		ccm_debug("UNLOCK LOCK COUNT %i", lock->count);
-	
-	return ret;
 }
 
 GObject*

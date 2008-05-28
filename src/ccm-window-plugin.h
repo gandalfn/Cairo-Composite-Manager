@@ -37,23 +37,23 @@ G_BEGIN_DECLS
 
 #define CCM_WINDOW_PLUGIN_PARENT(obj)	    ((CCMWindowPlugin*)ccm_plugin_get_parent((CCMPlugin*)obj))
 #define CCM_WINDOW_PLUGIN_ROOT(obj)	   	    ((CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)obj))
-#define CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, func) \
+#define CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, func, callback, data) \
 { \
 	CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
 \
 	if (r && CCM_WINDOW_PLUGIN_GET_INTERFACE(r) && \
 		CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
-		_ccm_plugin_lock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func); \
+		_ccm_plugin_lock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func, \
+								 callback, data); \
 }
 
-#define CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func, unlocked) \
+#define CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func) \
 { \
 	CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
 \
-	unlocked = FALSE; \
 	if (r && CCM_WINDOW_PLUGIN_GET_INTERFACE(r) && \
 		CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
-		unlocked = _ccm_plugin_unlock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func); \
+		_ccm_plugin_unlock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func); \
 }
 
 typedef struct _CCMWindowPluginClass CCMWindowPluginClass;

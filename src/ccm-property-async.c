@@ -121,7 +121,7 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 	CCMPropertyASync* self = CCM_PROPERTY_ASYNC(dta);
 	xGetPropertyReply replbuf, *reply;
 	
-	if (rep->generic.sequenceNumber != self->priv->request_seq)
+	if (dpy->last_request_read != self->priv->request_seq)
 		return False;
 	
 	if (rep->generic.type == X_Error)

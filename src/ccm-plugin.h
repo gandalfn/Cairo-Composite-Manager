@@ -40,6 +40,8 @@ typedef struct _CCMPluginPrivate CCMPluginPrivate;
 typedef struct _CCMPluginClass CCMPluginClass;
 typedef struct _CCMPlugin CCMPlugin;
 
+typedef  void (*CCMPluginUnlockFunc) (gpointer data);
+
 struct _CCMPluginClass
 {
 	GObjectClass parent_class;
@@ -110,8 +112,10 @@ prefix##_get_plugin_type (GTypeModule * plugin) \
 }
 
 gboolean 	_ccm_plugin_method_locked	(GObject* obj, gpointer func);
-void 		_ccm_plugin_lock_method		(GObject* obj, gpointer func);
-gboolean 	_ccm_plugin_unlock_method	(GObject* obj, gpointer func);
+void 		_ccm_plugin_lock_method		(GObject* obj, gpointer func, 
+										 CCMPluginUnlockFunc callback, 
+										 gpointer data);
+void	 	_ccm_plugin_unlock_method	(GObject* obj, gpointer func);
 
 G_END_DECLS
 

@@ -119,30 +119,30 @@ ccm_menu_animation_on_new_frame (CCMMenuAnimation* self, int num_frame,
 	ccm_window_set_transform (self->priv->window, &matrix);
 }
 
+static void
+ccm_menu_animation_on_map_unmap_unlocked(CCMMenuAnimation* self)
+{
+	ccm_window_init_transfrom (self->priv->window);
+}
 
 static void
 ccm_menu_animation_finish (CCMMenuAnimation* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	gboolean unlocked = FALSE;
-	
 	ccm_debug_window(self->priv->window, "MENU ANIMATION COMPLETED");
-	ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 	
 	if (ccm_timeline_get_direction (self->priv->timeline) == CCM_TIMELINE_FORWARD)
 	{
-		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, map, unlocked);
-		if (unlocked)
-			ccm_window_plugin_map((CCMWindowPlugin*)self->priv->window,
-								  self->priv->window);
+		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, map);
+		ccm_window_plugin_map((CCMWindowPlugin*)self->priv->window,
+							  self->priv->window);	
 	}
 	else
 	{
-		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, unmap, unlocked);
-		if (unlocked)
-			ccm_window_plugin_unmap((CCMWindowPlugin*)self->priv->window,
-								  self->priv->window);
+		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, unmap);
+		ccm_window_plugin_unmap((CCMWindowPlugin*)self->priv->window,
+								self->priv->window);
 	}
 }
 
@@ -150,7 +150,6 @@ static void
 ccm_menu_animation_on_completed (CCMMenuAnimation* self, CCMTimeline* timeline)
 {
 	ccm_menu_animation_finish(self);
-	ccm_window_init_transfrom (self->priv->window);
 }
 
 static void
@@ -166,7 +165,6 @@ ccm_menu_animation_on_error (CCMMenuAnimation* self, CCMWindow* window)
 	{
 		ccm_timeline_stop(self->priv->timeline);
 		ccm_menu_animation_finish(self);
-		ccm_window_init_transfrom (window);
 	}
 }
 
@@ -227,7 +225,9 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 			cairo_matrix_scale(&matrix, 0.01, 0.01);
 			ccm_window_set_transform (window, &matrix);
 		}
-		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map);
+		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, 
+										   (CCMPluginUnlockFunc)ccm_menu_animation_on_map_unmap_unlocked,
+										   self);
 		
 		ccm_debug_window(window, "MENU ANIMATION MAP");
 		
@@ -264,7 +264,9 @@ ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 			ccm_window_init_transfrom (window);
 			
 		
-		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap);
+		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap, 
+										   (CCMPluginUnlockFunc)ccm_menu_animation_on_map_unmap_unlocked,
+										   self);
 		
 		ccm_debug_window(window, "MENU ANIMATION UNMAP");
 		ccm_timeline_set_direction (self->priv->timeline, 

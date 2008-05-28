@@ -97,17 +97,14 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 	if (!self->priv->gl_drawable)
 	{
 		glitz_format_t templ;
-		XWindowAttributes attribs;
+		XWindowAttributes* attribs = _ccm_window_get_attribs(CCM_WINDOW(self));
 		
-		if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-							  	   CCM_WINDOW_XWINDOW(self),
-								   &attribs))
-			return FALSE;
+		if (!attribs) return FALSE;
 		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
 				screen->number,
-				XVisualIDFromVisual (attribs.visual));
+				XVisualIDFromVisual (attribs->visual));
 		
 		if (!format)
 		{
@@ -124,7 +121,7 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 											screen->number,
 											format,
 											CCM_WINDOW_XWINDOW(self),
-											attribs.width, attribs.height);
+											attribs->width, attribs->height);
 		if (!self->priv->gl_drawable)
 		{
 			g_warning("Error on create glitz drawable");
@@ -156,22 +153,17 @@ ccm_window_glitz_create_gl_surface(CCMWindowGlitz* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-		
 	if (!self->priv->gl_surface && 
 		ccm_window_glitz_create_gl_drawable(self))
 	{
-		XWindowAttributes attribs;
+		XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_WINDOW(self));
 		
-		if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-								   CCM_WINDOW_XWINDOW(self),
-								   &attribs))
-			return FALSE;
+		if (!attribs) return FALSE;
 		
 		self->priv->gl_surface = glitz_surface_create(
 											self->priv->gl_drawable,
 											self->priv->gl_format,
-											attribs.width, attribs.height,
+											attribs->width, attribs->height,
 											0, NULL);
 		if (self->priv->gl_surface)
 		{

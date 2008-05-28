@@ -36,23 +36,23 @@ G_BEGIN_DECLS
 
 #define CCM_SCREEN_PLUGIN_PARENT(obj)	   		((CCMScreenPlugin*)ccm_plugin_get_parent((CCMPlugin*)obj))
 #define CCM_SCREEN_PLUGIN_ROOT(obj)	   	    	((CCMScreenPlugin*)_ccm_screen_plugin_get_root((CCMScreenPlugin*)obj))
-#define CCM_SCREEN_PLUGIN_LOCK_ROOT_METHOD(plugin, func) \
+#define CCM_SCREEN_PLUGIN_LOCK_ROOT_METHOD(plugin, func, callback, data) \
 { \
 	CCMScreenPlugin* r = (CCMScreenPlugin*)_ccm_screen_plugin_get_root((CCMScreenPlugin*)plugin); \
 \
 	if (r && CCM_SCREEN_PLUGIN_GET_INTERFACE(r) && \
 		CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func) \
-		_ccm_plugin_lock_method ((GObject*)r, CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func); \
+		_ccm_plugin_lock_method ((GObject*)r, CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func, \
+								 callback, data); \
 }
 
-#define CCM_SCREEN_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func, unlocked) \
+#define CCM_SCREEN_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func) \
 { \
 	CCMScreenPlugin* r = (CCMScreenPlugin*)_ccm_window_plugin_get_root((CCMScreenPlugin*)plugin); \
 \
-	unlocked = FALSE; \
 	if (r && CCM_SCREEN_PLUGIN_GET_INTERFACE(r) && \
 		CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func) \
-		unlocked = _ccm_plugin_unlock_method ((GObject*)r, CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func); \
+		_ccm_plugin_unlock_method ((GObject*)r, CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func); \
 }
 
 typedef struct _CCMScreenPluginClass CCMScreenPluginClass;

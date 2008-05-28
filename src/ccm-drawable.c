@@ -318,7 +318,11 @@ ccm_drawable_query_geometry(CCMDrawable* self)
 	
 	if (CCM_DRAWABLE_GET_CLASS(self)->query_geometry)
 	{
-		if (self->priv->geometry) ccm_region_destroy(self->priv->geometry);
+		if (self->priv->geometry) 
+		{
+			ccm_region_destroy(self->priv->geometry);
+			self->priv->geometry = NULL;
+		}
 		self->priv->geometry = CCM_DRAWABLE_GET_CLASS(self)->query_geometry(self);
 	}
 	
@@ -357,12 +361,7 @@ ccm_drawable_get_geometry(CCMDrawable* self)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
-	if (self->priv->geometry)
-	{
-		return self->priv->geometry;
-	}
-	
-	return NULL;
+	return self->priv->geometry;
 }
 
 /**

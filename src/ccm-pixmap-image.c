@@ -89,13 +89,12 @@ ccm_pixmap_image_bind (CCMPixmap* pixmap)
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(pixmap));
 	cairo_format_t format = ccm_window_get_format (CCM_PIXMAP(self)->window);
 	gint depth = ccm_window_get_depth (CCM_PIXMAP(self)->window);
-	XWindowAttributes attribs;
+	XWindowAttributes* attribs;
 		
-	if (XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-							  CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
-							  &attribs))
-		self->priv->image = ccm_image_new(display, attribs.visual, format, 
-										  attribs.width, attribs.height, depth);
+	attribs = _ccm_window_get_attribs (CCM_PIXMAP(self)->window);
+	if (attribs)
+		self->priv->image = ccm_image_new(display, attribs->visual, format, 
+										  attribs->width, attribs->height, depth);
 	else
 		ccm_debug("PIXMAP BIND ERROR");
 }

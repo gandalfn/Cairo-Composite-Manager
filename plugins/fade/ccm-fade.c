@@ -112,25 +112,27 @@ ccm_fade_on_new_frame(CCMFade* self, gint num_frame, CCMTimeline* timeline)
 }
 
 static void
+ccm_fade_on_map_unmap_unlocked(CCMFade* self)
+{
+	ccm_window_set_opacity (self->priv->window, self->priv->origin);
+}
+
+static void
 ccm_fade_finish(CCMFade* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	gboolean unlocked = FALSE;
-	
 	if (ccm_timeline_get_direction (self->priv->timeline) == CCM_TIMELINE_FORWARD)
 	{
-		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, map, unlocked);
-		if (unlocked)
-			ccm_window_plugin_map((CCMWindowPlugin*)self->priv->window,
-								  self->priv->window);
+		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, map);
+		ccm_window_plugin_map((CCMWindowPlugin*)self->priv->window,
+						  self->priv->window);
 	}
 	else
 	{
-		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, unmap, unlocked);
-		if (unlocked)
-			ccm_window_plugin_unmap((CCMWindowPlugin*)self->priv->window,
-								    self->priv->window);
+		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, unmap);
+		ccm_window_plugin_unmap((CCMWindowPlugin*)self->priv->window,
+								self->priv->window);
 	}
 }
 
@@ -140,9 +142,6 @@ ccm_fade_on_completed(CCMFade* self, CCMTimeline* timeline)
 	g_return_if_fail(self != NULL);
 
 	ccm_fade_finish(self);
-	
-	ccm_window_set_opacity (self->priv->window, self->priv->origin);
-	ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 }
 
 static void
@@ -154,9 +153,7 @@ ccm_fade_on_error(CCMFade* self, CCMWindow* window)
 		
 		ccm_timeline_stop(self->priv->timeline);
 		
-		ccm_window_set_opacity (self->priv->window, self->priv->origin);
 		ccm_fade_finish(self);
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 	}
 }
 
@@ -184,6 +181,7 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	self->priv->window = window;
 	self->priv->origin = ccm_window_get_opacity (window);
+	
 	g_signal_connect_swapped(window, "property-changed",
 							 G_CALLBACK(ccm_fade_on_property_changed), 
 							 self);
@@ -193,7 +191,7 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 
 	duration = ccm_config_get_float(self->priv->options[CCM_FADE_DURATION]);
 	self->priv->timeline = ccm_timeline_new((int)(60 * duration), 60);
-		
+	
 	g_signal_connect_swapped(self->priv->timeline, "new-frame", 
 							 G_CALLBACK(ccm_fade_on_new_frame), self);
 	g_signal_connect_swapped(self->priv->timeline, "completed", 
@@ -218,7 +216,9 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		ccm_window_set_opacity (window, 0.0);
 	}
 	
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map);
+	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, 
+									   (CCMPluginUnlockFunc)ccm_fade_on_map_unmap_unlocked, 
+									   self);
 	
 	ccm_debug_window(window, "FADE MAP");
 	ccm_timeline_set_direction (self->priv->timeline, 
@@ -247,7 +247,9 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	else
 		ccm_window_set_opacity (window, self->priv->origin);
 	
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap);
+	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap, 
+									   (CCMPluginUnlockFunc)ccm_fade_on_map_unmap_unlocked, 
+									   self);
 		
 	ccm_debug_window(window, "FADE UNMAP");
 	ccm_timeline_set_direction (self->priv->timeline, 

@@ -258,12 +258,12 @@ ccm_screen_print_stack(CCMScreen* self)
 	
 	GList* item;
 	
-	g_print("XID\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\tName\n");
+	ccm_debug("STACK: XID\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\tName\n");
 	for (item = self->priv->windows; item; item = item->next)
 	{
 		CCMWindow* transient = ccm_window_transient_for (item->data);
 		CCMWindow* leader = ccm_window_get_group_leader (item->data);
-		g_print("0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t0x%lx\t0x%lx\t%s\n", 
+		ccm_debug("STACK: 0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t0x%lx\t0x%lx\t%s\n", 
 				CCM_WINDOW_XWINDOW(item->data), 
 				CCM_WINDOW(item->data)->is_viewable,
 				ccm_window_get_hint_type (item->data),
@@ -340,15 +340,18 @@ ccm_screen_find_window_or_child(CCMScreen* self, Window xwindow)
 	g_return_val_if_fail(xwindow != None, NULL);
 	
 	GList* item;
+	CCMWindow* child = NULL;
 	
-	for (item = g_list_first(self->priv->windows); item; item = item->next)
+	for (item = g_list_last(self->priv->windows); item; item = item->prev)
 	{
-		if (CCM_WINDOW_XWINDOW(item->data) == xwindow ||
-			_ccm_window_get_child (item->data) == xwindow)
+		if (CCM_WINDOW_XWINDOW(item->data) == xwindow)
 			return CCM_WINDOW(item->data);
+		else if (_ccm_window_get_child (item->data) == xwindow)
+			child = CCM_WINDOW(item->data);
 	}
+	if (child) ccm_debug_window(child, "PARENT OF 0x%lx", xwindow);
 	
-	return NULL;
+	return child;
 }
 
 static void
@@ -477,16 +480,13 @@ ccm_screen_check_stack(CCMScreen* self)
 	
 	for (cpt = 0; cpt < self->priv->n_windows; cpt++)
 	{
-		CCMWindow* window = ccm_screen_find_window_or_child (self, self->priv->stack[cpt]);
+		CCMWindow* window = ccm_screen_find_window (self, self->priv->stack[cpt]);
 		
-		if (window)	
+		if (window && !g_list_find(stack, window))
 		{
-			if (!g_list_find(stack, window))
-			{
-				stack = g_list_append(stack, window);
-				if (window->is_viewable || 	window->unmap_pending) 
-					viewable = g_list_append(viewable, window);
-			}
+			stack = g_list_append(stack, window);
+			if (window->is_viewable) 
+				viewable = g_list_append(viewable, window);
 		}
 	}
 	
@@ -942,6 +942,8 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			XCreateWindowEvent* create_event = ((XCreateWindowEvent*)event);
 			CCMWindow* window = ccm_screen_find_window(self,
 													   create_event->window);
+			ccm_debug("CREATE 0x%lx", create_event->window);
+						
 			if (!window) 
 			{
 				CCMWindow* root = ccm_screen_get_root_window(self);
@@ -971,8 +973,10 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		break;
 		case MapNotify:
 		{	
-			CCMWindow* window;
+			CCMWindow* window, *parent;
 			
+			parent = ccm_screen_find_window(self,
+											((XMapEvent*)event)->event);
 			window = ccm_screen_find_window (self,
 											((XMapEvent*)event)->window);
 			if (window) 
@@ -980,6 +984,19 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				ccm_debug_window(window, "MAP");
 				ccm_window_map(window);
 			}
+			else if (parent == self->priv->root)
+			{
+				window = ccm_window_new(self, ((XMapEvent*)event)->window);
+				if (window)
+				{
+					ccm_debug_window(window, "CREATE MAP");
+					if (!ccm_screen_add_window(self, window))
+						g_object_unref(window);
+					else
+						ccm_window_map(window);
+				}
+			}
+				
 		}
 		break;
 		case UnmapNotify:
@@ -999,8 +1016,10 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		{
 			CCMWindow* window = ccm_screen_find_window(self,
 											((XReparentEvent*)event)->window);
-			
-			if (((XReparentEvent*)event)->parent == CCM_WINDOW_XWINDOW(self->priv->root))
+			CCMWindow* parent = ccm_screen_find_window(self,
+											((XReparentEvent*)event)->parent);
+				
+			if (parent == self->priv->root)
 			{
 				if (!window)
 				{
@@ -1013,10 +1032,11 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 					}
 				}
 			}
-			else if (window) 
+			else if (parent && window)
 			{
 				ccm_debug_window(window, "REPARENT REMOVE");
 				ccm_screen_remove_window (self, window);
+				ccm_drawable_damage(CCM_DRAWABLE(parent));
 			}
 		}
 		break;
@@ -1124,7 +1144,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom ||
 				property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_list_atom)
 			{
-				ccm_screen_check_stack (self);
+				ccm_screen_add_check_pending (self);
 			}
 			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->transient_for_atom)
 			{

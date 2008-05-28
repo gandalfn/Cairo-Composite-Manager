@@ -1,4 +1,24 @@
 2008-05-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+    
+    * plugins/fade/ccm-fade.c:
+    * plugins/menu-animation/ccm-menu-animation.c:
+    * src/ccm-plugin.c:
+    * src/ccm-plugin.h:
+    * src/ccm-screen-plugin.h:
+    * src/ccm-window-plugin.h: Serialize unlock plugin operations.
+    
+    * src/ccm-pixmap-glitz.c:
+    * src/ccm-pixmap-image.c: 
+    * src/ccm-window-glitz.c: Get window attributes with _ccm_window_get_attribs.
+    
+    * src/ccm-drawable.c:
+    * src/ccm-timeline.c: Typo fixes .
+    
+    * src/ccm-property-async.c:
+    * src/ccm-screen.c:
+    * src/ccm-window.c: Fixes some redraw issues.
+
+2008-05-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-screen.c: Add check stack on property/state change.
 

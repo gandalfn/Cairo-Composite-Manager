@@ -526,7 +526,7 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			gdouble old = self->priv->opacity;
 			guint32 value;
 			memcpy (&value, result, sizeof (guint32));
-			self->priv->opacity = (double)(value >> 16) / (double)0xffff;
+			self->priv->opacity = (double)value/ (double)0xffffffff;
 			
 			ccm_debug_window(self, "OPACITY %f", self->priv->opacity);
 			if (self->priv->opacity == 1.0f && 
@@ -1104,13 +1104,13 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	self->unmap_pending = FALSE;
-	self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
 	ccm_debug_window(self, "IMPL WINDOW UNMAP");
 	if (self->priv->pixmap)
 	{
 		g_object_unref(self->priv->pixmap);
 		self->priv->pixmap = NULL;
 	}
+	ccm_drawable_damage(CCM_DRAWABLE(self));
 }
 	
 static void
@@ -1209,6 +1209,14 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	ccm_window_plugin_load_options(self->priv->plugin, self);
 	
 	if (!ccm_drawable_query_geometry(CCM_DRAWABLE(self)))
+	{
+		g_object_unref(self);
+		return NULL;
+	}
+	
+	if (self->priv->attribs.root != None && 
+		xwindow != RootWindowOfScreen(CCM_SCREEN_XSCREEN(screen)) &&
+		self->priv->attribs.root != RootWindowOfScreen(CCM_SCREEN_XSCREEN(screen)))
 	{
 		g_object_unref(self);
 		return NULL;
@@ -1501,6 +1509,35 @@ ccm_window_keep_below(CCMWindow* self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	return self->priv->keep_below;
+}
+
+gboolean
+ccm_window_is_child(CCMWindow* self, Window window)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(self != None, FALSE);
+	
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
+	Window* windows = NULL, w, p;
+	guint n_windows, cpt;
+	gboolean ret  = FALSE;
+	
+	if (XQueryTree(CCM_DISPLAY_XDISPLAY(display), 
+			   CCM_WINDOW_XWINDOW(self), &w, &p, 
+			   &windows, &n_windows) && windows)
+	{
+		for (cpt = 0; cpt < n_windows; cpt++)
+		{
+			if (windows[cpt] == window) 
+			{
+				ret = TRUE;
+				break;
+			}
+		}
+		XFree(windows);
+	}
+	
+	return ret;
 }
 
 CCMWindow*
@@ -1840,8 +1877,6 @@ ccm_window_map(CCMWindow* self)
 		ccm_debug_window(self, "WINDOW MAP");
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
-	else
-		ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void
