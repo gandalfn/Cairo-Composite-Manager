@@ -1,5 +1,9 @@
 2008-05-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-screen.c: Add check stack on property/state change.
+
+2008-05-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * src/ccm-animation.c: (Remove)
     * src/ccm-animation.h: (Remove)
     * src/ccm-timeline.c:

@@ -648,6 +648,8 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
 	g_return_if_fail(window != NULL);
 	
 	ccm_debug_window(window, "PROPERTY_CHANGED");
+	
+	ccm_screen_add_check_pending(self);
 }
 
 static void
@@ -668,6 +670,8 @@ ccm_screen_on_window_state_changed(CCMScreen* self, CCMWindow* window)
 		ccm_debug_window(window, "UNFULLSCREEN");
 		self->priv->fullscreen = NULL;
 	}
+	
+	ccm_screen_add_check_pending(self);
 }
 
 static gboolean
