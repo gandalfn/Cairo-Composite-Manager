@@ -26,6 +26,7 @@
 #include "ccm-window.h"
 #include "ccm-screen.h"
 #include "ccm-display.h"
+#include "ccm-timeline.h"
 #include "ccm-freeze.h"
 #include "ccm.h"
 
@@ -62,7 +63,7 @@ struct _CCMFreezePrivate
 	guint id_ping;
 	guint32 last_ping;
 	
-	CCMAnimation* animation;
+	CCMTimeline* timeline;
 	CCMConfig* options[CCM_FREEZE_OPTION_N];
 };
 
@@ -77,7 +78,7 @@ ccm_freeze_init (CCMFreeze *self)
 	self->priv->window = NULL;
 	self->priv->id_ping = 0;
 	self->priv->last_ping = 0;
-	self->priv->animation = NULL;
+	self->priv->timeline = NULL;
 }
 
 static void
@@ -90,34 +91,10 @@ ccm_freeze_finalize (GObject *object)
 	self->priv->opacity = 0.0f;
 	self->priv->id_ping = 0;
 	self->priv->last_ping = 0;
-	if (self->priv->animation) 
-		g_object_unref (self->priv->animation);
+	if (self->priv->timeline) 
+		g_object_unref (self->priv->timeline);
 	
 	G_OBJECT_CLASS (ccm_freeze_parent_class)->finalize (object);
-}
-
-static gfloat
-interpolate (gfloat t, gfloat begin, gfloat end, gfloat power)
-{
-    return (begin + (end - begin) * pow (t, power));
-}
-
-static gboolean
-ccm_freeze_animation (CCMAnimation* animation, gfloat elapsed, CCMFreeze* self)
-{
-	gboolean ret = FALSE;
-	
-	if (!self->priv->alive && self->priv->opacity < 0.5)
-	{
-		gfloat duration = ccm_config_get_float(self->priv->options[CCM_FREEZE_DURATION]);
-		gfloat step = elapsed / duration;
-		
-		self->priv->opacity = interpolate(step, 0.0, 0.5, 1);
-		ret = self->priv->opacity < 0.5;
-		if (ret) ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-	}
-	
-	return ret;
 }
 
 static void
@@ -131,6 +108,19 @@ ccm_freeze_class_init (CCMFreezeClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMFreezePrivate));
 	
 	object_class->finalize = ccm_freeze_finalize;
+}
+
+static void
+ccm_freeze_on_new_frame (CCMFreeze* self, guint num_frame, 
+						 CCMTimeline* timeline)
+{
+	if (!self->priv->alive && self->priv->opacity < 0.5)
+	{
+		gfloat progress = ccm_timeline_get_progress (timeline);
+		
+		self->priv->opacity = progress / 2.0f;
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+	}
 }
 
 static void
@@ -152,7 +142,7 @@ ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
 		{
 			self->priv->alive = TRUE;
 			self->priv->last_ping = 0;
-			ccm_animation_stop(self->priv->animation);
+			ccm_timeline_start(self->priv->timeline);
 		}
 	}
 }
@@ -167,7 +157,7 @@ ccm_freeze_ping(CCMFreeze* self)
 		if (type != CCM_WINDOW_TYPE_NORMAL && type != CCM_WINDOW_TYPE_UNKNOWN)
 		{
 			self->priv->alive = TRUE;
-			ccm_animation_stop(self->priv->animation);
+			ccm_timeline_stop(self->priv->timeline);
 			return FALSE;
 		}
 		
@@ -181,12 +171,12 @@ ccm_freeze_ping(CCMFreeze* self)
 		if (self->priv->last_ping)
 		{
 			self->priv->alive = FALSE;
-			ccm_animation_start(self->priv->animation);
+			ccm_timeline_start(self->priv->timeline);
 		}
 		else
 		{
 			self->priv->alive = TRUE;
-			ccm_animation_stop(self->priv->animation);
+			ccm_timeline_stop(self->priv->timeline);
 			if (self->priv->opacity > 0)
 				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 			self->priv->opacity = 0.0f;
@@ -219,6 +209,7 @@ ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
 	gint cpt;
+	gfloat duration;
 	
 	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; cpt++)
 	{
@@ -231,9 +222,11 @@ ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	g_signal_connect_swapped(G_OBJECT(display), "event", 
 							 G_CALLBACK(ccm_freeze_on_event), self);
 	
-	self->priv->animation = ccm_animation_new(screen, 
-										(CCMAnimationFunc)ccm_freeze_animation, 
-										self);
+	duration = ccm_config_get_float(self->priv->options[CCM_FREEZE_DURATION]);
+	self->priv->timeline = ccm_timeline_new((int)(60.0 * duration), 60);
+		
+	g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+							 G_CALLBACK(ccm_freeze_on_new_frame), self);
 	
 	if (CCM_FREEZE_GET_CLASS(self)->protocol_atom == None)
 		CCM_FREEZE_GET_CLASS(self)->protocol_atom = 
@@ -298,7 +291,7 @@ ccm_freeze_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 		g_source_remove (self->priv->id_ping);
 		self->priv->id_ping = 0;
 		self->priv->alive = TRUE;
-		ccm_animation_stop(self->priv->animation);
+		ccm_timeline_stop(self->priv->timeline);
 	}
 	ccm_window_plugin_unmap(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
@@ -342,7 +335,7 @@ ccm_freeze_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen,
 		g_source_remove (self->priv->id_ping);
 		self->priv->id_ping = 0;
 		self->priv->alive = TRUE;
-		ccm_animation_stop(self->priv->animation);
+		ccm_timeline_stop(self->priv->timeline);
 	}
 	ccm_screen_plugin_remove_window(CCM_SCREEN_PLUGIN_PARENT(plugin), screen,
 									window);
@@ -351,15 +344,15 @@ ccm_freeze_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen,
 static void
 ccm_freeze_window_iface_init(CCMWindowPluginClass* iface)
 {
-	iface->load_options 	= ccm_freeze_load_options;
-	iface->query_geometry 	= NULL;
-	iface->paint 			= ccm_freeze_paint;
-	iface->map				= ccm_freeze_map;
-	iface->unmap			= ccm_freeze_unmap;
-	iface->query_opacity  	= NULL;
-	iface->set_opaque		= NULL;
-	iface->move				= NULL;
-	iface->resize			= NULL;
+	iface->load_options 	 = ccm_freeze_load_options;
+	iface->query_geometry 	 = NULL;
+	iface->paint 			 = ccm_freeze_paint;
+	iface->map				 = ccm_freeze_map;
+	iface->unmap			 = ccm_freeze_unmap;
+	iface->query_opacity  	 = NULL;
+	iface->move				 = NULL;
+	iface->resize			 = NULL;
+	iface->set_opaque_region = NULL;
 }
 
 static void

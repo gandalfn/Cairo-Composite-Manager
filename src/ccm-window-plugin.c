@@ -20,6 +20,7 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
+#include "ccm-debug.h"
 #include "ccm-window-plugin.h"
 
 static void
@@ -79,12 +80,20 @@ ccm_window_plugin_load_options(CCMWindowPlugin* self, CCMWindow* window)
 	CCMWindowPlugin* plugin;
 	
 	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
-	
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options)
+			break;
+	}
+    
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options)
-  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options(plugin, window);
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+						CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options))
+			CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options(plugin, 
+																   window);
+	}
 }
 
 CCMRegion*
@@ -96,15 +105,21 @@ ccm_window_plugin_query_geometry (CCMWindowPlugin* self, CCMWindow* window)
 	CCMWindowPlugin* plugin;
 	
 	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
-	
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry)
+			break;
+	}
+    
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry)
-  		return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry (plugin, 
-																	     window);
-	else
-		return NULL;
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+					CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry))
+			return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry (plugin, 
+																		     window);
+	}
+	return NULL;
 }
 
 gboolean 
@@ -118,17 +133,27 @@ ccm_window_plugin_paint (CCMWindowPlugin* self, CCMWindow* window,
 	g_return_val_if_fail (surface != NULL, FALSE);
 
   	CCMWindowPlugin* plugin;
-	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
 	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint)
+			break;
+	}
+    
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint)
-  		return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint (plugin, window, 
-																ctx, surface,
-																y_invert);
-	else
-		return FALSE;
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+							 CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint))
+			return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint (plugin, 
+																	window, 
+																	ctx, 
+																	surface,
+																	y_invert);
+	}
+	
+	return FALSE;
 }
 
 void
@@ -140,12 +165,21 @@ ccm_window_plugin_map(CCMWindowPlugin* self, CCMWindow* window)
 	CCMWindowPlugin* plugin;
 	
 	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
-	
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map)
+			break;
+	}
+    
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map)
-  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map(plugin, window);
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+							 CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map))
+			CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map(plugin, window);
+		else
+			ccm_debug("LOCKED");
+	}
 }
 
 void
@@ -157,12 +191,23 @@ ccm_window_plugin_unmap(CCMWindowPlugin* self, CCMWindow* window)
 	CCMWindowPlugin* plugin;
 	
 	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
-	
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap)
+			break;
+		else
+			ccm_debug("PLUGIN NEXT");
+	}
+    
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap)
-  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap(plugin, window);
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+							 CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap))
+			CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap(plugin, window);
+		else
+			ccm_debug("LOCKED");
+	}
 }
 
 void
@@ -174,29 +219,19 @@ ccm_window_plugin_query_opacity(CCMWindowPlugin* self, CCMWindow* window)
 	CCMWindowPlugin* plugin;
 	
 	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
-	
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity)
+			break;
+	}
+    
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity)
-  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity(plugin, window);
-}
-
-void
-ccm_window_plugin_set_opaque(CCMWindowPlugin* self, CCMWindow* window)
-{
-  	g_return_if_fail (CCM_IS_WINDOW_PLUGIN (self));
-	g_return_if_fail (window != NULL);
-
-	CCMWindowPlugin* plugin;
-	
-	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
-	
-	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque)
-  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque(plugin, window);
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+					CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity))
+			CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity(plugin, window);
+	}
 }
 
 void
@@ -209,12 +244,19 @@ ccm_window_plugin_move(CCMWindowPlugin* self, CCMWindow* window,
 	CCMWindowPlugin* plugin;
 	
 	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
-	
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move)
+			break;
+	}
+    
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move)
-  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move(plugin, window, x, y);
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+							 CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move))
+		  CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move(plugin, window, x, y);
+	}
 }
 
 void
@@ -227,11 +269,46 @@ ccm_window_plugin_resize(CCMWindowPlugin* self, CCMWindow* window,
 	CCMWindowPlugin* plugin;
 	
 	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize; 
-		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin));
-	
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize)
+			break;
+	}
+    
 	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize)
-  		CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize(plugin, window,
-														 width, height);
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+							 CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize))
+			CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize(plugin, window,
+															 width, height);
+	}
 }
+
+void
+ccm_window_plugin_set_opaque_region(CCMWindowPlugin* self, CCMWindow* window,
+									CCMRegion* area)
+{
+	g_return_if_fail (CCM_IS_WINDOW_PLUGIN (self));
+	g_return_if_fail (window != NULL);
+
+	CCMWindowPlugin* plugin;
+       
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque_region)
+			break;
+	}
+    
+	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque_region)
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+				CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque_region))
+			CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque_region(plugin, 
+																		window, 
+																		area);
+	}
+}
+

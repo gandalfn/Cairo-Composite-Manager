@@ -143,6 +143,8 @@ void          	ccm_region_subtract        (CCMRegion     *source1,
 											CCMRegion     *source2);
 void          	ccm_region_xor             (CCMRegion     *source1,
 											CCMRegion     *source2);
+void            ccm_region_transform        (CCMRegion *region, 
+                                             cairo_matrix_t* matrix);
 /******************************************************************************/
 
 /********************************** Display ***********************************/
@@ -275,6 +277,14 @@ guint32*        ccm_window_get_property             (CCMWindow* self,
                                                      Atom property_atom, 
                                                      Atom req_type, 
                                                      guint *n_items);
+void            ccm_window_init_transfrom           (CCMWindow* self);
+void            ccm_window_get_transform            (CCMWindow* self, 
+                                                     cairo_matrix_t* matrix);
+void            ccm_window_set_transform            (CCMWindow* self, 
+                                                     cairo_matrix_t* matrix);
+void            ccm_window_transform                (CCMWindow* self, 
+                                                     cairo_t* ctx, 
+                                                     gboolean y_invert);
 /******************************************************************************/
 
 /******************************** Config **************************************/

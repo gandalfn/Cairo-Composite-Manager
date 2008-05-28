@@ -70,8 +70,7 @@ ccm_log_window (CCMWindow* window, const char *format, ...)
 	formatted = g_strdup_vprintf (format, args);
 	va_end (args);
 	
-	ccm_print_log("%s: 0x%lx %s\n", formatted, CCM_WINDOW_XWINDOW(window), 
-				  ccm_window_get_name(window));
+	ccm_print_log("%s: 0x%lx\n", formatted, CCM_WINDOW_XWINDOW(window));
 	g_free(formatted);
 } 
 

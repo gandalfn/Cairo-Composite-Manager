@@ -208,6 +208,8 @@ ccm_pixmap_on_damage(CCMPixmap* self, Damage damage, CCMDisplay* display)
 			XFree(rects);
 			ccm_drawable_damage_region (CCM_DRAWABLE(self), damaged);
 		}
+		else
+			ccm_debug("DAMAGE ERROR");
 		XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY (display), region);
 		ccm_region_destroy (damaged);
 	}

@@ -45,6 +45,7 @@ static guint signals[N_SIGNALS] = { 0 };
 
 static gboolean ccm_screen_paint(CCMScreen* self);
 static void ccm_screen_iface_init(CCMScreenPluginClass* iface);
+static void ccm_screen_unset_selection_owner(CCMScreen* self);
 
 G_DEFINE_TYPE_EXTENDED (CCMScreen, ccm_screen, G_TYPE_OBJECT, 0,
 						G_IMPLEMENT_INTERFACE(CCM_TYPE_SCREEN_PLUGIN,
@@ -92,11 +93,11 @@ struct _CCMScreenPrivate
 	gboolean			filtered_damage;
 	
 	guint				id_paint;
+	guint				id_pendings;
 	
 	CCMExtensionLoader* plugin_loader;
 	CCMScreenPlugin*	plugin;
 
-	GSList*				animations;
 	CCMConfig*			options[CCM_SCREEN_OPTION_N];
 };
 
@@ -131,8 +132,8 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->buffered = FALSE;
 	self->priv->filtered_damage = TRUE;
 	self->priv->id_paint = 0;
+	self->priv->id_pendings = 0;
 	self->priv->plugin_loader = NULL;
-	self->priv->animations = NULL;
 }
 
 static void
@@ -143,14 +144,16 @@ ccm_screen_finalize (GObject *object)
 	
 	ccm_debug("FINALIZE SCREEN");
 	
-	if (self->priv->animations)
-		g_slist_free(self->priv->animations);
+	ccm_screen_unset_selection_owner(self);
 	
 	if (self->priv->plugin_loader)
 		g_object_unref(self->priv->plugin_loader);
 	
 	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; cpt++)
 		g_object_unref(self->priv->options[cpt]);
+	
+	if (self->priv->id_pendings)
+		g_source_remove(self->priv->id_pendings);
 	
 	if (self->priv->id_paint)
 		g_source_remove(self->priv->id_paint);
@@ -184,19 +187,6 @@ ccm_screen_finalize (GObject *object)
 									   CCM_WINDOW_XWINDOW(self->priv->cow));
 		ccm_display_sync(self->priv->display);
 		g_object_unref(self->priv->cow);
-	}
-	if (self->priv->selection_owner != None)
-	{
-		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", self->number);
-		Atom cm_atom = XInternAtom(CCM_DISPLAY_XDISPLAY(self->priv->display), 
-								   cm_atom_name, 0);
-		
-		g_free(cm_atom_name);
-		XDestroyWindow (CCM_DISPLAY_XDISPLAY(self->priv->display), 
-						self->priv->selection_owner);
-		ccm_debug("UNSET SELECTION OWNER");
-		XSetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
-							cm_atom, None, CurrentTime);
 	}
 	
 	G_OBJECT_CLASS (ccm_screen_parent_class)->finalize (object);
@@ -361,6 +351,26 @@ ccm_screen_find_window_or_child(CCMScreen* self, Window xwindow)
 	return NULL;
 }
 
+static void
+ccm_screen_unset_selection_owner(CCMScreen* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	if (self->priv->selection_owner != None)
+	{
+		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", self->number);
+		Atom cm_atom = XInternAtom(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+								   cm_atom_name, 0);
+		g_free(cm_atom_name);
+		 
+		XDestroyWindow (CCM_DISPLAY_XDISPLAY(self->priv->display),
+						self->priv->selection_owner);
+			
+		XSetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+							cm_atom, None, 0);
+	}
+}
+
 static gboolean
 ccm_screen_set_selection_owner(CCMScreen* self)
 {
@@ -375,7 +385,7 @@ ccm_screen_set_selection_owner(CCMScreen* self)
 		
 		g_free(cm_atom_name);
 		 
-		if (0 && XGetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+		if (XGetSelectionOwner (CCM_DISPLAY_XDISPLAY(self->priv->display), 
 								cm_atom) != None)
 		{
 			g_critical("\nScreen %d already has a composite manager running, \n"
@@ -468,30 +478,30 @@ ccm_screen_check_stack(CCMScreen* self)
 	for (cpt = 0; cpt < self->priv->n_windows; cpt++)
 	{
 		CCMWindow* window = ccm_screen_find_window_or_child (self, self->priv->stack[cpt]);
+		
 		if (window)	
 		{
-			stack = g_list_append(stack, window);
-			if (window->is_viewable || 	window->unmap_pending) 
-				viewable = g_list_append(viewable, window);
+			if (!g_list_find(stack, window))
+			{
+				stack = g_list_append(stack, window);
+				if (window->is_viewable || 	window->unmap_pending) 
+					viewable = g_list_append(viewable, window);
+			}
 		}
 	}
 	
 	for (item = g_list_first(self->priv->windows); item; item = item->next)
 	{
-		if (CCM_WINDOW(item->data)->is_viewable || 
-			CCM_WINDOW(item->data)->unmap_pending)
-		{
-			GList* link = g_list_find(stack, item->data);
+		GList* link = g_list_find(stack, item->data);
 		
-			if (!link) 
-			{
-				ccm_debug_window(item->data, "NOT FOUND");
-				removed = g_list_append (removed, item->data);
-			}
-			else
-			{
-				new_viewable = g_list_append (new_viewable, item->data);
-			}
+		if (!link) 
+		{
+			ccm_debug_window(item->data, "NOT FOUND");
+			removed = g_list_append (removed, item->data);
+		}
+		else if (CCM_WINDOW(item->data)->is_viewable)
+		{
+			new_viewable = g_list_append (new_viewable, item->data);
 		}
 	}
 	for (item = g_list_first(removed); item; item = item->next)
@@ -579,7 +589,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 	
 	for (item = g_list_first(self->priv->windows); item; item = item->next)
 	{
-		CCMWindow* window = item->data;
+		CCMWindow* window = CCM_WINDOW(item->data);
 		
 		if (!window->is_input_only)
 		{
@@ -601,6 +611,36 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 	return ret;
 }
 
+static gboolean
+ccm_screen_on_check_stack_pendings(CCMScreen* self)
+{
+	ccm_screen_check_stack (self);
+	
+	self->priv->id_pendings = 0;
+	
+	return FALSE;
+}
+
+static void
+ccm_screen_add_check_pending(CCMScreen* self)
+{
+	if (!self->priv->id_pendings)
+		self->priv->id_pendings = g_idle_add_full (G_PRIORITY_HIGH,
+							(GSourceFunc)ccm_screen_on_check_stack_pendings,
+							self, NULL);
+}
+
+static void
+ccm_screen_on_error(CCMScreen* self, CCMWindow* window)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(window != NULL);
+	
+	ccm_debug_window(window, "WINDOW_ERROR");
+	
+	ccm_screen_add_check_pending(self);
+}
+
 static void
 ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
 {
@@ -608,8 +648,6 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
 	g_return_if_fail(window != NULL);
 	
 	ccm_debug_window(window, "PROPERTY_CHANGED");
-	
-	ccm_screen_check_stack (self);
 }
 
 static void
@@ -620,10 +658,16 @@ ccm_screen_on_window_state_changed(CCMScreen* self, CCMWindow* window)
 	
 	ccm_debug_window(window, "STATE_CHANGED");
 	
-	if (ccm_window_is_fullscreen (window))
+	if (ccm_window_is_fullscreen (window) && self->priv->fullscreen != window)
+	{
+		ccm_debug_window(window, "FULLSCREEN");
 		self->priv->fullscreen = window;
+	}
 	else if (self->priv->fullscreen == window)
+	{
+		ccm_debug_window(window, "UNFULLSCREEN");
 		self->priv->fullscreen = NULL;
+	}
 }
 
 static gboolean
@@ -640,6 +684,8 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	
 	g_signal_connect_swapped(window, "damaged", 
 							 G_CALLBACK(ccm_screen_on_window_damaged), self);
+	g_signal_connect_swapped(window, "error", 
+							 G_CALLBACK(ccm_screen_on_error), self);
 	g_signal_connect_swapped(window, "property-changed", 
 							 G_CALLBACK(ccm_screen_on_window_property_changed), self);
 	g_signal_connect_swapped(window, "state-changed", 
@@ -664,6 +710,9 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 		self->priv->windows = g_list_remove(self->priv->windows, window);
 		g_signal_handlers_disconnect_by_func(window, 
 											 ccm_screen_on_window_damaged, 
+											 self);
+		g_signal_handlers_disconnect_by_func(window, 
+											 ccm_screen_on_error, 
 											 self);
 		g_signal_handlers_disconnect_by_func(window, 
 											 ccm_screen_on_window_property_changed, 
@@ -693,14 +742,6 @@ ccm_screen_paint(CCMScreen* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	GSList* item;
-	
-	for (item = self->priv->animations; item; item = item->next)
-	{	
-		if (!_ccm_animation_main (item->data))
-			_ccm_screen_remove_animation (self, item->data);
-	}
-			
 	if (self->priv->cow)
 	{
 		if (!self->priv->ctx)
@@ -754,18 +795,46 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 		
 		// Substract opaque region of window to damage region below
 		if (self->priv->filtered_damage && window->opaque && 
-			(window->is_viewable || window->unmap_pending))
+			window->is_viewable)
 		{
 			ccm_region_subtract(damage_below, window->opaque);
 		}
 		
+		if (self->priv->fullscreen && self->priv->fullscreen != window &&
+			self->priv->fullscreen != ccm_window_transient_for (window) &&
+			self->priv->fullscreen != ccm_window_get_group_leader (window) &&
+			g_list_index(self->priv->windows, window) < 
+				 g_list_index(self->priv->windows, self->priv->fullscreen) &&
+			self->priv->fullscreen->is_viewable)
+		{
+			if (self->priv->fullscreen->opaque)
+			{
+				// substract opaque region of fullscreen window to damage
+				ccm_region_subtract(damage_below, 
+									self->priv->fullscreen->opaque);
+				ccm_region_subtract(damage_above, 
+									self->priv->fullscreen->opaque);
+				// Undamage opaque region
+				ccm_drawable_undamage_region(CCM_DRAWABLE(window), 
+											 self->priv->fullscreen->opaque);
+			}
+						
+			// If no below damage or window is undamaged
+			if (ccm_region_empty (damage_below) ||
+				!ccm_drawable_is_damaged (CCM_DRAWABLE(window)))
+			{
+				ccm_region_destroy (damage_below);
+				ccm_region_destroy (damage_above);
+				return;
+			}
+		}
+
 		// Substract all obscured area to damage region
 		for (item = g_list_last(self->priv->windows); 
 			 self->priv->filtered_damage && item; item = item->prev)
 		{
 			if (!((CCMWindow*)item->data)->is_input_only &&
-				(((CCMWindow*)item->data)->is_viewable ||
-				 ((CCMWindow*)item->data)->unmap_pending) && 
+				((CCMWindow*)item->data)->is_viewable && 
 				CCM_WINDOW_XWINDOW(item->data) != CCM_WINDOW_XWINDOW(window))
 			{
 				if (((CCMWindow*)item->data)->opaque)
@@ -821,7 +890,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 				else
 				{
 					if (self->priv->filtered_damage && 
-						(window->is_viewable || window->unmap_pending) &&
+						window->is_viewable &&
 						window->opaque && !ccm_region_empty(window->opaque))
 					{
 						ccm_debug_window(item->data, "UNDAMAGE BELOW");
@@ -898,7 +967,9 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		break;
 		case MapNotify:
 		{	
-			CCMWindow* window = ccm_screen_find_window (self,
+			CCMWindow* window;
+			
+			window = ccm_screen_find_window (self,
 											((XMapEvent*)event)->window);
 			if (window) 
 			{
@@ -909,7 +980,9 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		break;
 		case UnmapNotify:
 		{	
-			CCMWindow* window = ccm_screen_find_window (self,
+			CCMWindow* window;
+			
+			window = ccm_screen_find_window (self,
 											((XUnmapEvent*)event)->window);
 			if (window) 
 			{
@@ -1028,7 +1101,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			XPropertyEvent* property_event = (XPropertyEvent*)event;
 			XEvent ce;
 			CCMWindow* window;
-
+			
 			ccm_debug_atom(self->priv->display, property_event->atom, 
 						   "PROPERTY_NOTIFY");
 
@@ -1042,12 +1115,10 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
                     break;
                 }
                 property_event = &ce.xproperty;
-				
-				ccm_debug_atom(self->priv->display, property_event->atom, 
-						   "COMPRESS PROPERTY_NOTIFY");
             }
 			
-			if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom)
+			if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom ||
+				property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_list_atom)
 			{
 				ccm_screen_check_stack (self);
 			}
@@ -1068,6 +1139,12 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				window = ccm_screen_find_window_or_child (self,
 													   property_event->window);
 				if (window) ccm_window_query_hint_type(window);
+			}
+			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->mwm_hints_atom)
+			{
+				window = ccm_screen_find_window_or_child (self,
+													   property_event->window);
+				if (window) ccm_window_query_mwm_hints (window);
 			}
 			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->state_atom)
 			{
@@ -1253,24 +1330,6 @@ _ccm_screen_get_window_plugins(CCMScreen* self)
 	g_slist_free(filter);
 	
 	return plugins;
-}
-
-void
-_ccm_screen_add_animation(CCMScreen* self, CCMAnimation* animation)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(self != NULL);
-	
-	self->priv->animations = g_slist_append(self->priv->animations, animation);
-}
-
-void
-_ccm_screen_remove_animation(CCMScreen* self, CCMAnimation* animation)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(self != NULL);
-	
-	self->priv->animations = g_slist_remove(self->priv->animations, animation);
 }
 
 void 

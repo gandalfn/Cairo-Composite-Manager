@@ -109,6 +109,10 @@ prefix##_get_plugin_type (GTypeModule * plugin) \
   g_type_module_add_interface (plugin, prefix##_type, TYPE_IFACE, &g_implement_interface_info); \
 }
 
+gboolean 	_ccm_plugin_method_locked	(GObject* obj, gpointer func);
+void 		_ccm_plugin_lock_method		(GObject* obj, gpointer func);
+gboolean 	_ccm_plugin_unlock_method	(GObject* obj, gpointer func);
+
 G_END_DECLS
 
 #endif /* _CCM_PLUGIN_H_ */

@@ -33,6 +33,7 @@ static guint signals[N_SIGNALS] = { 0 };
 struct _CCMPropertyASyncPrivate
 {
 	CCMDisplay* 	display;
+	Window			window;
 	
 	Atom			property;
 	_XAsyncHandler  async;
@@ -120,16 +121,23 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 	CCMPropertyASync* self = CCM_PROPERTY_ASYNC(dta);
 	xGetPropertyReply replbuf, *reply;
 	
-	if (dpy->last_request_read != self->priv->request_seq)
+	if (rep->generic.sequenceNumber != self->priv->request_seq)
 		return False;
 	
 	if (rep->generic.type == X_Error)
-    	return False;
-    
+	{
+		_XGetAsyncReply(dpy, (char *)&replbuf, rep, buf, len,
+						(sizeof(xError) - sizeof(xReply)) >> 2,
+						False);
+		return True;
+	}
+	
+	ccm_debug("ASYNC PROPERTY: 0x%lx", self->priv->window);
+	
 	reply = (xGetPropertyReply *)
 		    _XGetAsyncReply(dpy, (char *)&replbuf, rep, buf, len,
 							(sizeof(xGetPropertyReply) - sizeof(xReply)) >> 2,
-							True);
+							False);
 	
 	if (reply->propertyType != None)
 	{
@@ -200,6 +208,7 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 				nbytes = netbytes = 0L;
           	break;
         }
+	
 		if (self->priv->data)
 		{
 			self->priv->n_items = reply->nItems;
@@ -211,7 +220,7 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 		{
 			ccm_debug("BAD ALLOC");
 			_XGetAsyncData (dpy, NULL, buf, len,
-                            sizeof(xGetPropertyReply), 0, netbytes);
+							sizeof(xGetPropertyReply), 0, netbytes);
 			return BadAlloc;
 		}
 	}
@@ -231,6 +240,7 @@ ccm_property_async_new(CCMDisplay* display, Window window, Atom property,
 	xGetPropertyReq *req;
 	
 	self->priv->display = display;
+	self->priv->window = window;
 	self->priv->property = property;
 	
 	LockDisplay (dpy);
@@ -260,5 +270,5 @@ ccm_property_async_get_property(CCMPropertyASync* self)
 {
 	g_return_val_if_fail(self != NULL, None);
 	
-	return self->priv->property;
+	return self->priv ? self->priv->property : None;
 }

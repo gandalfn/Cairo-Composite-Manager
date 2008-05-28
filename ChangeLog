@@ -1,3 +1,44 @@
+2008-05-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-animation.c: (Remove)
+    * src/ccm-animation.h: (Remove)
+    * src/ccm-timeline.c:
+    * src/ccm-timeline.h:
+    * src/Makefile.am: New implementation for animation (timeline) mostly 
+                       inspirated by GtkTimeline:
+                       http://bugzilla.gnome.org/show_bug.cgi?id=444659
+    
+    * src/ccm-screen-plugin.c:
+    * src/ccm-screen-plugin.h:
+    * src/ccm-window-plugin.c:
+    * src/ccm-window-plugin.h:
+    * src/ccm-plugin.c:
+    * src/ccm-plugin.h: Fix plugin methods chain, implement methods lock.
+    
+    * plugins/fade/ccm-fade.c:
+    * plugins/freeze/ccm-freeze.c:
+    * plugins/magnifier/ccm-magnifier.c:
+    * plugins/menu-animation/ccm-menu-animation.c:
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/perf/ccm-perf.c:
+    * plugins/shadow/ccm-shadow.c: Some fixes and change to use timeline and
+                                   plugin lock methods.
+                                   
+    * src/ccm-debug.c:
+    * src/ccm-display.c:
+    * src/ccm-image.c:
+    * src/ccm-pixmap-image.c:
+    * src/ccm-pixmap.c:
+    * src/ccm-property-async.c:
+    * src/ccm-region.c:
+    * src/ccm-screen.c:
+    * src/ccm-screen.h:
+    * src/ccm-window.c:
+    * src/ccm.h: Some fixes and performance improvements.
+    
+    * configure.ac: Bump to 0.1.99 version, begin of 0.2.0 test phase.
+
 2008-05-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-window.c: Get hint type in sync on window creation.

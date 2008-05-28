@@ -56,6 +56,20 @@ ccm_screen_plugin_get_type (void)
   	return ccm_screen_plugin_type;
 }
 
+CCMScreenPlugin*
+_ccm_screen_plugin_get_root(CCMScreenPlugin* self)
+{
+  	g_return_val_if_fail (CCM_IS_SCREEN_PLUGIN (self), NULL);
+	
+	CCMScreenPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin));
+	
+	return plugin;
+}
+
 void
 ccm_screen_plugin_load_options(CCMScreenPlugin* self, CCMScreen* screen)
 {
@@ -63,13 +77,21 @@ ccm_screen_plugin_load_options(CCMScreenPlugin* self, CCMScreen* screen)
 	g_return_if_fail (screen != NULL);
 	
   	CCMScreenPlugin* plugin;
-	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options; 
-		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin));
 	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options)
+			break;
+	}
+    
 	if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options)
-  		CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options (plugin, screen);
+	{
+		if (!_ccm_plugin_method_locked ((GObject*)plugin, 
+					CCM_SCREEN_PLUGIN_GET_INTERFACE  (plugin)->load_options))
+  			CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options (plugin, screen);
+	}
 }
 
 gboolean
@@ -82,15 +104,22 @@ ccm_screen_plugin_paint (CCMScreenPlugin* self, CCMScreen* screen, cairo_t* ctx)
   	CCMScreenPlugin* plugin;
 	
 	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint; 
-		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin));
-	
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint)
+			break;
+	}
+    
 	if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint)
-  		return CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint (plugin, screen, 
-															    ctx);
-	else
-		return FALSE;
+	{
+		if (!_ccm_plugin_method_locked ((GObject*)plugin, 
+							CCM_SCREEN_PLUGIN_GET_INTERFACE  (plugin)->paint))
+  			return CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint (plugin, 
+																	screen, 
+																	ctx);
+	}
+	return FALSE;
 }
 
 gboolean
@@ -102,17 +131,25 @@ ccm_screen_plugin_add_window (CCMScreenPlugin* self, CCMScreen* screen,
 	g_return_val_if_fail (window != NULL, FALSE);
 	
   	CCMScreenPlugin* plugin;
-	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window; 
-		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin));
 	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window)
+			break;
+	}
+    
 	if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window)
-  		return CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window (plugin, 
-																	 screen,
-																	 window);
-	else
-		return FALSE;
+	{
+		if (!_ccm_plugin_method_locked ((GObject*)plugin, 
+						CCM_SCREEN_PLUGIN_GET_INTERFACE  (plugin)->add_window))
+  			return CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window (plugin, 
+																		 screen,
+																	     window);
+	}
+	
+	return FALSE;
 }
 
 void
@@ -124,12 +161,21 @@ ccm_screen_plugin_remove_window (CCMScreenPlugin* self, CCMScreen* screen,
 	g_return_if_fail (window != NULL);
 	
   	CCMScreenPlugin* plugin;
-	for (plugin = self; 
-		 CCM_IS_PLUGIN(plugin) && 
-		 !CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window; 
-		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin));
 	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window)
+			break;
+	}
+    
 	if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window)
-  		CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window(plugin, screen,
-																window);
+	{
+		if (!_ccm_plugin_method_locked ((GObject*)plugin, 
+					CCM_SCREEN_PLUGIN_GET_INTERFACE  (plugin)->remove_window))
+  			CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window(plugin, 
+																	screen,
+																	window);
+	}
 }

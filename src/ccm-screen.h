@@ -26,7 +26,6 @@
 #include <glib-object.h>
 
 #include "ccm.h"
-#include "ccm-animation.h"
 #include "ccm-screen-plugin.h"
 
 G_BEGIN_DECLS
@@ -65,10 +64,6 @@ gchar*			 _ccm_screen_get_window_backend	(CCMScreen* self);
 gboolean		 _ccm_screen_native_pixmap_bind (CCMScreen* self);
 gboolean		 _ccm_screen_indirect_rendering (CCMScreen* self);
 CCMScreenPlugin* _ccm_screen_get_plugin			(CCMScreen *self, GType type);
-void			 _ccm_screen_add_animation		(CCMScreen* self, 
-												 CCMAnimation* animation);
-void			 _ccm_screen_remove_animation	(CCMScreen* self, 
-												 CCMAnimation* animation);
 void 			 _ccm_screen_set_buffered		(CCMScreen* self, 
 												 gboolean buffered);
 G_END_DECLS

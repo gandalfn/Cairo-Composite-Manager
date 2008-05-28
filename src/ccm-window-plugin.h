@@ -35,8 +35,26 @@ G_BEGIN_DECLS
 #define CCM_IS_WINDOW_PLUGIN(obj)          	   (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_WINDOW_PLUGIN))
 #define CCM_WINDOW_PLUGIN_GET_INTERFACE(obj)   (G_TYPE_INSTANCE_GET_INTERFACE ((obj), CCM_TYPE_WINDOW_PLUGIN, CCMWindowPluginClass))
 
-#define CCM_WINDOW_PLUGIN_PARENT(obj)	   ((CCMWindowPlugin*)ccm_plugin_get_parent((CCMPlugin*)obj))
-#define CCM_WINDOW_PLUGIN_ROOT(obj)	   	   ((CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)obj))
+#define CCM_WINDOW_PLUGIN_PARENT(obj)	    ((CCMWindowPlugin*)ccm_plugin_get_parent((CCMPlugin*)obj))
+#define CCM_WINDOW_PLUGIN_ROOT(obj)	   	    ((CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)obj))
+#define CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, func) \
+{ \
+	CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
+\
+	if (r && CCM_WINDOW_PLUGIN_GET_INTERFACE(r) && \
+		CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
+		_ccm_plugin_lock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func); \
+}
+
+#define CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func, unlocked) \
+{ \
+	CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
+\
+	unlocked = FALSE; \
+	if (r && CCM_WINDOW_PLUGIN_GET_INTERFACE(r) && \
+		CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
+		unlocked = _ccm_plugin_unlock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func); \
+}
 
 typedef struct _CCMWindowPluginClass CCMWindowPluginClass;
 typedef struct _CCMWindowPlugin CCMWindowPlugin;
@@ -58,43 +76,44 @@ struct _CCMWindowPluginClass
 											 CCMWindow* window);
 	void 			  (*query_opacity)		(CCMWindowPlugin* self, 
 											 CCMWindow* window);
-	void 			  (*set_opaque)			(CCMWindowPlugin* self, 
-											 CCMWindow* window);
 	void			  (*move)	 			(CCMWindowPlugin* self, 
 											 CCMWindow* window,
 											 int x, int y);
 	void			  (*resize)	 			(CCMWindowPlugin* self, 
 											 CCMWindow* window,
 											 int width, int height);
-
+	void			  (*set_opaque_region)	(CCMWindowPlugin* self, 
+											 CCMWindow* window,
+											 CCMRegion* area);
 };
 
 GType ccm_window_plugin_get_type (void) G_GNUC_CONST;
 
-CCMWindowPlugin* _ccm_window_plugin_get_root(CCMWindowPlugin* self);
-void 		ccm_window_plugin_load_options	(CCMWindowPlugin* self, 
-											 CCMWindow* window);
-CCMRegion* 	ccm_window_plugin_query_geometry(CCMWindowPlugin* self,
-											 CCMWindow* window);
-gboolean 	ccm_window_plugin_paint 		(CCMWindowPlugin* self, 
-											 CCMWindow* window,
-								  			 cairo_t* ctx, 
-											 cairo_surface_t* surface,
-											 gboolean y_invert);
-void 		ccm_window_plugin_map			(CCMWindowPlugin* self, 
-											 CCMWindow* window);
-void 		ccm_window_plugin_unmap			(CCMWindowPlugin* self, 
-										     CCMWindow* window);
-void 		ccm_window_plugin_query_opacity (CCMWindowPlugin* self, 
-										     CCMWindow* window);
-void		ccm_window_plugin_set_opaque	(CCMWindowPlugin* self, 
-											 CCMWindow* window);
-void		ccm_window_plugin_move			(CCMWindowPlugin* self, 
-											 CCMWindow* window,
-											 int x, int y);
-void		ccm_window_plugin_resize		(CCMWindowPlugin* self, 
-											 CCMWindow* window,
-											 int width, int height);
+CCMWindowPlugin* _ccm_window_plugin_get_root	(CCMWindowPlugin* self);
+void 		ccm_window_plugin_load_options		(CCMWindowPlugin* self, 
+											 	 CCMWindow* window);
+CCMRegion* 	ccm_window_plugin_query_geometry	(CCMWindowPlugin* self,
+											 	 CCMWindow* window);
+gboolean 	ccm_window_plugin_paint 			(CCMWindowPlugin* self, 
+											 	 CCMWindow* window,
+								  			 	 cairo_t* ctx, 
+											 	 cairo_surface_t* surface,
+											 	 gboolean y_invert);
+void 		ccm_window_plugin_map				(CCMWindowPlugin* self, 
+											 	 CCMWindow* window);
+void 		ccm_window_plugin_unmap				(CCMWindowPlugin* self, 
+										     	 CCMWindow* window);
+void 		ccm_window_plugin_query_opacity 	(CCMWindowPlugin* self, 
+										     	 CCMWindow* window);
+void		ccm_window_plugin_move				(CCMWindowPlugin* self, 
+												 CCMWindow* window,
+												 int x, int y);
+void		ccm_window_plugin_resize			(CCMWindowPlugin* self, 
+											 	 CCMWindow* window,
+											 	 int width, int height);
+void		ccm_window_plugin_set_opaque_region (CCMWindowPlugin* self, 
+											 	 CCMWindow* window,
+											 	 CCMRegion* area);
 
 G_END_DECLS
 

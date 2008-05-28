@@ -73,6 +73,7 @@ SOFTWARE.
 #include <string.h>
 #include <math.h>
 
+#include "ccm-debug.h"
 #include "ccm-region.h"
 
 typedef struct RegionBox RegionBox;
@@ -859,6 +860,73 @@ ccm_region_scale (CCMRegion *region,
     height = _cairo_lround((double)(region->extents.y2 - region->extents.y1) * scale_height) + 1;
     
     ccm_region_resize(region, width, height);
+}
+
+/* Transform(pRegion, matrix)
+   transform a region
+   added by gandalfn for ccm
+*/
+void
+ccm_region_transform (CCMRegion *region, cairo_matrix_t* matrix)
+{
+    g_return_if_fail (region != NULL);
+	g_return_if_fail (matrix != NULL);
+    
+    int nbox;
+    RegionBox *pbox;
+        
+    pbox = region->rects;
+    nbox = region->numRects;
+    
+    if (matrix->xx == 0 || matrix->yy == 0)
+    {
+        region->numRects = 0;
+        return;
+    }
+    
+    while(nbox--)
+    {
+        pbox->x1 += matrix->x0;
+	    pbox->x2 = _cairo_lround(((double)pbox->x2 - (double)pbox->x1) * 
+                                 matrix->xx) + pbox->x1;
+        pbox->y1 += matrix->y0;
+	    pbox->y2 = _cairo_lround(((double)pbox->y2 - (double)pbox->y1) * 
+                                 matrix->yy) + pbox->y1;
+	    pbox++;
+    }
+    
+    region->extents.x1 += matrix->x0;
+    region->extents.x2 = _cairo_lround(((double)region->extents.x2 - 
+                                        (double)region->extents.x1) * 
+                                       matrix->xx) + region->extents.x1;
+    region->extents.y1 += matrix->y0;
+    region->extents.y2 = _cairo_lround(((double)region->extents.y2 - 
+                                        (double)region->extents.y1) * 
+                                       matrix->yy) + region->extents.y1;
+}
+
+void
+_ccm_region_print (CCMRegion *region)
+{
+    g_return_if_fail (region != NULL);
+	
+    int nbox;
+    RegionBox *pbox;
+        
+    pbox = region->rects;
+    nbox = region->numRects;
+    
+    ccm_debug("REGION: %i,%i %i,%i", region->extents.x1, region->extents.y1,
+              region->extents.x2 - region->extents.x1, 
+              region->extents.y2 - region->extents.y1);
+    
+    while(nbox--)
+    {
+	    ccm_debug("REGION BOX: %i,%i %i,%i", pbox->x1, pbox->y1,
+                  pbox->x2 - pbox->x1, 
+                  pbox->y2 - pbox->y1);
+	    pbox++;
+    }
 }
 
 /* 
@@ -2139,23 +2207,3 @@ ccm_region_rect_in (CCMRegion    *region,
 	     CCM_OVERLAP_RECTANGLE_PART : CCM_OVERLAP_RECTANGLE_IN) : 
 	    CCM_OVERLAP_RECTANGLE_OUT);
 }
-
-void
-_ccm_region_print(CCMRegion *self)
-{
-    int nb_rects;
-    int cpt;
-    cairo_rectangle_t* rects;
-	cairo_rectangle_t clipbox;
-
-    ccm_region_get_rectangles(self, &rects, &nb_rects);
-    g_print("num: %d\n", nb_rects);
-	ccm_region_get_clipbox(self, &clipbox);
-    g_print("clipbox: %f %f %f %f\n",
-	   clipbox.x, clipbox.y, clipbox.x + clipbox.width, clipbox.y + clipbox.height);
-    for (cpt = 0; cpt < nb_rects; cpt++)
-	g_print("\t%f %f %f %f \n",
-		rects[cpt].x, rects[cpt].y, rects[cpt].x + rects[cpt].width, rects[cpt].y + rects[cpt].height);
-	g_free(rects);
-    g_print("\n");
- }

@@ -21,11 +21,13 @@
  */
 #include <math.h>
 
+#include "ccm.h"
+#include "ccm-debug.h"
 #include "ccm-drawable.h"
 #include "ccm-window.h"
 #include "ccm-screen.h"
-#include "ccm-animation.h"
 #include "ccm-menu-animation.h"
+#include "ccm-timeline.h"
 #include "ccm.h"
 
 enum
@@ -55,14 +57,9 @@ CCM_DEFINE_PLUGIN (CCMMenuAnimation, ccm_menu_animation, CCM_TYPE_PLUGIN,
 struct _CCMMenuAnimationPrivate
 {	
 	CCMWindow*     window;
-	
 	CCMWindowType  type;
-	CCMRegion*	   opaque;
-	gfloat		   opacity;
-	gfloat		   scale;
-	gint 		   way;
-	
-	CCMAnimation*  animation;
+		
+	CCMTimeline*   timeline;
 	
 	CCMConfig*     options[CCM_MENU_ANIMATION_OPTION_N];
 };
@@ -75,11 +72,8 @@ ccm_menu_animation_init (CCMMenuAnimation *self)
 {
 	self->priv = CCM_MENU_ANIMATION_GET_PRIVATE(self);
 	self->priv->window = NULL;
-	self->priv->opaque = NULL;
-	self->priv->way = CCM_MENU_ANIMATION_NONE;
-	self->priv->scale = 1.0f;
 	self->priv->type = CCM_WINDOW_TYPE_UNKNOWN;
-	self->priv->animation = NULL;
+	self->priv->timeline = NULL;
 }
 
 static void
@@ -87,16 +81,10 @@ ccm_menu_animation_finalize (GObject *object)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(object);
 	
-	if (self->priv->opaque)
+	if (self->priv->timeline) 
 	{
-		ccm_region_destroy (self->priv->opaque);
-		self->priv->opaque = NULL;
-	}
-	
-	if (self->priv->animation) 
-	{
-		g_object_unref (self->priv->animation);
-		self->priv->animation = NULL;
+		g_object_unref (self->priv->timeline);
+		self->priv->timeline = NULL;
 	}
 	
 	G_OBJECT_CLASS (ccm_menu_animation_parent_class)->finalize (object);
@@ -112,112 +100,74 @@ ccm_menu_animation_class_init (CCMMenuAnimationClass *klass)
 	object_class->finalize = ccm_menu_animation_finalize;
 }
 
-static gfloat
-interpolate (gfloat t, gfloat begin, gfloat end, gfloat power)
+static void
+ccm_menu_animation_on_new_frame (CCMMenuAnimation* self, int num_frame, 
+								 CCMTimeline* timeline)
 {
-    return (begin + (end - begin) * pow (t, power));
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(timeline != NULL);
+	
+	gdouble progress = ccm_timeline_get_progress (timeline);
+	cairo_matrix_t matrix;
+	
+	ccm_debug_window(self->priv->window, "MENU ANIMATION %i %f", num_frame, progress);
+	
+	progress = MAX(progress, 0.01f);
+	cairo_matrix_init_identity (&matrix);
+	cairo_matrix_scale (&matrix, 
+						progress > 0.5f ? 1.0f : progress  * 2, progress);
+	ccm_window_set_transform (self->priv->window, &matrix);
 }
 
-static gboolean
-ccm_menu_animation_animation(CCMAnimation* animation, gfloat elapsed, CCMMenuAnimation* self)
+
+static void
+ccm_menu_animation_finish (CCMMenuAnimation* self)
 {
-	gboolean ret = FALSE;
+	g_return_if_fail(self != NULL);
 	
-	if (self->priv->way != CCM_MENU_ANIMATION_NONE)
+	gboolean unlocked = FALSE;
+	
+	ccm_debug_window(self->priv->window, "MENU ANIMATION COMPLETED");
+	ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+	
+	if (ccm_timeline_get_direction (self->priv->timeline) == CCM_TIMELINE_FORWARD)
 	{
-		gfloat duration = ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION]);
-		gfloat step = elapsed / duration;
-		CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self->priv->window));
-		CCMRegion* damage = NULL;
-		
-		if (geometry && (self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP))
-		{
-			damage = ccm_region_copy (geometry);
-			ccm_region_scale(damage, self->priv->scale > 0.5f ? 1.0f : 
-								     self->priv->scale  * 2, 
-							 self->priv->scale);
-		}
-				
-		self->priv->scale = self->priv->way & CCM_MENU_ANIMATION_ON_MAP ? 
-					interpolate(step, 0.1, 1.0, 1) : interpolate(step, 1.0, 0.1, 1);
-		
-		if (self->priv->window->opaque)
-		{
-			if (!self->priv->opaque)
-			{
-				self->priv->opaque = ccm_region_copy(self->priv->window->opaque);
-			}
-			else
-			{
-				ccm_region_destroy (self->priv->window->opaque);
-				self->priv->window->opaque = ccm_region_copy(self->priv->opaque);
-			}
-			ccm_region_scale(self->priv->window->opaque, 
-							 self->priv->scale > 0.5f ? 1.0f : 
-								     self->priv->scale  * 2, 
-							 self->priv->scale);
-		} 
-		else if (self->priv->opaque)
-		{
-			ccm_region_destroy (self->priv->opaque);
-			self->priv->opaque = NULL;
-		}
-			
-		if (geometry && (self->priv->way & CCM_MENU_ANIMATION_ON_MAP))
-		{
-			damage = ccm_region_copy (geometry);
-			ccm_region_scale(damage, self->priv->scale > 0.5f ? 1.0f : 
-								     self->priv->scale  * 2, 
-							 self->priv->scale);
-		}
-		if (damage)
-		{
-			ccm_drawable_damage_region (CCM_DRAWABLE(self->priv->window), 
-											damage);
-			ccm_region_destroy (damage);
-		}
-		if (((self->priv->way & CCM_MENU_ANIMATION_ON_MAP) && 
-			 self->priv->scale >= 1.0f) ||
-			((self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP) && 
-			 self->priv->scale <= 0.1f))
-		{
-			if (self->priv->way & CCM_MENU_ANIMATION_ON_MAP)
-			{
-				ccm_window_plugin_map ((CCMWindowPlugin*)self->priv->window, 
-									   self->priv->window);
-				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-			}
-			if (self->priv->way & CCM_MENU_ANIMATION_ON_UNMAP)
-			{
-				ccm_window_plugin_unmap ((CCMWindowPlugin*)self->priv->window, 
-										 self->priv->window);
-				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-			}
-			self->priv->scale = 1.0f;
-			ccm_window_set_opacity (self->priv->window, self->priv->opacity);
-			self->priv->way = CCM_MENU_ANIMATION_NONE;
-			ret = FALSE;
-		}
-		else
-		{
-			ret = TRUE;
-		}
+		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, map, unlocked);
+		if (unlocked)
+			ccm_window_plugin_map((CCMWindowPlugin*)self->priv->window,
+								  self->priv->window);
 	}
-	
-	return ret;
+	else
+	{
+		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, unmap, unlocked);
+		if (unlocked)
+			ccm_window_plugin_unmap((CCMWindowPlugin*)self->priv->window,
+								  self->priv->window);
+	}
 }
 
 static void
-ccm_menu_animation_on_property_changed(CCMMenuAnimation* self, CCMWindow* window)
+ccm_menu_animation_on_completed (CCMMenuAnimation* self, CCMTimeline* timeline)
 {
-	if (self->priv->opaque) 
-	{
-		ccm_region_destroy (self->priv->opaque);
-		self->priv->opaque = NULL;
-	}
-	if (window->opaque)	self->priv->opaque = ccm_region_copy(window->opaque);
-	self->priv->opacity = ccm_window_get_opacity (window);
+	ccm_menu_animation_finish(self);
+	ccm_window_init_transfrom (self->priv->window);
+}
+
+static void
+ccm_menu_animation_on_property_changed (CCMMenuAnimation* self, CCMWindow* window)
+{
 	self->priv->type = ccm_window_get_hint_type (window);
+}
+
+static void
+ccm_menu_animation_on_error (CCMMenuAnimation* self, CCMWindow* window)
+{
+	if (ccm_timeline_is_playing(self->priv->timeline))
+	{
+		ccm_timeline_stop(self->priv->timeline);
+		ccm_menu_animation_finish(self);
+		ccm_window_init_transfrom (window);
+	}
 }
 
 static void
@@ -225,6 +175,7 @@ ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* windo
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
+	gfloat duration;
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++)
@@ -235,101 +186,112 @@ ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* windo
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	self->priv->window = window;
-	if (self->priv->opaque) 
-	{
-		ccm_region_destroy (self->priv->opaque);
-		self->priv->opaque = NULL;
-	}
-	if (window->opaque)	self->priv->opaque = ccm_region_copy(window->opaque);
 	self->priv->type = ccm_window_get_hint_type (window);
 	g_signal_connect_swapped(window, "property-changed",
 							 G_CALLBACK(ccm_menu_animation_on_property_changed), 
 							 self);
+	g_signal_connect_swapped(window, "error",
+							 G_CALLBACK(ccm_menu_animation_on_error), 
+							 self);
 	
-	self->priv->animation = ccm_animation_new(screen, (CCMAnimationFunc)ccm_menu_animation_animation, self);
+	duration = ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION]);
+	self->priv->timeline = ccm_timeline_new((int)(60.0 * duration), 60);
+		
+	g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+							 G_CALLBACK(ccm_menu_animation_on_new_frame), self);
+	g_signal_connect_swapped(self->priv->timeline, "completed", 
+							 G_CALLBACK(ccm_menu_animation_on_completed), self);
 }
 
 static void
 ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
-	
+		
+	ccm_debug("MENU ANIMATION MAP: %i", self->priv->type);
 	if (self->priv->type == CCM_WINDOW_TYPE_MENU ||
 		self->priv->type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
 		self->priv->type == CCM_WINDOW_TYPE_POPUP_MENU)
 	{
-		if (self->priv->way == CCM_MENU_ANIMATION_NONE)
+		guint current_frame = 0;
+		
+		if (ccm_timeline_is_playing (self->priv->timeline))
 		{
-			self->priv->scale = 0.1f;
-			ccm_animation_start(self->priv->animation);
+			current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
+			ccm_timeline_stop(self->priv->timeline);
+			ccm_menu_animation_finish(self);
 		}
-		self->priv->way = CCM_MENU_ANIMATION_ON_MAP;
+		else
+		{
+			cairo_matrix_t matrix;
+			cairo_matrix_scale(&matrix, 0.01, 0.01);
+			ccm_window_set_transform (window, &matrix);
+		}
+		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map);
+		
+		ccm_debug_window(window, "MENU ANIMATION MAP");
+		
+		ccm_timeline_set_direction (self->priv->timeline, 
+									CCM_TIMELINE_FORWARD);
+		ccm_timeline_rewind(self->priv->timeline);
+		ccm_timeline_start (self->priv->timeline);
+		if (current_frame > 0)
+		{
+			ccm_timeline_advance (self->priv->timeline, current_frame);
+		}
 	}
-	else
-		ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+	ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
 static void
 ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
-
+	
 	if (self->priv->type == CCM_WINDOW_TYPE_MENU ||
 		self->priv->type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
 		self->priv->type == CCM_WINDOW_TYPE_POPUP_MENU)
 	{
-		self->priv->window = window;
-		if (self->priv->way == CCM_MENU_ANIMATION_NONE)
-		{
-			self->priv->scale = 1.0f;
-			ccm_animation_start(self->priv->animation);
-		}
-		self->priv->way = CCM_MENU_ANIMATION_ON_UNMAP;
-	}
-	else
-		ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-}
-
-static gboolean
-ccm_menu_animation_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-						 cairo_t* context, cairo_surface_t* surface,
-						 gboolean y_invert)
-{
-	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
-	gboolean ret;
-	
-	cairo_save(context);
-	if (self->priv->scale < 1.0f && self->priv->scale > 0.0f) 
-	{
-		cairo_matrix_t matrix;
+		guint current_frame = 0;
 		
-		cairo_get_matrix (context, &matrix);
-		cairo_matrix_scale (&matrix, 
-							self->priv->scale > 0.5f ? 1.0f : 
-								self->priv->scale  * 2, 
-							self->priv->scale);
-		cairo_set_matrix (context, &matrix);
-		ccm_window_set_opacity (window, self->priv->opacity * self->priv->scale / 2);
+		if (ccm_timeline_is_playing (self->priv->timeline))
+		{
+			current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
+			ccm_timeline_stop(self->priv->timeline);
+			ccm_menu_animation_finish(self);
+		}
+		else
+			ccm_window_init_transfrom (window);
+			
+		
+		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap);
+		
+		ccm_debug_window(window, "MENU ANIMATION UNMAP");
+		ccm_timeline_set_direction (self->priv->timeline, 
+									CCM_TIMELINE_BACKWARD);
+		ccm_timeline_rewind(self->priv->timeline);
+		ccm_timeline_start (self->priv->timeline);
+		if (current_frame > 0)
+		{
+			guint num_frame = ccm_timeline_get_n_frames (self->priv->timeline) - 
+							  current_frame;
+			ccm_timeline_advance (self->priv->timeline, num_frame);
+		}
 	}
-	
-	ret = ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT(plugin), window, 
-								   context, surface, y_invert);
-	cairo_restore (context);
-	
-	return ret;
+	ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
 static void
 ccm_menu_animation_window_iface_init(CCMWindowPluginClass* iface)
 {
-	iface->load_options 	= ccm_menu_animation_window_load_options;
-	iface->query_geometry 	= NULL;
-	iface->paint 			= ccm_menu_animation_paint;
-	iface->map				= ccm_menu_animation_map;
-	iface->unmap			= ccm_menu_animation_unmap;
-	iface->query_opacity  	= NULL;
-	iface->set_opaque		= NULL;
-	iface->move				= NULL;
-	iface->resize			= NULL;
+	iface->load_options 	 = ccm_menu_animation_window_load_options;
+	iface->query_geometry 	 = NULL;
+	iface->paint 			 = NULL;
+	iface->map				 = ccm_menu_animation_map;
+	iface->unmap			 = ccm_menu_animation_unmap;
+	iface->query_opacity  	 = NULL;
+	iface->move				 = NULL;
+	iface->resize			 = NULL;
+	iface->set_opaque_region = NULL;
 }
 

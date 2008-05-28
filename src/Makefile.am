@@ -65,8 +65,6 @@ cairo_compmgr_SOURCES = \
 	ccm-window-backend.h \
 	ccm-window-backend.c \
 	ccm.h \
-	ccm-animation.h \
-	ccm-animation.c \
 	ccm-tray-menu.h \
 	ccm-tray-menu.c \
 	ccm-tray-icon.h \
@@ -82,7 +80,9 @@ cairo_compmgr_SOURCES = \
 	ccm-keybind.h \
 	ccm-keybind.c \
 	ccm-property-async.h \
-	ccm-property-async.c
+	ccm-property-async.c \
+	ccm-timeline.h \
+	ccm-timeline.c
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

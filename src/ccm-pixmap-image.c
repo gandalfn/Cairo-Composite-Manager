@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <cairo.h>
 
+#include "ccm-debug.h"
 #include "ccm-image.h"
 #include "ccm-pixmap-image.h"
 #include "ccm-window.h"
@@ -95,6 +96,8 @@ ccm_pixmap_image_bind (CCMPixmap* pixmap)
 							  &attribs))
 		self->priv->image = ccm_image_new(display, attribs.visual, format, 
 										  attribs.width, attribs.height, depth);
+	else
+		ccm_debug("PIXMAP BIND ERROR");
 }
 
 static void
@@ -124,6 +127,7 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 			if (!ccm_image_get_image (self->priv->image, 
 									  CCM_PIXMAP(self), 0, 0))
 			{
+				ccm_debug("IMAGE_REPAIR ERROR");
 				ret = FALSE;
 				ccm_image_destroy (self->priv->image);
 				self->priv->image = NULL;
@@ -145,6 +149,9 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 											  rects[cpt].width, 
 											  rects[cpt].height))
 				{
+					ccm_debug("SUB IMAGE_REPAIR ERROR");
+					ccm_image_destroy (self->priv->image);
+					self->priv->image = NULL;
 					ret = FALSE;
 					break;
 				}

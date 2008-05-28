@@ -665,13 +665,13 @@ ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface)
 static void
 ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface)
 {
-	iface->load_options 	= NULL;
-	iface->query_geometry 	= NULL;
-	iface->paint 			= ccm_mosaic_window_paint;
-	iface->map				= NULL;
-	iface->unmap			= NULL;
-	iface->query_opacity  	= NULL;
-	iface->set_opaque		= NULL;
-	iface->move				= NULL;
-	iface->resize			= NULL;
+	iface->load_options 	 = NULL;
+	iface->query_geometry 	 = NULL;
+	iface->paint 			 = ccm_mosaic_window_paint;
+	iface->map				 = NULL;
+	iface->unmap			 = NULL;
+	iface->query_opacity  	 = NULL;
+	iface->move				 = NULL;
+	iface->resize			 = NULL;
+	iface->set_opaque_region = NULL;
 }

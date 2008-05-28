@@ -73,25 +73,26 @@ static void 		impl_ccm_window_unmap		  (CCMWindowPlugin* plugin,
 												   CCMWindow* self);
 static void 		impl_ccm_window_query_opacity (CCMWindowPlugin* plugin, 
 												   CCMWindow* self);
-static void			impl_ccm_window_set_opaque	  (CCMWindowPlugin* plugin, 
-												   CCMWindow* self);
 static void			impl_ccm_window_move		  (CCMWindowPlugin* plugin, 
 												   CCMWindow* self, 
 												   int x, int y);
 static void			impl_ccm_window_resize		  (CCMWindowPlugin* plugin, 
 												   CCMWindow* self, 
 												   int width, int height);
+static void			impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, 
+													  CCMWindow* self,
+													  CCMRegion* area);
 static void			ccm_window_get_property_async (CCMWindow* self, 
 												   Atom property_atom, 
 												   Atom req_type, long length);
 static void			ccm_window_on_get_property_async(CCMWindow* self, 
 													 guint n_items, gchar* result, 
 													 CCMPropertyASync* property);
-
 enum
 {
 	PROPERTY_CHANGED,
 	STATE_CHANGED,
+	ERROR,
     N_SIGNALS
 };
 
@@ -128,7 +129,10 @@ struct _CCMWindowPrivate
 	CCMPixmap*			pixmap;
 	
 	CCMWindowPlugin*	plugin;
+	
+	CCMRegion*			orig_opaque;
 	double				opacity;
+	cairo_matrix_t		transform;
 };
 
 #define CCM_WINDOW_GET_PRIVATE(o)  \
@@ -160,6 +164,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->has_format = FALSE;
 	self->priv->format = CAIRO_FORMAT_ARGB32;
 	self->priv->override_redirect = FALSE;
+	self->priv->orig_opaque = NULL;
 	self->priv->opacity = 1.0f;
 	self->priv->pixmap = NULL;
 	self->priv->plugin = NULL;
@@ -169,13 +174,13 @@ static void
 ccm_window_finalize (GObject *object)
 {
 	CCMWindow* self = CCM_WINDOW(object);
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
 	
 	if (self->opaque) ccm_region_destroy(self->opaque);
+	if (self->priv->orig_opaque) ccm_region_destroy(self->priv->orig_opaque);
 	if (self->priv->pixmap) g_object_unref(self->priv->pixmap);
 	if (self->priv->name) g_free(self->priv->name);
 	if (self->priv->plugin) g_object_unref(self->priv->plugin);
-	g_signal_handlers_disconnect_by_func(display, ccm_window_on_get_property_async, self);
+	
 	G_OBJECT_CLASS (ccm_window_parent_class)->finalize (object);
 }
 
@@ -204,21 +209,27 @@ ccm_window_class_init (CCMWindowClass *klass)
 									 g_cclosure_marshal_VOID__VOID,
 									 G_TYPE_NONE, 0);
 	
+	signals[ERROR] = g_signal_new ("error",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__VOID,
+								   G_TYPE_NONE, 0);
+	
 	object_class->finalize = ccm_window_finalize;
 }
 
 static void
 ccm_window_iface_init(CCMWindowPluginClass* iface)
 {
-	iface->load_options 	= NULL;
-	iface->query_geometry 	= impl_ccm_window_query_geometry;
-	iface->paint 			= impl_ccm_window_paint;
-	iface->map  			= impl_ccm_window_map;
-	iface->unmap  			= impl_ccm_window_unmap;
-	iface->query_opacity  	= impl_ccm_window_query_opacity;
-	iface->set_opaque	  	= impl_ccm_window_set_opaque;
-	iface->move				= impl_ccm_window_move;
-	iface->resize			= impl_ccm_window_resize;
+	iface->load_options 	 = NULL;
+	iface->query_geometry 	 = impl_ccm_window_query_geometry;
+	iface->paint 			 = impl_ccm_window_paint;
+	iface->map  			 = impl_ccm_window_map;
+	iface->unmap  			 = impl_ccm_window_unmap;
+	iface->query_opacity  	 = impl_ccm_window_query_opacity;
+	iface->move				 = impl_ccm_window_move;
+	iface->resize			 = impl_ccm_window_resize;
+	iface->set_opaque_region = impl_ccm_window_set_opaque_region;
 }
 
 static void
@@ -383,6 +394,7 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom,
     if (ret != Success)
     {
 		if (property) XFree(property);
+		g_signal_emit(self, signals[ERROR], 0);
 		return NULL;
     }
 	result = g_memdup (property, n_items_internal * (format / 8));
@@ -397,13 +409,12 @@ static void
 ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result, 
 								 CCMPropertyASync* prop)
 {
-	g_return_if_fail(prop != NULL);
-	g_return_if_fail(self != NULL);
+	if (!CCM_IS_WINDOW(self)) return;
+	
+	g_return_if_fail(CCM_IS_PROPERTY_ASYNC(prop));
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
-    Atom property = ccm_property_async_get_property (prop);
-	ccm_debug_atom(display, property, "ON GET PROPERTY");
+	Atom property = ccm_property_async_get_property (prop);
 		
 	if (property == CCM_WINDOW_GET_CLASS(self)->type_atom)
 	{
@@ -412,7 +423,6 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			CCMWindowType old = self->priv->hint_type;
 			Atom atom;
 			memcpy (&atom, result, sizeof (Atom));
-			ccm_debug_atom(display, atom, "DATA HINT TYPE");
 			
 			if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
 				self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
@@ -445,10 +455,6 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			
 			if (old != self->priv->hint_type)
 			{
-				ccm_debug_atom(display, atom, "HINT TYPE 0x%lx %s %i", 
-							   CCM_WINDOW_XWINDOW(self),
-							   ccm_window_get_name (self),
-							   self->priv->hint_type);
 				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 			}
 		}
@@ -479,18 +485,13 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 	}
 	else if (property == CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom)
 	{
-#define MAX_ITEMS sizeof (MotifWmHints)/sizeof (gulong)
 		if (result)
 		{
 			MotifWmHints* hints;
-			int real_size, max_size;
 			gboolean old = self->priv->is_decorated;
-			
-			hints = malloc (sizeof (MotifWmHints));
-			real_size = n_items * sizeof (gulong);
-			max_size = MAX_ITEMS * sizeof (gulong);
-			memcpy (hints, result, MIN (real_size, max_size));
-			
+		
+			hints = (MotifWmHints*)result;
+		
 			if (hints->flags & MWM_HINTS_DECORATIONS)
 				self->priv->is_decorated = hints->decorations != 0;
 			if (old != self->priv->is_decorated)
@@ -498,7 +499,6 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 				ccm_debug_window(self, "IS_DECORATED %i", self->priv->is_decorated);
 				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 			}
-			XFree(hints);
 		}
 	}
 	else if (property == CCM_WINDOW_GET_CLASS(self)->state_atom)
@@ -511,7 +511,6 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			
 			for (cpt = 0; cpt < n_items; cpt++)
 			{
-				ccm_debug_atom(display, atom[cpt], "STATE");
 				updated |= ccm_window_set_state (self, atom[cpt]);
 			}
 			if (updated) 
@@ -529,6 +528,7 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			memcpy (&value, result, sizeof (guint32));
 			self->priv->opacity = (double)(value >> 16) / (double)0xffff;
 			
+			ccm_debug_window(self, "OPACITY %f", self->priv->opacity);
 			if (self->priv->opacity == 1.0f && 
 				ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 &&
 				!self->opaque)
@@ -536,11 +536,14 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			else
 				ccm_window_set_alpha(self);
 			if (old != self->priv->opacity)
+			{
+				ccm_drawable_damage (CCM_DRAWABLE(self));
 				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+			}
 		}
 	}		
 
-	g_object_unref (prop);
+	g_object_unref(prop);
 }
 								 
 static void
@@ -596,6 +599,7 @@ ccm_window_get_child_property(CCMWindow* self, Atom property_atom, int req_forma
     
     if (ret != Success)
     {
+		g_signal_emit(self, signals[ERROR], 0);
 		if (property) XFree(property);
 		return NULL;
     }
@@ -743,20 +747,20 @@ ccm_window_query_hint_type_sync(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
+	
 	guint32* result = NULL;
 	guint n_items;
 	
 	ccm_debug_window(self, "QUERY HINT TYPE");
+	
 	result = ccm_window_get_property (self, 
 									  CCM_WINDOW_GET_CLASS(self)->type_atom,
 									  XA_ATOM, &n_items);
-	
 	if (result)
 	{
 		CCMWindowType old = self->priv->hint_type;
 		Atom atom;
 		memcpy (&atom, result, sizeof (Atom));
-		ccm_debug_atom(display, atom, "DATA HINT TYPE");
 		
 		if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
 			self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
@@ -789,13 +793,42 @@ ccm_window_query_hint_type_sync(CCMWindow* self)
 		
 		if (old != self->priv->hint_type)
 		{
-			ccm_debug_atom(display, atom, "HINT TYPE 0x%lx %s %i", 
-						   CCM_WINDOW_XWINDOW(self),
-						   ccm_window_get_name (self),
-						   self->priv->hint_type);
 			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
 		}
 		
+		g_free(result);
+	}
+}
+
+static void 
+ccm_window_query_mwm_hints_sync(CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
+	
+	guint32* result = NULL;
+	guint n_items;
+	
+	ccm_debug_window(self, "QUERY HINT TYPE");
+	
+	result = ccm_window_get_property (self, 
+									  CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom,
+								  	  AnyPropertyType, &n_items);
+	
+	if (result)
+	{
+		MotifWmHints* hints;
+		gboolean old = self->priv->is_decorated;
+		
+		hints = (MotifWmHints*)result;
+		
+		if (hints->flags & MWM_HINTS_DECORATIONS)
+			self->priv->is_decorated = hints->decorations != 0;
+		if (old != self->priv->is_decorated)
+		{
+			ccm_debug_window(self, "IS_DECORATED %i", self->priv->is_decorated);
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+		}
 		g_free(result);
 	}
 }
@@ -861,10 +894,16 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	_ccm_display_trap_error (display);
 	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
 							   CCM_WINDOW_XWINDOW(self), &self->priv->attribs))
+	{
+		g_signal_emit (self, signals[ERROR], 0);
 		return NULL;
+	}
 	
 	if (_ccm_display_pop_error (display))
+	{
+		g_signal_emit (self, signals[ERROR], 0);
 		return NULL;
+	}
 	
 	if (XShapeQueryExtents (CCM_DISPLAY_XDISPLAY(display), 
 							CCM_WINDOW_XWINDOW(self), 
@@ -1035,25 +1074,15 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	cairo_rectangle_t geometry;
 	gboolean ret = FALSE;
 	
-	if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry))
-	{
-		cairo_matrix_t matrix;
-		
-		ccm_debug_window(self, "PAINT WINDOW");
-		cairo_get_matrix (context, &matrix);
-		cairo_translate (context, geometry.x / matrix.xx, geometry.y / matrix.yy);
-		if (y_invert)
-		{
-			cairo_scale (context, 1.0, -1.0);
-			cairo_translate (context, 0.0f, -self->priv->attribs.height);
-		}
-		cairo_set_source_surface(context, surface, 0.0f, 0.0f);
-		cairo_paint_with_alpha(context, self->priv->opacity);
-		ret = cairo_status (context) == CAIRO_STATUS_SUCCESS;
-	}		
+	cairo_save(context);
+	ccm_debug_window(self, "PAINT WINDOW");
+	ccm_window_transform (self, context, y_invert);
+	cairo_set_source_surface(context, surface, 0.0f, 0.0f);
+	cairo_paint_with_alpha(context, self->priv->opacity);
+	ret = cairo_status (context) == CAIRO_STATUS_SUCCESS;
+	cairo_restore(context);
 	
 	return ret;
 }
@@ -1064,7 +1093,8 @@ impl_ccm_window_map(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 
-	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+	ccm_debug_window(self, "IMPL WINDOW MAP");
+	ccm_drawable_damage(CCM_DRAWABLE(self));
 }
 
 static void
@@ -1075,6 +1105,7 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	
 	self->unmap_pending = FALSE;
 	self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
+	ccm_debug_window(self, "IMPL WINDOW UNMAP");
 	if (self->priv->pixmap)
 	{
 		g_object_unref(self->priv->pixmap);
@@ -1094,14 +1125,20 @@ impl_ccm_window_query_opacity(CCMWindowPlugin* plugin, CCMWindow* self)
 }
 
 static void
-impl_ccm_window_set_opaque(CCMWindowPlugin* plugin, CCMWindow* self)
+impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* self,
+								  CCMRegion* area)
 {
+	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
-	
-	CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(self));
-	
-	ccm_window_set_alpha(self);
-	if (geometry) self->opaque = ccm_region_copy(geometry);
+	g_return_if_fail(area != NULL);
+
+	if (!ccm_region_empty(area))
+	{
+		ccm_window_set_alpha(self);
+		self->priv->orig_opaque = ccm_region_copy(area);
+		self->opaque = ccm_region_copy(area);
+		ccm_region_transform (self->opaque, &self->priv->transform);
+	}
 }
 
 CCMWindowPlugin*
@@ -1150,13 +1187,12 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	g_return_val_if_fail(screen != NULL, NULL);
 	g_return_val_if_fail(xwindow != None, NULL);
 	
-	CCMDisplay* display = ccm_screen_get_display (screen);
-	ccm_display_sync(display);
 	CCMWindow* self = g_object_new(CCM_TYPE_WINDOW_BACKEND(screen), 
 								   "screen", screen,
 								   "drawable", xwindow,
 								   NULL);
 	GSList* item, *plugins = _ccm_screen_get_window_plugins(screen);
+	
 	self->priv->plugin = (CCMWindowPlugin*)self;
 	
 	create_atoms(self);
@@ -1178,16 +1214,23 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		return NULL;
 	}
 	
+	ccm_window_get_format (self);
+	ccm_window_set_opacity(self, 1.0f);
+	ccm_window_init_transfrom (self);
+	
 	if (!self->is_input_only)
 	{
+		CCMDisplay* display = ccm_screen_get_display(screen);
+	
 		ccm_window_query_child (self);
 		ccm_window_query_hint_type_sync (self);
+		ccm_window_query_opacity (self);
 		ccm_window_query_transient_for(self);
 		ccm_window_query_wm_hints(self);
-		ccm_window_query_mwm_hints(self);
+		ccm_window_query_mwm_hints_sync(self);
 		ccm_window_query_state (self);
 		
-		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(screen)), 
+		XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
 					  CCM_WINDOW_XWINDOW(self),
 					  PropertyChangeMask  | 
 					  StructureNotifyMask |
@@ -1629,7 +1672,10 @@ ccm_window_get_format (CCMWindow* self)
     
     if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
 							   CCM_WINDOW_XWINDOW(self), &attrs))
+	{
+		g_signal_emit(self, signals[ERROR], 0);
 		return CAIRO_FORMAT_ARGB32;
+	}
 	
     self->is_viewable = attrs.map_state == IsViewable;
 	self->priv->override_redirect = attrs.override_redirect;
@@ -1768,6 +1814,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			{
 				g_object_unref(self->priv->pixmap);
 				self->priv->pixmap = NULL;
+				g_signal_emit (self, signals[ERROR], 0);
 			}
 		}
 		cairo_reset_clip (context);
@@ -1790,6 +1837,7 @@ ccm_window_map(CCMWindow* self)
 		self->is_viewable = TRUE;
 		self->unmap_pending = FALSE;
 		
+		ccm_debug_window(self, "WINDOW MAP");
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
 	else
@@ -1802,13 +1850,14 @@ ccm_window_unmap(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
-	if (self->is_viewable)
+	if (self->is_viewable && !self->unmap_pending)
 	{
 		self->is_viewable = FALSE;
 		self->unmap_pending = TRUE;
 		
 		if (self->priv->is_fullscreen)
 			ccm_window_switch_state (self, CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom);
+		ccm_debug_window(self, "WINDOW UNMAP");
 		ccm_window_plugin_unmap(self->priv->plugin, self);
 	}
 	else
@@ -1927,9 +1976,9 @@ ccm_window_add_alpha_region(CCMWindow* self, CCMRegion* region)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(region != NULL);
 	
-	if (self->opaque)
+	if (self->opaque && self->priv->orig_opaque)
 	{
-		ccm_region_subtract(self->opaque, region);
+		ccm_region_subtract(self->priv->orig_opaque, region);
 		if (ccm_region_empty(self->opaque))
 		{
 			ccm_region_destroy(self->opaque);
@@ -1943,10 +1992,12 @@ ccm_window_set_alpha(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->opaque)
+	if (self->opaque && self->priv->orig_opaque)
 	{
 		ccm_region_destroy(self->opaque);
+		ccm_region_destroy(self->priv->orig_opaque);
 		self->opaque = NULL;
+		self->priv->orig_opaque = NULL;
 	}
 }
 
@@ -1956,11 +2007,7 @@ ccm_window_set_opaque_region(CCMWindow* self, CCMRegion* region)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(region != NULL);
 	
-	if (!ccm_region_empty(region))
-	{
-		ccm_window_set_alpha(self);
-		self->opaque = ccm_region_copy(region);
-	}
+	ccm_window_plugin_set_opaque_region (self->priv->plugin, self, region);
 }
 
 void
@@ -1968,7 +2015,10 @@ ccm_window_set_opaque(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	ccm_window_plugin_set_opaque (self->priv->plugin, self);
+	CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(self));
+	
+	ccm_window_set_alpha(self);
+	if (geometry) ccm_window_set_opaque_region (self, geometry);
 }
 
 gboolean
@@ -2014,4 +2064,82 @@ ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame,
 	}
 	
 	return ret;
+}
+
+void 
+ccm_window_init_transfrom(CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	cairo_matrix_init_identity (&self->priv->transform);
+	if (self->priv->orig_opaque)
+	{
+		CCMRegion* region = ccm_region_copy (self->priv->orig_opaque);
+		
+		ccm_window_set_opaque_region(self, region);
+		ccm_region_destroy (region);
+	}
+	ccm_drawable_damage (CCM_DRAWABLE(self));
+}
+
+void
+ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(matrix != NULL);
+	
+	memcpy (&self->priv->transform, matrix, sizeof(cairo_matrix_t));
+	
+	if (self->priv->orig_opaque)
+	{
+		CCMRegion* region = ccm_region_copy (self->priv->orig_opaque);
+		
+		ccm_drawable_damage_region(CCM_DRAWABLE(self), region);
+	
+		ccm_window_set_opaque_region(self, region);
+		ccm_region_destroy (region);
+	}
+	
+	ccm_drawable_damage(CCM_DRAWABLE(self));
+}
+
+void
+ccm_window_get_transform(CCMWindow* self, cairo_matrix_t* matrix)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(matrix != NULL);
+	
+	memcpy (matrix, &self->priv->transform, sizeof(cairo_matrix_t));
+}
+
+void
+ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(ctx != NULL);
+	
+	cairo_rectangle_t geometry;
+	
+	if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry))
+	{
+		cairo_matrix_t matrix, invert;
+			
+		memcpy(&matrix, &self->priv->transform, sizeof(cairo_matrix_t));
+		memcpy(&invert, &self->priv->transform, sizeof(cairo_matrix_t));
+		cairo_matrix_invert(&invert);
+		cairo_matrix_transform_point (&invert, &geometry.x, &geometry.y);
+		cairo_matrix_translate (&matrix, geometry.x, geometry.y);
+			
+		matrix.xx = MAX(0.001f, matrix.xx);
+		matrix.yy = MAX(0.001f, matrix.yy);
+		
+		if (matrix.xx != 1.0f || matrix.yy != 1.0f)
+			ccm_debug_window(self, "MATRIX %f,%f", matrix.xx, matrix.yy);
+		if (y_invert)
+		{
+			cairo_matrix_scale (&matrix, 1.0, -1.0);
+			cairo_matrix_translate (&matrix, 0.0f, -self->priv->attribs.height);
+		}
+		cairo_set_matrix (ctx, &matrix);
+	}
 }

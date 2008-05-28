@@ -47,6 +47,9 @@ CCM_DEFINE_PLUGIN (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN,
 
 struct _CCMShadowPrivate
 {
+	int border;
+	int offset;
+	
 	cairo_surface_t* shadow_right;
 	cairo_surface_t* shadow_bottom;
 	
@@ -181,13 +184,61 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height,
     cairo_pattern_destroy (shadow);
 	cairo_destroy(cr);
 }
+static gboolean 
+ccm_shadow_need_shadow(CCMWindow* window)
+{
+	g_return_val_if_fail(window != NULL, FALSE);
+	
+	CCMWindowType type = ccm_window_get_hint_type(window);
+	
+	return (ccm_window_is_decorated (window) || 
+		    (type != CCM_WINDOW_TYPE_NORMAL && 
+			 type != CCM_WINDOW_TYPE_DIALOG)) && 
+		   (type != CCM_WINDOW_TYPE_DOCK || window->opaque) &&
+		   !ccm_window_is_shaded (window) &&
+		   !ccm_window_skip_taskbar (window) &&   
+		   !ccm_window_skip_pager (window) &&   
+		   (ccm_window_is_managed(window) ||   
+			type == CCM_WINDOW_TYPE_DOCK ||
+			type == CCM_WINDOW_TYPE_DROPDOWN_MENU || 
+			type == CCM_WINDOW_TYPE_POPUP_MENU || 
+			type == CCM_WINDOW_TYPE_TOOLTIP || 
+			type == CCM_WINDOW_TYPE_MENU);
+}
 
 static void
-ccm_shadow_on_property_changed(CCMShadow* self, CCMWindow* window)
+ccm_shadow_on_property_state_changed(CCMShadow* self, CCMWindow* window)
 {
-	ccm_drawable_damage(CCM_DRAWABLE(window));
-	ccm_drawable_query_geometry(CCM_DRAWABLE(window));
-	ccm_drawable_damage(CCM_DRAWABLE(window));
+	if (ccm_shadow_need_shadow(window) && !self->priv->shadow_right &&
+		 !self->priv->shadow_bottom)
+	{
+		ccm_drawable_damage(CCM_DRAWABLE(window));
+		ccm_drawable_query_geometry(CCM_DRAWABLE(window));
+		ccm_drawable_damage(CCM_DRAWABLE(window));
+	}
+	else if (!ccm_shadow_need_shadow(window))
+	{
+		gboolean update = FALSE;
+		if (self->priv->geometry) 
+		{
+			ccm_region_destroy (self->priv->geometry);
+			update = TRUE;
+		}
+		self->priv->geometry = NULL;
+		if (self->priv->shadow_right) 
+		{
+			cairo_surface_destroy(self->priv->shadow_right);
+			update = TRUE;
+		}
+		self->priv->shadow_right = NULL;
+		if (self->priv->shadow_bottom) 
+		{
+			cairo_surface_destroy(self->priv->shadow_bottom);
+			update = TRUE;
+		}
+		self->priv->shadow_bottom = NULL;
+		if (update) ccm_drawable_damage (CCM_DRAWABLE(window));
+	}
 }
 
 static void
@@ -203,16 +254,14 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 												  CCMShadowOptions[cpt]);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+	
+	self->priv->border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
+	self->priv->offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
+			
 	g_signal_connect_swapped(window, "property-changed",
-							 G_CALLBACK(ccm_shadow_on_property_changed), self);
-}
-
-static void
-ccm_shadow_map(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	ccm_drawable_damage(CCM_DRAWABLE(window));
-	ccm_drawable_query_geometry(CCM_DRAWABLE(window));
-	ccm_drawable_damage(CCM_DRAWABLE(window));
+							 G_CALLBACK(ccm_shadow_on_property_state_changed), self);
+	g_signal_connect_swapped(window, "state-changed",
+							 G_CALLBACK(ccm_shadow_on_property_state_changed), self);
 }
 
 static CCMRegion*
@@ -220,7 +269,6 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMRegion* geometry = NULL;
 	cairo_rectangle_t area;
-	CCMWindowType type = ccm_window_get_hint_type(window);
 	CCMShadow* self = CCM_SHADOW(plugin);
 		
 	if (self->priv->geometry) ccm_region_destroy (self->priv->geometry);
@@ -232,18 +280,7 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
 												window);
-	if (geometry && 
-		(ccm_window_is_decorated (window) || (type != CCM_WINDOW_TYPE_NORMAL &&
--		 type != CCM_WINDOW_TYPE_DIALOG)) &&
-		(type != CCM_WINDOW_TYPE_DOCK || window->opaque) &&
-		!ccm_window_is_shaded (window) &&
-		!ccm_window_skip_taskbar (window) &&
-		!ccm_window_skip_pager (window) &&
-		(ccm_window_is_managed(window) || 
-		 type == CCM_WINDOW_TYPE_DROPDOWN_MENU || 
-		 type == CCM_WINDOW_TYPE_POPUP_MENU || 
-		 type == CCM_WINDOW_TYPE_TOOLTIP || 
-		 type == CCM_WINDOW_TYPE_MENU))
+	if (geometry && ccm_shadow_need_shadow(window))
 	{
 		int border = 
 				ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
@@ -255,7 +292,8 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 		create_shadow(self, window, area.width, area.height, 
 					  ccm_region_shaped(geometry));
 		ccm_region_resize(geometry, area.width, area.height);
-	}	
+	}
+	
 	return geometry;
 }
 
@@ -274,50 +312,48 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &area))
 		{
 			cairo_rectangle_t* rects;
-			gint nb_rects, cpt;
-			cairo_matrix_t matrix;
-			int border, offset;
-			
-			border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
-			offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
+			gint cpt, nb_rects;
 			
 			cairo_save(context);
-			cairo_get_matrix (context, &matrix);
-			cairo_translate (context, area.x / matrix.xx, area.y / matrix.yy);
+			
+			ccm_window_transform (window, context, y_invert);
+			
+			cairo_save(context);
+			cairo_rectangle (context, area.width - self->priv->border * 2, 
+							 self->priv->offset, self->priv->border * 2, 
+							 area.height - self->priv->offset + self->priv->border);
+			cairo_clip(context);
 			cairo_set_source_surface(context, self->priv->shadow_right, 
-									 area.width - border * 2, offset);
+									 area.width - self->priv->border * 2, 
+									 self->priv->offset);
 			cairo_paint_with_alpha(context,
 								   ccm_window_get_opacity(window));
+			cairo_restore (context);
+			
+			cairo_save(context);
+			cairo_rectangle (context, self->priv->offset, 
+							 area.height - self->priv->border,
+							 area.width - self->priv->offset, 
+							 self->priv->border);
+			cairo_clip(context);
 			cairo_set_source_surface(context, self->priv->shadow_bottom, 
-									 offset, area.height - border);
+									 self->priv->offset, 
+									 area.height - self->priv->border);
 			cairo_paint_with_alpha(context,
 								   ccm_window_get_opacity(window));
 			cairo_restore(context);
-			
+			cairo_restore(context);
 			ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
-			{
-				cairo_rectangle(context, rects[cpt].x / matrix.xx, rects[cpt].y / matrix.yy, 
-								rects[cpt].width, rects[cpt].height);
-			}
-			g_free(rects);
+				cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
+								 rects[cpt].width, rects[cpt].height);
 			cairo_clip(context);
+			g_free(rects);
 		}
 	} 
 	
 	return ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
 								   window, context, surface, y_invert);
-}
-
-static void 
-ccm_shadow_set_opaque(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	CCMShadow* self = CCM_SHADOW(plugin);
-	
-	ccm_window_plugin_set_opaque (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-	
-	if (self->priv->geometry)
-		ccm_window_set_opaque_region (window, self->priv->geometry);
 }
 
 static void 
@@ -353,17 +389,39 @@ ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 							  width + border, height + border);
 }
 
+
+static void 
+ccm_shadow_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* window,
+							 CCMRegion* area)
+{
+	CCMShadow* self = CCM_SHADOW(plugin);
+       
+    if (self->priv->geometry) 
+	{
+		CCMRegion* opaque = ccm_region_copy(self->priv->geometry);
+		
+		ccm_region_intersect (opaque, area);
+	
+		ccm_window_plugin_set_opaque_region (CCM_WINDOW_PLUGIN_PARENT(plugin), 
+											 window, opaque);
+		ccm_region_destroy (opaque);
+	}
+	else
+		ccm_window_plugin_set_opaque_region (CCM_WINDOW_PLUGIN_PARENT(plugin), 
+											 window, area);
+}
+
 static void
 ccm_shadow_iface_init(CCMWindowPluginClass* iface)
 {
-	iface->load_options 	= ccm_shadow_load_options;
-	iface->query_geometry 	= ccm_shadow_query_geometry;
-	iface->paint 			= ccm_shadow_paint;
-	iface->map				= ccm_shadow_map;
-	iface->unmap			= NULL;
-	iface->query_opacity  	= NULL;
-	iface->set_opaque		= ccm_shadow_set_opaque;
-	iface->move				= ccm_shadow_move;
-	iface->resize			= ccm_shadow_resize;
+	iface->load_options 	 = ccm_shadow_load_options;
+	iface->query_geometry 	 = ccm_shadow_query_geometry;
+	iface->paint 			 = ccm_shadow_paint;
+	iface->map				 = NULL;
+	iface->unmap			 = NULL;
+	iface->query_opacity  	 = NULL;
+	iface->move				 = ccm_shadow_move;
+	iface->resize			 = ccm_shadow_resize;
+	iface->set_opaque_region = ccm_shadow_set_opaque_region;
 }
 

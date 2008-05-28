@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <pixman.h>
 
+#include "ccm-debug.h"
 #include "ccm-image.h"
 
 struct _CCMImage
@@ -214,6 +215,10 @@ ccm_image_get_sub_image(CCMImage* image, CCMPixmap* pixmap,
 								   image->pimage, 0, 0, 0, 0, x, y, 
 								   width, height);
 			ret = TRUE;
+		}
+		else
+		{
+			ccm_debug("GET_SUB_IMAGE ERROR");
 		}
 		ccm_image_destroy (sub_image);
 	}

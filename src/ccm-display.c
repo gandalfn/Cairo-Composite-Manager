@@ -20,6 +20,7 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
+#include <string.h>
 #include <X11/Xresource.h>
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xdamage.h>
@@ -176,6 +177,7 @@ ccm_display_init_shape(CCMDisplay *self)
 							  &self->priv->shape.error_base))
     {
 		self->priv->shape.available = TRUE;
+		ccm_debug("SHAPE ERROR BASE: %i", self->priv->shape.error_base);
 		return TRUE;
     }
     
@@ -192,6 +194,7 @@ ccm_display_init_composite(CCMDisplay *self)
 	    						  &self->priv->composite.error_base))
     {
 		self->priv->composite.available = TRUE;
+		ccm_debug("COMPOSITE ERROR BASE: %i", self->priv->composite.error_base);
 		return TRUE;
     }
     
@@ -208,6 +211,7 @@ ccm_display_init_damage(CCMDisplay *self)
 							   &self->priv->damage.error_base))
     {
 		self->priv->damage.available = TRUE;
+		ccm_debug("DAMAGE ERROR BASE: %i", self->priv->damage.error_base);
 		return TRUE;
     }
     
@@ -253,8 +257,13 @@ ccm_display_error_handler(Display* dpy, XErrorEvent* evt)
 	gchar str[128];
 	
 	XGetErrorText (dpy, evt->error_code, str, 128);
-	g_warning("Xerror: %s", str);
+	ccm_debug("ERROR: Xerror: %s", str);
 	
+	sprintf (str, "%d", evt->request_code);
+    XGetErrorDatabaseText (dpy, "XRequest", str, "", str, 128);
+    if (strcmp (str, ""))
+		ccm_debug("ERROR: XRequest: (%s)", str);
+    
 	CCMLastXError = evt->error_code;
 	
 	return 0;
@@ -427,6 +436,7 @@ ccm_display_sync(CCMDisplay* self)
 {
 	g_return_if_fail(self != NULL);
 	
+	XFlush(self->xdisplay);
 	XSync(self->xdisplay, FALSE);
 }
 

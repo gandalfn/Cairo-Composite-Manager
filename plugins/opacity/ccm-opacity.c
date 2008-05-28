@@ -213,16 +213,6 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
-ccm_opacity_window_map(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	CCMOpacity* self = CCM_OPACITY(plugin);
-
-	self->priv->opacity = 
-				ccm_config_get_float(self->priv->options[CCM_OPACITY_OPACITY]);
-	ccm_opacity_on_property_changed (self, window);
-}
-
-static void
 ccm_opacity_screen_iface_init(CCMScreenPluginClass* iface)
 {
 	iface->load_options 	= ccm_opacity_screen_load_options;
@@ -234,14 +224,14 @@ ccm_opacity_screen_iface_init(CCMScreenPluginClass* iface)
 static void
 ccm_opacity_window_iface_init(CCMWindowPluginClass* iface)
 {
-	iface->load_options 	= ccm_opacity_window_load_options;
-	iface->query_geometry 	= NULL;
-	iface->paint 			= NULL;
-	iface->map				= ccm_opacity_window_map;
-	iface->unmap			= NULL;
-	iface->query_opacity  	= NULL;
-	iface->set_opaque		= NULL;
-	iface->move				= NULL;
-	iface->resize			= NULL;
+	iface->load_options 	 = ccm_opacity_window_load_options;
+	iface->query_geometry 	 = NULL;
+	iface->paint 			 = NULL;
+	iface->map				 = NULL;
+	iface->unmap			 = NULL;
+	iface->query_opacity  	 = NULL;
+	iface->move				 = NULL;
+	iface->resize			 = NULL;
+	iface->set_opaque_region = NULL;
 }
 
