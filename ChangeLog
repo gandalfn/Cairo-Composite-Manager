@@ -1,3 +1,18 @@
+2008-05-29  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/fade/ccm-fade.c:
+    * plugins/menu-animation/ccm-menu-animation.c:
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/opacity/ccm-opacity.plugin.desktop.in:
+    * plugins/shadow/ccm-shadow.c
+    * src/ccm-property-async.c:
+    * src/ccm-screen.c:
+    * src/ccm-window.c:
+    * src/ccm.h: Remove state changed signal and update property changed to
+                 indicate the type of property changed.
+                 Remove get property sync methods not really needed.
+                 Check hint type on map in opacity plugin.
+
 2008-05-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
     
     * plugins/fade/ccm-fade.c:

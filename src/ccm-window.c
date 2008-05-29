@@ -91,7 +91,6 @@ static void			ccm_window_on_get_property_async(CCMWindow* self,
 enum
 {
 	PROPERTY_CHANGED,
-	STATE_CHANGED,
 	ERROR,
     N_SIGNALS
 };
@@ -200,14 +199,8 @@ ccm_window_class_init (CCMWindowClass *klass)
 	signals[PROPERTY_CHANGED] = g_signal_new ("property-changed",
 									 G_OBJECT_CLASS_TYPE (object_class),
 									 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-									 g_cclosure_marshal_VOID__VOID,
-									 G_TYPE_NONE, 0);
-	
-	signals[STATE_CHANGED] = g_signal_new ("state-changed",
-									 G_OBJECT_CLASS_TYPE (object_class),
-									 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-									 g_cclosure_marshal_VOID__VOID,
-									 G_TYPE_NONE, 0);
+									 g_cclosure_marshal_VOID__INT,
+									 G_TYPE_NONE, 1, G_TYPE_INT);
 	
 	signals[ERROR] = g_signal_new ("error",
 								   G_OBJECT_CLASS_TYPE (object_class),
@@ -455,7 +448,8 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			
 			if (old != self->priv->hint_type)
 			{
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+							  CCM_PROPERTY_HINT_TYPE);
 			}
 		}
 	}
@@ -480,7 +474,8 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 		if (updated)
 		{
 			ccm_debug_window(self, "TRANSIENT FOR 0x%lx", self->priv->transient_for);
-			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+						  CCM_PROPERTY_TRANSIENT);
 		}
 	}
 	else if (property == CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom)
@@ -497,7 +492,8 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			if (old != self->priv->is_decorated)
 			{
 				ccm_debug_window(self, "IS_DECORATED %i", self->priv->is_decorated);
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+							  CCM_PROPERTY_MWM_HINTS);
 			}
 		}
 	}
@@ -515,7 +511,8 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			}
 			if (updated) 
 			{
-				g_signal_emit(self, signals[STATE_CHANGED], 0);
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+							  CCM_PROPERTY_STATE);
 			}
 		}
 	}
@@ -538,7 +535,8 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			if (old != self->priv->opacity)
 			{
 				ccm_drawable_damage (CCM_DRAWABLE(self));
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+							  CCM_PROPERTY_OPACITY);
 			}
 		}
 	}		
@@ -740,97 +738,6 @@ ccm_window_get_child_text_property (CCMWindow* self, Atom atom)
     }
 	
 	return retval;
-}
-
-static void
-ccm_window_query_hint_type_sync(CCMWindow* self)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
-	
-	guint32* result = NULL;
-	guint n_items;
-	
-	ccm_debug_window(self, "QUERY HINT TYPE");
-	
-	result = ccm_window_get_property (self, 
-									  CCM_WINDOW_GET_CLASS(self)->type_atom,
-									  XA_ATOM, &n_items);
-	if (result)
-	{
-		CCMWindowType old = self->priv->hint_type;
-		Atom atom;
-		memcpy (&atom, result, sizeof (Atom));
-		
-		if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_menu_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_MENU;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_desktop_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_DESKTOP;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dock_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_DOCK;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_toolbar_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_TOOLBAR;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_util_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_UTILITY;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_splash_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_SPLASH;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dialog_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dropdown_menu_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_DROPDOWN_MENU;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_popup_menu_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_POPUP_MENU;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_tooltip_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_TOOLTIP;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_notification_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_NOTIFICATION;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_combo_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_COMBO;
-		else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dnd_atom)
-			self->priv->hint_type = CCM_WINDOW_TYPE_DND;
-		
-		if (old != self->priv->hint_type)
-		{
-			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
-		}
-		
-		g_free(result);
-	}
-}
-
-static void 
-ccm_window_query_mwm_hints_sync(CCMWindow* self)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
-	
-	guint32* result = NULL;
-	guint n_items;
-	
-	ccm_debug_window(self, "QUERY HINT TYPE");
-	
-	result = ccm_window_get_property (self, 
-									  CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom,
-								  	  AnyPropertyType, &n_items);
-	
-	if (result)
-	{
-		MotifWmHints* hints;
-		gboolean old = self->priv->is_decorated;
-		
-		hints = (MotifWmHints*)result;
-		
-		if (hints->flags & MWM_HINTS_DECORATIONS)
-			self->priv->is_decorated = hints->decorations != 0;
-		if (old != self->priv->is_decorated)
-		{
-			ccm_debug_window(self, "IS_DECORATED %i", self->priv->is_decorated);
-			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
-		}
-		g_free(result);
-	}
 }
 
 static void
@@ -1187,6 +1094,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	g_return_val_if_fail(screen != NULL, NULL);
 	g_return_val_if_fail(xwindow != None, NULL);
 	
+	CCMDisplay* display = ccm_screen_get_display (screen);
 	CCMWindow* self = g_object_new(CCM_TYPE_WINDOW_BACKEND(screen), 
 								   "screen", screen,
 								   "drawable", xwindow,
@@ -1208,6 +1116,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	
 	ccm_window_plugin_load_options(self->priv->plugin, self);
 	
+	ccm_display_sync(display);
 	if (!ccm_drawable_query_geometry(CCM_DRAWABLE(self)))
 	{
 		g_object_unref(self);
@@ -1231,11 +1140,11 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		CCMDisplay* display = ccm_screen_get_display(screen);
 	
 		ccm_window_query_child (self);
-		ccm_window_query_hint_type_sync (self);
+		ccm_window_query_hint_type (self);
 		ccm_window_query_opacity (self);
 		ccm_window_query_transient_for(self);
 		ccm_window_query_wm_hints(self);
-		ccm_window_query_mwm_hints_sync(self);
+		ccm_window_query_mwm_hints(self);
 		ccm_window_query_state (self);
 		
 		XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
@@ -1401,7 +1310,8 @@ ccm_window_unset_state(CCMWindow* self, Atom state_atom)
 		updated = old != self->priv->keep_below;
 		ccm_debug_window(self, "KEEP_BELOW %i", self->priv->keep_below);
 	}
-	if (updated) g_signal_emit(self, signals[STATE_CHANGED], 0);
+	if (updated) g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+							   CCM_PROPERTY_STATE);
 }
 
 void
@@ -1460,7 +1370,8 @@ ccm_window_switch_state(CCMWindow* self, Atom state_atom)
 		ccm_debug_window(self, "KEEP_BELOW %i", self->priv->keep_below);
 	}
 	
-	if (updated) g_signal_emit(self, signals[STATE_CHANGED], 0);
+	if (updated) g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+							   CCM_PROPERTY_STATE);
 }
 
 gboolean
@@ -1702,51 +1613,43 @@ ccm_window_get_format (CCMWindow* self)
 {
     g_return_val_if_fail(self != NULL, 0);
 	
-	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-    XWindowAttributes attrs;
-    
     if (self->priv->has_format) return self->priv->format;
     
-    if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
-							   CCM_WINDOW_XWINDOW(self), &attrs))
-	{
-		g_signal_emit(self, signals[ERROR], 0);
-		return CAIRO_FORMAT_ARGB32;
-	}
+    self->is_viewable = self->priv->attribs.map_state == IsViewable;
+	self->priv->override_redirect = self->priv->attribs.override_redirect;
 	
-    self->is_viewable = attrs.map_state == IsViewable;
-	self->priv->override_redirect = attrs.override_redirect;
-	
-    if (attrs.class == InputOnly)
+    if (self->priv->attribs.class == InputOnly)
     {
 		self->is_input_only = TRUE;
     }
-    else if (attrs.depth == 16 &&
-			 attrs.visual->red_mask == 0xf800 &&
-			 attrs.visual->green_mask == 0x7e0 &&
-			 attrs.visual->blue_mask == 0x1f)
+    else if (self->priv->attribs.depth == 16 &&
+			 self->priv->attribs.visual->red_mask == 0xf800 &&
+			 self->priv->attribs.visual->green_mask == 0x7e0 &&
+			 self->priv->attribs.visual->blue_mask == 0x1f)
     {
 		self->priv->format = CAIRO_FORMAT_A8;
     }
-    else if (attrs.depth == 24 &&
-	     	 attrs.visual->red_mask == 0xff0000 &&
-			 attrs.visual->green_mask == 0xff00 &&
-			 attrs.visual->blue_mask == 0xff)
+    else if (self->priv->attribs.depth == 24 &&
+	     	 self->priv->attribs.visual->red_mask == 0xff0000 &&
+			 self->priv->attribs.visual->green_mask == 0xff00 &&
+			 self->priv->attribs.visual->blue_mask == 0xff)
     {
 		self->priv->format = CAIRO_FORMAT_RGB24;
     }
-    else if (attrs.depth == 32 &&
-			 attrs.visual->red_mask == 0xff0000 &&
-			 attrs.visual->green_mask == 0xff00 &&
-			 attrs.visual->blue_mask == 0xff)
+    else if (self->priv->attribs.depth == 32 &&
+			 self->priv->attribs.visual->red_mask == 0xff0000 &&
+			 self->priv->attribs.visual->green_mask == 0xff00 &&
+			 self->priv->attribs.visual->blue_mask == 0xff)
     {
 		self->priv->format = CAIRO_FORMAT_ARGB32;
     }
     else
     {
 		g_warning ("Unknown visual format depth=%d, r=%#lx/g=%#lx/b=%#lx",
-				   attrs.depth, attrs.visual->red_mask,
-				   attrs.visual->green_mask, attrs.visual->blue_mask);
+				   self->priv->attribs.depth, 
+				   self->priv->attribs.visual->red_mask,
+				   self->priv->attribs.visual->green_mask, 
+				   self->priv->attribs.visual->blue_mask);
 	
 		self->priv->format = CAIRO_FORMAT_ARGB32;
     }
@@ -1957,7 +1860,8 @@ ccm_window_query_wm_hints(CCMWindow* self)
 		if (hints->flags & WindowGroupHint)
 			self->priv->group_leader = hints->window_group;
 		if (old != self->priv->group_leader)
-			g_signal_emit(self, signals[PROPERTY_CHANGED], 0);
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+						  CCM_PROPERTY_WM_HINTS);
 		
 		XFree (hints);
 	}

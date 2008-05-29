@@ -125,19 +125,14 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 		return False;
 	
 	if (rep->generic.type == X_Error)
-	{
-		_XGetAsyncReply(dpy, (char *)&replbuf, rep, buf, len,
-						(sizeof(xError) - sizeof(xReply)) >> 2,
-						False);
-		return True;
-	}
+		return False;
 	
 	ccm_debug("ASYNC PROPERTY: 0x%lx", self->priv->window);
 	
 	reply = (xGetPropertyReply *)
 		    _XGetAsyncReply(dpy, (char *)&replbuf, rep, buf, len,
 							(sizeof(xGetPropertyReply) - sizeof(xReply)) >> 2,
-							False);
+							True);
 	
 	if (reply->propertyType != None)
 	{

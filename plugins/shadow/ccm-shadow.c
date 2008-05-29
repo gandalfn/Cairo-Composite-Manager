@@ -207,7 +207,8 @@ ccm_shadow_need_shadow(CCMWindow* window)
 }
 
 static void
-ccm_shadow_on_property_state_changed(CCMShadow* self, CCMWindow* window)
+ccm_shadow_on_property_changed(CCMShadow* self, CCMPropertyType changed,
+							   CCMWindow* window)
 {
 	if (ccm_shadow_need_shadow(window) && !self->priv->shadow_right &&
 		 !self->priv->shadow_bottom)
@@ -259,9 +260,7 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	self->priv->offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
 			
 	g_signal_connect_swapped(window, "property-changed",
-							 G_CALLBACK(ccm_shadow_on_property_state_changed), self);
-	g_signal_connect_swapped(window, "state-changed",
-							 G_CALLBACK(ccm_shadow_on_property_state_changed), self);
+							 G_CALLBACK(ccm_shadow_on_property_changed), self);
 }
 
 static CCMRegion*

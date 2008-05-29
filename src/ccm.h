@@ -68,6 +68,16 @@ typedef enum
     CCM_WINDOW_TYPE_DOCK
 } CCMWindowType;
 
+typedef enum 
+{
+	CCM_PROPERTY_HINT_TYPE,
+	CCM_PROPERTY_TRANSIENT,
+	CCM_PROPERTY_MWM_HINTS,
+    CCM_PROPERTY_WM_HINTS,
+    CCM_PROPERTY_OPACITY,
+	CCM_PROPERTY_STATE
+} CCMPropertyType;
+
 typedef struct _CCMWindowClass 	 CCMWindowClass;
 typedef struct _CCMWindow 		 CCMWindow;
 /******************************************************************************/

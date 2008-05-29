@@ -3,4 +3,4 @@ Plugin=ccm-opacity
 _Name=Opacity
 _Description=Window Opacity
 Backends=xrender;glitz
-Depends=
+Depends=fade

@@ -153,9 +153,12 @@ ccm_menu_animation_on_completed (CCMMenuAnimation* self, CCMTimeline* timeline)
 }
 
 static void
-ccm_menu_animation_on_property_changed (CCMMenuAnimation* self, CCMWindow* window)
+ccm_menu_animation_on_property_changed (CCMMenuAnimation* self, 
+										CCMPropertyType changed,
+										CCMWindow* window)
 {
-	self->priv->type = ccm_window_get_hint_type (window);
+	if (changed == CCM_PROPERTY_HINT_TYPE)
+		self->priv->type = ccm_window_get_hint_type (window);
 }
 
 static void

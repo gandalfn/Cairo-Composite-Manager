@@ -158,10 +158,14 @@ ccm_fade_on_error(CCMFade* self, CCMWindow* window)
 }
 
 static void
-ccm_fade_on_property_changed(CCMFade* self, CCMWindow* window)
+ccm_fade_on_property_changed(CCMFade* self, CCMPropertyType changed,
+							 CCMWindow* window)
 {
-	self->priv->origin = ccm_window_get_opacity (window);
-	ccm_debug_window(window, "FADE OPACITY %f", self->priv->origin);
+	if (changed == CCM_PROPERTY_OPACITY)
+	{
+		self->priv->origin = ccm_window_get_opacity (window);
+		ccm_debug_window(window, "FADE OPACITY %f", self->priv->origin);
+	}
 }
 
 static void

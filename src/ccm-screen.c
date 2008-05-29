@@ -488,6 +488,14 @@ ccm_screen_check_stack(CCMScreen* self)
 			if (window->is_viewable) 
 				viewable = g_list_append(viewable, window);
 		}
+		else if (!window)
+		{
+			window = ccm_window_new (self, self->priv->stack[cpt]);
+			if (window && !ccm_screen_add_window (self, window))
+				g_object_unref(window);
+			else
+				viewable = g_list_append(viewable, window);
+		}
 	}
 	
 	for (item = g_list_first(self->priv->windows); item; item = item->next)
@@ -642,36 +650,27 @@ ccm_screen_on_error(CCMScreen* self, CCMWindow* window)
 }
 
 static void
-ccm_screen_on_window_property_changed(CCMScreen* self, CCMWindow* window)
+ccm_screen_on_window_property_changed(CCMScreen* self, CCMPropertyType changed,
+									  CCMWindow* window)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
 	
 	ccm_debug_window(window, "PROPERTY_CHANGED");
 	
-	ccm_screen_add_check_pending(self);
-}
-
-static void
-ccm_screen_on_window_state_changed(CCMScreen* self, CCMWindow* window)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(window != NULL);
-	
-	ccm_debug_window(window, "STATE_CHANGED");
-	
-	if (ccm_window_is_fullscreen (window) && self->priv->fullscreen != window)
+	if (changed == CCM_PROPERTY_STATE)
 	{
-		ccm_debug_window(window, "FULLSCREEN");
-		self->priv->fullscreen = window;
+		if (ccm_window_is_fullscreen (window) && self->priv->fullscreen != window)
+		{
+			ccm_debug_window(window, "FULLSCREEN");
+			self->priv->fullscreen = window;
+		}
+		else if (self->priv->fullscreen == window)
+		{
+			ccm_debug_window(window, "UNFULLSCREEN");
+			self->priv->fullscreen = NULL;
+		}
 	}
-	else if (self->priv->fullscreen == window)
-	{
-		ccm_debug_window(window, "UNFULLSCREEN");
-		self->priv->fullscreen = NULL;
-	}
-	
-	ccm_screen_add_check_pending(self);
 }
 
 static gboolean
@@ -692,9 +691,6 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 							 G_CALLBACK(ccm_screen_on_error), self);
 	g_signal_connect_swapped(window, "property-changed", 
 							 G_CALLBACK(ccm_screen_on_window_property_changed), self);
-	g_signal_connect_swapped(window, "state-changed", 
-							 G_CALLBACK(ccm_screen_on_window_state_changed), self);
-	
 	
 	if (window->is_viewable) ccm_window_map(window);
 	
@@ -720,9 +716,6 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 											 self);
 		g_signal_handlers_disconnect_by_func(window, 
 											 ccm_screen_on_window_property_changed, 
-											 self);
-		g_signal_handlers_disconnect_by_func(window, 
-											 ccm_screen_on_window_state_changed, 
 											 self);
 		if (self->priv->fullscreen == window)
 		{
