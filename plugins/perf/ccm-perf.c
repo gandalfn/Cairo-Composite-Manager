@@ -296,7 +296,7 @@ ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 		
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	self->priv->keybind = ccm_keybind_new(screen, 
-		ccm_config_get_string(self->priv->options [CCM_PERF_SHORTCUT]));
+		ccm_config_get_string(self->priv->options [CCM_PERF_SHORTCUT]), TRUE);
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_perf_on_key_press), self);
 }

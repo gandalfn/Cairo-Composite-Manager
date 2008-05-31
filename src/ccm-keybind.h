@@ -43,8 +43,6 @@ typedef struct _CCMKeybind CCMKeybind;
 struct _CCMKeybindClass
 {
 	GObjectClass parent_class;
-	
-	guint mod_masks[8];
 };
 
 struct _CCMKeybind
@@ -55,7 +53,8 @@ struct _CCMKeybind
 };
 
 GType ccm_keybind_get_type (void) G_GNUC_CONST;
-CCMKeybind* ccm_keybind_new (CCMScreen* screen, gchar* keystring);
+CCMKeybind* ccm_keybind_new (CCMScreen* screen, gchar* keystring, 
+							 gboolean exclusive);
 
 G_END_DECLS
 

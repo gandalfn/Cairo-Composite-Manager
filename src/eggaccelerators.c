@@ -186,6 +186,17 @@ is_keycode (const gchar *string)
 	  (string[1] == 'x'));
 }
 
+static inline gboolean
+is_button (const gchar *string)
+{
+  return ((string[0] == 'b' || string[0] == 'B') &&
+          (string[1] == 'u' || string[1] == 'U') &&
+	      (string[2] == 't' || string[2] == 'T') &&
+          (string[3] == 't' || string[3] == 'T') &&
+	      (string[4] == 'o' || string[4] == 'O') &&
+          (string[5] == 'n' || string[5] == 'N'));
+}
+
 /**
  * egg_accelerator_parse_virtual:
  * @accelerator:      string representing an accelerator
@@ -215,6 +226,7 @@ gboolean
 egg_accelerator_parse_virtual (const gchar            *accelerator,
                                guint                  *accelerator_key,
                                guint                  *keycode,
+                               guint                  *button,
                                EggVirtualModifierType *accelerator_mods)
 {
   guint keyval;
@@ -327,13 +339,19 @@ egg_accelerator_parse_virtual (const gchar            *accelerator,
 		}
 	    }
 	}
+    else if (len >= 7 && is_button (accelerator))
+    {
+        if (button) *button = accelerator[6] - '0';
+        accelerator += 7;
+        len -= 7;
+    }
       else
 	{
           keyval = gdk_keyval_from_name (accelerator);
 
           if (keyval == 0)
 	    {
-	      /* If keyval is 0, than maybe it's a keycode.  Check for 0x## */
+          /* If keyval is 0, than maybe it's a keycode.  Check for 0x## */
 	      if (len >= 4 && is_keycode (accelerator))
 		{
 		  char keystring[5];

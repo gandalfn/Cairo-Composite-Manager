@@ -633,20 +633,19 @@ static void
 ccm_screen_add_check_pending(CCMScreen* self)
 {
 	if (!self->priv->id_pendings)
-		self->priv->id_pendings = g_idle_add_full (G_PRIORITY_HIGH,
+		self->priv->id_pendings = g_idle_add_full (G_PRIORITY_LOW,
 							(GSourceFunc)ccm_screen_on_check_stack_pendings,
 							self, NULL);
 }
 
 static void
-ccm_screen_on_error(CCMScreen* self, CCMWindow* window)
+ccm_screen_on_window_error(CCMScreen* self, CCMWindow* window)
 {
 	g_return_if_fail(self != NULL);
-	g_return_if_fail(window != NULL);
 	
-	ccm_debug_window(window, "WINDOW_ERROR");
+	ccm_debug_window(window, "ON WINDOW ERROR");
 	
-	ccm_screen_add_check_pending(self);
+	ccm_screen_add_check_pending (self);
 }
 
 static void
@@ -688,7 +687,7 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	g_signal_connect_swapped(window, "damaged", 
 							 G_CALLBACK(ccm_screen_on_window_damaged), self);
 	g_signal_connect_swapped(window, "error", 
-							 G_CALLBACK(ccm_screen_on_error), self);
+							 G_CALLBACK(ccm_screen_on_window_error), self);
 	g_signal_connect_swapped(window, "property-changed", 
 							 G_CALLBACK(ccm_screen_on_window_property_changed), self);
 	
@@ -712,7 +711,7 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 											 ccm_screen_on_window_damaged, 
 											 self);
 		g_signal_handlers_disconnect_by_func(window, 
-											 ccm_screen_on_error, 
+											 ccm_screen_on_window_error, 
 											 self);
 		g_signal_handlers_disconnect_by_func(window, 
 											 ccm_screen_on_window_property_changed, 
@@ -951,8 +950,8 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 					}
 				}
 			}
-			break;	
 		}
+		break;	
 		case DestroyNotify:
 		{	
 			CCMWindow* window = ccm_screen_find_window(self,
@@ -1149,7 +1148,9 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			{
 				window = ccm_screen_find_window_or_child (self,
 													   property_event->window);
-				if (window) ccm_window_query_opacity(window);
+				if (window) 
+					ccm_window_query_opacity(window, 
+									property_event->state == PropertyDelete);
 			}
 			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->type_atom)
 			{
@@ -1167,10 +1168,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			{
 				window = ccm_screen_find_window_or_child (self,
 													   property_event->window);
-				if (window) 
-				{
-					ccm_window_query_state(window);
-				}
+				if (window) ccm_window_query_state(window);
 			}
 		}
 		break;
@@ -1262,7 +1260,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			{
 				CCMWindow* window = ccm_screen_find_window_or_child (self,
 													   client_event->window);
-				if (window) ccm_window_query_opacity (window);
+				if (window) ccm_window_query_opacity (window, FALSE);
 			}
 		}
 		break;
@@ -1600,4 +1598,28 @@ ccm_screen_activate_window(CCMScreen* self, CCMWindow* window, Time timestamp)
 	      		SubstructureRedirectMask | SubstructureNotifyMask, &event); 
 	
 	XRaiseWindow (CCM_DISPLAY_XDISPLAY(display),CCM_WINDOW_XWINDOW(window));
+}
+
+gboolean
+ccm_screen_query_pointer(CCMScreen* self, CCMWindow** below, 
+						 gint *x, gint *y)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(x != NULL && y != NULL, FALSE);
+	
+	CCMWindow* root = ccm_screen_get_root_window (self);
+	gboolean ret = FALSE;
+	Window r, w;
+	gint xw, yw;
+	guint state;
+	
+	if (XQueryPointer(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+					  CCM_WINDOW_XWINDOW(root), &r, &w, x, y, &xw, &yw,
+					  &state))
+	{
+		if (below) *below = ccm_screen_find_window_or_child (self, w);
+		ret = TRUE;
+	}
+	
+	return ret;
 }

@@ -207,7 +207,7 @@ ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	self->priv->screen = screen;
 	self->priv->keybind = ccm_keybind_new(self->priv->screen, 
-		ccm_config_get_string(self->priv->options [CCM_MAGNIFIER_SHORTCUT]));
+		ccm_config_get_string(self->priv->options [CCM_MAGNIFIER_SHORTCUT]), TRUE);
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_magnifier_on_key_press), self);
 }

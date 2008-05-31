@@ -127,12 +127,11 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 	if (rep->generic.type == X_Error)
 		return False;
 	
-	ccm_debug("ASYNC PROPERTY: 0x%lx", self->priv->window);
-	
 	reply = (xGetPropertyReply *)
 		    _XGetAsyncReply(dpy, (char *)&replbuf, rep, buf, len,
 							(sizeof(xGetPropertyReply) - sizeof(xReply)) >> 2,
 							True);
+	ccm_debug("ASYNC PROPERTY 0x%lx: %i", self->priv->window, self->priv->request_seq);
 	
 	if (reply->propertyType != None)
 	{
@@ -247,6 +246,7 @@ ccm_property_async_new(CCMDisplay* display, Window window, Atom property,
 	
 	GetReq (GetProperty, req);
   	self->priv->request_seq = dpy->request;
+	ccm_debug("GET ASYNC PROPERTY 0x%lx: %i", self->priv->window, self->priv->request_seq);
 	req->window = window;
   	req->property = property;
   	req->type = req_type;

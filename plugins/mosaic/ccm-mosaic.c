@@ -195,9 +195,15 @@ ccm_mosaic_broadcast_event(Window window, int x, int y,
 	
 	XSendEvent(evt->xany.display, window, True, NoEventMask, evt);
 	
+	ccm_debug("BROADCAST: 0x%lx %i, %i %i, %i\n", 
+					  window, x, y, x_parent, y_parent);
+	
 	if (XQueryTree(evt->xany.display, window, &w, &p, 
 				   &windows, &n_windows) && windows && n_windows)
 	{
+		XSendEvent(evt->xany.display, w, False, 
+						   NoEventMask, evt);
+		
 		while (n_windows--)
         {
             XWindowAttributes attribs;
@@ -211,17 +217,18 @@ ccm_mosaic_broadcast_event(Window window, int x, int y,
 			ccm_mosaic_broadcast_event (windows[n_windows], x, y, 
 										x_parent + attribs.x,
 										y_parent + attribs.y, evt);
-			ccm_debug("BROADCAST: 0x%lx %i, %i %i, %i %i, %i %i\n", 
+			if (send)
+			{
+            	ccm_debug("BROADCAST: 0x%lx %i, %i %i, %i %i, %i %i\n", 
 					  windows[n_windows], x, y, x_parent, y_parent, 
 					  attribs.x, attribs.y, send);
 			
-			if (send)
-			{
-                evt->xany.window = windows[n_windows];
+			    evt->xany.window = windows[n_windows];
 				if (evt->type == ButtonPress || evt->type == ButtonRelease)
                 {
                     XButtonEvent* button_evt = (XButtonEvent*)evt;
                     
+					button_evt->send_event = True;
                     button_evt->x = x - (x_parent + attribs.x);
                     button_evt->y = y - (y_parent + attribs.y);
                     button_evt->x_root = x;
@@ -347,7 +354,7 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	self->priv->screen = screen;
 	self->priv->keybind = ccm_keybind_new(self->priv->screen, 
-		ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT]));
+		ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT]), TRUE);
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_mosaic_on_key_press), self);
 	g_signal_connect_swapped(display, "event", 

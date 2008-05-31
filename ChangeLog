@@ -1,3 +1,20 @@
+2008-05-31  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.c:
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/opacity/ccm-opacity.schemas.in:
+    * plugins/perf/ccm-perf.c:
+    * src/ccm-keybind.c:
+    * src/ccm-keybind.h:
+    * src/ccm-property-async.c:
+    * src/ccm-screen.c:
+    * src/ccm-window.c:
+    * src/ccm.h:
+    * src/eggaccelerators.c:
+    * src/eggaccelerators.h: Add support of button mouse shortcuts, set shortcut
+                             Super (roll wheell) to change window opacity.
+
 2008-05-29  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/fade/ccm-fade.c:

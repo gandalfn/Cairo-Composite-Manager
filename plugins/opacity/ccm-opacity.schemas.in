@@ -17,7 +17,7 @@
          <applyto>/apps/cairo-compmgr/default/opacity/increase</applyto>
          <owner>gnome</owner>
          <type>string</type>
-		 <default>&lt;Super&gt;Up</default>
+		 <default>&lt;Super&gt;Button4</default>
          <locale name="C">
             <short>Increase opacity shortcut key.</short>
             <long>The increase opacity shortcut key.</long>
@@ -28,10 +28,21 @@
          <applyto>/apps/cairo-compmgr/default/opacity/decrease</applyto>
          <owner>gnome</owner>
          <type>string</type>
-		 <default>&lt;Super&gt;Down</default>
+		 <default>&lt;Super&gt;Button5</default>
          <locale name="C">
             <short>Decrease opacity shortcut key.</short>
             <long>The decrease opacity shortcut key.</long>
+         </locale>
+      </schema>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/opacity/step</key>
+         <applyto>/apps/cairo-compmgr/default/opacity/step</applyto>
+         <owner>gnome</owner>
+         <type>float</type>
+		 <default>0.1</default>
+         <locale name="C">
+            <short>Opacity step on increase/decrease</short>
+            <long>Opacity step on increase/decrease</long>
          </locale>
       </schema>
    </schemalist>

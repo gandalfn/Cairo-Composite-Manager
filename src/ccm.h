@@ -194,6 +194,9 @@ CCMWindow*      ccm_screen_find_window_or_child (CCMScreen* self,
 void            ccm_screen_activate_window      (CCMScreen* self, 
                                                  CCMWindow* window, 
                                                  Time timestamp);
+gboolean        ccm_screen_query_pointer        (CCMScreen* self, 
+                                                 CCMWindow** below, 
+                                                 gint *x, gint *y);
 /******************************************************************************/
 
 /****************************** Drawable **************************************/
@@ -246,7 +249,8 @@ gboolean		ccm_window_paint 					(CCMWindow* self,
                                                      gboolean buffered);
 void			ccm_window_map						(CCMWindow* self);
 void			ccm_window_unmap					(CCMWindow* self);
-void 			ccm_window_query_opacity			(CCMWindow* self);
+void 			ccm_window_query_opacity			(CCMWindow* self,
+                                                     gboolean deleted);
 void            ccm_window_query_transient_for      (CCMWindow* self);
 void            ccm_window_query_wm_hints           (CCMWindow* self);
 void            ccm_window_query_hint_type          (CCMWindow* self);

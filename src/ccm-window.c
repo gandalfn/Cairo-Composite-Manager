@@ -1141,7 +1141,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	
 		ccm_window_query_child (self);
 		ccm_window_query_hint_type (self);
-		ccm_window_query_opacity (self);
+		ccm_window_query_opacity (self, FALSE);
 		ccm_window_query_transient_for(self);
 		ccm_window_query_wm_hints(self);
 		ccm_window_query_mwm_hints(self);
@@ -1803,11 +1803,19 @@ ccm_window_unmap(CCMWindow* self)
 }
 
 void 
-ccm_window_query_opacity(CCMWindow* self)
+ccm_window_query_opacity(CCMWindow* self, gboolean deleted)
 {
 	g_return_if_fail(self != NULL);
 	
-	ccm_window_plugin_query_opacity (self->priv->plugin, self);
+	if (deleted)
+	{
+		ccm_window_set_opacity (self, 1.0f);
+		ccm_drawable_damage (CCM_DRAWABLE(self));
+		g_signal_emit (self, signals[PROPERTY_CHANGED], 0, 
+					   CCM_PROPERTY_OPACITY);
+	}
+	else
+		ccm_window_plugin_query_opacity (self->priv->plugin, self);
 }
 
 void 

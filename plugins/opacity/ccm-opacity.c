@@ -20,7 +20,10 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
+#include <X11/Xatom.h>
+
 #include "ccm-drawable.h"
+#include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-window.h"
 #include "ccm-opacity.h"
@@ -32,13 +35,15 @@ enum
 	CCM_OPACITY_OPACITY,
 	CCM_OPACITY_INCREASE,
 	CCM_OPACITY_DECREASE,
+	CCM_OPACITY_STEP,
 	CCM_OPACITY_OPTION_N
 };
 
 static gchar* CCMOpacityOptions[CCM_OPACITY_OPTION_N] = {
 	"opacity",
 	"increase",
-	"decrease"
+	"decrease",
+	"step"
 };
 
 static void ccm_opacity_screen_iface_init(CCMScreenPluginClass* iface);
@@ -57,6 +62,7 @@ struct _CCMOpacityPrivate
 	CCMScreen*	screen;
 	CCMKeybind*	increase;
 	CCMKeybind*	decrease;
+	gfloat step;
 	gfloat opacity;
 	
 	CCMConfig* 	options[CCM_OPACITY_OPTION_N];
@@ -97,28 +103,44 @@ ccm_opacity_class_init (CCMOpacityClass *klass)
 }
 
 static void
+ccm_opacity_change_opacity(CCMWindow* window, gfloat value)
+{
+	g_return_if_fail(window != NULL);
+	
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
+	guint32 opacity = value * 0xffffffff;
+	
+	if (value == 1.0f)
+		XDeleteProperty (CCM_DISPLAY_XDISPLAY(display), 
+						 CCM_WINDOW_XWINDOW(window), 
+						 CCM_WINDOW_GET_CLASS(window)->opacity_atom);
+	else
+		XChangeProperty(CCM_DISPLAY_XDISPLAY(display), 
+						CCM_WINDOW_XWINDOW(window), 
+						CCM_WINDOW_GET_CLASS(window)->opacity_atom, 
+						XA_CARDINAL, 32, PropModeReplace, 
+						(unsigned char *) &opacity, 1L);
+	ccm_display_sync(display);
+}
+
+static void
 ccm_opacity_on_increase_key_press(CCMOpacity* self)
 {
-	GList* windows = ccm_screen_get_windows(self->priv->screen);
-	if (windows)
+	CCMWindow* window = NULL;
+	gint x, y;
+	
+	if (ccm_screen_query_pointer (self->priv->screen, &window, &x, &y) &&
+		window)
 	{
-		GList *item;
-		
-		for (item = g_list_last(windows); item; item = item->prev)
+		CCMWindowType type = ccm_window_get_hint_type (window);
+			
+		if (window->is_viewable && type == CCM_WINDOW_TYPE_NORMAL)
 		{
-			CCMWindow* toplevel = item->data;
-			CCMWindowType type = ccm_window_get_hint_type (toplevel);
-			
-			if (toplevel->is_viewable && type == CCM_WINDOW_TYPE_NORMAL)
-			{
-				gfloat opacity = ccm_window_get_opacity (toplevel);
-			
-				opacity += 0.05;
-				if (opacity > 1) opacity = 1.0;
-				ccm_window_set_opacity (toplevel, opacity);
-				ccm_drawable_damage (CCM_DRAWABLE(toplevel));
-				break;
-			}
+			gfloat opacity = ccm_window_get_opacity (window);
+				
+			opacity += self->priv->step;
+			if (opacity > 1) opacity = 1.0;
+			ccm_opacity_change_opacity (window, opacity);
 		}
 	}
 }
@@ -126,26 +148,21 @@ ccm_opacity_on_increase_key_press(CCMOpacity* self)
 static void
 ccm_opacity_on_decrease_key_press(CCMOpacity* self)
 {
-	GList* windows = ccm_screen_get_windows(self->priv->screen);
-	if (windows && g_list_last(windows))
+	CCMWindow* window = NULL;
+	gint x, y;
+	
+	if (ccm_screen_query_pointer (self->priv->screen, &window, &x, &y) &&
+		window)
 	{
-		GList *item;
-		
-		for (item = g_list_last(windows); item; item = item->prev)
-		{
-			CCMWindow* toplevel = item->data;
-			CCMWindowType type = ccm_window_get_hint_type (toplevel);
+		CCMWindowType type = ccm_window_get_hint_type (window);
 			
-			if (toplevel->is_viewable && type == CCM_WINDOW_TYPE_NORMAL)
-			{
-				gfloat opacity = ccm_window_get_opacity (toplevel);
+		if (window->is_viewable && type == CCM_WINDOW_TYPE_NORMAL)
+		{
+			gfloat opacity = ccm_window_get_opacity (window);
 				
-				opacity -= 0.05;
-				if (opacity < 0.1) opacity = 0.1;
-				ccm_window_set_opacity (toplevel, opacity);
-				ccm_drawable_damage (CCM_DRAWABLE(toplevel));
-				break;
-			}
+			opacity -= self->priv->step;
+			if (opacity < 0.1) opacity = 0.1;
+			ccm_opacity_change_opacity (window, opacity);
 		}
 	}
 }
@@ -164,12 +181,15 @@ ccm_opacity_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 		
 	self->priv->screen = screen;
+	
+	self->priv->step = 
+		ccm_config_get_float (self->priv->options[CCM_OPACITY_STEP]);
 	self->priv->increase = ccm_keybind_new(self->priv->screen, 
-		ccm_config_get_string(self->priv->options [CCM_OPACITY_INCREASE]));
+		ccm_config_get_string(self->priv->options [CCM_OPACITY_INCREASE]), TRUE);
 	g_signal_connect_swapped(self->priv->increase, "key_press", 
 							 G_CALLBACK(ccm_opacity_on_increase_key_press), self);
 	self->priv->decrease = ccm_keybind_new(self->priv->screen, 
-		ccm_config_get_string(self->priv->options [CCM_OPACITY_DECREASE]));
+		ccm_config_get_string(self->priv->options [CCM_OPACITY_DECREASE]), TRUE);
 	g_signal_connect_swapped(self->priv->decrease, "key_press", 
 							 G_CALLBACK(ccm_opacity_on_decrease_key_press), self);
 }
@@ -189,8 +209,8 @@ ccm_opacity_on_property_changed(CCMOpacity* self, CCMPropertyType changed,
 			type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
 			type == CCM_WINDOW_TYPE_POPUP_MENU)
 		{
-			ccm_window_set_opacity(window, self->priv->opacity);
-			ccm_drawable_damage(CCM_DRAWABLE(window));
+			ccm_window_set_opacity (window, self->priv->opacity);
+			ccm_opacity_change_opacity(window, self->priv->opacity);
 		}
 	}
 }
@@ -217,20 +237,6 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
-ccm_opacity_window_map(CCMWindowPlugin* plugin, CCMWindow* window)
-{
-	CCMOpacity* self = CCM_OPACITY(plugin);
-	CCMWindowType type = ccm_window_get_hint_type(window);
-		
-	if (type == CCM_WINDOW_TYPE_MENU ||
-		type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
-		type == CCM_WINDOW_TYPE_POPUP_MENU)
-		ccm_window_set_opacity(window, self->priv->opacity);
-	
-	ccm_window_plugin_map(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-}
-
-static void
 ccm_opacity_screen_iface_init(CCMScreenPluginClass* iface)
 {
 	iface->load_options 	= ccm_opacity_screen_load_options;
@@ -245,7 +251,7 @@ ccm_opacity_window_iface_init(CCMWindowPluginClass* iface)
 	iface->load_options 	 = ccm_opacity_window_load_options;
 	iface->query_geometry 	 = NULL;
 	iface->paint 			 = NULL;
-	iface->map				 = ccm_opacity_window_map;
+	iface->map				 = NULL;
 	iface->unmap			 = NULL;
 	iface->query_opacity  	 = NULL;
 	iface->move				 = NULL;
