@@ -114,6 +114,7 @@ ccm_fade_on_new_frame(CCMFade* self, gint num_frame, CCMTimeline* timeline)
 static void
 ccm_fade_on_map_unmap_unlocked(CCMFade* self)
 {
+	ccm_debug_window(self->priv->window, "FADE UNLOCKED %f", self->priv->origin);
 	ccm_window_set_opacity (self->priv->window, self->priv->origin);
 }
 
@@ -122,6 +123,7 @@ ccm_fade_finish(CCMFade* self)
 {
 	g_return_if_fail(self != NULL);
 	
+	ccm_debug_window(self->priv->window, "FADE FINISH");
 	if (ccm_timeline_get_direction (self->priv->timeline) == CCM_TIMELINE_FORWARD)
 	{
 		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(self, map);

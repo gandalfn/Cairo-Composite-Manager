@@ -670,6 +670,27 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMPropertyType changed,
 			self->priv->fullscreen = NULL;
 		}
 	}
+	else if (changed == CCM_PROPERTY_HINT_TYPE)
+	{
+		ccm_screen_add_check_pending (self);
+	}
+	else if (changed == CCM_PROPERTY_TRANSIENT)
+	{
+		CCMWindow* transient = ccm_window_transient_for (window);
+		
+		if (g_list_index (self->priv->windows, transient) > 
+			g_list_index (self->priv->windows, window))
+		{
+			GList* link = g_list_find (self->priv->windows, transient);
+			
+			if (link)
+			{
+				self->priv->windows = g_list_remove (self->priv->windows, window);
+				self->priv->windows = g_list_insert_before (self->priv->windows, 
+															link->next, window);
+			}
+		}
+	}
 }
 
 static gboolean
@@ -701,7 +722,9 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 							  CCMWindow* window)
 {
 	GList* link = g_list_find (self->priv->windows, window);
-	
+
+	ccm_debug_window(window, "REMOVE");
+
 	if (link)
 	{
 		ccm_debug_window(window, "REMOVE");
@@ -958,7 +981,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 										((XCreateWindowEvent*)event)->window);
 			if (window) 
 			{
-				ccm_debug_window(window, "REMOVE");
+				ccm_debug_window(window, "EVENT REMOVE");
 				ccm_screen_remove_window(self, window);
 			}
 		}
@@ -983,12 +1006,34 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				{
 					ccm_debug_window(window, "CREATE MAP");
 					if (!ccm_screen_add_window(self, window))
+					{
 						g_object_unref(window);
+						window = NULL;
+					}
 					else
 						ccm_window_map(window);
 				}
 			}
-				
+			if (window)
+			{
+				CCMWindow* transient = ccm_window_transient_for (window);
+		
+				if (transient &&
+					g_list_index (self->priv->windows, transient) > 
+					g_list_index (self->priv->windows, window))
+				{
+					GList* link = g_list_find (self->priv->windows, transient);
+	
+					if (link)
+					{
+						self->priv->windows = 
+							g_list_remove (self->priv->windows, window);
+						self->priv->windows = 
+							g_list_insert_before (self->priv->windows, 
+												  link->next, window);
+					}
+				}						
+			}
 		}
 		break;
 		case UnmapNotify:
@@ -1494,6 +1539,8 @@ ccm_screen_remove_window(CCMScreen* self, CCMWindow* window)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
+	
+	if (window->is_viewable) ccm_window_unmap (window);
 	
 	ccm_screen_plugin_remove_window(self->priv->plugin, self, window);
 }

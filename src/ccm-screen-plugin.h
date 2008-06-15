@@ -48,7 +48,7 @@ G_BEGIN_DECLS
 
 #define CCM_SCREEN_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func) \
 { \
-	CCMScreenPlugin* r = (CCMScreenPlugin*)_ccm_window_plugin_get_root((CCMScreenPlugin*)plugin); \
+	CCMScreenPlugin* r = (CCMScreenPlugin*)_ccm_screen_plugin_get_root((CCMScreenPlugin*)plugin); \
 \
 	if (r && CCM_SCREEN_PLUGIN_GET_INTERFACE(r) && \
 		CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func) \

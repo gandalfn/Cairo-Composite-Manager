@@ -1,3 +1,15 @@
+2008-06-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/fade/ccm-fade.c: Add debug statement.
+	* plugins/shadow/ccm-shadow.c: Affine shadow window policy.
+    * src/ccm-screen-plugin.h: Fix CCM_SCREEN_PLUGIN_UNLOCK_ROOT_METHOD
+    * src/ccm-screen.c: Check stack on hint type change and transient change.
+                        Create window on map event if don't exist.
+                        Unmap window if visible on remove.
+    * src/ccm-window.c: Destruct CCMPixmap on window paint error.
+                        Check XError on XCompositeNameWindowPixmap.
+						Always set window translucent when opaque area is empty.
+
 2008-05-31  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/magnifier/ccm-magnifier.c:

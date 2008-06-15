@@ -525,7 +525,7 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 			memcpy (&value, result, sizeof (guint32));
 			self->priv->opacity = (double)value/ (double)0xffffffff;
 			
-			ccm_debug_window(self, "OPACITY %f", self->priv->opacity);
+			ccm_debug_window(self, "OPACITY 0x%x %f", value, self->priv->opacity);
 			if (self->priv->opacity == 1.0f && 
 				ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 &&
 				!self->opaque)
@@ -988,7 +988,16 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	ccm_window_transform (self, context, y_invert);
 	cairo_set_source_surface(context, surface, 0.0f, 0.0f);
 	cairo_paint_with_alpha(context, self->priv->opacity);
-	ret = cairo_status (context) == CAIRO_STATUS_SUCCESS;
+	if (cairo_status (context) != CAIRO_STATUS_SUCCESS)
+	{
+		g_object_unref(self->priv->pixmap);
+		self->priv->pixmap = NULL;
+		g_signal_emit (self, signals[ERROR], 0);
+		ret = FALSE;
+	}
+	else
+		ret = TRUE;
+	ccm_debug_window(self, "PAINT WINDOW %i", ret);
 	cairo_restore(context);
 	
 	return ret;
@@ -1039,9 +1048,9 @@ impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* self,
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(area != NULL);
 
+	ccm_window_set_alpha(self);
 	if (!ccm_region_empty(area))
 	{
-		ccm_window_set_alpha(self);
 		self->priv->orig_opaque = ccm_region_copy(area);
 		self->opaque = ccm_region_copy(area);
 		ccm_region_transform (self->opaque, &self->priv->transform);
@@ -1592,11 +1601,14 @@ ccm_window_get_pixmap(CCMWindow* self)
 		CCMDisplay *display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 		Pixmap xpixmap;
 		
+		ccm_display_sync(display);
+		_ccm_display_trap_error (display);
 		ccm_display_grab(display);
 		xpixmap = XCompositeNameWindowPixmap(CCM_DISPLAY_XDISPLAY(display),
 											 CCM_WINDOW_XWINDOW(self));
 		ccm_display_ungrab(display);
-		if (xpixmap)
+		ccm_display_sync(display);
+		if (xpixmap && !_ccm_display_pop_error (display))
 		{
 			self->priv->pixmap = ccm_pixmap_new(self, xpixmap);
 			if (self->priv->pixmap)
