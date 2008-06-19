@@ -1,5 +1,10 @@
 2008-06-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-window.c: Fix opaque region destruction.
+                        Add some debug statement.
+    
+2008-06-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * plugins/fade/ccm-fade.c: Add debug statement.
 	* plugins/shadow/ccm-shadow.c: Affine shadow window policy.
     * src/ccm-screen-plugin.h: Fix CCM_SCREEN_PLUGIN_UNLOCK_ROOT_METHOD

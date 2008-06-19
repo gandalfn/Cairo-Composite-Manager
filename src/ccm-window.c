@@ -1036,6 +1036,7 @@ impl_ccm_window_query_opacity(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 
+	ccm_debug_window(self, "QUERY OPACITY");
 	ccm_window_get_property_async(self, CCM_WINDOW_GET_CLASS(self)->opacity_atom,
 								  XA_CARDINAL, 32);
 }
@@ -1836,6 +1837,7 @@ ccm_window_query_mwm_hints(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
+	ccm_debug_window(self, "QUERY MWM HINTS");
 	ccm_window_get_property_async(self, 
 								  CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom,
 								  AnyPropertyType, sizeof(MotifWmHints));
@@ -1847,6 +1849,7 @@ ccm_window_query_transient_for (CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
+	ccm_debug_window(self, "QUERY TRANSIENT");
 	ccm_window_get_property_async (self, 
 								   CCM_WINDOW_GET_CLASS(self)->transient_for_atom,
 								   XA_WINDOW, sizeof(Window));
@@ -1951,11 +1954,14 @@ ccm_window_set_alpha(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->opaque && self->priv->orig_opaque)
+	if (self->opaque)
 	{
 		ccm_region_destroy(self->opaque);
-		ccm_region_destroy(self->priv->orig_opaque);
 		self->opaque = NULL;
+	}
+	if (self->priv->orig_opaque)
+	{
+		ccm_region_destroy(self->priv->orig_opaque);
 		self->priv->orig_opaque = NULL;
 	}
 }
