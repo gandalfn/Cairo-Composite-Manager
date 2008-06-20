@@ -1,6 +1,7 @@
 2008-06-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
-    * magnifier/ccm-magnifier.c: Fix magnifier plugin.
+    * magnifier/ccm-magnifier.c: 
+    * src/ccm-window.c: Fix magnifier plugin.
 
 2008-06-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
