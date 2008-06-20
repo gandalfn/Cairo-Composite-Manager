@@ -2105,6 +2105,8 @@ ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 			cairo_matrix_scale (&matrix, 1.0, -1.0);
 			cairo_matrix_translate (&matrix, 0.0f, -self->priv->attribs.height);
 		}
+		cairo_get_matrix (ctx, &invert);
 		cairo_set_matrix (ctx, &matrix);
+		cairo_transform (ctx, &invert);
 	}
 }

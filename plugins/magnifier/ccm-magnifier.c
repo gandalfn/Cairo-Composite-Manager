@@ -65,6 +65,7 @@ struct _CCMMagnifierPrivate
 {	
 	CCMScreen*			 screen;
 	gboolean 			 enabled;
+	gfloat				 scale;
 	
 	int					 x_mouse;
 	int 				 y_mouse;
@@ -147,6 +148,7 @@ ccm_magnifier_init (CCMMagnifier *self)
 	self->priv = CCM_MAGNIFIER_GET_PRIVATE(self);
 	self->priv->screen = NULL;
 	self->priv->enabled = FALSE;
+	self->priv->scale = 1.0f;
 	self->priv->x_mouse = 0;
 	self->priv->y_mouse = 0;
 	self->priv->x_offset = 0;
@@ -206,8 +208,10 @@ ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	
 	self->priv->screen = screen;
+	self->priv->scale = 
+		ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
 	self->priv->keybind = ccm_keybind_new(self->priv->screen, 
-		ccm_config_get_string(self->priv->options [CCM_MAGNIFIER_SHORTCUT]), TRUE);
+	 ccm_config_get_string(self->priv->options [CCM_MAGNIFIER_SHORTCUT]), TRUE);
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_magnifier_on_key_press), self);
 }
@@ -220,9 +224,6 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 	int x, y;
 	unsigned int m;
 	Window r, w;
-	gfloat scale;
-	
-	scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
 			
 	XQueryPointer (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root),
 				   &r, &w, &self->priv->x_mouse, &self->priv->y_mouse,
@@ -238,18 +239,28 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 		self->priv->y_offset = self->priv->y_mouse;
 		ccm_screen_damage (self->priv->screen);
 	}
-	if (self->priv->x_offset + (self->priv->area.width / scale) < self->priv->x_mouse)
+	if (self->priv->x_offset + 
+		(self->priv->area.width / self->priv->scale) < self->priv->x_mouse)
 	{
-		self->priv->x_offset = self->priv->x_mouse + 20 - (self->priv->area.width / scale);
-		if (self->priv->x_offset + (self->priv->area.width / scale) > self->priv->screen->xscreen->width)
-			self->priv->x_offset = self->priv->screen->xscreen->width - (self->priv->area.width / scale);
+		self->priv->x_offset = self->priv->x_mouse + 20 - 
+							   (self->priv->area.width / self->priv->scale);
+		if (self->priv->x_offset + 
+			(self->priv->area.width / self->priv->scale) > 
+			self->priv->screen->xscreen->width)
+			self->priv->x_offset = self->priv->screen->xscreen->width - 
+								   (self->priv->area.width / self->priv->scale);
 		ccm_screen_damage (self->priv->screen);
 	}
-	if (self->priv->y_offset + (self->priv->area.height / scale) < self->priv->y_mouse)
+	if (self->priv->y_offset + (self->priv->area.height / self->priv->scale) < 
+		self->priv->y_mouse)
 	{
-		self->priv->y_offset = self->priv->y_mouse + 20 - (self->priv->area.height / scale);
-		if (self->priv->y_offset + (self->priv->area.height / scale) > self->priv->screen->xscreen->height)
-			self->priv->y_offset = self->priv->screen->xscreen->height - (self->priv->area.height / scale);
+		self->priv->y_offset = self->priv->y_mouse + 20 - 
+							   (self->priv->area.height / self->priv->scale);
+		if (self->priv->y_offset + 
+			(self->priv->area.height / self->priv->scale) > 
+			self->priv->screen->xscreen->height)
+			self->priv->y_offset = self->priv->screen->xscreen->height - 
+								  (self->priv->area.height / self->priv->scale);
 		ccm_screen_damage (self->priv->screen);
 	}
 }
@@ -273,19 +284,20 @@ ccm_magnifier_paint_mouse(CCMMagnifier* self, cairo_t* context)
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	XFixesCursorImage *cursor_image;
 	cairo_surface_t* surface;
-	gfloat scale;
 			
-	scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
 	cursor_image = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(display));
 	ccm_magnifier_cursor_convert_to_rgba (self, cursor_image);
 	
 	surface = cairo_image_surface_create_for_data ((guchar *)cursor_image->pixels, 
 												   CAIRO_FORMAT_ARGB32,
-												   cursor_image->width, cursor_image->height,
+												   cursor_image->width, 
+												   cursor_image->height,
 												   cursor_image->width * 4);
 	cairo_set_source_surface (context, surface, 
-							  self->priv->x_mouse - self->priv->x_offset, 
-							  self->priv->y_mouse - self->priv->y_offset);
+							  self->priv->x_mouse - self->priv->x_offset - 
+							  (cursor_image->width / 4) / self->priv->scale, 
+							  self->priv->y_mouse - self->priv->y_offset - 
+							  (cursor_image->height / 4) / self->priv->scale);
 	cairo_paint(context);
 	cairo_surface_destroy (surface);
 	XFree(cursor_image);
@@ -302,10 +314,6 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	if (self->priv->enabled && !self->priv->surface) 
 	{
 		cairo_t* ctx;
-		gfloat scale;
-			
-		scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
-		
 		self->priv->area.x = 0;
 		self->priv->area.y = 0;
 		self->priv->area.width = (double)
@@ -313,10 +321,9 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		self->priv->area.height = (double)
 			ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT]);
 		
-		self->priv->surface = cairo_image_surface_create (
-												CAIRO_FORMAT_RGB24, 
-												self->priv->area.width / scale, 
-												self->priv->area.height / scale);
+		self->priv->surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 
+								self->priv->area.width / self->priv->scale, 
+								self->priv->area.height / self->priv->scale);
 		ctx = cairo_create (self->priv->surface);
 		cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
 		cairo_paint(ctx);
@@ -331,7 +338,6 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 
 	if (ret && self->priv->enabled) 
 	{
-		gfloat scale;
 		CCMRegion* area = ccm_region_rectangle(&self->priv->area);
 		int x = (self->priv->screen->xscreen->width - 
 				 self->priv->area.width) / 2;
@@ -373,15 +379,13 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 							  10.0f);
 		cairo_fill(context);
 		
-		scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
-		
 		cairo_rectangle_round(context, x, y,
 							  self->priv->area.width, self->priv->area.height, 
 							  10.0f);
 		cairo_clip(context);
 		
 		cairo_translate (context, x, y);
-		cairo_scale(context, scale, scale);
+		cairo_scale(context, self->priv->scale, self->priv->scale);
 			
 		cairo_set_source_surface (context, self->priv->surface, 0, 0);
 		cairo_paint (context);
@@ -413,15 +417,20 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		{
 			cairo_t* ctx = cairo_create (self->priv->surface);
 			cairo_path_t* damaged;
-			gfloat scale;
+			cairo_matrix_t matrix;
 			
-			scale = ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
-		
+			ccm_window_get_transform (window, &matrix);
+			
 			cairo_rectangle (ctx, 0, 0,
-							 self->priv->area.width / scale, 
-							 self->priv->area.height / scale);
+							 self->priv->area.width / self->priv->scale, 
+							 self->priv->area.height / self->priv->scale);
 			cairo_clip(ctx);
-			cairo_translate (ctx, -self->priv->x_offset, -self->priv->y_offset);
+			
+			cairo_matrix_translate (&matrix, 
+									-self->priv->x_offset, 
+									-self->priv->y_offset);
+			cairo_set_matrix (ctx, &matrix);
+			
 			damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(window), ctx);
 			cairo_clip (ctx);
 			cairo_path_destroy (damaged);
