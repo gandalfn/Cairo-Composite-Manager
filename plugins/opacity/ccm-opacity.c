@@ -74,17 +74,25 @@ struct _CCMOpacityPrivate
 static void
 ccm_opacity_init (CCMOpacity *self)
 {
+	gint cpt;
+	
 	self->priv = CCM_OPACITY_GET_PRIVATE(self);
 	self->priv->screen = NULL;
 	self->priv->increase = NULL;
 	self->priv->decrease = NULL;
 	self->priv->opacity = 1.0;
+	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++) 
+		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_opacity_finalize (GObject *object)
 {
 	CCMOpacity* self = CCM_OPACITY(object);
+	gint cpt;
+	
+	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	
 	if (self->priv->increase) g_object_unref(self->priv->increase);
 	if (self->priv->decrease) g_object_unref(self->priv->decrease);

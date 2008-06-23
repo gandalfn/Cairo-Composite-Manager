@@ -32,10 +32,15 @@
 
 enum
 {
-	CCM_MENU_ANIMATION_NONE = 0,
-	CCM_MENU_ANIMATION_ON_MAP = 1 << 1,
-	CCM_MENU_ANIMATION_ON_UNMAP = 1 << 2
-};
+	CCM_MENU_ANIMATION_TOP_LEFT,
+	CCM_MENU_ANIMATION_TOP,
+	CCM_MENU_ANIMATION_TOP_RIGHT,
+	CCM_MENU_ANIMATION_RIGHT,
+	CCM_MENU_ANIMATION_BOTTOM_RIGHT,
+	CCM_MENU_ANIMATION_BOTTOM,
+	CCM_MENU_ANIMATION_BOTTOM_LEFT,
+	CCM_MENU_ANIMATION_LEFT
+} CCMMenuAnimationMousePosition;
 
 enum
 {
@@ -61,6 +66,7 @@ struct _CCMMenuAnimationPrivate
 		
 	CCMTimeline*   timeline;
 	
+	
 	CCMConfig*     options[CCM_MENU_ANIMATION_OPTION_N];
 };
 
@@ -70,16 +76,24 @@ struct _CCMMenuAnimationPrivate
 static void
 ccm_menu_animation_init (CCMMenuAnimation *self)
 {
+	gint cpt;
+	
 	self->priv = CCM_MENU_ANIMATION_GET_PRIVATE(self);
 	self->priv->window = NULL;
 	self->priv->type = CCM_WINDOW_TYPE_UNKNOWN;
 	self->priv->timeline = NULL;
+	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++) 
+		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_menu_animation_finalize (GObject *object)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(object);
+	gint cpt;
+	
+	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++)
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	
 	if (self->priv->timeline) 
 	{
@@ -101,6 +115,24 @@ ccm_menu_animation_class_init (CCMMenuAnimationClass *klass)
 }
 
 static void
+ccm_menu_animation_get_position (CCMMenuAnimation* self)
+{
+	if (self->priv->window)
+	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self->priv->window));
+		cairo_rectangle_t geometry;
+		gint x, y;
+		
+		if (ccm_screen_query_pointer (screen, NULL, &x, &y) &&
+			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self->priv->window),
+											   &geometry))
+		{
+			
+		}
+	}
+}
+
+static void
 ccm_menu_animation_on_new_frame (CCMMenuAnimation* self, int num_frame, 
 								 CCMTimeline* timeline)
 {
@@ -116,7 +148,7 @@ ccm_menu_animation_on_new_frame (CCMMenuAnimation* self, int num_frame,
 	cairo_matrix_init_identity (&matrix);
 	cairo_matrix_scale (&matrix, 
 						progress > 0.5f ? 1.0f : progress  * 2, progress);
-	ccm_window_set_transform (self->priv->window, &matrix);
+	ccm_window_set_transform (self->priv->window, &matrix, TRUE);
 }
 
 static void
@@ -226,7 +258,7 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		{
 			cairo_matrix_t matrix;
 			cairo_matrix_scale(&matrix, 0.01, 0.01);
-			ccm_window_set_transform (window, &matrix);
+			ccm_window_set_transform (window, &matrix, TRUE);
 		}
 		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, 
 										   (CCMPluginUnlockFunc)ccm_menu_animation_on_map_unmap_unlocked,

@@ -167,6 +167,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->opacity = 1.0f;
 	self->priv->pixmap = NULL;
 	self->priv->plugin = NULL;
+	cairo_matrix_init_identity (&self->priv->transform);
 }
 
 static void
@@ -2048,24 +2049,40 @@ ccm_window_init_transfrom(CCMWindow* self)
 }
 
 void
-ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix)
+ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix, gboolean damage)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(matrix != NULL);
 	
+	CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self));
+	CCMRegion* old_geometry = NULL;
+	
+	if (damage && geometry)
+	{
+		old_geometry = ccm_region_copy (geometry);
+		
+		ccm_region_transform (old_geometry, &self->priv->transform);
+	}
 	memcpy (&self->priv->transform, matrix, sizeof(cairo_matrix_t));
 	
 	if (self->priv->orig_opaque)
 	{
 		CCMRegion* region = ccm_region_copy (self->priv->orig_opaque);
 		
-		ccm_drawable_damage_region(CCM_DRAWABLE(self), region);
-	
 		ccm_window_set_opaque_region(self, region);
 		ccm_region_destroy (region);
 	}
 	
-	ccm_drawable_damage(CCM_DRAWABLE(self));
+	if (damage && geometry && old_geometry)
+	{
+		CCMRegion* tmp = ccm_region_copy (geometry);
+		
+		ccm_region_transform (tmp, &self->priv->transform);
+		ccm_region_union (tmp, old_geometry);
+		ccm_region_destroy (old_geometry);
+		ccm_drawable_damage_region (CCM_DRAWABLE(self), tmp);
+		ccm_region_destroy (tmp);
+	}
 }
 
 void
@@ -2087,26 +2104,18 @@ ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 	
 	if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry))
 	{
-		cairo_matrix_t matrix, invert;
-			
-		memcpy(&matrix, &self->priv->transform, sizeof(cairo_matrix_t));
-		memcpy(&invert, &self->priv->transform, sizeof(cairo_matrix_t));
-		cairo_matrix_invert(&invert);
-		cairo_matrix_transform_point (&invert, &geometry.x, &geometry.y);
-		cairo_matrix_translate (&matrix, geometry.x, geometry.y);
-			
-		matrix.xx = MAX(0.001f, matrix.xx);
-		matrix.yy = MAX(0.001f, matrix.yy);
+		cairo_matrix_t matrix;
 		
-		if (matrix.xx != 1.0f || matrix.yy != 1.0f)
-			ccm_debug_window(self, "MATRIX %f,%f", matrix.xx, matrix.yy);
+		ccm_window_get_transform (self, &matrix);
+		
 		if (y_invert)
 		{
 			cairo_matrix_scale (&matrix, 1.0, -1.0);
 			cairo_matrix_translate (&matrix, 0.0f, -self->priv->attribs.height);
 		}
-		cairo_get_matrix (ctx, &invert);
-		cairo_set_matrix (ctx, &matrix);
-		cairo_transform (ctx, &invert);
+		
+		cairo_identity_matrix (ctx);
+		cairo_translate (ctx, geometry.x, geometry.y);
+		cairo_transform (ctx, &matrix);
 	}
 }

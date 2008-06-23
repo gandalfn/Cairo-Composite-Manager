@@ -134,6 +134,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->id_paint = 0;
 	self->priv->id_pendings = 0;
 	self->priv->plugin_loader = NULL;
+	self->priv->plugin = NULL;
 }
 
 static void
@@ -145,6 +146,9 @@ ccm_screen_finalize (GObject *object)
 	ccm_debug("FINALIZE SCREEN");
 	
 	ccm_screen_unset_selection_owner(self);
+	
+	if (self->priv->plugin)
+		g_object_unref(self->priv->plugin);
 	
 	if (self->priv->plugin_loader)
 		g_object_unref(self->priv->plugin_loader);

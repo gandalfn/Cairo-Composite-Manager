@@ -17,10 +17,10 @@
          <applyto>/apps/cairo-compmgr/default/magnifier/height</applyto>
          <owner>gnome</owner>
          <type>int</type>
-		 <default>384</default>
+		 <default>70</default>
          <locale name="C">
-            <short>Magnifier height.</short>
-            <long>Magnifier height.</long>
+            <short>Magnifier height in percent.</short>
+            <long>Magnifier height in percent of screen height.</long>
          </locale>
       </schema>
       <schema>
@@ -28,10 +28,10 @@
          <applyto>/apps/cairo-compmgr/default/magnifier/width</applyto>
          <owner>gnome</owner>
          <type>int</type>
-		 <default>512</default>
+		 <default>70</default>
          <locale name="C">
-            <short>Magnifier width.</short>
-            <long>Magnifier width.</long>
+            <short>Magnifier width in percent.</short>
+            <long>Magnifier width in percent of screen width.</long>
          </locale>
       </schema>
       <schema>

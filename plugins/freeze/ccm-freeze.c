@@ -73,19 +73,26 @@ struct _CCMFreezePrivate
 static void
 ccm_freeze_init (CCMFreeze *self)
 {
+	gint cpt;
+	
 	self->priv = CCM_FREEZE_GET_PRIVATE(self);
 	self->priv->alive = TRUE;
 	self->priv->window = NULL;
 	self->priv->id_ping = 0;
 	self->priv->last_ping = 0;
 	self->priv->timeline = NULL;
+	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; cpt++) 
+		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_freeze_finalize (GObject *object)
 {
 	CCMFreeze* self = CCM_FREEZE(object);
+	gint cpt;
 	
+	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; cpt++)
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	self->priv->window = NULL;
 	if (self->priv->id_ping) g_source_remove (self->priv->id_ping);
 	self->priv->opacity = 0.0f;

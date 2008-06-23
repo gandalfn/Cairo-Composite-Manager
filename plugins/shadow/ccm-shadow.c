@@ -64,18 +64,25 @@ struct _CCMShadowPrivate
 static void
 ccm_shadow_init (CCMShadow *self)
 {
+	gint cpt;
+	
 	self->priv = CCM_SHADOW_GET_PRIVATE(self);
 	
 	self->priv->geometry = NULL;
 	self->priv->shadow_right = NULL;
 	self->priv->shadow_bottom = NULL;
+	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; cpt++) 
+		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_shadow_finalize (GObject *object)
 {
 	CCMShadow* self = CCM_SHADOW(object);
+	gint cpt;
 	
+	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; cpt++)
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	if (self->priv->shadow_right) cairo_surface_destroy(self->priv->shadow_right);
 	if (self->priv->shadow_bottom) cairo_surface_destroy(self->priv->shadow_bottom);
 	if (self->priv->geometry) ccm_region_destroy (self->priv->geometry);

@@ -158,6 +158,8 @@ cairo_rectangle_round (cairo_t *cr,
 static void
 ccm_perf_init (CCMPerf *self)
 {
+	gint cpt;
+	
 	self->priv = CCM_PERF_GET_PRIVATE(self);
 	self->priv->frames = 0;
 	self->priv->elapsed = 0.0f;
@@ -173,13 +175,18 @@ ccm_perf_init (CCMPerf *self)
 	self->priv->timer = g_timer_new();
 	self->priv->screen = NULL;
 	self->priv->keybind = NULL;
+	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++) 
+		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_perf_finalize (GObject *object)
 {
 	CCMPerf* self = CCM_PERF(object);
+	gint cpt;
 	
+	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++)
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	if (self->priv->timer) g_timer_destroy (self->priv->timer);
 	if (self->priv->keybind) g_object_unref (self->priv->keybind);
 	

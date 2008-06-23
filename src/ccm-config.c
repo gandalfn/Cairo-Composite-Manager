@@ -142,9 +142,8 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 														 extension, key);
 				ccm_config_copy_entry(self, default_config);
 				g_free(default_config);
-				entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
-								           self->priv->key, NULL, TRUE, NULL);
 			}
+			if (entry) gconf_entry_unref(entry);
 		}
 		else
 		{
@@ -159,9 +158,8 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 														 CCM_CONFIG_PREFIX, key);
 				ccm_config_copy_entry(self, default_config);
 				g_free(default_config);
-				entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
-								           self->priv->key, NULL, TRUE, NULL);
 			}
+			if (entry) gconf_entry_unref(entry);
 		}
 	}
 	else

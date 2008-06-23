@@ -84,6 +84,8 @@ struct _CCMMosaicPrivate
 static void
 ccm_mosaic_init (CCMMosaic *self)
 {
+	gint cpt;
+	
 	self->priv = CCM_MOSAIC_GET_PRIVATE(self);
 	self->priv->screen = NULL;
 	self->priv->window = 0;
@@ -91,13 +93,18 @@ ccm_mosaic_init (CCMMosaic *self)
 	self->priv->areas = NULL;
 	self->priv->surface = NULL;
 	self->priv->keybind = NULL;
+	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++) 
+		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_mosaic_finalize (GObject *object)
 {
 	CCMMosaic* self = CCM_MOSAIC(object);
+	gint cpt;
 	
+	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	if (self->priv->keybind) g_object_unref(self->priv->keybind);
 	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
 	if (self->priv->areas) g_free(self->priv->areas);

@@ -70,15 +70,23 @@ struct _CCMFadePrivate
 static void
 ccm_fade_init (CCMFade *self)
 {
+	gint cpt;
+	
 	self->priv = CCM_FADE_GET_PRIVATE(self);
 	self->priv->window = NULL;
 	self->priv->timeline = NULL;
+	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++) 
+		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_fade_finalize (GObject *object)
 {
 	CCMFade* self = CCM_FADE(object);
+	gint cpt;
+	
+	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	
 	if (self->priv->timeline) 
 		g_object_unref (self->priv->timeline);

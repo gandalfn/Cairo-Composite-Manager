@@ -1,3 +1,26 @@
+2008-06-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.schemas.in: 
+    * plugins/magnifier/ccm-magnifier.c: Performance improvement and many fix,
+                                         change width and height value to 
+                                         percent of screen size.
+    * data/cairo-compmgr.schemas.in: Remove freeze plugin from default list and
+                                     add magnifier plugin.
+    * plugins/fade/ccm-fade.c:
+    * plugins/freeze/ccm-freeze.c:
+    * plugins/menu-animation/ccm-menu-animation.c:
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/perf/ccm-perf.c:
+    * plugins/shadow/ccm-shadow.c:
+    * plugins/magnifier/ccm-magnifier.c: Fix memory leak, initialisation and 
+                                         destruction of options.
+    * src/ccm-config.c: Fix memory leak.
+    * src/ccm-screen.c: Fix memory leak.
+    * src/ccm-window.c: 
+    * src/ccm.h: Add to ccm_window_set_transform an option to indicate if we 
+                 want damage window, and fix transform application.
+
 2008-06-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * magnifier/ccm-magnifier.c: 
