@@ -31,6 +31,7 @@ void ccm_log (const char *format, ...);
 void ccm_log_window (CCMWindow* window, const char *format, ...);
 void ccm_log_atom (CCMDisplay* display, Atom atom, const char *format, ...);
 void ccm_log_region (CCMDrawable* drawable, const char *format, ...);
+void ccm_log_print_backtrace();
 
 #ifdef CCM_DEBUG_ENABLE
 
@@ -38,6 +39,7 @@ void ccm_log_region (CCMDrawable* drawable, const char *format, ...);
 #define ccm_debug_window(window, format...) ccm_log_window(window, format)
 #define ccm_debug_atom(display, atom, format...) ccm_log_atom(display, atom, format)
 #define ccm_debug_region(drawable, format...) // ccm_log_region(drawable, format)
+#define ccm_debug_backtrace() ccm_log_print_backtrace()
 
 #else
 
@@ -45,6 +47,7 @@ void ccm_log_region (CCMDrawable* drawable, const char *format, ...);
 #define ccm_debug_window(window, format...)
 #define ccm_debug_atom(display, atom, format...)
 #define ccm_debug_region(drawable, format...)
+#define ccm_debug_backtrace()
 
 #endif
 

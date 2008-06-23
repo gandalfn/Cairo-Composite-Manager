@@ -771,12 +771,13 @@ ccm_screen_paint(CCMScreen* self)
 		{
 			self->priv->ctx = 
 				ccm_drawable_create_context(CCM_DRAWABLE(self->priv->cow));
-			cairo_identity_matrix (self->priv->ctx);
 			cairo_rectangle(self->priv->ctx, 0, 0, 
 							self->xscreen->width, self->xscreen->height);
 			cairo_clip(self->priv->ctx);
 		}
-		
+		else
+			cairo_identity_matrix (self->priv->ctx);
+			
 		if (ccm_screen_plugin_paint(self->priv->plugin, self, 
 									self->priv->ctx))
 		{

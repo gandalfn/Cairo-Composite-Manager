@@ -2056,6 +2056,14 @@ ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix, gboolean damag
 	
 	CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self));
 	CCMRegion* old_geometry = NULL;
+	cairo_matrix_t invert;
+	
+	memcpy (&invert, matrix, sizeof(cairo_matrix_t));
+	if (cairo_matrix_invert (&invert) != CAIRO_STATUS_SUCCESS)
+	{
+		ccm_debug_window(self, "INVALID MATRIX");
+		return;
+	}
 	
 	if (damage && geometry)
 	{
@@ -2106,6 +2114,13 @@ ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 	{
 		cairo_matrix_t matrix;
 		
+		ccm_window_get_transform (self, &matrix);
+		if (cairo_matrix_invert (&matrix) != CAIRO_STATUS_SUCCESS)
+		{
+			ccm_debug_window(self, "INVALID MATRIX");
+			return;
+		}
+	
 		ccm_window_get_transform (self, &matrix);
 		
 		if (y_invert)

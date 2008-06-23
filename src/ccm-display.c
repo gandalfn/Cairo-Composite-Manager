@@ -266,6 +266,8 @@ ccm_display_error_handler(Display* dpy, XErrorEvent* evt)
     
 	CCMLastXError = evt->error_code;
 	
+	ccm_debug_backtrace();
+	
 	return 0;
 }
 

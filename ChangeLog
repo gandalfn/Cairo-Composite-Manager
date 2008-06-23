@@ -1,5 +1,13 @@
 2008-06-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-debug.c:
+    * src/ccm-debug.h: add ccm_debug_backtrace function.
+    * src/ccm-display.c: add debug statement.
+    * src/ccm-screen.c: initialize overlay window context matrix on each paint.
+    * src/ccm-window.c: check if matrix is valid with cairo_invert.
+
+2008-06-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * plugins/magnifier/ccm-magnifier.schemas.in: 
     * plugins/magnifier/ccm-magnifier.c: Performance improvement and many fix,
                                          change width and height value to 

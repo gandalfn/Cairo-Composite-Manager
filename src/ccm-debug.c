@@ -21,6 +21,7 @@
  */
 
 #include <unistd.h>
+#include <execinfo.h>
 #include <glib.h>
 
 #include "ccm-debug.h"
@@ -128,3 +129,20 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 	
 	g_free(formatted);
 } 
+
+void
+ccm_log_print_backtrace()
+{
+	void * array[10];
+    int size;
+    char ** strings;
+    int i;
+
+    size = backtrace (array, 10);
+    strings = backtrace_symbols (array, size);
+
+    for (i = 0; i < size; i++)
+        ccm_log(strings[i]);
+    
+	g_free (strings);
+}
