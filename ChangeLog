@@ -1,5 +1,12 @@
 2008-06-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * plugins/magnifier/ccm-magnifier.schemas.in: 
+    * plugins/magnifier/ccm-magnifier.c: Add zoom quality option and manage
+                                         mouse change when zoom is enabled.
+    * plugins/opacity/ccm-opacity.c: Don't filter window on opacity change.
+    * src/ccm-display.c: Add xfixes check and xfixes cursor notify event.
+    * src/ccm-window.c: Fix use of buffered pixmap on move.
+
 2008-06-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-debug.c:
