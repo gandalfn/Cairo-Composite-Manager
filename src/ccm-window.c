@@ -1742,8 +1742,8 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			
 			g_object_get (pixmap, "y_invert", &y_invert, NULL);
 			
-			if (CCM_IS_PIXMAP_BUFFERED(pixmap) && 
-				self->priv->buffered && buffered)
+			if (self->priv->buffered && buffered &&
+				CCM_IS_PIXMAP_BUFFERED(pixmap))
 				g_object_set(pixmap, "buffered", TRUE, NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));

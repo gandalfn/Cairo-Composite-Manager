@@ -1,5 +1,10 @@
 2008-06-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * src/ccm-pixmap-buffered-image.c: Don't buffer by default.
+    * src/ccm-window.c: Small performance improvement.
+
+2008-06-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * plugins/magnifier/ccm-magnifier.schemas.in: 
     * plugins/magnifier/ccm-magnifier.c: Add zoom quality option and manage
                                          mouse change when zoom is enabled.

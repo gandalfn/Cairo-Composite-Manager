@@ -75,7 +75,7 @@ ccm_pixmap_buffered_image_init (CCMPixmapBufferedImage *self)
 {
 	self->priv = CCM_PIXMAP_BUFFERED_IMAGE_GET_PRIVATE(self);
 	
-	self->priv->buffered = TRUE;
+	self->priv->buffered = FALSE;
 	self->priv->surface = NULL;
 	self->priv->need_to_sync = NULL;
 }
