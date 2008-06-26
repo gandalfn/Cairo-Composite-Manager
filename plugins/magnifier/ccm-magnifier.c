@@ -36,6 +36,7 @@
 enum
 {
 	CCM_MAGNIFIER_ZOOM_LEVEL,
+	CCM_MAGNIFIER_ZOOM_QUALITY,
 	CCM_MAGNIFIER_HEIGHT,
 	CCM_MAGNIFIER_WIDTH,
 	CCM_MAGNIFIER_SHORTCUT,
@@ -45,6 +46,7 @@ enum
 
 static gchar* CCMMagnifierOptions[CCM_MAGNIFIER_OPTION_N] = {
 	"zoom-level",
+	"zoom-quality",
 	"height",
 	"width",
 	"shortcut",
@@ -73,12 +75,15 @@ struct _CCMMagnifierPrivate
 	int 				 y_mouse;
 	int					 x_hot;
 	int 				 y_hot;
+	int					 mouse_width;
+	int 				 mouse_height;
 	guchar*				 image_mouse;
 	cairo_surface_t*     surface_mouse;
 	int					 x_offset;
 	int 				 y_offset;
 	cairo_surface_t*     surface;
 	cairo_rectangle_t    area;
+	cairo_filter_t		 quality;
 	CCMRegion*			 damaged;
 	CCMKeybind*			 keybind;
 	
@@ -161,6 +166,10 @@ ccm_magnifier_init (CCMMagnifier *self)
 	self->priv->scale = 1.0f;
 	self->priv->x_mouse = 0;
 	self->priv->y_mouse = 0;
+	self->priv->x_hot = 0;
+	self->priv->y_hot = 0;
+	self->priv->mouse_width = 0;
+	self->priv->mouse_height = 0;	
 	self->priv->image_mouse = NULL;
 	self->priv->surface_mouse = NULL;
 	self->priv->x_offset = 0;
@@ -183,6 +192,9 @@ ccm_magnifier_finalize (GObject *object)
 		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 		CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
 		
+		XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(display), 
+								CCM_WINDOW_XWINDOW(root), 
+								0);
 		XFixesShowCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
 	}
 	for (cpt = 0; cpt < CCM_MAGNIFIER_OPTION_N; cpt++)
@@ -212,68 +224,6 @@ ccm_magnifier_class_init (CCMMagnifierClass *klass)
 }
 
 static void
-ccm_magnifier_on_key_press(CCMMagnifier* self)
-{
-	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
-	
-	self->priv->enabled = ~self->priv->enabled;
-	ccm_screen_damage(self->priv->screen);
-	
-	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
-	if (self->priv->enabled)
-		XFixesHideCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
-	else
-	{
-		XFixesShowCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
-		if (self->priv->surface) 
-			cairo_surface_destroy (self->priv->surface);
-		self->priv->surface = NULL;
-		if (self->priv->image_mouse) 
-			g_free (self->priv->image_mouse);
-		self->priv->image_mouse = NULL;
-		if (self->priv->surface_mouse) 
-			cairo_surface_destroy (self->priv->surface_mouse);
-		self->priv->surface_mouse = NULL;
-	}
-}
-
-static void
-ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
-{
-	CCMMagnifier* self = CCM_MAGNIFIER(plugin);
-	gint cpt, val;
-	
-	for (cpt = 0; cpt < CCM_MAGNIFIER_OPTION_N; cpt++)
-	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "magnifier", 
-												  CCMMagnifierOptions[cpt]);
-	}
-	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
-	
-	self->priv->screen = screen;
-	self->priv->scale = 
-		ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
-	self->priv->shade =
-	 ccm_config_get_boolean (self->priv->options [CCM_MAGNIFIER_SHADE_DESKTOP]);
-	self->priv->keybind = ccm_keybind_new(self->priv->screen, 
-	 ccm_config_get_string(self->priv->options [CCM_MAGNIFIER_SHORTCUT]), TRUE);
-	self->priv->area.x = 0;
-	self->priv->area.y = 0;
-	val = MAX(10, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_WIDTH]));
-	val = MIN(80, val);
-	ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_WIDTH], val);
-	self->priv->area.width = (gdouble)screen->xscreen->width * (gdouble)val / 100;
-	val = MAX(10, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT]));
-	val = MIN(80, val);
-	ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT], val);
-	self->priv->area.height = (gdouble)screen->xscreen->height * (gdouble)val / 100;
-	
-	g_signal_connect_swapped(self->priv->keybind, "key_press", 
-							 G_CALLBACK(ccm_magnifier_on_key_press), self);
-}
-
-static void
 ccm_magnifier_cursor_convert_to_rgba (CCMMagnifier *self, 
 									  XFixesCursorImage *cursor_image)
 {
@@ -287,13 +237,8 @@ ccm_magnifier_cursor_convert_to_rgba (CCMMagnifier *self,
 }
 
 static void
-ccm_magnifier_cursor_get_position(CCMMagnifier*self)
+ccm_magnifier_cursor_get_surface(CCMMagnifier* self)
 {
-	gboolean damaged = FALSE;
-	gint old_x = self->priv->x_mouse, 
-	     old_y = self->priv->y_mouse,
-		 old_xhot = self->priv->x_hot,
-		 old_yhot = self->priv->y_hot;
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	XFixesCursorImage *cursor_image;
 	
@@ -317,6 +262,22 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 	self->priv->y_mouse = cursor_image->y;
 	self->priv->x_hot = cursor_image->xhot;
 	self->priv->y_hot = cursor_image->yhot;
+	self->priv->mouse_width = cursor_image->width;
+	self->priv->mouse_height = cursor_image->height;
+	
+	XFree(cursor_image);
+}
+
+static void
+ccm_magnifier_cursor_get_position(CCMMagnifier*self)
+{
+	gboolean damaged = FALSE;
+	gint old_x = self->priv->x_mouse, 
+	     old_y = self->priv->y_mouse,
+		 old_xhot = self->priv->x_hot,
+		 old_yhot = self->priv->y_hot;
+	
+	ccm_magnifier_cursor_get_surface (self);
 	
 	if (self->priv->x_offset > self->priv->x_mouse)
 	{
@@ -375,8 +336,8 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 		
 		area.x = old_x - old_xhot;
 		area.y = old_y - old_yhot;
-		area.width = cursor_image->width;
-		area.height = cursor_image->height;
+		area.width = self->priv->mouse_width;
+		area.height = self->priv->mouse_height;
 		damage = ccm_region_rectangle (&area);
 		ccm_screen_damage_region (self->priv->screen, damage);
 		ccm_region_destroy (damage);
@@ -386,7 +347,108 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 		ccm_screen_damage_region (self->priv->screen, damage);
 		ccm_region_destroy (damage);
 	}
-	XFree(cursor_image);
+}
+
+static void
+ccm_magnifier_on_cursor_notify_event(CCMMagnifier* self, 
+									 XFixesCursorNotifyEvent* event,
+									 CCMDisplay* display)
+{
+	if (self->priv->enabled)
+		ccm_magnifier_cursor_get_position (self);
+}
+
+static void
+ccm_magnifier_on_key_press(CCMMagnifier* self)
+{
+	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
+	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
+	
+	self->priv->enabled = ~self->priv->enabled;
+	ccm_screen_damage(self->priv->screen);
+	
+	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
+	if (self->priv->enabled)
+	{
+		XFixesHideCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
+		XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(display), 
+								CCM_WINDOW_XWINDOW(root), 
+								XFixesDisplayCursorNotifyMask);
+	}
+	else
+	{
+		XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(display), 
+								CCM_WINDOW_XWINDOW(root), 
+								0);
+		XFixesShowCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
+		if (self->priv->surface) 
+			cairo_surface_destroy (self->priv->surface);
+		self->priv->surface = NULL;
+		if (self->priv->image_mouse) 
+			g_free (self->priv->image_mouse);
+		self->priv->image_mouse = NULL;
+		if (self->priv->surface_mouse) 
+			cairo_surface_destroy (self->priv->surface_mouse);
+		self->priv->surface_mouse = NULL;
+	}
+}
+
+static void
+ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
+{
+	CCMMagnifier* self = CCM_MAGNIFIER(plugin);
+	CCMDisplay* display = ccm_screen_get_display (screen);
+	gint cpt, val;
+	gchar* quality;
+	
+	for (cpt = 0; cpt < CCM_MAGNIFIER_OPTION_N; cpt++)
+	{
+		self->priv->options[cpt] = ccm_config_new(screen->number, "magnifier", 
+												  CCMMagnifierOptions[cpt]);
+	}
+	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
+	
+	self->priv->screen = screen;
+	self->priv->scale = 
+		ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
+	self->priv->shade =
+	 ccm_config_get_boolean (self->priv->options [CCM_MAGNIFIER_SHADE_DESKTOP]);
+	self->priv->keybind = ccm_keybind_new(self->priv->screen, 
+	 ccm_config_get_string(self->priv->options [CCM_MAGNIFIER_SHORTCUT]), TRUE);
+	self->priv->area.x = 0;
+	self->priv->area.y = 0;
+	val = MAX(10, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_WIDTH]));
+	val = MIN(80, val);
+	ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_WIDTH], val);
+	self->priv->area.width = (gdouble)screen->xscreen->width * (gdouble)val / 100;
+	val = MAX(10, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT]));
+	val = MIN(80, val);
+	ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT], val);
+	self->priv->area.height = (gdouble)screen->xscreen->height * (gdouble)val / 100;
+	
+	quality = ccm_config_get_string (self->priv->options [CCM_MAGNIFIER_ZOOM_QUALITY]);
+	if (!quality)
+	{
+		self->priv->quality = CAIRO_FILTER_FAST;
+		ccm_config_set_string (self->priv->options [CCM_MAGNIFIER_ZOOM_QUALITY], 
+							   "fast");
+	}
+	else
+	{
+		
+		if (!g_ascii_strcasecmp (quality, "fast"))
+			self->priv->quality = CAIRO_FILTER_FAST;
+		else if (!g_ascii_strcasecmp (quality, "good"))
+			self->priv->quality = CAIRO_FILTER_GOOD;
+		else if (!g_ascii_strcasecmp (quality, "best"))
+			self->priv->quality = CAIRO_FILTER_BEST;
+		g_free(quality);
+	}
+	g_signal_connect_swapped(self->priv->keybind, "key_press", 
+							 G_CALLBACK(ccm_magnifier_on_key_press), self);
+	g_signal_connect_swapped(display, "xfixes-cursor-event", 
+							 G_CALLBACK(ccm_magnifier_on_cursor_notify_event), 
+							 self);
 }
 
 static gboolean
@@ -539,6 +601,8 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL CLIP");
 	
 			cairo_set_source_surface (context, self->priv->surface, 0, 0);
+			pattern = cairo_get_source (context);
+			cairo_pattern_set_filter (pattern, self->priv->quality);
 			cairo_paint (context);
 			
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL PAINT");
@@ -551,7 +615,7 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 									  self->priv->y_offset -
 									  self->priv->y_hot);
 			pattern = cairo_get_source (context);
-			cairo_pattern_set_filter (pattern, CAIRO_FILTER_BEST);
+			cairo_pattern_set_filter (pattern, self->priv->quality);
 			cairo_paint(context);
 			
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL PAINT MOUSE");

@@ -26,6 +26,7 @@
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xdbe.h>
+#include <X11/extensions/Xfixes.h>
 #include <X11/extensions/shape.h>
 #include <gtk/gtk.h>
 
@@ -54,6 +55,7 @@ enum
 {
 	EVENT,
 	DAMAGE_EVENT,
+	XFIXES_CURSOR_EVENT,
 	N_SIGNALS
 };
 
@@ -77,6 +79,7 @@ struct _CCMDisplayPrivate
 	CCMExtension shm;
 	gboolean	 shm_shared_pixmap;
 	CCMExtension dbe;
+	CCMExtension fixes;
 	
 	gboolean 	 use_shm;
 	
@@ -143,6 +146,12 @@ ccm_display_class_init (CCMDisplayClass *klass)
 								   G_TYPE_NONE, 1, G_TYPE_POINTER);
 	
 	signals[DAMAGE_EVENT] = g_signal_new ("damage-event",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__POINTER,
+								   G_TYPE_NONE, 1, G_TYPE_POINTER);
+	
+	signals[XFIXES_CURSOR_EVENT] = g_signal_new ("xfixes-cursor-event",
 								   G_OBJECT_CLASS_TYPE (object_class),
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__POINTER,
@@ -251,6 +260,23 @@ ccm_display_init_dbe(CCMDisplay *self)
     return FALSE;
 }
 
+static gboolean
+ccm_display_init_xfixes(CCMDisplay *self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	if (XFixesQueryExtension (self->xdisplay,
+							  &self->priv->fixes.event_base,
+							  &self->priv->fixes.error_base))
+    {
+		self->priv->fixes.available = TRUE;
+		ccm_debug("FIXES ERROR BASE: %i", self->priv->fixes.error_base);
+		return TRUE;
+    }
+	
+    return FALSE;
+}
+
 static int
 ccm_display_error_handler(Display* dpy, XErrorEvent* evt)
 {
@@ -287,6 +313,12 @@ ccm_display_process_events(CCMDisplay* self)
 			XDamageNotifyEvent* event_damage = (XDamageNotifyEvent*)&xevent;
 			
 			g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage);
+		}
+		else if (xevent.type == self->priv->damage.event_base + XFixesCursorNotify)
+		{
+			XFixesCursorNotifyEvent* event_cursor = (XFixesCursorNotifyEvent*)&xevent;
+			
+			g_signal_emit (self, signals[XFIXES_CURSOR_EVENT], 0, event_cursor);
 		}
 		else
 		{
@@ -373,6 +405,13 @@ ccm_display_new(gchar* display)
 	{
 		g_object_unref(self);
 		g_warning("DBE init failed for %s", display);
+		return NULL;
+	}
+	
+	if (!ccm_display_init_xfixes(self))
+	{
+		g_object_unref(self);
+		g_warning("FIXES init failed for %s", display);
 		return NULL;
 	}
 	

@@ -140,9 +140,7 @@ ccm_opacity_on_increase_key_press(CCMOpacity* self)
 	if (ccm_screen_query_pointer (self->priv->screen, &window, &x, &y) &&
 		window)
 	{
-		CCMWindowType type = ccm_window_get_hint_type (window);
-			
-		if (window->is_viewable && type == CCM_WINDOW_TYPE_NORMAL)
+		if (window->is_viewable)
 		{
 			gfloat opacity = ccm_window_get_opacity (window);
 				
@@ -162,9 +160,7 @@ ccm_opacity_on_decrease_key_press(CCMOpacity* self)
 	if (ccm_screen_query_pointer (self->priv->screen, &window, &x, &y) &&
 		window)
 	{
-		CCMWindowType type = ccm_window_get_hint_type (window);
-			
-		if (window->is_viewable && type == CCM_WINDOW_TYPE_NORMAL)
+		if (window->is_viewable)
 		{
 			gfloat opacity = ccm_window_get_opacity (window);
 				

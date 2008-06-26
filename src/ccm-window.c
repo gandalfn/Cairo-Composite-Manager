@@ -126,6 +126,7 @@ struct _CCMWindowPrivate
 	XWindowAttributes   attribs;
 	
 	CCMPixmap*			pixmap;
+	gboolean			buffered;
 	
 	CCMWindowPlugin*	plugin;
 	
@@ -166,6 +167,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->orig_opaque = NULL;
 	self->priv->opacity = 1.0f;
 	self->priv->pixmap = NULL;
+	self->priv->buffered = FALSE;
 	self->priv->plugin = NULL;
 	cairo_matrix_init_identity (&self->priv->transform);
 }
@@ -896,17 +898,8 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 		(x != (int)geometry.x || y != (int)geometry.y))
 	{
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
-		CCMPixmap* pixmap = ccm_window_get_pixmap(self);
-		CCMWindowType type = ccm_window_get_hint_type (self);
 		
-		if (pixmap && !ccm_drawable_is_damaged (CCM_DRAWABLE(pixmap)) &&
-			CCM_IS_PIXMAP_BUFFERED(pixmap) &&
-			ccm_window_is_managed (self) && ccm_window_is_decorated (self) &&
-			(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG))
-			g_object_set(pixmap, "buffered", TRUE, NULL);
-		else if (CCM_IS_PIXMAP_BUFFERED(pixmap))
-			g_object_set(pixmap, "buffered", FALSE, NULL);
-			
+		if (self->is_viewable) self->priv->buffered = TRUE;
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
 		if (self->opaque)
@@ -1749,8 +1742,9 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			
 			g_object_get (pixmap, "y_invert", &y_invert, NULL);
 			
-			if (CCM_IS_PIXMAP_BUFFERED(pixmap) && !buffered)
-				g_object_set(pixmap, "buffered", FALSE, NULL);
+			if (CCM_IS_PIXMAP_BUFFERED(pixmap) && 
+				self->priv->buffered && buffered)
+				g_object_set(pixmap, "buffered", TRUE, NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
 				
@@ -1760,9 +1754,11 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 				ret = ccm_window_plugin_paint(self->priv->plugin, self, 
 											  context, surface, y_invert);
 				cairo_surface_destroy(surface);
-				
-				if (CCM_IS_PIXMAP_BUFFERED(pixmap))
+				if (self->priv->buffered)
+				{
+					self->priv->buffered = FALSE;
 					g_object_set(pixmap, "buffered", FALSE, NULL);
+				}
 			}
 			else
 			{

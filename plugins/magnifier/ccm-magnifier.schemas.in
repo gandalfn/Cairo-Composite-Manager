@@ -13,6 +13,17 @@
          </locale>
       </schema>
       <schema>
+         <key>/schemas/apps/cairo-compmgr/default/magnifier/zoom-quality</key>
+         <applyto>/apps/cairo-compmgr/default/magnifier/zoom-quality</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+		 <default>fast</default>
+         <locale name="C">
+            <short>Magnifier zoom quality.</short>
+            <long>The magnifier zoom quality determines zoom filter quality (fast, good, best).</long>
+         </locale>
+      </schema>
+      <schema>
 	 <key>/schemas/apps/cairo-compmgr/default/magnifier/height</key>
          <applyto>/apps/cairo-compmgr/default/magnifier/height</applyto>
          <owner>gnome</owner>
