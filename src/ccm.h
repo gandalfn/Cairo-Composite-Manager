@@ -297,7 +297,7 @@ void            ccm_window_get_transform            (CCMWindow* self,
 void            ccm_window_set_transform            (CCMWindow* self, 
                                                      cairo_matrix_t* matrix,
                                                      gboolean damage);
-void            ccm_window_transform                (CCMWindow* self, 
+gboolean        ccm_window_transform                (CCMWindow* self, 
                                                      cairo_t* ctx, 
                                                      gboolean y_invert);
 /******************************************************************************/

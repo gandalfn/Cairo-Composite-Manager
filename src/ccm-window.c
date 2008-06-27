@@ -126,7 +126,6 @@ struct _CCMWindowPrivate
 	XWindowAttributes   attribs;
 	
 	CCMPixmap*			pixmap;
-	gboolean			buffered;
 	
 	CCMWindowPlugin*	plugin;
 	
@@ -167,7 +166,6 @@ ccm_window_init (CCMWindow *self)
 	self->priv->orig_opaque = NULL;
 	self->priv->opacity = 1.0f;
 	self->priv->pixmap = NULL;
-	self->priv->buffered = FALSE;
 	self->priv->plugin = NULL;
 	cairo_matrix_init_identity (&self->priv->transform);
 }
@@ -897,9 +895,10 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) &&
 		(x != (int)geometry.x || y != (int)geometry.y))
 	{
+		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
 		
-		if (self->is_viewable) self->priv->buffered = TRUE;
+		if (self->is_viewable) _ccm_screen_set_buffered (screen, TRUE);
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
 		if (self->opaque)
@@ -979,18 +978,22 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	
 	cairo_save(context);
 	ccm_debug_window(self, "PAINT WINDOW");
-	ccm_window_transform (self, context, y_invert);
-	cairo_set_source_surface(context, surface, 0.0f, 0.0f);
-	cairo_paint_with_alpha(context, self->priv->opacity);
-	if (cairo_status (context) != CAIRO_STATUS_SUCCESS)
+	if (ccm_window_transform (self, context, y_invert))
 	{
-		g_object_unref(self->priv->pixmap);
-		self->priv->pixmap = NULL;
-		g_signal_emit (self, signals[ERROR], 0);
-		ret = FALSE;
+		cairo_set_source_surface(context, surface, 0.0f, 0.0f);
+		cairo_paint_with_alpha(context, self->priv->opacity);
+		if (cairo_status (context) != CAIRO_STATUS_SUCCESS)
+		{
+			g_object_unref(self->priv->pixmap);
+			self->priv->pixmap = NULL;
+			g_signal_emit (self, signals[ERROR], 0);
+			ret = FALSE;
+		}
+		else
+			ret = TRUE;
 	}
 	else
-		ret = TRUE;
+		ret = FALSE;
 	ccm_debug_window(self, "PAINT WINDOW %i", ret);
 	cairo_restore(context);
 	
@@ -1742,9 +1745,8 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			
 			g_object_get (pixmap, "y_invert", &y_invert, NULL);
 			
-			if (self->priv->buffered && buffered &&
-				CCM_IS_PIXMAP_BUFFERED(pixmap))
-				g_object_set(pixmap, "buffered", TRUE, NULL);
+			g_object_set(pixmap, "buffered", buffered &&
+						 CCM_IS_PIXMAP_BUFFERED(pixmap), NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
 				
@@ -1754,11 +1756,6 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 				ret = ccm_window_plugin_paint(self->priv->plugin, self, 
 											  context, surface, y_invert);
 				cairo_surface_destroy(surface);
-				if (self->priv->buffered)
-				{
-					self->priv->buffered = FALSE;
-					g_object_set(pixmap, "buffered", FALSE, NULL);
-				}
 			}
 			else
 			{
@@ -2052,14 +2049,6 @@ ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix, gboolean damag
 	
 	CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self));
 	CCMRegion* old_geometry = NULL;
-	cairo_matrix_t invert;
-	
-	memcpy (&invert, matrix, sizeof(cairo_matrix_t));
-	if (cairo_matrix_invert (&invert) != CAIRO_STATUS_SUCCESS)
-	{
-		ccm_debug_window(self, "INVALID MATRIX");
-		return;
-	}
 	
 	if (damage && geometry)
 	{
@@ -2098,11 +2087,11 @@ ccm_window_get_transform(CCMWindow* self, cairo_matrix_t* matrix)
 	memcpy (matrix, &self->priv->transform, sizeof(cairo_matrix_t));
 }
 
-void
+gboolean
 ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 {
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(ctx != NULL);
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(ctx != NULL, FALSE);
 	
 	cairo_rectangle_t geometry;
 	
@@ -2114,7 +2103,7 @@ ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 		if (cairo_matrix_invert (&matrix) != CAIRO_STATUS_SUCCESS)
 		{
 			ccm_debug_window(self, "INVALID MATRIX");
-			return;
+			return FALSE;
 		}
 	
 		ccm_window_get_transform (self, &matrix);
@@ -2129,4 +2118,6 @@ ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 		cairo_translate (ctx, geometry.x, geometry.y);
 		cairo_transform (ctx, &matrix);
 	}
+	
+	return TRUE;
 }

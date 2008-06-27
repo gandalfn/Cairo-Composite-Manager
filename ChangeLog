@@ -1,3 +1,14 @@
+2008-06-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/magnifier/ccm-magnifier.c:
+    * src/ccm-pixmap-buffered-image.c:
+    * src/ccm-screen.c:
+    * src/ccm-window.c: Fix buffering on move.
+    
+    * plugins/shadow/ccm-shadow.c:
+    * src/ccm-window.c:
+    * src/ccm.h: Better handling invalid matrix.
+
 2008-06-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap-buffered-image.c: Don't buffer by default.

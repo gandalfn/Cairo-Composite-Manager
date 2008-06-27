@@ -619,6 +619,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 			ret |= ccm_window_paint(window, self->priv->ctx, self->priv->buffered);
 		}
 	}
+	self->priv->buffered = FALSE;
 	
 	return ret;
 }

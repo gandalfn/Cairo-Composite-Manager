@@ -324,32 +324,33 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			
 			cairo_save(context);
 			
-			ccm_window_transform (window, context, y_invert);
-			
-			cairo_save(context);
-			cairo_rectangle (context, area.width - self->priv->border * 2, 
-							 self->priv->offset, self->priv->border * 2, 
-							 area.height - self->priv->offset + self->priv->border);
-			cairo_clip(context);
-			cairo_set_source_surface(context, self->priv->shadow_right, 
-									 area.width - self->priv->border * 2, 
-									 self->priv->offset);
-			cairo_paint_with_alpha(context,
-								   ccm_window_get_opacity(window));
-			cairo_restore (context);
-			
-			cairo_save(context);
-			cairo_rectangle (context, self->priv->offset, 
-							 area.height - self->priv->border,
-							 area.width - self->priv->offset, 
-							 self->priv->border);
-			cairo_clip(context);
-			cairo_set_source_surface(context, self->priv->shadow_bottom, 
-									 self->priv->offset, 
-									 area.height - self->priv->border);
-			cairo_paint_with_alpha(context,
-								   ccm_window_get_opacity(window));
-			cairo_restore(context);
+			if (ccm_window_transform (window, context, y_invert))
+			{
+				cairo_save(context);
+				cairo_rectangle (context, area.width - self->priv->border * 2, 
+								 self->priv->offset, self->priv->border * 2, 
+								 area.height - self->priv->offset + self->priv->border);
+				cairo_clip(context);
+				cairo_set_source_surface(context, self->priv->shadow_right, 
+										 area.width - self->priv->border * 2, 
+										 self->priv->offset);
+				cairo_paint_with_alpha(context,
+									   ccm_window_get_opacity(window));
+				cairo_restore (context);
+				
+				cairo_save(context);
+				cairo_rectangle (context, self->priv->offset, 
+								 area.height - self->priv->border,
+								 area.width - self->priv->offset, 
+								 self->priv->border);
+				cairo_clip(context);
+				cairo_set_source_surface(context, self->priv->shadow_bottom, 
+										 self->priv->offset, 
+										 area.height - self->priv->border);
+				cairo_paint_with_alpha(context,
+									   ccm_window_get_opacity(window));
+				cairo_restore(context);
+			}
 			cairo_restore(context);
 			ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)

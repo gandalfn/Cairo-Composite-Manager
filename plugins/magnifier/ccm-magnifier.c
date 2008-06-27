@@ -367,7 +367,6 @@ ccm_magnifier_on_key_press(CCMMagnifier* self)
 	self->priv->enabled = ~self->priv->enabled;
 	ccm_screen_damage(self->priv->screen);
 	
-	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
 	if (self->priv->enabled)
 	{
 		XFixesHideCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
@@ -507,6 +506,7 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		
 		ccm_magnifier_cursor_get_position (self);
 		
+		_ccm_screen_set_buffered(self->priv->screen, FALSE);
 		ccm_debug("MAGNIFIER PAINT SCREEN");
 	}
 	

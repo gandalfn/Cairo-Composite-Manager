@@ -146,23 +146,24 @@ ccm_pixmap_buffered_image_sync(CCMPixmapBufferedImage* self, cairo_surface_t* su
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(surface != NULL);
 	
-	gdouble width, height;
 	gboolean sync_all = FALSE;
 	
-	width = cairo_image_surface_get_width (surface);
-	height = cairo_image_surface_get_height (surface);
-
+	
 	if (!self->priv->surface)
 	{
 		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		CCMWindow* overlay = ccm_screen_get_overlay_window (screen);
-			
+		
 		cairo_surface_t* target = ccm_drawable_get_surface (CCM_DRAWABLE(overlay));
 			
 		if (target)
 		{
 			cairo_content_t content;
-			
+			gdouble width, height;
+		
+			width = cairo_image_surface_get_width (surface);
+			height = cairo_image_surface_get_height (surface);
+
 			if (ccm_window_get_format(CCM_PIXMAP(self)->window) == CAIRO_FORMAT_ARGB32) 
 				content = CAIRO_CONTENT_COLOR_ALPHA;
 			else
@@ -180,12 +181,13 @@ ccm_pixmap_buffered_image_sync(CCMPixmapBufferedImage* self, cairo_surface_t* su
 	if (self->priv->surface && (self->priv->need_to_sync || sync_all))
 	{
 		cairo_t* cr;
-		cairo_rectangle_t clipbox;
 		
 		cr = cairo_create(self->priv->surface);
 		
 		if (!sync_all)
 		{
+			cairo_rectangle_t clipbox;
+		
 			ccm_region_get_clipbox (self->priv->need_to_sync, &clipbox);
 			cairo_rectangle (cr, clipbox.x, clipbox.y, 
 							 clipbox.width, clipbox.height);
@@ -203,7 +205,6 @@ ccm_pixmap_buffered_image_sync(CCMPixmapBufferedImage* self, cairo_surface_t* su
 		cairo_set_source_surface (cr, surface, 0, 0);
 		cairo_paint (cr);
 		cairo_destroy (cr);
-		cairo_surface_flush (self->priv->surface);
 	}
 }
 
