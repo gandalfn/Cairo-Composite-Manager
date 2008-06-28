@@ -1,3 +1,17 @@
+2008-06-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * plugins/fade/ccm-fade.c:
+    * plugins/magnifier/ccm-magnifier.c:
+    * plugins/menu-animation/ccm-menu-animation.c:
+    * plugins/mosaic/ccm-mosaic.c:
+    * plugins/opacity/ccm-opacity.c:
+    * plugins/perf/ccm-perf.c:
+    * plugins/shadow/ccm-shadow.c:
+    * src/ccm-keybind.c:
+    * src/ccm-screen.c:
+    * src/ccm-window.c: Implement dynamic config change, fix some memory leak
+                        and fix some crash.
+
 2008-06-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/magnifier/ccm-magnifier.c:

@@ -19,7 +19,6 @@
  * 	51 Franklin Street, Fifth Floor
  * 	Boston, MA  02110-1301, USA.
  */
-
 #include <math.h>
 #include <string.h>
 #include <cairo.h>
@@ -88,6 +87,9 @@ static void			ccm_window_get_property_async (CCMWindow* self,
 static void			ccm_window_on_get_property_async(CCMWindow* self, 
 													 guint n_items, gchar* result, 
 													 CCMPropertyASync* property);
+static void			ccm_window_on_plugins_changed(CCMWindow* self, 
+												  CCMScreen* screen);
+
 enum
 {
 	PROPERTY_CHANGED,
@@ -174,6 +176,12 @@ static void
 ccm_window_finalize (GObject *object)
 {
 	CCMWindow* self = CCM_WINDOW(object);
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	
+	ccm_debug_window(self, "FINALIZE");
+	g_signal_handlers_disconnect_by_func (screen, 
+										  ccm_window_on_plugins_changed, 
+										  self);
 	
 	if (self->opaque) ccm_region_destroy(self->opaque);
 	if (self->priv->orig_opaque) ccm_region_destroy(self->priv->orig_opaque);
@@ -888,6 +896,31 @@ ccm_window_move(CCMDrawable* drawable, int x, int y)
 }
 
 static void
+ccm_window_get_plugins(CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	GSList* item, *plugins = _ccm_screen_get_window_plugins(screen);
+	
+	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin)) 
+		g_object_unref(self->priv->plugin);
+	
+	self->priv->plugin = (CCMWindowPlugin*)self;
+	
+	for (item = plugins; item; item = item->next)
+	{
+		GType type = GPOINTER_TO_INT(item->data);
+		GObject* prev = G_OBJECT(self->priv->plugin);
+		
+		self->priv->plugin = g_object_new(type, "parent", prev, NULL);
+	}
+	g_slist_free(plugins);
+	
+	ccm_window_plugin_load_options(self->priv->plugin, self);
+}
+
+static void
 impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 {
 	cairo_rectangle_t geometry;
@@ -1095,35 +1128,28 @@ _ccm_window_set_child(CCMWindow* self, Window child)
 	self->priv->child = child;
 }
 
+static void
+ccm_window_on_plugins_changed(CCMWindow* self, CCMScreen* screen)
+{
+	ccm_window_get_plugins (self);
+	ccm_drawable_damage (CCM_DRAWABLE(self));
+}
+
 CCMWindow *
 ccm_window_new (CCMScreen* screen, Window xwindow)
 {
 	g_return_val_if_fail(screen != NULL, NULL);
 	g_return_val_if_fail(xwindow != None, NULL);
 	
-	CCMDisplay* display = ccm_screen_get_display (screen);
 	CCMWindow* self = g_object_new(CCM_TYPE_WINDOW_BACKEND(screen), 
 								   "screen", screen,
 								   "drawable", xwindow,
 								   NULL);
-	GSList* item, *plugins = _ccm_screen_get_window_plugins(screen);
-	
-	self->priv->plugin = (CCMWindowPlugin*)self;
-	
+
 	create_atoms(self);
 	
-	for (item = plugins; item; item = item->next)
-	{
-		GType type = GPOINTER_TO_INT(item->data);
-		GObject* prev = G_OBJECT(self->priv->plugin);
-		
-		self->priv->plugin = g_object_new(type, "parent", prev, NULL);
-	}
-	g_slist_free(plugins);
+	ccm_window_get_plugins (self);
 	
-	ccm_window_plugin_load_options(self->priv->plugin, self);
-	
-	ccm_display_sync(display);
 	if (!ccm_drawable_query_geometry(CCM_DRAWABLE(self)))
 	{
 		g_object_unref(self);
@@ -1137,6 +1163,9 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		g_object_unref(self);
 		return NULL;
 	}
+	
+	g_signal_connect_swapped(screen, "plugins-changed", 
+							 G_CALLBACK(ccm_window_on_plugins_changed), self);
 	
 	ccm_window_get_format (self);
 	ccm_window_set_opacity(self, 1.0f);
@@ -1745,8 +1774,8 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			
 			g_object_get (pixmap, "y_invert", &y_invert, NULL);
 			
-			g_object_set(pixmap, "buffered", buffered &&
-						 CCM_IS_PIXMAP_BUFFERED(pixmap), NULL);
+			if (CCM_IS_PIXMAP_BUFFERED(pixmap))
+				g_object_set(pixmap, "buffered", buffered, NULL);
 			
 			surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
 				
@@ -2100,14 +2129,17 @@ ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 		cairo_matrix_t matrix;
 		
 		ccm_window_get_transform (self, &matrix);
-		if (cairo_matrix_invert (&matrix) != CAIRO_STATUS_SUCCESS)
+		ccm_debug_window(self,"MATRIX: %f,%f %f,%f %f,%f\n", 
+						 matrix.xx, matrix.xy, matrix.yy, matrix.yx, 
+						 matrix.x0, matrix.y0);
+		if (matrix.xx <= 0.01f || matrix.yy <= 0.01f ||
+			cairo_matrix_invert (&matrix) != CAIRO_STATUS_SUCCESS)
 		{
 			ccm_debug_window(self, "INVALID MATRIX");
 			return FALSE;
 		}
 	
 		ccm_window_get_transform (self, &matrix);
-		
 		if (y_invert)
 		{
 			cairo_matrix_scale (&matrix, 1.0, -1.0);

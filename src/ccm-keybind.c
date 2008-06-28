@@ -61,6 +61,7 @@ struct _CCMKeybindPrivate
 	((CCMKeybindPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_KEYBIND, CCMKeybindClass))
 
 static void ccm_keybind_ungrab (CCMKeybind* self);
+static void ccm_keybind_on_event(CCMKeybind* self, XEvent* xevent);
 
 static void
 ccm_keybind_init (CCMKeybind *self)
@@ -82,6 +83,9 @@ static void
 ccm_keybind_finalize (GObject *object)
 {
 	CCMKeybind* self = CCM_KEYBIND(object);
+	
+	g_signal_handlers_disconnect_by_func (self->priv->display, 
+										  ccm_keybind_on_event, self);
 	
 	ccm_keybind_ungrab(self);
 	g_free(self->priv->keystring);

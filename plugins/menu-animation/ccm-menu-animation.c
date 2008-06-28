@@ -53,6 +53,11 @@ static gchar* CCMMenuAnimationOptions[CCM_MENU_ANIMATION_OPTION_N] = {
 };
 
 static void ccm_menu_animation_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_menu_animation_on_error (CCMMenuAnimation* self, 
+										 CCMWindow* window);
+static void ccm_menu_animation_on_property_changed (CCMMenuAnimation* self, 
+													CCMPropertyType changed,
+													CCMWindow* window);
 
 CCM_DEFINE_PLUGIN (CCMMenuAnimation, ccm_menu_animation, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_menu_animation,
@@ -65,7 +70,7 @@ struct _CCMMenuAnimationPrivate
 	CCMWindowType  type;
 		
 	CCMTimeline*   timeline;
-	
+	gfloat 		   duration;
 	
 	CCMConfig*     options[CCM_MENU_ANIMATION_OPTION_N];
 };
@@ -82,6 +87,7 @@ ccm_menu_animation_init (CCMMenuAnimation *self)
 	self->priv->window = NULL;
 	self->priv->type = CCM_WINDOW_TYPE_UNKNOWN;
 	self->priv->timeline = NULL;
+	self->priv->duration = 0.1f;
 	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++) 
 		self->priv->options[cpt] = NULL;
 }
@@ -91,6 +97,14 @@ ccm_menu_animation_finalize (GObject *object)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(object);
 	gint cpt;
+	
+	g_signal_handlers_disconnect_by_func(self->priv->window, 
+										 ccm_menu_animation_on_property_changed, 
+										 self);	
+	
+	g_signal_handlers_disconnect_by_func(self->priv->window, 
+										 ccm_menu_animation_on_error, 
+										 self);	
 	
 	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++)
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
@@ -203,18 +217,60 @@ ccm_menu_animation_on_error (CCMMenuAnimation* self, CCMWindow* window)
 	}
 }
 
+static gboolean
+ccm_menu_animation_get_duration(CCMMenuAnimation* self)
+{
+	gfloat duration = 
+		ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION]);
+	
+	duration = MAX(0.1f, duration);
+	duration = MIN(2.0f, duration);
+	if (duration != self->priv->duration)
+	{
+		if (self->priv->timeline) g_object_unref (self->priv->timeline);
+
+		self->priv->duration = duration;
+		ccm_config_set_float(self->priv->options[CCM_MENU_ANIMATION_DURATION],
+							 self->priv->duration);
+		
+		self->priv->timeline = ccm_timeline_new((int)(60 * duration), 60);
+	
+		g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+							 	 G_CALLBACK(ccm_menu_animation_on_new_frame), 
+								 self);
+		g_signal_connect_swapped(self->priv->timeline, "completed", 
+								 G_CALLBACK(ccm_menu_animation_on_completed), 
+								 self);
+		
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+static void
+ccm_menu_animation_on_option_changed(CCMMenuAnimation* self, CCMConfig* config)
+{
+	if (config == self->priv->options[CCM_MENU_ANIMATION_DURATION])
+	{
+		ccm_menu_animation_get_duration (self);
+	}
+}
+
 static void
 ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	gfloat duration;
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++)
 	{
 		self->priv->options[cpt] = ccm_config_new(screen->number, "menu-animation", 
 												  CCMMenuAnimationOptions[cpt]);
+		g_signal_connect_swapped(self->priv->options[cpt], "changed",
+								 G_CALLBACK(ccm_menu_animation_on_option_changed), 
+								 self);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
@@ -227,13 +283,7 @@ ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* windo
 							 G_CALLBACK(ccm_menu_animation_on_error), 
 							 self);
 	
-	duration = ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION]);
-	self->priv->timeline = ccm_timeline_new((int)(60.0 * duration), 60);
-		
-	g_signal_connect_swapped(self->priv->timeline, "new-frame", 
-							 G_CALLBACK(ccm_menu_animation_on_new_frame), self);
-	g_signal_connect_swapped(self->priv->timeline, "completed", 
-							 G_CALLBACK(ccm_menu_animation_on_completed), self);
+	ccm_menu_animation_get_duration (self);
 }
 
 static void

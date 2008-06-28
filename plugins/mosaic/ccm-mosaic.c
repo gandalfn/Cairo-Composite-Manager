@@ -351,6 +351,7 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	CCMMosaic* self = CCM_MOSAIC(plugin);
 	CCMDisplay* display = ccm_screen_get_display (screen);
 	gint cpt;
+	gchar* shortcut;
 	
 	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
 	{
@@ -360,8 +361,11 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	
 	self->priv->screen = screen;
-	self->priv->keybind = ccm_keybind_new(self->priv->screen, 
-		ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT]), TRUE);
+	shortcut = 
+		ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT]);
+	self->priv->keybind = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
+	g_free(shortcut);
+	
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_mosaic_on_key_press), self);
 	g_signal_connect_swapped(display, "event", 

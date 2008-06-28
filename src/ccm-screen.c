@@ -37,7 +37,7 @@
 
 enum
 {
-	TIMER,
+	PLUGINS_CHANGED,
     N_SIGNALS
 };
 
@@ -113,6 +113,8 @@ static void impl_ccm_screen_remove_window(CCMScreenPlugin* plugin,
 										  CCMWindow* window);
 static void ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, 
 										 CCMWindow* window);
+static void ccm_screen_on_option_changed(CCMScreen* self, CCMConfig* config);
+
 
 static void
 ccm_screen_init (CCMScreen *self)
@@ -203,11 +205,11 @@ ccm_screen_class_init (CCMScreenClass *klass)
 	
 	g_type_class_add_private (klass, sizeof (CCMScreenPrivate));
 	
-	signals[TIMER] = g_signal_new ("timer",
-								   G_OBJECT_CLASS_TYPE (object_class),
-								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-								   g_cclosure_marshal_VOID__VOID,
-								   G_TYPE_NONE, 0, G_TYPE_NONE);
+	signals[PLUGINS_CHANGED] = g_signal_new ("plugins-changed",
+											 G_OBJECT_CLASS_TYPE (object_class),
+											 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+											 g_cclosure_marshal_VOID__VOID,
+											 G_TYPE_NONE, 0, G_TYPE_NONE);
 	
 	object_class->finalize = ccm_screen_finalize;
 }
@@ -232,6 +234,9 @@ ccm_screen_load_config(CCMScreen* self)
 	{
 		self->priv->options[cpt] = ccm_config_new(self->number, NULL, 
 												  CCMScreenOptions[cpt]);
+		g_signal_connect_swapped(self->priv->options[cpt], "changed",
+								 G_CALLBACK(ccm_screen_on_option_changed), 
+								 self);
 	}
 	self->priv->buffered = _ccm_screen_use_buffered(self);
 }
@@ -761,6 +766,34 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	}
 }
 
+static void
+ccm_screen_get_plugins(CCMScreen* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	GSList* filter = NULL, *plugins = NULL, *item;
+	
+	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin))
+		g_object_unref(self->priv->plugin);
+	
+	self->priv->plugin = (CCMScreenPlugin*)self;
+	
+	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
+	plugins = ccm_extension_loader_get_screen_plugins(self->priv->plugin_loader,
+													  filter);
+	g_slist_foreach(filter, (GFunc)g_free, NULL);
+	g_slist_free(filter);
+	for (item = plugins; item; item = item->next)
+	{
+		GType type = GPOINTER_TO_INT(item->data);
+		GObject* prev = G_OBJECT(self->priv->plugin);
+		
+		self->priv->plugin = g_object_new(type, "parent", prev, NULL);
+	}
+	g_slist_free(plugins);
+	ccm_screen_plugin_load_options(self->priv->plugin, self);
+}
+
 static gboolean
 ccm_screen_paint(CCMScreen* self)
 {
@@ -795,6 +828,16 @@ ccm_screen_paint(CCMScreen* self)
 	}
 	
 	return TRUE;
+}
+
+static void
+ccm_screen_on_option_changed (CCMScreen* self, CCMConfig* config)
+{
+	if (config == self->priv->options[CCM_SCREEN_PLUGINS])
+	{
+		ccm_screen_get_plugins (self);
+		g_signal_emit (self, signals[PLUGINS_CHANGED], 0);
+	}
 }
 
 static void
@@ -1410,7 +1453,6 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	g_return_val_if_fail(display != NULL, NULL);
 	
 	CCMScreen *self = g_object_new(CCM_TYPE_SCREEN, NULL);
-	GSList* filter = NULL, *plugins = NULL, *item;
 	int refresh_rate;
 	
 	self->priv->display = display;
@@ -1423,21 +1465,7 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	self->priv->plugin_loader = ccm_extension_loader_new();
 	
 	/* Load plugins */
-	self->priv->plugin = (CCMScreenPlugin*)self;
-	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
-	plugins = ccm_extension_loader_get_screen_plugins(self->priv->plugin_loader,
-													  filter);
-	g_slist_foreach(filter, (GFunc)g_free, NULL);
-	g_slist_free(filter);
-	for (item = plugins; item; item = item->next)
-	{
-		GType type = GPOINTER_TO_INT(item->data);
-		GObject* prev = G_OBJECT(self->priv->plugin);
-		
-		self->priv->plugin = g_object_new(type, "parent", prev, NULL);
-	}
-	g_slist_free(plugins);
-	ccm_screen_plugin_load_options(self->priv->plugin, self);
+	ccm_screen_get_plugins (self);
 	
 	g_signal_connect_swapped(self->priv->display, "event", 
 							 G_CALLBACK(ccm_screen_on_event), self);

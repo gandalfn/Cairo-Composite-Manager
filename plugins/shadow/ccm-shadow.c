@@ -39,6 +39,9 @@ static gchar* CCMShadowOptions[CCM_SHADOW_OPTION_N] = {
 };
 
 static void ccm_shadow_iface_init(CCMWindowPluginClass* iface);
+static void ccm_shadow_on_property_changed(CCMShadow* self, 
+										   CCMPropertyType changed,
+										   CCMWindow* window);
 
 CCM_DEFINE_PLUGIN (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_shadow,
@@ -49,6 +52,8 @@ struct _CCMShadowPrivate
 {
 	int border;
 	int offset;
+	
+	CCMWindow* window;
 	
 	cairo_surface_t* shadow_right;
 	cairo_surface_t* shadow_bottom;
@@ -68,6 +73,7 @@ ccm_shadow_init (CCMShadow *self)
 	
 	self->priv = CCM_SHADOW_GET_PRIVATE(self);
 	
+	self->priv->window = NULL;
 	self->priv->geometry = NULL;
 	self->priv->shadow_right = NULL;
 	self->priv->shadow_bottom = NULL;
@@ -81,11 +87,33 @@ ccm_shadow_finalize (GObject *object)
 	CCMShadow* self = CCM_SHADOW(object);
 	gint cpt;
 	
+	g_signal_handlers_disconnect_by_func(self->priv->window, 
+										 ccm_shadow_on_property_changed, 
+										 self);	
+	
 	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; cpt++)
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-	if (self->priv->shadow_right) cairo_surface_destroy(self->priv->shadow_right);
-	if (self->priv->shadow_bottom) cairo_surface_destroy(self->priv->shadow_bottom);
-	if (self->priv->geometry) ccm_region_destroy (self->priv->geometry);
+	{
+		if (self->priv->options[cpt]) 
+		{
+			g_object_unref(self->priv->options[cpt]);
+			self->priv->options[cpt] = NULL;
+		}
+	}
+	if (self->priv->shadow_right) 
+	{
+		cairo_surface_destroy(self->priv->shadow_right);
+		self->priv->shadow_right = NULL;
+	}
+	if (self->priv->shadow_bottom) 
+	{
+		cairo_surface_destroy(self->priv->shadow_bottom);
+		self->priv->shadow_bottom = NULL;
+	}
+	if (self->priv->geometry) 
+	{
+		ccm_region_destroy (self->priv->geometry);
+		self->priv->geometry = NULL;
+	}
 	
 	G_OBJECT_CLASS (ccm_shadow_parent_class)->finalize (object);
 }
@@ -191,6 +219,7 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height,
     cairo_pattern_destroy (shadow);
 	cairo_destroy(cr);
 }
+
 static gboolean 
 ccm_shadow_need_shadow(CCMWindow* window)
 {
@@ -265,6 +294,7 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
+	self->priv->window = window;
 	self->priv->border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 	self->priv->offset = ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET]);
 			

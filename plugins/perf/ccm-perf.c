@@ -287,6 +287,7 @@ static void
 ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMPerf* self = CCM_PERF(plugin);
+	gchar* shortcut;
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++)
@@ -302,8 +303,10 @@ ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	self->priv->area.height = 100;
 		
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
-	self->priv->keybind = ccm_keybind_new(screen, 
-		ccm_config_get_string(self->priv->options [CCM_PERF_SHORTCUT]), TRUE);
+	shortcut = ccm_config_get_string(self->priv->options [CCM_PERF_SHORTCUT]);
+	self->priv->keybind = ccm_keybind_new(screen, shortcut, TRUE);
+	g_free(shortcut);
+	
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_perf_on_key_press), self);
 }

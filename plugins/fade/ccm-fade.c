@@ -47,6 +47,10 @@ static gchar* CCMFadeOptions[CCM_FADE_OPTION_N] = {
 };
 
 static void ccm_fade_window_iface_init(CCMWindowPluginClass* iface);
+static void	ccm_fade_on_error(CCMFade* self, CCMWindow* window);
+static void ccm_fade_on_property_changed(CCMFade* self, 
+										 CCMPropertyType changed,
+										 CCMWindow* window);
 
 CCM_DEFINE_PLUGIN (CCMFade, ccm_fade, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_fade,
@@ -59,6 +63,7 @@ struct _CCMFadePrivate
 	
 	gfloat origin;
 	
+	gfloat duration;
 	CCMTimeline* timeline;
 	
 	CCMConfig* options[CCM_FADE_OPTION_N];
@@ -73,6 +78,8 @@ ccm_fade_init (CCMFade *self)
 	gint cpt;
 	
 	self->priv = CCM_FADE_GET_PRIVATE(self);
+	self->priv->origin = 1.0f;
+	self->priv->duration = 1.0f;
 	self->priv->window = NULL;
 	self->priv->timeline = NULL;
 	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++) 
@@ -84,6 +91,14 @@ ccm_fade_finalize (GObject *object)
 {
 	CCMFade* self = CCM_FADE(object);
 	gint cpt;
+	
+	g_signal_handlers_disconnect_by_func(self->priv->window, 
+										 ccm_fade_on_property_changed, 
+										 self);	
+	
+	g_signal_handlers_disconnect_by_func(self->priv->window, 
+										 ccm_fade_on_error, 
+										 self);	
 	
 	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
@@ -178,18 +193,58 @@ ccm_fade_on_property_changed(CCMFade* self, CCMPropertyType changed,
 	}
 }
 
+static gboolean
+ccm_fade_get_duration(CCMFade* self)
+{
+	gfloat duration = 
+		ccm_config_get_float(self->priv->options[CCM_FADE_DURATION]);
+	
+	duration = MAX(0.1f, duration);
+	duration = MIN(2.0f, duration);
+	if (duration != self->priv->duration)
+	{
+		if (self->priv->timeline) g_object_unref (self->priv->timeline);
+
+		self->priv->duration = duration;
+		ccm_config_set_float(self->priv->options[CCM_FADE_DURATION],
+							 self->priv->duration);
+		
+		self->priv->timeline = ccm_timeline_new((int)(60 * duration), 60);
+	
+		g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+								 G_CALLBACK(ccm_fade_on_new_frame), self);
+		g_signal_connect_swapped(self->priv->timeline, "completed", 
+								 G_CALLBACK(ccm_fade_on_completed), self);
+		
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+static void
+ccm_fade_on_option_changed(CCMFade* self, CCMConfig* config)
+{
+	if (config == self->priv->options[CCM_FADE_DURATION])
+	{
+		ccm_fade_get_duration (self);
+	}
+}
+
 static void
 ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	gfloat duration;
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
 	{
 		self->priv->options[cpt] = ccm_config_new(screen->number, "fade", 
 												  CCMFadeOptions[cpt]);
+		g_signal_connect_swapped(self->priv->options[cpt], "changed",
+								 G_CALLBACK(ccm_fade_on_option_changed), 
+								 self);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
@@ -203,13 +258,7 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 							 G_CALLBACK(ccm_fade_on_error), 
 							 self);
 
-	duration = ccm_config_get_float(self->priv->options[CCM_FADE_DURATION]);
-	self->priv->timeline = ccm_timeline_new((int)(60 * duration), 60);
-	
-	g_signal_connect_swapped(self->priv->timeline, "new-frame", 
-							 G_CALLBACK(ccm_fade_on_new_frame), self);
-	g_signal_connect_swapped(self->priv->timeline, "completed", 
-							 G_CALLBACK(ccm_fade_on_completed), self);
+	ccm_fade_get_duration(self);
 }
 
 static void
