@@ -931,7 +931,9 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
 		
-		if (self->is_viewable) _ccm_screen_set_buffered (screen, TRUE);
+		if (self->is_viewable && !self->is_input_only && 
+			self->priv->is_decorated) 
+			_ccm_screen_set_buffered (screen, TRUE);
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
 		if (self->opaque)

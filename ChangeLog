@@ -1,3 +1,7 @@
+2008-06-29  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-window.c: Don't buffering undecorated and input only window.
+
 2008-06-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/fade/ccm-fade.c:
