@@ -1012,7 +1012,7 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	gboolean ret = FALSE;
 	
 	cairo_save(context);
-	ccm_debug_window(self, "PAINT WINDOW");
+	ccm_debug_window(self, "PAINT WINDOW %f", self->priv->opacity);
 	if (ccm_window_transform (self, context, y_invert))
 	{
 		cairo_set_source_surface(context, surface, 0.0f, 0.0f);
@@ -1835,11 +1835,11 @@ ccm_window_unmap(CCMWindow* self)
 		
 		if (self->priv->is_fullscreen)
 			ccm_window_switch_state (self, CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom);
+		if (self->priv->pixmap)
+			g_object_set(self->priv->pixmap, "freeze", TRUE, NULL);
 		ccm_debug_window(self, "WINDOW UNMAP");
 		ccm_window_plugin_unmap(self->priv->plugin, self);
 	}
-	else
-		ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 void 

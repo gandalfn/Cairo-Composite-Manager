@@ -39,13 +39,15 @@ G_DEFINE_TYPE (CCMPixmap, ccm_pixmap, CCM_TYPE_DRAWABLE);
 enum
 {
     PROP_0,
-	PROP_Y_INVERT
+	PROP_Y_INVERT,
+	PROP_FREEZE
 };
 
 struct _CCMPixmapPrivate
 {
 	Damage				damage;
 	gboolean			y_invert;
+	gboolean			freeze;
 };
 
 #define CCM_PIXMAP_GET_PRIVATE(o)  \
@@ -69,6 +71,11 @@ ccm_pixmap_set_property(GObject *object, guint prop_id,
 			self->priv->y_invert = g_value_get_boolean (value);
 		}
 		break;
+		case PROP_FREEZE:
+		{
+			self->priv->freeze = g_value_get_boolean (value);
+		}
+		break;
 		default:
 		break;
     }
@@ -87,6 +94,11 @@ ccm_pixmap_get_property(GObject *object, guint prop_id,
 			g_value_set_boolean (value, self->priv->y_invert);
 		}
 		break;
+		case PROP_FREEZE:
+		{
+			g_value_set_boolean (value, self->priv->freeze);
+		}
+		break;
 		default:
 		break;
     }
@@ -100,6 +112,7 @@ ccm_pixmap_init (CCMPixmap *self)
 	self->window = NULL;
 	self->priv->damage = 0;
 	self->priv->y_invert = FALSE;
+	self->priv->freeze = FALSE;
 }
 
 static void
@@ -137,6 +150,13 @@ ccm_pixmap_class_init (CCMPixmapClass *klass)
 		g_param_spec_boolean("y_invert",
 		 					 "Y Invert",
 			     			 "Get if pixmap is y inverted",
+							 FALSE,
+			     			 G_PARAM_READABLE | G_PARAM_WRITABLE));
+	
+	g_object_class_install_property(object_class, PROP_FREEZE,
+		g_param_spec_boolean("freeze",
+		 					 "Freeze",
+			     			 "Freeze pixmap damage and repair",
 							 FALSE,
 			     			 G_PARAM_READABLE | G_PARAM_WRITABLE));
 	
@@ -188,7 +208,7 @@ ccm_pixmap_on_damage(CCMPixmap* self, Damage damage, CCMDisplay* display)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->priv->damage == damage)
+	if (!self->priv->freeze && self->priv->damage == damage)
 	{
 		CCMRegion* damaged = ccm_region_new();
 		CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));

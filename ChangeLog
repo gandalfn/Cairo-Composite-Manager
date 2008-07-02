@@ -1,3 +1,10 @@
+2008-07-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-pixmap.c:
+    * src/ccm-screen.c:
+    * src/ccm-window.c: Wait unmap is finished to remove window when an 
+                        animation is started.
+
 2008-07-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-window.c: Sync display on ccm_window_new

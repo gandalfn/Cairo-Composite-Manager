@@ -46,6 +46,10 @@ static guint signals[N_SIGNALS] = { 0 };
 static gboolean ccm_screen_paint(CCMScreen* self);
 static void ccm_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_screen_unset_selection_owner(CCMScreen* self);
+static void ccm_screen_on_window_error(CCMScreen* self, CCMWindow* window);
+static void ccm_screen_on_window_property_changed(CCMScreen* self, 
+												  CCMPropertyType changed,
+												  CCMWindow* window);
 
 G_DEFINE_TYPE_EXTENDED (CCMScreen, ccm_screen, G_TYPE_OBJECT, 0,
 						G_IMPLEMENT_INTERFACE(CCM_TYPE_SCREEN_PLUGIN,
@@ -89,6 +93,7 @@ struct _CCMScreenPrivate
 	Window*				stack;
 	guint				n_windows;
 	GList*				windows;
+	GList*				removed;
 	gboolean			buffered;
 	gboolean			filtered_damage;
 	
@@ -131,6 +136,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->stack = NULL;
 	self->priv->n_windows = 0;
 	self->priv->windows = NULL;
+	self->priv->removed = NULL;
 	self->priv->buffered = FALSE;
 	self->priv->filtered_damage = TRUE;
 	self->priv->id_paint = 0;
@@ -177,6 +183,11 @@ ccm_screen_finalize (GObject *object)
 	{
 		g_list_foreach(self->priv->windows, (GFunc)g_object_unref, NULL);
 		g_list_free(self->priv->windows);
+	}
+	if (self->priv->removed) 
+	{
+		g_list_foreach(self->priv->removed, (GFunc)g_object_unref, NULL);
+		g_list_free(self->priv->removed);
 	}
 	if (self->priv->root) 
 	{
@@ -257,6 +268,38 @@ ccm_screen_create_overlay_window(CCMScreen* self)
 	ccm_window_make_output_only(self->priv->cow);
 	
 	return self->priv->cow != NULL;
+}
+
+static void
+ccm_screen_destroy_window (CCMScreen* self, CCMWindow* window)
+{
+	ccm_debug_window(window, "DESTROY WINDOW");
+	
+	self->priv->windows = g_list_remove(self->priv->windows, window);
+	
+	g_signal_handlers_disconnect_by_func(window, 
+										 ccm_screen_on_window_damaged, 
+										 self);
+	g_signal_handlers_disconnect_by_func(window, 
+										 ccm_screen_on_window_error, 
+										 self);
+	g_signal_handlers_disconnect_by_func(window, 
+										 ccm_screen_on_window_property_changed, 
+										 self);
+	if (self->priv->fullscreen == window)
+	{
+		self->priv->fullscreen = NULL;
+		ccm_screen_damage (self);
+	}		
+	else if (!window->is_input_only)
+	{
+		CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(window));
+		if (geometry && !ccm_region_empty (geometry))
+			ccm_screen_damage_region(self, geometry);
+		else
+			ccm_screen_damage (self);
+	}
+	g_object_unref(window);
 }
 
 #if 0
@@ -514,7 +557,10 @@ ccm_screen_check_stack(CCMScreen* self)
 		if (!link) 
 		{
 			ccm_debug_window(item->data, "NOT FOUND");
-			removed = g_list_append (removed, item->data);
+			if (!g_list_find(self->priv->removed, item->data))
+				removed = g_list_append (removed, item->data);
+			else
+				stack = g_list_append(stack, item->data);
 		}
 		else if (CCM_WINDOW(item->data)->is_viewable)
 		{
@@ -602,7 +648,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 	g_return_val_if_fail(ctx != NULL, FALSE);
 	
 	gboolean ret = FALSE;
-	GList* item;
+	GList* item, *destroy = NULL;
 	
 	for (item = g_list_first(self->priv->windows); item; item = item->next)
 	{
@@ -624,6 +670,22 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 			ret |= ccm_window_paint(window, self->priv->ctx, self->priv->buffered);
 		}
 	}
+	for (item = g_list_first(self->priv->removed); item; item = item->next)
+	{
+		CCMWindow* window = CCM_WINDOW(item->data);
+		
+		if (!window->is_viewable && !window->unmap_pending)
+		{
+			destroy = g_list_append(destroy, item);
+			ccm_screen_destroy_window (self, window);
+		}
+	}
+	for (item = g_list_first(destroy); item; item = item->next)
+	{
+		self->priv->removed = g_list_remove_link (self->priv->removed, item->data);
+	}
+	g_list_free(destroy);
+	
 	self->priv->buffered = FALSE;
 	
 	return ret;
@@ -727,42 +789,21 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	return TRUE;
 }
 
+
 static void
 impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self, 
 							  CCMWindow* window)
 {
 	GList* link = g_list_find (self->priv->windows, window);
 
-	ccm_debug_window(window, "REMOVE");
-
 	if (link)
 	{
 		ccm_debug_window(window, "REMOVE");
 
-		self->priv->windows = g_list_remove(self->priv->windows, window);
-		g_signal_handlers_disconnect_by_func(window, 
-											 ccm_screen_on_window_damaged, 
-											 self);
-		g_signal_handlers_disconnect_by_func(window, 
-											 ccm_screen_on_window_error, 
-											 self);
-		g_signal_handlers_disconnect_by_func(window, 
-											 ccm_screen_on_window_property_changed, 
-											 self);
-		if (self->priv->fullscreen == window)
-		{
-			self->priv->fullscreen = NULL;
-			ccm_screen_damage (self);
-		}		
-		else if (!window->is_input_only)
-		{
-			CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(window));
-			if (geometry && !ccm_region_empty (geometry))
-				ccm_screen_damage_region(self, geometry);
-			else
-				ccm_screen_damage (self);
-		}
-		g_object_unref(window);
+		if (!window->is_viewable && !window->unmap_pending)
+			ccm_screen_destroy_window(self, window);
+		else if (!g_list_find (self->priv->removed, window))
+			self->priv->removed = g_list_append (self->priv->removed, window);
 	}
 }
 
@@ -863,7 +904,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 		
 		// Substract opaque region of window to damage region below
 		if (self->priv->filtered_damage && window->opaque && 
-			window->is_viewable)
+			(window->is_viewable || window->unmap_pending))
 		{
 			ccm_region_subtract(damage_below, window->opaque);
 		}
@@ -873,7 +914,8 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 			self->priv->fullscreen != ccm_window_get_group_leader (window) &&
 			g_list_index(self->priv->windows, window) < 
 				 g_list_index(self->priv->windows, self->priv->fullscreen) &&
-			self->priv->fullscreen->is_viewable)
+			(self->priv->fullscreen->is_viewable || 
+			 self->priv->fullscreen->unmap_pending))
 		{
 			if (self->priv->fullscreen->opaque)
 			{
@@ -902,7 +944,8 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 			 self->priv->filtered_damage && item; item = item->prev)
 		{
 			if (!((CCMWindow*)item->data)->is_input_only &&
-				((CCMWindow*)item->data)->is_viewable && 
+				(((CCMWindow*)item->data)->is_viewable ||
+				 ((CCMWindow*)item->data)->unmap_pending) && 
 				CCM_WINDOW_XWINDOW(item->data) != CCM_WINDOW_XWINDOW(window))
 			{
 				if (((CCMWindow*)item->data)->opaque)
@@ -942,7 +985,8 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 		for (; item; item = item->prev)
 		{
 			if (!((CCMWindow*)item->data)->is_input_only &&
-				((CCMWindow*)item->data)->is_viewable && 
+				(((CCMWindow*)item->data)->is_viewable ||
+				 ((CCMWindow*)item->data)->unmap_pending) && 
 				item->data != window)
 			{
 				if (top)
@@ -958,7 +1002,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 				else
 				{
 					if (self->priv->filtered_damage && 
-						window->is_viewable &&
+						(window->is_viewable || window->unmap_pending) &&
 						window->opaque && !ccm_region_empty(window->opaque))
 					{
 						ccm_debug_window(item->data, "UNDAMAGE BELOW");
@@ -1574,9 +1618,12 @@ ccm_screen_remove_window(CCMScreen* self, CCMWindow* window)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(window != NULL);
 	
-	if (window->is_viewable) ccm_window_unmap (window);
+	if (!g_list_find(self->priv->removed, window))
+	{
+		if (window->is_viewable) ccm_window_unmap (window);
 	
-	ccm_screen_plugin_remove_window(self->priv->plugin, self, window);
+		ccm_screen_plugin_remove_window(self->priv->plugin, self, window);
+	}
 }
 
 void
