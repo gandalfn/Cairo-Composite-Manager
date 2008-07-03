@@ -932,7 +932,7 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
 		
 		if (self->is_viewable && !self->is_input_only && 
-			self->priv->is_decorated) 
+			self->priv->is_decorated && !self->priv->override_redirect) 
 			_ccm_screen_set_buffered (screen, TRUE);
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
@@ -1010,6 +1010,8 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	gboolean ret = FALSE;
+	
+	if (self->priv->opacity == 0.0f) return TRUE;
 	
 	cairo_save(context);
 	ccm_debug_window(self, "PAINT WINDOW %f", self->priv->opacity);

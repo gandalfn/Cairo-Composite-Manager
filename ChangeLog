@@ -1,3 +1,8 @@
+2008-07-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-screen.c: Damage window which is in remove pending in check stack.
+    * src/ccm-window.c: Ignore silently window paint with alpha 0.
+
 2008-07-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-pixmap.c:

@@ -559,8 +559,13 @@ ccm_screen_check_stack(CCMScreen* self)
 			ccm_debug_window(item->data, "NOT FOUND");
 			if (!g_list_find(self->priv->removed, item->data))
 				removed = g_list_append (removed, item->data);
-			else
+			
+			if (CCM_WINDOW(item->data)->is_viewable ||
+				CCM_WINDOW(item->data)->unmap_pending)
+			{
 				stack = g_list_append(stack, item->data);
+				new_viewable = g_list_append (new_viewable, item->data);
+			}
 		}
 		else if (CCM_WINDOW(item->data)->is_viewable)
 		{
@@ -667,24 +672,25 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 					ccm_region_union(self->priv->damaged, damaged);
 			}
 			
+			ccm_debug_window(window, "PAINT SCREEN");
 			ret |= ccm_window_paint(window, self->priv->ctx, self->priv->buffered);
 		}
-	}
-	for (item = g_list_first(self->priv->removed); item; item = item->next)
-	{
-		CCMWindow* window = CCM_WINDOW(item->data);
-		
-		if (!window->is_viewable && !window->unmap_pending)
+		if (!window->is_viewable && !window->unmap_pending &&
+			g_list_find(self->priv->removed, window))
 		{
-			destroy = g_list_append(destroy, item);
-			ccm_screen_destroy_window (self, window);
+			self->priv->removed = g_list_remove (self->priv->removed, window);
+			destroy = g_list_append(destroy, window);
 		}
 	}
-	for (item = g_list_first(destroy); item; item = item->next)
+	if (destroy)
 	{
-		self->priv->removed = g_list_remove_link (self->priv->removed, item->data);
+		for (item = g_list_first(destroy); item; item = item->next)
+		{
+			self->priv->windows = g_list_remove (self->priv->windows, item->data);
+			ccm_screen_destroy_window (self, item->data);
+		}
+		g_list_free(destroy);
 	}
-	g_list_free(destroy);
 	
 	self->priv->buffered = FALSE;
 	
