@@ -1055,6 +1055,9 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	
+	CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self));
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	
 	self->is_viewable = FALSE;
 	self->priv->visible = FALSE;
 	self->unmap_pending = FALSE;
@@ -1064,6 +1067,7 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 		g_object_unref(self->priv->pixmap);
 		self->priv->pixmap = NULL;
 	}
+	ccm_screen_damage_region (screen, geometry);
 }
 	
 static void
@@ -1834,7 +1838,7 @@ ccm_window_unmap(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
-	if (self->is_viewable && !self->unmap_pending)
+	if (self->priv->visible)
 	{
 		self->priv->visible = FALSE;
 		self->is_viewable = FALSE;
