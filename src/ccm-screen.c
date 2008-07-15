@@ -767,6 +767,34 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* sibling)
 	if (ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP)
 		return;
 	
+	if (window->opaque)
+	{
+		cairo_rectangle_t geometry;
+		
+		ccm_region_get_clipbox (window->opaque, &geometry);
+		if (geometry.x == 0 && geometry.y == 0 && 
+			geometry.width == CCM_SCREEN_XSCREEN(self)->width &&
+			geometry.height == CCM_SCREEN_XSCREEN(self)->height)
+		{
+			GList* item;
+			gboolean found= FALSE;
+			
+			for (item = g_list_find(self->priv->windows, window); 
+				 item; 
+				 item = item->prev)
+			{
+				if (item->data != window && 
+					CCM_WINDOW(item->data)->is_viewable)
+				{
+					found = TRUE;
+					break;
+				}
+			}
+			
+			if (!found) return;
+		}
+	}
+	
 	ccm_debug_window(window, "RESTACK AFTER 0x%x", CCM_WINDOW_XWINDOW(sibling));
 	
 	self->priv->windows = g_list_remove (self->priv->windows, window);

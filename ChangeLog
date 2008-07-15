@@ -1,4 +1,9 @@
 2008-07-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
+    
+    * src/ccm-screen.c: Consider first window opaque viewable which covered
+                        all screen as desktop type window.
+                        
+2008-07-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * plugins/menu-animation/ccm-menu-animation.c: Set animation depending the 
                                                    mouse on map.
