@@ -117,9 +117,10 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapImage* self = CCM_PIXMAP_IMAGE(drawable);
-	gboolean ret = TRUE;
+	gboolean ret = TRUE, frozen = FALSE;
 	
-	if (self->priv->image)
+	g_object_get (self, "freeze", &frozen, NULL);
+	if (!frozen && self->priv->image)
 	{
 		if (!self->priv->synced) 
 		{

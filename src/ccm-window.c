@@ -113,6 +113,7 @@ struct _CCMWindowPrivate
 	Window				transient_for;
 	Window				group_leader;
 	
+	gboolean			visible;
 	gboolean			is_shaped;
 	gboolean			is_shaded;
 	gboolean			is_fullscreen;
@@ -153,6 +154,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->child = None;
 	self->priv->transient_for = None;
 	self->priv->group_leader = None;
+	self->priv->visible = FALSE;
 	self->priv->is_shaped = FALSE;
 	self->priv->is_shaded = FALSE;
 	self->priv->is_fullscreen = FALSE;
@@ -1053,6 +1055,8 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	
+	self->is_viewable = FALSE;
+	self->priv->visible = FALSE;
 	self->unmap_pending = FALSE;
 	ccm_debug_window(self, "IMPL WINDOW UNMAP");
 	if (self->priv->pixmap)
@@ -1060,7 +1064,6 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 		g_object_unref(self->priv->pixmap);
 		self->priv->pixmap = NULL;
 	}
-	ccm_drawable_damage(CCM_DRAWABLE(self));
 }
 	
 static void
@@ -1814,8 +1817,9 @@ ccm_window_map(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (!self->is_viewable)
+	if (!self->priv->visible)
 	{
+		self->priv->visible = TRUE;
 		self->is_viewable = TRUE;
 		self->unmap_pending = FALSE;
 		
@@ -1832,6 +1836,7 @@ ccm_window_unmap(CCMWindow* self)
 	
 	if (self->is_viewable && !self->unmap_pending)
 	{
+		self->priv->visible = FALSE;
 		self->is_viewable = FALSE;
 		self->unmap_pending = TRUE;
 		

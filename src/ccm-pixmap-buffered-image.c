@@ -28,6 +28,7 @@
 #include "ccm-window.h"
 #include "ccm-screen.h"
 #include "ccm-display.h"
+#include "ccm-debug.h"
 
 G_DEFINE_TYPE (CCMPixmapBufferedImage, ccm_pixmap_buffered_image, CCM_TYPE_PIXMAP_IMAGE);
 
@@ -87,6 +88,7 @@ ccm_pixmap_buffered_image_finalize (GObject *object)
 	
 	if (self->priv->surface) 
 	{
+		ccm_debug("FINALIZE BUFFERED IMAGE : %i", cairo_surface_get_reference_count(self->priv->surface));
 		cairo_surface_destroy (self->priv->surface);
 		self->priv->surface = NULL;
 	}

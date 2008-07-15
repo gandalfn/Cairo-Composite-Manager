@@ -260,7 +260,6 @@ ccm_opacity_on_property_changed(CCMOpacity* self, CCMPropertyType changed,
 			type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
 			type == CCM_WINDOW_TYPE_POPUP_MENU)
 		{
-			ccm_window_set_opacity (window, self->priv->opacity);
 			ccm_opacity_change_opacity(window, self->priv->opacity);
 		}
 	}

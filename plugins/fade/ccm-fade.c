@@ -31,13 +31,6 @@
 
 enum
 {
-	CCM_FADE_NONE = 0,
-	CCM_FADE_ON_MAP = 1 << 1,
-	CCM_FADE_ON_UNMAP = 1 << 2
-};
-
-enum
-{
 	CCM_FADE_DURATION,
 	CCM_FADE_OPTION_N
 };
@@ -190,6 +183,14 @@ ccm_fade_on_property_changed(CCMFade* self, CCMPropertyType changed,
 	{
 		self->priv->origin = ccm_window_get_opacity (window);
 		ccm_debug_window(window, "FADE OPACITY %f", self->priv->origin);
+		if (ccm_timeline_is_playing (self->priv->timeline))
+		{
+			gdouble progress = ccm_timeline_get_progress (self->priv->timeline);
+			gfloat opacity = self->priv->origin * progress;
+	
+			ccm_window_set_opacity (self->priv->window, opacity);
+			ccm_debug_window(window, "FADE OPACITY PROGRESS %f %f", progress, opacity);
+		}
 	}
 }
 
@@ -203,13 +204,16 @@ ccm_fade_get_duration(CCMFade* self)
 	duration = MIN(2.0f, duration);
 	if (duration != self->priv->duration)
 	{
+		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self->priv->window));
+		guint refresh_rate = _ccm_screen_get_refresh_rate (screen);
+		
 		if (self->priv->timeline) g_object_unref (self->priv->timeline);
 
 		self->priv->duration = duration;
 		ccm_config_set_float(self->priv->options[CCM_FADE_DURATION],
 							 self->priv->duration);
 		
-		self->priv->timeline = ccm_timeline_new((int)(60 * duration), 60);
+		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), refresh_rate);
 	
 		g_signal_connect_swapped(self->priv->timeline, "new-frame", 
 								 G_CALLBACK(ccm_fade_on_new_frame), self);
@@ -283,7 +287,7 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 									   (CCMPluginUnlockFunc)ccm_fade_on_map_unmap_unlocked, 
 									   self);
 	
-	ccm_debug_window(window, "FADE MAP");
+	ccm_debug_window(window, "FADE MAP %i", current_frame);
 	ccm_timeline_set_direction (self->priv->timeline, 
 								CCM_TIMELINE_FORWARD);
 	ccm_timeline_rewind(self->priv->timeline);

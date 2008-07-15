@@ -21,6 +21,7 @@
  */
 #include <math.h>
 
+//#define CCM_DEBUG_ENABLE
 #include "ccm.h"
 #include "ccm-debug.h"
 #include "ccm-drawable.h"
@@ -30,17 +31,15 @@
 #include "ccm-timeline.h"
 #include "ccm.h"
 
+#define CCM_MENU_ANIMATION_DIV 7
 enum
 {
-	CCM_MENU_ANIMATION_TOP_LEFT,
-	CCM_MENU_ANIMATION_TOP,
-	CCM_MENU_ANIMATION_TOP_RIGHT,
+	CCM_MENU_ANIMATION_LEFT,
 	CCM_MENU_ANIMATION_RIGHT,
-	CCM_MENU_ANIMATION_BOTTOM_RIGHT,
-	CCM_MENU_ANIMATION_BOTTOM,
-	CCM_MENU_ANIMATION_BOTTOM_LEFT,
-	CCM_MENU_ANIMATION_LEFT
-} CCMMenuAnimationMousePosition;
+	CCM_MENU_ANIMATION_MIDDLE,
+	CCM_MENU_ANIMATION_TOP,
+	CCM_MENU_ANIMATION_BOTTOM
+};
 
 enum
 {
@@ -71,6 +70,8 @@ struct _CCMMenuAnimationPrivate
 		
 	CCMTimeline*   timeline;
 	gfloat 		   duration;
+	guint		   x_pos;
+	guint		   y_pos;
 	
 	CCMConfig*     options[CCM_MENU_ANIMATION_OPTION_N];
 };
@@ -88,6 +89,8 @@ ccm_menu_animation_init (CCMMenuAnimation *self)
 	self->priv->type = CCM_WINDOW_TYPE_UNKNOWN;
 	self->priv->timeline = NULL;
 	self->priv->duration = 0.1f;
+	self->priv->x_pos = CCM_MENU_ANIMATION_LEFT;
+	self->priv->y_pos = CCM_MENU_ANIMATION_TOP;
 	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++) 
 		self->priv->options[cpt] = NULL;
 }
@@ -141,7 +144,42 @@ ccm_menu_animation_get_position (CCMMenuAnimation* self)
 			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self->priv->window),
 											   &geometry))
 		{
-			
+			if (x < geometry.x + (geometry.width / CCM_MENU_ANIMATION_DIV))
+			{
+				self->priv->x_pos = CCM_MENU_ANIMATION_LEFT;
+				ccm_debug("ON LEFT");
+			}
+			if (x >= geometry.x + (geometry.width / CCM_MENU_ANIMATION_DIV) && 
+				x <= geometry.x + (((CCM_MENU_ANIMATION_DIV - 1) * 
+									geometry.width) / CCM_MENU_ANIMATION_DIV))
+			{
+				self->priv->x_pos = CCM_MENU_ANIMATION_MIDDLE;
+				ccm_debug("ON MIDDLE");
+			}
+			if (x > geometry.x + (((CCM_MENU_ANIMATION_DIV - 1) * 
+								   geometry.width) / CCM_MENU_ANIMATION_DIV))
+			{
+				self->priv->x_pos = CCM_MENU_ANIMATION_RIGHT;
+				ccm_debug("ON RIGHT");
+			}
+			if (y < geometry.y + (geometry.height / CCM_MENU_ANIMATION_DIV))
+			{
+				self->priv->y_pos = CCM_MENU_ANIMATION_TOP;
+				ccm_debug("ON TOP");
+			}
+			if (y >= geometry.y + (geometry.height / CCM_MENU_ANIMATION_DIV) && 
+				y <= geometry.y + (((CCM_MENU_ANIMATION_DIV - 1) * 
+									geometry.height) / CCM_MENU_ANIMATION_DIV))
+			{
+				self->priv->y_pos = CCM_MENU_ANIMATION_MIDDLE;
+				ccm_debug("ON MIDDLE");
+			}
+			if (y > geometry.y + (((CCM_MENU_ANIMATION_DIV - 1) * 
+								   geometry.height) / CCM_MENU_ANIMATION_DIV))
+			{
+				self->priv->y_pos = CCM_MENU_ANIMATION_BOTTOM;
+				ccm_debug("ON BOTTOM");
+			}
 		}
 	}
 }
@@ -154,14 +192,47 @@ ccm_menu_animation_on_new_frame (CCMMenuAnimation* self, int num_frame,
 	g_return_if_fail(timeline != NULL);
 	
 	gdouble progress = ccm_timeline_get_progress (timeline);
+	cairo_rectangle_t geometry;
 	cairo_matrix_t matrix;
 	
 	ccm_debug_window(self->priv->window, "MENU ANIMATION %i %f", num_frame, progress);
 	
 	progress = MAX(progress, 0.01f);
+	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self->priv->window),
+									   &geometry);
 	cairo_matrix_init_identity (&matrix);
-	cairo_matrix_scale (&matrix, 
-						progress > 0.5f ? 1.0f : progress  * 2, progress);
+	switch (self->priv->y_pos)
+	{
+		case CCM_MENU_ANIMATION_TOP:
+			matrix.yy = progress;
+			break;
+		case CCM_MENU_ANIMATION_BOTTOM:
+			matrix.yy = progress;
+			matrix.y0 = geometry.height - (geometry.height * matrix.yy);
+			break;
+		default:
+			break;
+	}
+	switch (self->priv->x_pos)
+	{
+		case CCM_MENU_ANIMATION_LEFT:
+			if (self->priv->y_pos == CCM_MENU_ANIMATION_TOP ||
+				self->priv->y_pos == CCM_MENU_ANIMATION_BOTTOM)
+				matrix.xx = progress > 0.5f ? 1.0f : progress  * 2;
+			else
+				matrix.xx = progress;
+			break;
+		case CCM_MENU_ANIMATION_RIGHT:
+			if (self->priv->y_pos == CCM_MENU_ANIMATION_TOP ||
+				self->priv->y_pos == CCM_MENU_ANIMATION_BOTTOM)
+				matrix.xx = progress > 0.5f ? 1.0f : progress  * 2;
+			else
+				matrix.xx = progress;
+			matrix.x0 = geometry.width - (geometry.width * matrix.xx);
+			break;
+		default:
+			break;
+	}
 	ccm_window_set_transform (self->priv->window, &matrix, TRUE);
 }
 
@@ -227,13 +298,17 @@ ccm_menu_animation_get_duration(CCMMenuAnimation* self)
 	duration = MIN(2.0f, duration);
 	if (duration != self->priv->duration)
 	{
+		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self->priv->window));
+		guint refresh_rate = _ccm_screen_get_refresh_rate (screen);
+		
 		if (self->priv->timeline) g_object_unref (self->priv->timeline);
 
 		self->priv->duration = duration;
 		ccm_config_set_float(self->priv->options[CCM_MENU_ANIMATION_DURATION],
 							 self->priv->duration);
 		
-		self->priv->timeline = ccm_timeline_new((int)(60 * duration), 60);
+		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), 
+												refresh_rate);
 	
 		g_signal_connect_swapped(self->priv->timeline, "new-frame", 
 							 	 G_CALLBACK(ccm_menu_animation_on_new_frame), 
@@ -298,6 +373,7 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 	{
 		guint current_frame = 0;
 		
+		ccm_menu_animation_get_position (self);
 		if (ccm_timeline_is_playing (self->priv->timeline))
 		{
 			current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
