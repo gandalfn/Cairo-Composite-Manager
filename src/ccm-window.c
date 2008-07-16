@@ -1201,6 +1201,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 					  PropertyChangeMask  | 
 					  StructureNotifyMask |
 					  SubstructureNotifyMask);
+		ccm_display_sync(display);
 	}
 	
 	return self;

@@ -1,3 +1,7 @@
+2008-07-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/ccm-window.c: Sync display on end of window creation.
+
 2008-07-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-window.c: Damage screen region covered by window on unmap.
