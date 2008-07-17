@@ -1,3 +1,10 @@
+2008-07-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    * src/Makefile.am:
+	* src/ccm-timeline.c:
+	* src/ccm-timeout-pool.c:
+	* src/ccm-timeout-pool.h: Add timeout pool from clutter for timeline.
+
 2008-07-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * src/ccm-window.c: Sync display on end of window creation.

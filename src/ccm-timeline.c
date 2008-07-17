@@ -24,6 +24,7 @@
  */
 
 #include "ccm-debug.h"
+#include "ccm-timeout-pool.h"
 #include "ccm-timeline.h"
 
 G_DEFINE_TYPE (CCMTimeline, ccm_timeline, G_TYPE_OBJECT);
@@ -90,19 +91,21 @@ static guint signals[LAST_SIGNAL] = { 0 };
 #define CCM_TIMELINE_GET_PRIVATE(o)  \
    ((CCMTimelinePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMELINE, CCMTimelineClass))
 
+static CCMTimeoutPool *timeline_pool = NULL;
+
 static guint
 timeout_add (guint          interval, GSourceFunc    func,
              gpointer       data,
              GDestroyNotify notify)
 {
-    return g_timeout_add_full (CCM_TIMELINE_PRIORITY, interval, 
-                               func, data, notify);
+    return ccm_timeout_pool_add (timeline_pool, interval, 
+                                 func, data, notify);
 }
 
 static void
 timeout_remove (guint tag)
 {
-    g_source_remove (tag);
+    ccm_timeout_pool_remove (timeline_pool, tag);
 }
 
 static TimelineMarker *
@@ -230,6 +233,8 @@ ccm_timeline_class_init (CCMTimelineClass *klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
+    timeline_pool = ccm_timeout_pool_new (CCM_TIMELINE_PRIORITY);
+    
     g_type_class_add_private (klass, sizeof (CCMTimelinePrivate));
 
     object_class->set_property = ccm_timeline_set_property;

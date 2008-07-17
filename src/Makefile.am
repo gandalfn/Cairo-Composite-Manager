@@ -82,7 +82,9 @@ cairo_compmgr_SOURCES = \
 	ccm-property-async.h \
 	ccm-property-async.c \
 	ccm-timeline.h \
-	ccm-timeline.c
+	ccm-timeline.c \
+	ccm-timeout-pool.c \
+	ccm-timeout-pool.h
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \
