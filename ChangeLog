@@ -1,4 +1,8 @@
-2008-07-18  Nicolas Bruguier  <gandalfn@rohan>
+2008-07-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_check_needed): Fix crash.
+
+2008-07-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/shadow/ccm-shadow.c (ccm_shadow_finalize): Remove check shadow on
                                                          window destruction.

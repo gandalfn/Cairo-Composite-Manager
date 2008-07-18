@@ -221,7 +221,7 @@ create_shadow(CCMShadow* self,CCMWindow* window, int width, int height,
 static gboolean
 ccm_shadow_check_needed(CCMShadow* self)
 {
-	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(CCM_IS_SHADOW(self), FALSE);
 	
 	ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self->priv->window));
