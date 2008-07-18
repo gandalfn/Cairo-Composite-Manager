@@ -245,8 +245,7 @@ ccm_shadow_need_shadow(CCMWindow* window)
 			 type != CCM_WINDOW_TYPE_DIALOG)) && 
 		   (type != CCM_WINDOW_TYPE_DOCK || window->opaque) &&
 		   ((type != CCM_WINDOW_TYPE_DOCK && window->opaque) || 
-			(!ccm_window_is_shaded (window) &&
-			 !ccm_window_skip_taskbar (window) &&   
+			(!ccm_window_skip_taskbar (window) &&   
 			 !ccm_window_skip_pager (window))) &&   
 		   (ccm_window_is_managed(window) ||   
 			type == CCM_WINDOW_TYPE_DOCK ||

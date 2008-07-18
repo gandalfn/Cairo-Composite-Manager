@@ -1022,6 +1022,38 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 		{
 			if (self->priv->damaged)
 			{
+#ifdef CCM_TRACK_DAMAGE
+				cairo_rectangle_t* rects;
+				gint cpt, nb_rects;
+				static gint i = 0;
+				
+				ccm_region_get_rectangles (self->priv->damaged, &rects, &nb_rects);
+				switch (i)
+				{
+					case 0:
+						cairo_set_source_rgba (self->priv->ctx, 1, 0, 0, 0.5);
+						i++;
+						break;
+					case 1:
+						cairo_set_source_rgba (self->priv->ctx, 0, 1, 0, 0.5);
+						i++;
+						break;
+					case 2:
+						cairo_set_source_rgba (self->priv->ctx, 0, 0, 1, 0.5);
+						i = 0;
+						break;
+					default:
+						break;
+				}
+						
+				for (cpt = 0; cpt < nb_rects; cpt++)
+				{
+					cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
+									 rects[cpt].width, rects[cpt].height);
+					cairo_fill(self->priv->ctx);
+				}
+				g_free(rects);
+#endif
 				ccm_drawable_flush_region (CCM_DRAWABLE(self->priv->cow),
 										   self->priv->damaged);
 				ccm_region_destroy(self->priv->damaged);

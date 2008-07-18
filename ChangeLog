@@ -1,5 +1,11 @@
 2008-07-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_need_shadow): Allow shaded window
+                                                            to have shadow.
+	* src/ccm-screen.c (ccm_screen_paint): Add track damage colorization.
+
+2008-07-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/shadow/ccm-shadow.c (ccm_shadow_check_needed): Fix crash.
 
 2008-07-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
