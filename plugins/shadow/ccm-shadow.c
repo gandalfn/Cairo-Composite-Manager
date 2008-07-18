@@ -87,6 +87,8 @@ ccm_shadow_finalize (GObject *object)
 	CCMShadow* self = CCM_SHADOW(object);
 	gint cpt;
 	
+	if (self->priv->id_check) g_source_remove (self->priv->id_check);
+	
 	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; cpt++)
 	{
 		if (self->priv->options[cpt]) 
