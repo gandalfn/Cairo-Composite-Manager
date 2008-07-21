@@ -1,4 +1,9 @@
-2008-07-21  Nicolas Bruguier  <gandalfn@rohan>
+2008-07-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c (ccm_screen_check_stack): 
+      - Damage window which its position changed in stack.
+
+2008-07-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
 	* src/ccm-window-glitz.c (ccm_window_glitz_create_gl_drawable):

@@ -603,7 +603,7 @@ ccm_screen_check_stack(CCMScreen* self)
 
 	guint cpt;
 	GList* stack = NULL, *item, *last = NULL;
-	GList* removed = NULL;
+	GList* removed = NULL, *viewable = NULL, *new_viewable = NULL;
 	
 	ccm_debug("CHECK_STACK");
 	
@@ -620,6 +620,7 @@ ccm_screen_check_stack(CCMScreen* self)
 			if (window->is_viewable || window->unmap_pending)
 			{
 				ccm_debug_window(window, "STACK IS VIEWABLE");
+				viewable = g_list_append(viewable, window);
 			}
 		}
 		else if (!window)
@@ -633,6 +634,7 @@ ccm_screen_check_stack(CCMScreen* self)
 				{
 					ccm_debug_window(window, "CHECK STACK NEW WINDOW MAP");
 					ccm_window_map(window);
+					viewable = g_list_append(viewable, window);
 				}
 				g_signal_connect_swapped(window, "damaged", 
 					 G_CALLBACK(ccm_screen_on_window_damaged), self);
@@ -656,6 +658,7 @@ ccm_screen_check_stack(CCMScreen* self)
 		{
 			ccm_debug_window(item->data, "CHECK STACK LAST");
 			last = link;
+			new_viewable = g_list_append(new_viewable, item->data);
 		}
 		else if (!link) 
 		{
@@ -691,6 +694,14 @@ ccm_screen_check_stack(CCMScreen* self)
 	
 	g_list_free(self->priv->windows);
 	self->priv->windows = stack;
+	
+	for (item = g_list_first(new_viewable); item; item = item->next)
+	{
+		if (g_list_index (viewable, item->data) != g_list_index (new_viewable, item->data))
+			ccm_drawable_damage (item->data);
+	}
+	g_list_free(viewable);
+	g_list_free(new_viewable);
 	
 #if 0
 	g_print("Stack\n");
