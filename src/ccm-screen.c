@@ -1013,6 +1013,9 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 			cairo_rectangle(self->priv->ctx, 0, 0, 
 							self->xscreen->width, self->xscreen->height);
 			cairo_clip(self->priv->ctx);
+			cairo_set_operator (self->priv->ctx, CAIRO_OPERATOR_CLEAR);
+			cairo_paint(self->priv->ctx);
+			cairo_set_operator (self->priv->ctx, CAIRO_OPERATOR_OVER);
 		}
 		else
 			cairo_identity_matrix (self->priv->ctx);

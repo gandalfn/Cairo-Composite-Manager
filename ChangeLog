@@ -1,3 +1,11 @@
+2008-07-21  Nicolas Bruguier  <gandalfn@rohan>
+
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
+	* src/ccm-window-glitz.c (ccm_window_glitz_create_gl_drawable):
+      - Use latest glitz API.
+	* src/ccm-screen.c (ccm_screen_paint):
+      - Clean screen surface on startup.
+
 2008-07-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/shadow/ccm-shadow.c (ccm_shadow_need_shadow): Allow shaded window
