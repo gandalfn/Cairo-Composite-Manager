@@ -1,4 +1,4 @@
-AC_INIT(cairo-compmgr, 0.1.99)
+AC_INIT(cairo-compmgr, 0.2.0)
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AM_CONFIG_HEADER(config.h)

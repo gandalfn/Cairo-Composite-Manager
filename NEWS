@@ -1,3 +1,18 @@
+Overview of Changes in Cairo Composite Manager 0.2.0
+====================================
+
+* Stack check rewrite.
+* Get/Set image rewrite
+* Plugins methods call improvement.
+* Timeline support.
+* Async property support.
+* Dynamic preferences change support.
+* Many performances improvements.
+* Add magnifier plugin.
+* Add mosaic plugin.
+* Experimental glitz TFP backend.
+* Experimental openvg backend.
+
 Overview of Changes in Cairo Composite Manager 0.1.3
 ====================================
 

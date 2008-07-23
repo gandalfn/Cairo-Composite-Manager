@@ -1,5 +1,10 @@
 2008-07-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* configure.ac: 
+    * NEWS: Bump to version 0.2.0
+
+2008-07-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* data/cairo-compmgr.schemas.in:
 	* plugins/fade/ccm-fade.schemas.in:
 	* plugins/magnifier/ccm-magnifier.schemas.in:
