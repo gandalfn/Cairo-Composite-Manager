@@ -50,7 +50,7 @@
          <applyto>/apps/cairo-compmgr/default/magnifier/shortcut</applyto>
          <owner>gnome</owner>
          <type>string</type>
-		 <default>F12</default>
+		 <default>&lt;Super&gt;F12</default>
          <locale name="C">
             <short>Magnifier shortcut key.</short>
             <long>The magnifier shortcut key.</long>

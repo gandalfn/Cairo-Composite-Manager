@@ -1,3 +1,12 @@
+2008-07-23  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/cairo-compmgr.schemas.in:
+	* plugins/fade/ccm-fade.schemas.in:
+	* plugins/magnifier/ccm-magnifier.schemas.in:
+	* plugins/menu-animation/ccm-menu-animation.schemas.in:
+      - Change default options: native pixmap bind disabled, fade duration 0.2,
+        menu-animation duration 0.2 and magnifier shortcut <Super>F12.
+
 2008-07-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-screen.c (ccm_screen_check_stack): 
