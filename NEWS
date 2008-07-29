@@ -1,3 +1,10 @@
+Overview of Changes in Cairo Composite Manager 0.2.1
+====================================
+
+* Xrender performance improvement.
+* Plugin shadow fix with glitz tfp.
+* Glitz tfp backend fixes.
+
 Overview of Changes in Cairo Composite Manager 0.2.0
 ====================================
 

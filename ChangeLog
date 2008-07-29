@@ -1,5 +1,10 @@
 2008-07-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* NEWS:
+	* configure.ac: Bump to version 0.2.1
+
+2008-07-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* data/cairo-compmgr.schemas.in: 
       - re-enable native_pixmap_bind by default.                                            
 
