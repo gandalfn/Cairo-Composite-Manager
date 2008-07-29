@@ -350,9 +350,10 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			
 			cairo_save(context);
 			
-			if (ccm_window_transform (window, context, y_invert))
+			if (ccm_window_transform (window, context, FALSE))
 			{
 				cairo_save(context);
+				
 				cairo_rectangle (context, area.width - self->priv->border * 2, 
 								 self->priv->offset, self->priv->border * 2, 
 								 area.height - self->priv->offset + self->priv->border);

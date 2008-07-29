@@ -124,24 +124,16 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 								  screen->number, 
 								  !_ccm_screen_indirect_rendering (screen));
 		
-		self->priv->gl_drawable = glitz_glx_create_pbuffer_drawable (
-											CCM_DISPLAY_XDISPLAY(display),
-											screen->number,
-											format,
-											attribs->width, attribs->height);
-		if (!self->priv->gl_drawable)
-		{
-			self->priv->gl_drawable = glitz_glx_create_drawable_for_window (
+		self->priv->gl_drawable = glitz_glx_create_drawable_for_window (
 											CCM_DISPLAY_XDISPLAY(display),
 											screen->number,
 											format,
 											CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
 											attribs->width, attribs->height);
-			if (!self->priv->gl_drawable)
-			{	
-				g_warning("Error on create glitz drawable");
-				return FALSE;
-			}
+		if (!self->priv->gl_drawable)
+		{	
+			g_warning("Error on create glitz drawable");
+			return FALSE;
 		}
 				
 		self->priv->gl_pixmap = glitz_glx_create_drawable_for_pixmap (
@@ -211,25 +203,14 @@ ccm_pixmap_glitz_repair (CCMDrawable* drawable, CCMRegion* area)
 	g_return_val_if_fail(area != NULL, FALSE);
 	
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(drawable);
-	gboolean ret = FALSE;
+	gboolean ret = FALSE, frozen = FALSE;
 	
-	if (self->priv->gl_surface && self->priv->gl_pixmap)
+	g_object_get (self, "freeze", &frozen, NULL);
+	
+	if (!frozen && self->priv->gl_surface && self->priv->gl_pixmap)
 	{
-		CCMDisplay* display = ccm_drawable_get_display (drawable);
-		
-		_ccm_display_trap_error (display);
 		ret = glitz_surface_bind_tex_image(self->priv->gl_surface,
 										   self->priv->gl_pixmap);
-		if (_ccm_display_pop_error (display))
-		{
-			glitz_surface_release_tex_image(self->priv->gl_surface,
-										    self->priv->gl_pixmap);
-			glitz_drawable_destroy(self->priv->gl_pixmap);
-			self->priv->gl_pixmap = NULL;
-			glitz_surface_destroy (self->priv->gl_surface);
-			self->priv->gl_surface = NULL;
-			ret = FALSE;
-		}
 	}
 	
 	return ret;

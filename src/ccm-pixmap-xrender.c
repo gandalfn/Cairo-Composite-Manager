@@ -35,26 +35,30 @@ G_DEFINE_TYPE (CCMPixmapXRender, ccm_pixmap_xrender, CCM_TYPE_PIXMAP);
 
 struct _CCMPixmapXRenderPrivate
 {
-	XRenderPictFormat* 	format;
+	cairo_surface_t*    surface;
 };
 
 #define CCM_PIXMAP_XRENDER_GET_PRIVATE(o) \
 	((CCMPixmapXRenderPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRenderClass))
 
 static cairo_surface_t* ccm_pixmap_xrender_get_surface	(CCMDrawable* drawable);
-static void		  		ccm_pixmap_xrender_bind 		  	(CCMPixmap* self);
+static void		  		ccm_pixmap_xrender_bind 		(CCMPixmap* self);
 
 static void
 ccm_pixmap_xrender_init (CCMPixmapXRender *self)
 {
 	self->priv = CCM_PIXMAP_XRENDER_GET_PRIVATE(self);
 	
-	self->priv->format = NULL;
+	self->priv->surface = NULL;
 }
 
 static void
 ccm_pixmap_xrender_finalize (GObject *object)
 {
+	CCMPixmapXRender* self = CCM_PIXMAP_XRENDER(object);
+
+	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
+	
 	G_OBJECT_CLASS (ccm_pixmap_xrender_parent_class)->finalize (object);
 }
 
@@ -77,35 +81,20 @@ ccm_pixmap_xrender_bind (CCMPixmap* pixmap)
 	g_return_if_fail(pixmap != NULL);
 	
 	CCMPixmapXRender* self = CCM_PIXMAP_XRENDER(pixmap);
-	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+
+	XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_PIXMAP(self)->window);
 	
-	switch (ccm_window_get_format (CCM_PIXMAP(self)->window))
+	if (attribs && !self->priv->surface)
 	{
-		case CAIRO_FORMAT_ARGB32:
-			self->priv->format = 
-				XRenderFindStandardFormat (CCM_DISPLAY_XDISPLAY(display),
-										   PictStandardARGB32);
-		break;
-		case CAIRO_FORMAT_RGB24:
-			self->priv->format = 
-				XRenderFindStandardFormat (CCM_DISPLAY_XDISPLAY(display),
-										   PictStandardRGB24);
-		break;
-		case CAIRO_FORMAT_A8:
-			self->priv->format = 
-				XRenderFindStandardFormat (CCM_DISPLAY_XDISPLAY(display),
-										   PictStandardA8);
-		break;
-		case CAIRO_FORMAT_A1:
-			self->priv->format = 
-				XRenderFindStandardFormat (CCM_DISPLAY_XDISPLAY(display),
-										   PictStandardA1);
-		break;
-		default:
-			self->priv->format = 
-				XRenderFindStandardFormat (CCM_DISPLAY_XDISPLAY(display),
-										   PictStandardARGB32);
-		break;
+		CCMPixmapXRender* self = CCM_PIXMAP_XRENDER(pixmap);
+		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+	
+		self->priv->surface = cairo_xlib_surface_create (
+									CCM_DISPLAY_XDISPLAY(display),
+									CCM_PIXMAP_XPIXMAP(self), 
+									attribs->visual,
+									attribs->width, 
+									attribs->height);
 	}
 }
 
@@ -115,22 +104,14 @@ ccm_pixmap_xrender_get_surface (CCMDrawable* drawable)
 	g_return_val_if_fail(drawable != NULL, NULL);
 	
 	CCMPixmapXRender *self = CCM_PIXMAP_XRENDER(drawable);
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(CCM_PIXMAP(self)->window));
-	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(CCM_PIXMAP(self)->window));
-	cairo_rectangle_t geometry;
 	cairo_surface_t* surface = NULL;
 	
-	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(CCM_PIXMAP(self)->window), 
-										  &geometry))
+	if (self->priv->surface)
 	{
-		surface = cairo_xlib_surface_create_with_xrender_format (
-									CCM_DISPLAY_XDISPLAY(display),
-									CCM_PIXMAP_XPIXMAP(self), 
-									CCM_SCREEN_XSCREEN(screen),
-									self->priv->format,
-									(int)geometry.width, 
-									(int)geometry.height);
+		cairo_surface_reference (self->priv->surface);
+		surface = self->priv->surface;
 	}
+	
 	return surface;
 }
 

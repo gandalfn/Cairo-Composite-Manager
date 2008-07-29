@@ -22,7 +22,6 @@
 
 #include "ccm-window-xrender.h"
 
-#include <X11/extensions/Xdbe.h>
 #include <cairo-xlib.h>
 #include <cairo-xlib-xrender.h>
 
@@ -34,7 +33,8 @@ G_DEFINE_TYPE (CCMWindowXRender, ccm_window_xrender, CCM_TYPE_WINDOW);
 
 struct _CCMWindowXRenderPrivate
 {
-	Drawable back_buffer;
+	Pixmap back_buffer;
+	GC     gc;
 };
 
 #define CCM_WINDOW_XRENDER_GET_PRIVATE(o)  \
@@ -56,11 +56,13 @@ static void
 ccm_window_xrender_finalize (GObject *object)
 {
 	CCMWindowXRender* self = CCM_WINDOW_X_RENDER(object);
-	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	
 	if (self->priv->back_buffer) 
-		XdbeDeallocateBackBufferName(CCM_DISPLAY_XDISPLAY(display), 
-									 self->priv->back_buffer);
+	{
+		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+		XFreePixmap(CCM_DISPLAY_XDISPLAY(display), self->priv->back_buffer);
+		XFreeGC(CCM_DISPLAY_XDISPLAY(display), self->priv->gc);
+	}
 	
 	G_OBJECT_CLASS (ccm_window_xrender_parent_class)->finalize (object);
 }
@@ -88,10 +90,21 @@ ccm_window_xrender_create_backbuffer(CCMWindowXRender* self)
 	if (!self->priv->back_buffer)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-	
-		self->priv->back_buffer = XdbeAllocateBackBufferName(CCM_DISPLAY_XDISPLAY(display), 
-															 CCM_WINDOW_XWINDOW(self), 
-															 XdbeUndefined);
+		XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_WINDOW(self));
+		XGCValues gcv;
+		
+		self->priv->back_buffer = XCreatePixmap (CCM_DISPLAY_XDISPLAY(display), 
+									CCM_WINDOW_XWINDOW(self), 
+									attribs->width, attribs->height,
+									ccm_window_get_depth (CCM_WINDOW(self)));
+		
+		gcv.graphics_exposures = FALSE;
+		gcv.subwindow_mode = IncludeInferiors;
+		
+		self->priv->gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display),
+								   self->priv->back_buffer,
+								   GCGraphicsExposures | GCSubwindowMode,
+								   &gcv);
 	}
 	
 	return self->priv->back_buffer != None;
@@ -109,16 +122,16 @@ ccm_window_xrender_get_surface(CCMDrawable* drawable)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(drawable);
 		CCMScreen* screen = ccm_drawable_get_screen(drawable);
-		cairo_rectangle_t geometry;
+		XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_WINDOW(self));
 		Visual* visual = DefaultVisual(CCM_DISPLAY_XDISPLAY(display), 
 									   screen->number);
 		
-		if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
+		if (attribs)
 			surface = cairo_xlib_surface_create(CCM_DISPLAY_XDISPLAY(display),
 											self->priv->back_buffer, 
 											visual,
-											(int)geometry.width, 
-											(int)geometry.height);
+											attribs->width, 
+											attribs->height);
 	}
 	
 	return surface;
@@ -151,12 +164,16 @@ ccm_window_xrender_flush(CCMDrawable* drawable)
 	if (ccm_window_xrender_create_backbuffer(self))
 	{
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-		XdbeSwapInfo swap_info;
+		cairo_rectangle_t clipbox;
 		
-		swap_info.swap_window = CCM_WINDOW_XWINDOW(self);
-		swap_info.swap_action = XdbeUndefined;
-		
-		XdbeSwapBuffers(CCM_DISPLAY_XDISPLAY(display), &swap_info, 1);
+		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &clipbox);
+		XCopyArea(CCM_DISPLAY_XDISPLAY(display),
+				  self->priv->back_buffer, CCM_WINDOW_XWINDOW(self),
+				  self->priv->gc, 
+				  (int)clipbox.x, (int)clipbox.y, 
+				  (int)clipbox.width, (int)clipbox.height, 
+				  (int)clipbox.x, (int)clipbox.y);
+		ccm_display_sync(display);
 	}
 }
 
@@ -171,11 +188,20 @@ ccm_window_xrender_flush_region(CCMDrawable* drawable, CCMRegion* region)
 	if (ccm_window_xrender_create_backbuffer(self))
 	{
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-		XdbeSwapInfo swap_info;
-		
-		swap_info.swap_window = CCM_WINDOW_XWINDOW(self);
-		swap_info.swap_action = XdbeCopied;
-		
-		XdbeSwapBuffers(CCM_DISPLAY_XDISPLAY(display), &swap_info, 1);
+		cairo_rectangle_t* rects;
+		gint nb_rects, cpt;
+
+		ccm_region_get_rectangles(region, &rects, &nb_rects);
+		for (cpt = 0; cpt < nb_rects; cpt++)
+		{
+			XCopyArea(CCM_DISPLAY_XDISPLAY(display),
+					  self->priv->back_buffer, CCM_WINDOW_XWINDOW(self), 
+					  self->priv->gc, 
+					  (int)rects[cpt].x, (int)rects[cpt].y, 
+					  (int)rects[cpt].width, (int)rects[cpt].height, 
+					  (int)rects[cpt].x, (int)rects[cpt].y);
+		}
+		ccm_display_sync(display);
+		g_free(rects);
 	}
 }
