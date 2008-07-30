@@ -25,7 +25,6 @@
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/XShm.h>
-#include <X11/extensions/Xdbe.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/shape.h>
 #include <gtk/gtk.h>
@@ -78,7 +77,6 @@ struct _CCMDisplayPrivate
 	CCMExtension damage;
 	CCMExtension shm;
 	gboolean	 shm_shared_pixmap;
-	CCMExtension dbe;
 	CCMExtension fixes;
 	
 	gboolean 	 use_shm;
@@ -245,22 +243,6 @@ ccm_display_init_shm(CCMDisplay *self)
 }
 
 static gboolean
-ccm_display_init_dbe(CCMDisplay *self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	int major, minor;
-
-	if (XdbeQueryExtension (self->xdisplay, &major, &minor))
-    {
-		self->priv->dbe.available = TRUE;
-		return TRUE;
-    }
-    
-    return FALSE;
-}
-
-static gboolean
 ccm_display_init_xfixes(CCMDisplay *self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
@@ -398,13 +380,6 @@ ccm_display_new(gchar* display)
 	{
 		g_object_unref(self);
 		g_warning("SHM init failed for %s", display);
-		return NULL;
-	}
-	
-	if (!ccm_display_init_dbe(self))
-	{
-		g_object_unref(self);
-		g_warning("DBE init failed for %s", display);
 		return NULL;
 	}
 	
