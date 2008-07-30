@@ -1,4 +1,4 @@
-2008-07-30  Nicolas Bruguier  <gandalfn@rohan>
+2008-07-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-display.c (ccm_display_new):
       - Remove dbe check.
