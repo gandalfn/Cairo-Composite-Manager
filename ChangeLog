@@ -1,3 +1,13 @@
+2008-08-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-property-async.c (ccm_property_async_class_init),
+	(ccm_property_async_handler):
+	* src/ccm-window.c (ccm_window_init), (ccm_window_finalize),
+	(ccm_window_on_property_async_error),
+	(ccm_window_on_get_property_async),
+	(ccm_window_get_property_async): 
+      - Fix a memory leak.
+
 2008-07-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-display.c (ccm_display_new):

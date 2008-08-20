@@ -128,6 +128,7 @@ struct _CCMWindowPrivate
 	gboolean			override_redirect;
 	XWindowAttributes   attribs;
 	
+	GSList*				properties_pending;
 	CCMPixmap*			pixmap;
 	
 	CCMWindowPlugin*	plugin;
@@ -169,6 +170,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->override_redirect = FALSE;
 	self->priv->orig_opaque = NULL;
 	self->priv->opacity = 1.0f;
+	self->priv->properties_pending = NULL;
 	self->priv->pixmap = NULL;
 	self->priv->plugin = NULL;
 	cairo_matrix_init_identity (&self->priv->transform);
@@ -190,7 +192,11 @@ ccm_window_finalize (GObject *object)
 	if (self->priv->pixmap) g_object_unref(self->priv->pixmap);
 	if (self->priv->name) g_free(self->priv->name);
 	if (self->priv->plugin) g_object_unref(self->priv->plugin);
-	
+	if (self->priv->properties_pending)
+	{
+		g_slist_foreach (self->priv->properties_pending, (GFunc)g_object_unref, NULL);
+		g_slist_free (self->priv->properties_pending);
+	}
 	G_OBJECT_CLASS (ccm_window_parent_class)->finalize (object);
 }
 
@@ -410,10 +416,24 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom,
 }
 
 static void
+ccm_window_on_property_async_error(CCMWindow* self, CCMPropertyASync* prop)
+{
+	self->priv->properties_pending = 
+			g_slist_remove (self->priv->properties_pending, prop);
+	g_object_unref(prop);
+}
+
+static void
 ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result, 
 								 CCMPropertyASync* prop)
 {
-	if (!CCM_IS_WINDOW(self)) return;
+	if (!CCM_IS_WINDOW(self)) 
+	{
+		self->priv->properties_pending = 
+			g_slist_remove (self->priv->properties_pending, prop);
+		g_object_unref(prop);
+		return;
+	}
 	
 	g_return_if_fail(CCM_IS_PROPERTY_ASYNC(prop));
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
@@ -552,6 +572,8 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 		}
 	}		
 
+	self->priv->properties_pending = 
+			g_slist_remove (self->priv->properties_pending, prop);
 	g_object_unref(prop);
 }
 								 
@@ -570,14 +592,24 @@ ccm_window_get_property_async(CCMWindow* self, Atom property_atom,
 	g_signal_connect_swapped(property, "reply", 
 							 G_CALLBACK(ccm_window_on_get_property_async), 
 							 self);
-	
+	g_signal_connect_swapped(property, "error", 
+							 G_CALLBACK(ccm_window_on_property_async_error), 
+							 self);
+	self->priv->properties_pending = 
+			g_slist_append (self->priv->properties_pending, property);
+		
 	if (self->priv->child != None)
 	{
 		property = ccm_property_async_new (display, self->priv->child, 
-									   property_atom, req_type, length);
+									       property_atom, req_type, length);
 		g_signal_connect_swapped(property, "reply", 
 								 G_CALLBACK(ccm_window_on_get_property_async), 
 								 self);
+		g_signal_connect_swapped(property, "error", 
+							 	 G_CALLBACK(ccm_window_on_property_async_error), 
+								 self);
+		self->priv->properties_pending = 
+			g_slist_append (self->priv->properties_pending, property);
 	}
 }
 

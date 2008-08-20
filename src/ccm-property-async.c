@@ -25,6 +25,7 @@
 enum
 {
 	REPLY,
+	ERROR,
     N_SIGNALS
 };
 
@@ -94,6 +95,11 @@ ccm_property_async_class_init (CCMPropertyASyncClass *klass)
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__UINT_POINTER,
 								   G_TYPE_NONE, 2, G_TYPE_UINT, G_TYPE_POINTER);
+	signals[ERROR] = g_signal_new ("error",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__VOID,
+								   G_TYPE_NONE, 0);
 	
 	object_class->finalize = ccm_property_async_finalize;
 }
@@ -125,7 +131,10 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 		return False;
 	
 	if (rep->generic.type == X_Error)
+	{
+		g_signal_emit (self, signals[ERROR], 0);
 		return False;
+	}
 	
 	reply = (xGetPropertyReply *)
 		    _XGetAsyncReply(dpy, (char *)&replbuf, rep, buf, len,
@@ -215,6 +224,7 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 			ccm_debug("BAD ALLOC");
 			_XGetAsyncData (dpy, NULL, buf, len,
 							sizeof(xGetPropertyReply), 0, netbytes);
+			g_signal_emit (self, signals[ERROR], 0);
 			return BadAlloc;
 		}
 	}
