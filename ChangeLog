@@ -1,3 +1,12 @@
+2008-08-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-drawable.h:
+      - remove unused damage virtual method.
+	* src/ccm-property-async.c (ccm_property_async_init),
+	(ccm_property_async_finalize), (ccm_property_async_idle),
+	(ccm_property_async_handler):
+      - remove idle function on destroy.
+
 2008-08-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-property-async.c (ccm_property_async_class_init),

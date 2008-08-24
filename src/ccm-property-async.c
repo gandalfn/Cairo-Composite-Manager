@@ -40,6 +40,7 @@ struct _CCMPropertyASyncPrivate
 	_XAsyncHandler  async;
 	gulong		 	request_seq;
 	
+	guint			id;
 	gchar*			data;
 	gulong			n_items;
 };
@@ -59,6 +60,7 @@ ccm_property_async_init (CCMPropertyASync *self)
 	self->priv->request_seq = 0;
 	self->priv->data = NULL;
 	self->priv->n_items = 0;
+	self->priv->id = 0;
 }
 
 static void
@@ -66,6 +68,11 @@ ccm_property_async_finalize (GObject *object)
 {
 	CCMPropertyASync* self = CCM_PROPERTY_ASYNC(object);
 	
+	if (self->priv->id)
+	{
+		g_source_remove (self->priv->id);
+		self->priv->id = 0;
+	}
 	if (self->priv->data)
 	{
 		XFree(self->priv->data);
@@ -110,7 +117,7 @@ ccm_property_async_class_init (CCMPropertyASyncClass *klass)
 static gboolean
 ccm_property_async_idle(CCMPropertyASync* self)
 {
-	g_return_val_if_fail(self != NULL, FALSE);
+	if (!CCM_IS_PROPERTY_ASYNC(self)) return FALSE;
 	
 	ccm_debug("IDLE DATA %i %x", self->priv->n_items, self->priv->data);
 	
@@ -124,6 +131,8 @@ static Bool
 ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
                             int len, XPointer dta)
 {
+	if (!CCM_IS_PROPERTY_ASYNC(dta)) return False;
+	
 	CCMPropertyASync* self = CCM_PROPERTY_ASYNC(dta);
 	xGetPropertyReply replbuf, *reply;
 	
@@ -216,7 +225,7 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 		{
 			self->priv->n_items = reply->nItems;
 			ccm_debug("DATA %i", self->priv->n_items);
-			g_idle_add_full (G_PRIORITY_HIGH, 
+			self->priv->id = g_idle_add_full (G_PRIORITY_HIGH, 
 							 (GSourceFunc)ccm_property_async_idle, self, NULL);
 		}
 		else

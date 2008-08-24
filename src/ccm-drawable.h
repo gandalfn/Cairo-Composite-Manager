@@ -49,8 +49,6 @@ struct _CCMDrawableClass
 											 int x, int y);
 	void			  (*resize)				(CCMDrawable* self, 
 											 int width, int height);
-	void			  (*damage)				(CCMDrawable* self,
-											 cairo_rectangle_t* area);
 	gboolean		  (*repair)				(CCMDrawable* self,
 											 CCMRegion* damaged);
 	void			  (*flush)				(CCMDrawable* self);
