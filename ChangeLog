@@ -1,3 +1,9 @@
+2008-08-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-window.c (impl_ccm_window_query_geometry):
+	  - use ccm_window_set_opaque_region to define opaque region on resize to 
+	    keep transform matrix on opaque region.
+
 2008-08-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-drawable.h:

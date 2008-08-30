@@ -894,7 +894,9 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 		ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 && 
 		self->priv->opacity == 1.0f)
 	{
-		self->opaque = ccm_region_copy(geometry);
+		CCMRegion* area = ccm_region_copy(geometry);
+		ccm_window_set_opaque_region (self, area);
+		ccm_region_destroy (area);
 	}
 		
 	if (self->priv->pixmap)
