@@ -23,6 +23,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+//#define CCM_DEBUG_ENABLE
 #include "ccm-debug.h"
 #include "ccm-drawable.h"
 #include "ccm-window.h"
@@ -70,6 +71,7 @@ struct _CCMMosaicPrivate
 	
 	int					 x_mouse;
 	int 				 y_mouse;
+	int					 mouse_over;
 	CCMMosaicArea*     	 areas;
 	gint				 nb_areas;
 	cairo_surface_t* 	 surface;
@@ -90,6 +92,9 @@ ccm_mosaic_init (CCMMosaic *self)
 	self->priv->screen = NULL;
 	self->priv->window = 0;
 	self->priv->enabled = FALSE;
+	self->priv->x_mouse = 0;
+	self->priv->y_mouse = 0;
+	self->priv->mouse_over = -1;
 	self->priv->areas = NULL;
 	self->priv->surface = NULL;
 	self->priv->keybind = NULL;
@@ -150,7 +155,7 @@ ccm_mosaic_create_window(CCMMosaic* self)
 	XMapWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
 	XRaiseWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
 	XSelectInput (CCM_DISPLAY_XDISPLAY(display), self->priv->window,
-				  ButtonPressMask | ButtonReleaseMask);
+				  ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
 }
 
 static gboolean
@@ -162,101 +167,242 @@ ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
 	g_return_val_if_fail(x != NULL && y != NULL, FALSE);
 	g_return_val_if_fail(x_root != NULL && y_root != NULL, FALSE);
 	
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self->priv->areas[num].window));
-	XWindowAttributes attribs;
+	XWindowAttributes* attribs;
 	gfloat scale;
 	
-	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display),
-							   CCM_WINDOW_XWINDOW(self->priv->areas[num].window),
-							   &attribs))
-		return FALSE;
+	attribs = _ccm_window_get_attribs (self->priv->areas[num].window);
+	if (!attribs) return FALSE;
 	
-	scale = MIN((gfloat)self->priv->areas[num].geometry.height / (gfloat)attribs.height,
-				(gfloat)self->priv->areas[num].geometry.width / (gfloat)attribs.width);
+	scale = MIN((gfloat)self->priv->areas[num].geometry.height / (gfloat)attribs->height,
+				(gfloat)self->priv->areas[num].geometry.width / (gfloat)attribs->width);
 				
 	*x -= (gint)((gfloat)self->priv->areas[num].geometry.x + 
 		  ((gfloat)self->priv->areas[num].geometry.width / (gfloat)2) - 
-		  (((gfloat)attribs.width / 2) * scale));
+		  (((gfloat)attribs->width / 2) * scale));
 	*x = (gint)((gfloat)*x / scale);
 					
 	*y -= self->priv->areas[num].geometry.y + 
 		  (self->priv->areas[num].geometry.height / 2) - 
-		  (attribs.height / 2) * scale;
+		  (attribs->height / 2) * scale;
 	*y /= scale;
 	
-	*x_root = *x + attribs.x;
-	*y_root = *y + attribs.y;
+	*x_root = *x + attribs->x;
+	*y_root = *y + attribs->y;
 	
 	return TRUE;
 }
+
 static void
-ccm_mosaic_broadcast_event(Window window, int x, int y, 
-						   int x_parent, int y_parent, XEvent* evt)
+ccm_mosaic_send_leave_event(CCMWindow* window, int x, int y)
 {
-	g_return_if_fail(window != None);
-	g_return_if_fail(evt != NULL);
+	g_return_if_fail(window != NULL);
+	
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(window));
+	CCMWindow* root = ccm_screen_get_root_window (screen);
+	XCrossingEvent evt;
+	XWindowAttributes* attribs = _ccm_window_get_attribs (window);
+	
+	ccm_debug_window(window, "LEAVE: %i,%i %i,%i", x, y, attribs->x, attribs->y);
+	evt.type = LeaveNotify;
+	evt.serial = 0;
+	evt.send_event = True;
+	evt.display = CCM_DISPLAY_XDISPLAY(display);
+	evt.root = CCM_WINDOW_XWINDOW(root);
+	evt.window = CCM_WINDOW_XWINDOW(window);
+	evt.subwindow = 0;
+	evt.time = CurrentTime;
+	evt.x = x - attribs->x;
+	evt.y = y - attribs->y;
+	evt.x_root = x;
+	evt.y_root = y;
+	evt.mode = NotifyNormal;
+	evt.detail = NotifyAncestor | NotifyInferior;
+	evt.same_screen = True;
+	evt.focus = True;
+	evt.state = 0;
+	
+	XSendEvent(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(window), True, 
+			   NoEventMask, (XEvent*)&evt);
+}
+
+static void
+ccm_mosaic_send_enter_event(CCMWindow* window, int x, int y)
+{
+	g_return_if_fail(window != NULL);
+	
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(window));
+	CCMWindow* root = ccm_screen_get_root_window (screen);
+	XCrossingEvent evt;
+	XWindowAttributes* attribs = _ccm_window_get_attribs (window);
+	
+	ccm_debug_window(window, "ENTER: %i,%i %i,%i", x, y, attribs->x, attribs->y);
+	
+	evt.type = EnterNotify;
+	evt.serial = 0;
+	evt.send_event = True;
+	evt.display = CCM_DISPLAY_XDISPLAY(display);
+	evt.root = CCM_WINDOW_XWINDOW(root);
+	evt.window = CCM_WINDOW_XWINDOW(window);
+	evt.subwindow = 0;
+	evt.time = CurrentTime;
+	evt.x = x - attribs->x;
+	evt.y = y - attribs->y;
+	evt.x_root = x;
+	evt.y_root = y;
+	evt.mode = NotifyNormal;
+	evt.detail = NotifyAncestor | NotifyInferior;
+	evt.same_screen = True;
+	evt.focus = True;
+	evt.state = 0;
+	
+	XSendEvent(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(window), True, 
+			   NoEventMask, (XEvent*)&evt);
+}
+
+static void
+ccm_mosaic_simulate_enter_leave_event(CCMMosaic* self, int area, 
+									  int x, int y, int x_root, int y_root)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(area < self->priv->nb_areas);
+	
+	if (area != self->priv->mouse_over)
+	{
+		int x_win = x,
+			y_win = y,
+			x_win_root = x_root,
+			y_win_root = y_root;
+		if (self->priv->mouse_over != -1 && 
+			ccm_mosaic_recalc_coords (self, self->priv->mouse_over, 
+									  &x_win, &y_win, &x_win_root, &y_win_root))
+		{
+			CCMWindow* window = self->priv->areas[self->priv->mouse_over].window;
+			ccm_mosaic_send_leave_event(window, x_win_root, y_win_root);
+		}
+		x_win = x;
+		y_win = y;
+		x_win_root = x_root;
+		y_win_root = y_root;
+		if (area != -1 && 
+			ccm_mosaic_recalc_coords (self, area, &x_win, &y_win, 
+									  &x_win_root, &y_win_root))
+		{
+			CCMWindow* window = self->priv->areas[area].window;
+			ccm_mosaic_send_enter_event(window, x_win_root, y_win_root);
+		}
+		
+		self->priv->mouse_over = area;
+	}
+}
+
+static gboolean
+ccm_mosaic_send_event (Window window, int x, int y, 
+					   int x_win, int y_win, int width, int height, 
+					   XEvent* evt)
+{
+	g_return_val_if_fail(window != None, FALSE);
+	g_return_val_if_fail(evt != NULL, FALSE);
+
+	gboolean send = FALSE;
+            
+	send = (x >= x_win && x <= x_win + width && 
+			y >= y_win && y <= y_win + height);
+
+	if (send)
+	{
+    	evt->xany.window = window;
+		if (evt->type == ButtonPress || evt->type == ButtonRelease)
+        {
+            XButtonEvent* button_evt = (XButtonEvent*)evt;
+            
+			button_evt->window = window;
+			button_evt->subwindow = 0;
+			button_evt->x = x - x_win;
+            button_evt->y = y - y_win;
+            button_evt->x_root = x;
+            button_evt->y_root = y;
+			ccm_debug("BROADCAST BUTTON PRESS/RELEASE: 0x%lx %i,%i %i,%i", 
+					  window, x, y, button_evt->x, button_evt->y);
+        }
+		if (evt->type == EnterNotify || evt->type == LeaveNotify)
+        {
+            XCrossingEvent* crossing_evt = (XCrossingEvent*)evt;
+            
+			crossing_evt->x = x - x_win;
+            crossing_evt->y = y - y_win;
+            crossing_evt->x_root = x;
+            crossing_evt->y_root = y;
+			ccm_debug("BROADCAST ENTER/LEAVE: 0x%lx %i,%i %i,%i", 
+					  window, x, y, crossing_evt->x, crossing_evt->y);
+        }
+		if (evt->type == MotionNotify)
+        {
+            XMotionEvent* motion_evt = (XMotionEvent*)evt;
+            
+			motion_evt->x = x - x_win;
+            motion_evt->y = y - y_win;
+            motion_evt->x_root = x;
+            motion_evt->y_root = y;
+			ccm_debug("BROADCAST MOTION: 0x%lx %i,%i %i,%i", 
+					  window, x, y, x - x_win, y - y_win);
+        }
+		XSendEvent(evt->xany.display, window, False, 
+				   NoEventMask, evt);
+	}
+	
+	return send;
+}
+
+static gboolean
+ccm_mosaic_broadcast_event(Window window, int x, int y, 
+						   int x_win, int y_win, XEvent* evt)
+{
+	g_return_val_if_fail(window != None, FALSE);
+	g_return_val_if_fail(evt != NULL, FALSE);
 	
 	Window* windows = NULL;
 	Window w, p;
 	guint n_windows = 0;
-	
-	XSendEvent(evt->xany.display, window, True, NoEventMask, evt);
-	
-	ccm_debug("BROADCAST: 0x%lx %i, %i %i, %i\n", 
-					  window, x, y, x_parent, y_parent);
+	XWindowAttributes attribs;
+	gboolean send = FALSE;
+		
 	
 	if (XQueryTree(evt->xany.display, window, &w, &p, 
 				   &windows, &n_windows) && windows && n_windows)
 	{
-		XSendEvent(evt->xany.display, w, False, 
-						   NoEventMask, evt);
-		
-		while (n_windows--)
+		while (n_windows-- && !send)
         {
-            XWindowAttributes attribs;
-            gboolean send = FALSE;
+			XGetWindowAttributes(evt->xany.display, windows[n_windows], 
+								 &attribs);	
 			
-            XGetWindowAttributes(evt->xany.display, windows[n_windows], &attribs);
-            
-			send = (x >= x_parent + attribs.x && x <= x_parent + attribs.x + attribs.width &&
-					y >= y_parent + attribs.y && y <= y_parent + attribs.y + attribs.height);
-			
-			ccm_mosaic_broadcast_event (windows[n_windows], x, y, 
-										x_parent + attribs.x,
-										y_parent + attribs.y, evt);
-			if (send)
-			{
-            	ccm_debug("BROADCAST: 0x%lx %i, %i %i, %i %i, %i %i\n", 
-					  windows[n_windows], x, y, x_parent, y_parent, 
-					  attribs.x, attribs.y, send);
-			
-			    evt->xany.window = windows[n_windows];
-				if (evt->type == ButtonPress || evt->type == ButtonRelease)
-                {
-                    XButtonEvent* button_evt = (XButtonEvent*)evt;
-                    
-					button_evt->send_event = True;
-                    button_evt->x = x - (x_parent + attribs.x);
-                    button_evt->y = y - (y_parent + attribs.y);
-                    button_evt->x_root = x;
-                    button_evt->y_root = y;
-                }
-				if (evt->type == MotionNotify)
-                {
-                    XMotionEvent* motion_evt = (XMotionEvent*)evt;
-                    
-                    motion_evt->x = x - (x_parent + attribs.x);
-                    motion_evt->y = y - (y_parent + attribs.y);
-                    motion_evt->x_root = x;
-                    motion_evt->y_root = y;
-                }
-				XSendEvent(evt->xany.display, windows[n_windows], False, 
-						   NoEventMask, evt);
-				break;
-			}
+			send = ccm_mosaic_broadcast_event (windows[n_windows], x, y, 
+											   x_win + attribs.x,
+											   y_win + attribs.y, evt);
         }
         XFree(windows);
 	}
+
+	XGetWindowAttributes(evt->xany.display, window, &attribs);	
+	send |= ccm_mosaic_send_event(window, x, y, x_win, y_win,
+								  attribs.width, attribs.height, evt);
+	
+	return send;
+}
+
+static gboolean
+ccm_mosaic_mouse_over_area(CCMMosaic* self, gint area, gint x, gint y)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(area < self->priv->nb_areas, FALSE);
+	
+	return self->priv->areas[area].geometry.x <= x &&
+		   self->priv->areas[area].geometry.y <= y &&
+		   self->priv->areas[area].geometry.x +
+		   self->priv->areas[area].geometry.width >= x &&
+		   self->priv->areas[area].geometry.y +
+		   self->priv->areas[area].geometry.height >= y;
 }
 
 static void
@@ -269,40 +415,37 @@ ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 			case ButtonPress:
 			case ButtonRelease:
 			case MotionNotify:
+			case EnterNotify:
+			case LeaveNotify:
 			{
 				XButtonEvent* button_event = (XButtonEvent*)event;
 				gint cpt;
 				
 				for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
 				{
-					if (self->priv->areas[cpt].geometry.x <= button_event->x &&
-						self->priv->areas[cpt].geometry.y <= button_event->y &&
-						self->priv->areas[cpt].geometry.x +
-						self->priv->areas[cpt].geometry.width >= button_event->x &&
-						self->priv->areas[cpt].geometry.y +
-						self->priv->areas[cpt].geometry.height >= button_event->y)
+					gint x = button_event->x,
+						 y = button_event->y,
+						 x_root = button_event->x_root,
+						 y_root = button_event->y_root;
+					
+					if (ccm_mosaic_mouse_over_area(self, cpt, x_root, y_root) &&
+						ccm_mosaic_recalc_coords(self, cpt, &x, &y, 
+												 &x_root, &y_root))
 					{
-						if (ccm_mosaic_recalc_coords(self, cpt,
-													 &button_event->x, &button_event->y,
-													 &button_event->x_root, &button_event->y_root))
-						{
-							XWindowAttributes attribs;
-            
-							XGetWindowAttributes(button_event->display, 
-							CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window), 
-							&attribs);
-							button_event->window = CCM_WINDOW_XWINDOW(self->priv->areas[cpt].window);
-							ccm_screen_activate_window (self->priv->screen, 
-														self->priv->areas[cpt].window,
-														button_event->time);
+						CCMWindow* window = self->priv->areas[cpt].window;
+						XWindowAttributes* attribs = 
+											_ccm_window_get_attribs (window);
 						
-							ccm_mosaic_broadcast_event(button_event->window, 
-													   button_event->x_root, 
-													   button_event->y_root,
-													   attribs.x, attribs.y, 
-													   event);
-							break;
-						}
+						ccm_mosaic_simulate_enter_leave_event(self, cpt,
+															  button_event->x, 
+															  button_event->y,
+															  button_event->x_root, 
+															  button_event->y_root);
+						ccm_mosaic_broadcast_event(CCM_WINDOW_XWINDOW(window), 
+												   x_root, y_root,
+												   attribs->x, attribs->y,
+												   event);
+						break;
 					}
 				}
 			}
@@ -321,10 +464,15 @@ ccm_mosaic_on_key_press(CCMMosaic* self)
 	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
 	if (self->priv->enabled)
 	{
+		cairo_t* ctx;
 		self->priv->surface = cairo_image_surface_create (
 										CAIRO_FORMAT_ARGB32, 
 										self->priv->screen->xscreen->width, 
 										self->priv->screen->xscreen->height);
+		ctx = cairo_create (self->priv->surface);
+		cairo_set_source_rgba (ctx, 0, 0, 0, 0.6);
+		cairo_paint(ctx);
+		cairo_destroy (ctx);
 		ccm_mosaic_create_window(self);
 	}
 	else
@@ -472,19 +620,19 @@ ccm_mosaic_get_damaged_area(CCMMosaic* self, CCMWindow* window)
 		scale = MIN(area->geometry.height / attribs->height,
 					area->geometry.width / attribs->width);
 		
+		ccm_region_offset(damaged, -(attribs->width / 2),
+						  -(attribs->height / 2));
 		ccm_region_offset(damaged, area->geometry.width / 2,
 						  area->geometry.height / 2);
 		ccm_region_resize (damaged, attribs->width * scale, 
 						   attribs->height * scale);
-		ccm_region_offset(damaged, -(attribs->width / 2) * scale,
-						  -(attribs->height / 2) * scale);
 	}
 	
 	return damaged;
 }
 							
 static gboolean
-ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, 
+ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* target,
 					  cairo_surface_t* surface, gboolean y_invert)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
@@ -505,10 +653,9 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window,
 	damaged = ccm_mosaic_get_damaged_area (self, window);
 	if (!damaged) return FALSE;
 	ccm_screen_add_damaged_region (screen, damaged);
-	ccm_region_destroy (damaged);
 	
 	scale = MIN(area->geometry.height / attribs->height,
-					area->geometry.width / attribs->width);
+				area->geometry.width / attribs->width);
 	
 	ctx = cairo_create (self->priv->surface);
 	
@@ -517,6 +664,26 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window,
 		cairo_scale (ctx, 1.0, -1.0);
 		cairo_translate (ctx, 0.0f, - area->geometry.y - area->geometry.height);
 	}
+
+	if (ccm_window_get_format (window) == CAIRO_FORMAT_ARGB32)
+	{
+		cairo_rectangle_t* rects;
+		gint nb_rects, cpt;
+		
+		cairo_save(ctx);
+		ccm_region_get_rectangles (damaged, &rects, &nb_rects);
+		for (cpt = 0; cpt < nb_rects; cpt++)
+			cairo_rectangle (ctx, rects[cpt].x, rects[cpt].y,
+							 rects[cpt].width, rects[cpt].height);
+		g_free(rects);
+		cairo_clip(ctx);
+		cairo_set_source_rgba (ctx, 1, 0, 0, 0.8);
+		//cairo_set_source_surface (ctx, target, 0, 0);
+		cairo_paint (ctx);
+		cairo_restore(ctx);
+	}
+	ccm_region_destroy (damaged);
+	
 	cairo_translate (ctx, area->geometry.x + area->geometry.width / 2, 
 					 area->geometry.y + area->geometry.height / 2);
 	cairo_scale(ctx, scale, scale);
@@ -524,12 +691,9 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window,
 	cairo_translate (ctx, -(attribs->width / 2) - attribs->x,
 					 -(attribs->height / 2) - attribs->y);
 	path = ccm_drawable_get_damage_path (CCM_DRAWABLE(window), ctx);
-	cairo_clip(ctx);
+	cairo_clip (ctx);
 	cairo_path_destroy (path);
 	
-	cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
-	cairo_paint (ctx);
-	cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
 	cairo_set_source_surface (ctx, surface, attribs->x, attribs->y);
 	cairo_paint (ctx);
 	
@@ -586,11 +750,11 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			ccm_mosaic_create_areas(self, nb_windows);
 							
 			cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
-			cairo_paint(context);
+			cairo_paint(ctx);
 			cairo_destroy (ctx);
 			ccm_screen_damage (screen);
 		}
-		else
+		else if (0)
 		{
 			gint cpt;
 			
@@ -619,16 +783,15 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		cairo_reset_clip (context);
 		
 		ccm_region_get_rectangles (damaged, &rects, &nb_rects);
-		cairo_set_source_rgba (context, 0, 0, 0, 0.6);
 		for (cpt = 0; cpt < nb_rects; cpt++)
 		{
 			ccm_debug("CLIP: %i,%i %i,%i", (int)rects[cpt].x, (int)rects[cpt].y,
 							 (int)rects[cpt].width, (int)rects[cpt].height);
 			cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
 							 rects[cpt].width, rects[cpt].height);
-			cairo_fill(context);
+			//cairo_fill_preserve (context);
 		}
-		
+		cairo_clip(context);
 		cairo_set_source_surface (context, self->priv->surface, 0, 0);
 		cairo_paint(context);
 		cairo_restore (context);
@@ -656,8 +819,11 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 				type == CCM_WINDOW_TYPE_NORMAL) 
 			{
 				if (self->priv->surface)
-					ret = ccm_mosaic_paint_area (self, window,  
+				{
+					cairo_surface_t* target = cairo_get_target (context);
+					ret = ccm_mosaic_paint_area (self, window, target,
 												 surface, y_invert);
+				}
 			}
 			else
 				ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window,

@@ -185,6 +185,8 @@ GList*          ccm_screen_get_windows          (CCMScreen *self);
 CCMRegion*      ccm_screen_get_damaged          (CCMScreen *self);
 void            ccm_screen_add_damaged_region   (CCMScreen *self, 
                                                  CCMRegion* region);
+void            ccm_screen_undamage_region      (CCMScreen *self, 
+                                                 CCMRegion* region);
 void            ccm_screen_set_filtered_damage  (CCMScreen* self, 
                                                  gboolean filtered);
 CCMWindow*      ccm_screen_find_window          (CCMScreen* self, 

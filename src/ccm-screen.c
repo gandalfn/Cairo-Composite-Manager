@@ -1036,6 +1036,7 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 		{
 			if (self->priv->damaged)
 			{
+//#define CCM_TRACK_DAMAGE
 #ifdef CCM_TRACK_DAMAGE
 				cairo_rectangle_t* rects;
 				gint cpt, nb_rects;
@@ -1850,6 +1851,23 @@ ccm_screen_get_damaged (CCMScreen *self)
 }
 
 void
+ccm_screen_undamage_region (CCMScreen *self, CCMRegion* region)
+{
+	g_return_if_fail (self != NULL);
+	g_return_if_fail (region != NULL);
+
+	if (self->priv->damaged && !ccm_region_empty (region))
+	{
+		ccm_region_subtract (self->priv->damaged, region);
+		if (ccm_region_empty (self->priv->damaged))
+		{
+			ccm_region_destroy (self->priv->damaged);
+			self->priv->damaged = NULL;
+		}
+	}
+}
+
+void
 ccm_screen_add_damaged_region (CCMScreen *self, CCMRegion* region)
 {
 	g_return_if_fail (self != NULL);
@@ -1878,7 +1896,6 @@ ccm_screen_activate_window(CCMScreen* self, CCMWindow* window, Time timestamp)
     CCMDisplay* display = ccm_screen_get_display (self);
 	CCMWindow* root = ccm_screen_get_root_window (self);
 
-	g_print("%s\n", __FUNCTION__);
 	event.xclient.type = ClientMessage;
   	event.xclient.serial = 0;
   	event.xclient.send_event = True;

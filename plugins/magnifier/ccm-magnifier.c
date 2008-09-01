@@ -393,7 +393,7 @@ ccm_magnifier_cursor_convert_to_rgba (CCMMagnifier *self,
 	
 	for (i = 0; i < count; ++i) 
 	{
-		guint32 pixval = GUINT_TO_LE (cursor_image->pixels[i]);
+		guint32 pixval = GUINT32_TO_LE (cursor_image->pixels[i]);
 		cursor_image->pixels[i] = pixval;
 	}
 }

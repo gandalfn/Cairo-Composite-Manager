@@ -1,3 +1,19 @@
+2008-09-01  Nicolas Bruguier  <gandalfn@rohan>
+
+	* plugins/magnifier/ccm-magnifier.c
+	(ccm_magnifier_cursor_convert_to_rgba): Fix mouse image conversion.
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_init),
+	(ccm_mosaic_create_window), (ccm_mosaic_recalc_coords),
+	(ccm_mosaic_send_leave_event), (ccm_mosaic_send_enter_event),
+	(ccm_mosaic_simulate_enter_leave_event), (ccm_mosaic_send_event),
+	(ccm_mosaic_broadcast_event), (ccm_mosaic_mouse_over_area),
+	(ccm_mosaic_on_event), (ccm_mosaic_on_key_press),
+	(ccm_mosaic_get_damaged_area), (ccm_mosaic_paint_area),
+	(ccm_mosaic_screen_paint), (ccm_mosaic_window_paint):
+	* src/ccm-screen.c (ccm_screen_paint),
+	(ccm_screen_undamage_region), (ccm_screen_activate_window):
+	* src/ccm.h: Partial mosaic fix.
+
 2008-08-30  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-window.c (impl_ccm_window_query_geometry):
