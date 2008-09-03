@@ -183,7 +183,7 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 		if (!attribs) return;
 		
 		self->priv->gl_surface = glitz_surface_create(
-											self->priv->gl_drawable,
+											self->priv->gl_pixmap,
 											self->priv->gl_format,
 											attribs->width, attribs->height,
 											0, NULL);

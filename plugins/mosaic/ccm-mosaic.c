@@ -464,15 +464,10 @@ ccm_mosaic_on_key_press(CCMMosaic* self)
 	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
 	if (self->priv->enabled)
 	{
-		cairo_t* ctx;
 		self->priv->surface = cairo_image_surface_create (
 										CAIRO_FORMAT_ARGB32, 
 										self->priv->screen->xscreen->width, 
 										self->priv->screen->xscreen->height);
-		ctx = cairo_create (self->priv->surface);
-		cairo_set_source_rgba (ctx, 0, 0, 0, 0.6);
-		cairo_paint(ctx);
-		cairo_destroy (ctx);
 		ccm_mosaic_create_window(self);
 	}
 	else
@@ -600,32 +595,31 @@ ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window, int width, int height)
 }
 
 static CCMRegion*
-ccm_mosaic_get_damaged_area(CCMMosaic* self, CCMWindow* window)
+ccm_mosaic_get_damaged_area(CCMMosaic* self, CCMMosaicArea* area)
 {
 	g_return_val_if_fail(self != NULL, NULL);
-	g_return_val_if_fail(window != NULL, NULL);
+	g_return_val_if_fail(area != NULL, NULL);
 	
 	CCMRegion* damaged = NULL;
-	CCMMosaicArea* area;
-	XWindowAttributes* attribs = _ccm_window_get_attribs (window);
 				
-	area = ccm_mosaic_find_area(self, window, attribs->width, attribs->height);
-	
-	if (ccm_drawable_is_damaged (CCM_DRAWABLE(window)) && area)
+	if (ccm_drawable_is_damaged (CCM_DRAWABLE(area->window)))
 	{
+		XWindowAttributes* attribs = _ccm_window_get_attribs (area->window);
 		gfloat scale;
 		
 		damaged = ccm_region_rectangle (&area->geometry);
 		
-		scale = MIN(area->geometry.height / attribs->height,
+/*		scale = MIN(area->geometry.height / attribs->height,
 					area->geometry.width / attribs->width);
 		
-		ccm_region_offset(damaged, -(attribs->width / 2),
-						  -(attribs->height / 2));
+		ccm_region_offset(damaged, area->geometry.x - attribs->x,
+						  area->geometry.y - attribs->y);
 		ccm_region_offset(damaged, area->geometry.width / 2,
 						  area->geometry.height / 2);
+		ccm_region_offset(damaged, -(attribs->width / 2) * scale,
+						  -(attribs->height / 2) * scale);
 		ccm_region_resize (damaged, attribs->width * scale, 
-						   attribs->height * scale);
+						   attribs->height * scale);*/
 	}
 	
 	return damaged;
@@ -642,6 +636,7 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 	gfloat scale;
 	cairo_path_t* path;
 	cairo_t* ctx;
+	cairo_pattern_t* pattern;
 	CCMRegion* damaged;
 	CCMMosaicArea* area;
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
@@ -650,10 +645,11 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 	area = ccm_mosaic_find_area(self, window, attribs->width, attribs->height);
 	if (!area) return FALSE;
 	
-	damaged = ccm_mosaic_get_damaged_area (self, window);
+	damaged = ccm_mosaic_get_damaged_area (self, area);
 	if (!damaged) return FALSE;
 	ccm_screen_add_damaged_region (screen, damaged);
-	
+	ccm_region_destroy (damaged);
+
 	scale = MIN(area->geometry.height / attribs->height,
 				area->geometry.width / attribs->width);
 	
@@ -664,25 +660,6 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 		cairo_scale (ctx, 1.0, -1.0);
 		cairo_translate (ctx, 0.0f, - area->geometry.y - area->geometry.height);
 	}
-
-	if (ccm_window_get_format (window) == CAIRO_FORMAT_ARGB32)
-	{
-		cairo_rectangle_t* rects;
-		gint nb_rects, cpt;
-		
-		cairo_save(ctx);
-		ccm_region_get_rectangles (damaged, &rects, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
-			cairo_rectangle (ctx, rects[cpt].x, rects[cpt].y,
-							 rects[cpt].width, rects[cpt].height);
-		g_free(rects);
-		cairo_clip(ctx);
-		cairo_set_source_rgba (ctx, 1, 0, 0, 0.8);
-		//cairo_set_source_surface (ctx, target, 0, 0);
-		cairo_paint (ctx);
-		cairo_restore(ctx);
-	}
-	ccm_region_destroy (damaged);
 	
 	cairo_translate (ctx, area->geometry.x + area->geometry.width / 2, 
 					 area->geometry.y + area->geometry.height / 2);
@@ -694,9 +671,16 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 	cairo_clip (ctx);
 	cairo_path_destroy (path);
 	
+	if (ccm_window_get_format (window) == CAIRO_FORMAT_ARGB32)
+	{
+		cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
+		cairo_paint(ctx);
+	}
+	cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_surface (ctx, surface, attribs->x, attribs->y);
+	pattern = cairo_get_source (ctx);
+	cairo_pattern_set_filter (pattern, CAIRO_FILTER_FAST);
 	cairo_paint (ctx);
-	
 	cairo_destroy (ctx);
 	
 	return TRUE;
@@ -753,20 +737,6 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			cairo_paint(ctx);
 			cairo_destroy (ctx);
 			ccm_screen_damage (screen);
-		}
-		else if (0)
-		{
-			gint cpt;
-			
-			for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
-			{
-				CCMRegion* d = ccm_mosaic_get_damaged_area (self, self->priv->areas[cpt].window);
-				if (d)
-				{
-					ccm_drawable_damage_region (CCM_DRAWABLE(self->priv->areas[cpt].window), d);
-					ccm_region_destroy (d);
-				}
-			}
 		}
 	}
 	
