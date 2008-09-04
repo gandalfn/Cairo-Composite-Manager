@@ -1,3 +1,10 @@
+2008-09-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_init),
+	(ccm_pixmap_glitz_finalize), (ccm_pixmap_glitz_create_gl_drawable),
+	(ccm_pixmap_glitz_bind), (ccm_pixmap_glitz_get_surface):
+	  - fix glitz TFP support, is now fonctional.
+
 2008-09-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_on_key_press),

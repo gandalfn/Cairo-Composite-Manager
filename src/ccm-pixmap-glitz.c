@@ -35,7 +35,8 @@ G_DEFINE_TYPE (CCMPixmapGlitz, ccm_pixmap_glitz, CCM_TYPE_PIXMAP);
 
 struct _CCMPixmapGlitzPrivate
 {
-	glitz_drawable_t* 	gl_drawable;
+	cairo_surface_t*	surface;
+	
 	glitz_drawable_t* 	gl_pixmap;
 	glitz_surface_t*  	gl_surface;
 	glitz_format_t*		gl_format;
@@ -54,7 +55,7 @@ ccm_pixmap_glitz_init (CCMPixmapGlitz *self)
 {
 	self->priv = CCM_PIXMAP_GLITZ_GET_PRIVATE(self);
 	
-	self->priv->gl_drawable = NULL;
+	self->priv->surface = NULL;
 	self->priv->gl_pixmap = NULL;
 	self->priv->gl_surface = NULL;
 	self->priv->gl_format = NULL;
@@ -65,13 +66,14 @@ ccm_pixmap_glitz_finalize (GObject *object)
 {
 	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(object);
 	
+	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
+	
 	if (self->priv->gl_pixmap && self->priv->gl_surface) 
 	{
 		glitz_surface_release_tex_image(self->priv->gl_surface, 
 										self->priv->gl_pixmap);
 		glitz_drawable_destroy(self->priv->gl_pixmap);
 	}
-	if (self->priv->gl_drawable) glitz_drawable_destroy(self->priv->gl_drawable);
 	if (self->priv->gl_surface) glitz_surface_destroy(self->priv->gl_surface);
 	
 	G_OBJECT_CLASS (ccm_pixmap_glitz_parent_class)->finalize (object);
@@ -100,7 +102,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	glitz_drawable_format_t* format = NULL;
 	
-	if (!self->priv->gl_drawable)
+	if (!self->priv->gl_pixmap)
 	{
 		glitz_format_t templ;
 		XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_PIXMAP(self)->window);
@@ -124,18 +126,6 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 								  screen->number, 
 								  !_ccm_screen_indirect_rendering (screen));
 		
-		self->priv->gl_drawable = glitz_glx_create_drawable_for_window (
-											CCM_DISPLAY_XDISPLAY(display),
-											screen->number,
-											format,
-											CCM_WINDOW_XWINDOW(CCM_PIXMAP(self)->window),
-											attribs->width, attribs->height);
-		if (!self->priv->gl_drawable)
-		{	
-			g_warning("Error on create glitz drawable");
-			return FALSE;
-		}
-				
 		self->priv->gl_pixmap = glitz_glx_create_drawable_for_pixmap (
 											CCM_DISPLAY_XDISPLAY(display),
 											screen->number,
@@ -151,7 +141,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		templ.color = format->color;
 		templ.color.fourcc = GLITZ_FOURCC_RGB;
 		
-		self->priv->gl_format = glitz_find_format(self->priv->gl_drawable,
+		self->priv->gl_format = glitz_find_format(self->priv->gl_pixmap,
 												  GLITZ_FORMAT_RED_SIZE_MASK   |
 										  		  GLITZ_FORMAT_GREEN_SIZE_MASK |
 										  		  GLITZ_FORMAT_BLUE_SIZE_MASK  |
@@ -165,7 +155,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		}
 	}
 	
-	return self->priv->gl_drawable ? TRUE : FALSE;
+	return self->priv->gl_pixmap ? TRUE : FALSE;
 }
 
 static void
@@ -187,12 +177,6 @@ ccm_pixmap_glitz_bind (CCMPixmap* pixmap)
 											self->priv->gl_format,
 											attribs->width, attribs->height,
 											0, NULL);
-		if (self->priv->gl_surface)
-		{
-			glitz_surface_attach (self->priv->gl_surface,
-								  self->priv->gl_drawable,
-								  GLITZ_DRAWABLE_BUFFER_BACK_COLOR);
-		}
 	}
 }
 
@@ -227,8 +211,14 @@ ccm_pixmap_glitz_get_surface (CCMDrawable* drawable)
 	if (CCM_PIXMAP(self)->window->is_viewable)
 		ccm_drawable_repair (drawable);
 	
-	if (self->priv->gl_surface)
-		surface = cairo_glitz_surface_create (self->priv->gl_surface);
+	if (!self->priv->surface)
+	{
+		if (self->priv->gl_surface)
+			self->priv->surface = cairo_glitz_surface_create (self->priv->gl_surface);
+	}
+	
+	if (self->priv->surface)
+		surface = cairo_surface_reference (self->priv->surface);
 	
 	return surface;
 }
