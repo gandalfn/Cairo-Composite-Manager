@@ -221,107 +221,58 @@ ccm_window_glitz_get_visual(CCMDrawable* drawable)
 	return visual;
 }
 
-typedef void (*glXSwapIntervalSGIProc) (int);
-typedef void (*glXSwapIntervalMESAProc) (int);
-typedef void (*glXCopySubBufferMESAProc) (Display*, Drawable, 
-										  int, int, int, int);
-
-static void
-ccm_window_glitz_vsync(CCMWindowGlitz* self, gint interval)
-{
-	g_return_if_fail(self != NULL);
-	static int initialized = 0;
-	static gboolean supported = TRUE;
-	
-	if (supported && initialized != interval)
-	{
-		glXSwapIntervalSGIProc s = NULL;	
-		glXSwapIntervalMESAProc m = NULL;
-
-		s = (glXSwapIntervalSGIProc)
-			glXGetProcAddress((const guchar*)"glXSwapIntervalSGI");
-		if (s) 
-		{
-			s(interval);
-			initialized = interval;
-			return;
-		}
-			
-		m = (glXSwapIntervalMESAProc)
-			glXGetProcAddress((const guchar*)"glXSwapIntervalMESA");
-		if (m)
-		{
-			m(interval);
-			initialized = interval;
-			return;
-		}
-		supported = FALSE;
-	}
-}
-					   
 static void
 ccm_window_glitz_flush(CCMDrawable* drawable)
 {
 	g_return_if_fail(drawable != NULL);
 	
 	CCMWindowGlitz* self = CCM_WINDOW_GLITZ(drawable);
-	CCMScreen* screen = ccm_drawable_get_screen(drawable);
 	
 	if (ccm_window_glitz_create_gl_drawable(self))
-	{
-		if (_ccm_screen_sync_with_blank(screen)) 
-			ccm_window_glitz_vsync(self, 1);
-		else
-			ccm_window_glitz_vsync(self, 0);
 		glitz_drawable_swap_buffers(self->priv->gl_drawable);
-	}
 }
+
 static void
 ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 {
 	g_return_if_fail(drawable != NULL);
 	
 	CCMWindowGlitz* self = CCM_WINDOW_GLITZ(drawable);
-	CCMScreen* screen = ccm_drawable_get_screen(drawable);
+
 	
 	if (ccm_window_glitz_create_gl_drawable(self))
 	{
-		static glXCopySubBufferMESAProc csb = NULL;
-		static gboolean supported = TRUE;
 		cairo_rectangle_t geometry;
 			
-		if (_ccm_screen_sync_with_blank(screen)) 
-			ccm_window_glitz_vsync(self, 1);
-		else
-			ccm_window_glitz_vsync(self, 0);
-		
-		if (!csb && supported)
-		{
-		 	csb = (glXCopySubBufferMESAProc)
-				   glXGetProcAddress((const guchar*)"glXCopySubBufferMESA");
-			supported = csb != NULL;
-		}
-		
-		if (csb && ccm_drawable_get_geometry_clipbox (drawable, &geometry))
+		if (ccm_drawable_get_geometry_clipbox (drawable, &geometry))
 		{
 			cairo_rectangle_t* rects;
-			gint cpt, nb_rects;
-			CCMDisplay* display = ccm_drawable_get_display (drawable);
+			gint cpt, nb_rects, nbox = 0;
+			glitz_box_t* box = NULL;
 			
 			ccm_region_get_rectangles(region, &rects, &nb_rects);
+			box = g_new(glitz_box_t, nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 			{
 				gint x = rects[cpt].x > 0 ? rects[cpt].x : 0;
 				gint y = rects[cpt].y > 0 ? rects[cpt].y : 0;
-				y = geometry.height - (rects[cpt].height + y);
 				gint width = rects[cpt].width;
 				gint height = rects[cpt].height;
 				ccm_debug("FLUSH: %i,%i %i,%i", x, y, width, height);
 				if (width > 0 && height > 0)
-					csb(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
-						x, y, width, height);
-			}
+				{
+					box[nbox].x1 = x;
+					box[nbox].y1 = y;
+					box[nbox].x2 = x + width;
+					box[nbox].y2 = y + height;
+					nbox++;
+				}
+			}					
 			g_free(rects);
+			glitz_drawable_swap_buffer_region (self->priv->gl_drawable,
+											   geometry.x, geometry.y, 
+											   box, nbox);
+			g_free(box);
 		}
 		else
 			glitz_drawable_swap_buffers(self->priv->gl_drawable);

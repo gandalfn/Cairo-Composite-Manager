@@ -21,7 +21,6 @@
  */
 
 #include <X11/Xlib.h>
-#include <GL/glx.h>
 #include <glitz.h>
 #include <glitz-glx.h>
 #include <cairo-glitz.h>

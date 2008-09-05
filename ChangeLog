@@ -1,3 +1,9 @@
+2008-09-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-window-glitz.c (ccm_window_glitz_flush),
+	(ccm_window_glitz_flush_region):
+	  - Remove the stupid implementation of copy sub buffer use glitz instead.
+
 2008-09-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_init),
