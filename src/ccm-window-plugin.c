@@ -287,7 +287,7 @@ ccm_window_plugin_resize(CCMWindowPlugin* self, CCMWindow* window,
 
 void
 ccm_window_plugin_set_opaque_region(CCMWindowPlugin* self, CCMWindow* window,
-									CCMRegion* area)
+									const CCMRegion* area)
 {
 	g_return_if_fail (CCM_IS_WINDOW_PLUGIN (self));
 	g_return_if_fail (window != NULL);

@@ -87,14 +87,15 @@ ccm_pixmap_image_bind (CCMPixmap* pixmap)
 	
 	CCMPixmapImage* self = CCM_PIXMAP_IMAGE(pixmap);
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(pixmap));
-	cairo_format_t format = ccm_window_get_format (CCM_PIXMAP(self)->window);
-	gint depth = ccm_window_get_depth (CCM_PIXMAP(self)->window);
-	XWindowAttributes* attribs;
-		
-	attribs = _ccm_window_get_attribs (CCM_PIXMAP(self)->window);
-	if (attribs)
-		self->priv->image = ccm_image_new(display, attribs->visual, format, 
-										  attribs->width, attribs->height, depth);
+	cairo_format_t format = ccm_drawable_get_format (CCM_DRAWABLE(pixmap));
+	gint depth = ccm_drawable_get_depth (CCM_DRAWABLE(pixmap));
+	Visual* visual = ccm_drawable_get_visual(CCM_DRAWABLE(pixmap));
+	cairo_rectangle_t geometry;
+
+	if (visual &&
+		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(pixmap), &geometry))
+		self->priv->image = ccm_image_new(display, visual, format, 
+										  geometry.width, geometry.height, depth);
 	else
 		ccm_debug("PIXMAP BIND ERROR");
 }
@@ -170,8 +171,7 @@ ccm_pixmap_image_get_surface (CCMDrawable* drawable)
 	
 	CCMPixmapImage *self = CCM_PIXMAP_IMAGE(drawable);
 	
-	if (CCM_PIXMAP(self)->window->is_viewable)
-		ccm_drawable_repair(CCM_DRAWABLE(self));
+	ccm_drawable_repair(CCM_DRAWABLE(self));
 		
 	if (!self->priv->image && self->priv->surface)
 	{
@@ -182,7 +182,7 @@ ccm_pixmap_image_get_surface (CCMDrawable* drawable)
 		!self->priv->surface)
 		self->priv->surface = cairo_image_surface_create_for_data(
 								ccm_image_get_data (self->priv->image), 
-								ccm_window_get_format(CCM_PIXMAP(self)->window),
+								ccm_drawable_get_format(CCM_DRAWABLE(self)),
 								ccm_image_get_width (self->priv->image), 
 								ccm_image_get_height (self->priv->image), 
 								ccm_image_get_stride (self->priv->image));

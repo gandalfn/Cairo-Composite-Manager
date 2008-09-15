@@ -204,7 +204,7 @@ ccm_image_get_sub_image(CCMImage* image, CCMPixmap* pixmap,
 	g_return_val_if_fail(width > 0 && height > 0, FALSE);
 	
 	gboolean ret = FALSE;
-	cairo_format_t format = ccm_window_get_format(pixmap->window);
+	cairo_format_t format = ccm_drawable_get_format(CCM_DRAWABLE(pixmap));
 	CCMImage* sub_image = ccm_image_new (image->display, image->visual,
 										 format, width, height, image->depth);
 	if (sub_image)

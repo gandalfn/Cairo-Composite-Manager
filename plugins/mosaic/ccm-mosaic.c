@@ -167,27 +167,26 @@ ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
 	g_return_val_if_fail(x != NULL && y != NULL, FALSE);
 	g_return_val_if_fail(x_root != NULL && y_root != NULL, FALSE);
 	
-	XWindowAttributes* attribs;
+	const cairo_rectangle_t* area = ccm_window_get_area(self->priv->areas[num].window);
 	gfloat scale;
 	
-	attribs = _ccm_window_get_attribs (self->priv->areas[num].window);
-	if (!attribs) return FALSE;
+	if (!area) return FALSE;
 	
-	scale = MIN((gfloat)self->priv->areas[num].geometry.height / (gfloat)attribs->height,
-				(gfloat)self->priv->areas[num].geometry.width / (gfloat)attribs->width);
+	scale = MIN((gfloat)self->priv->areas[num].geometry.height / (gfloat)area->height,
+				(gfloat)self->priv->areas[num].geometry.width / (gfloat)area->width);
 				
 	*x -= (gint)((gfloat)self->priv->areas[num].geometry.x + 
 		  ((gfloat)self->priv->areas[num].geometry.width / (gfloat)2) - 
-		  (((gfloat)attribs->width / 2) * scale));
+		  (((gfloat)area->width / 2) * scale));
 	*x = (gint)((gfloat)*x / scale);
 					
 	*y -= self->priv->areas[num].geometry.y + 
 		  (self->priv->areas[num].geometry.height / 2) - 
-		  (attribs->height / 2) * scale;
+		  (area->height / 2) * scale;
 	*y /= scale;
 	
-	*x_root = *x + attribs->x;
-	*y_root = *y + attribs->y;
+	*x_root = *x + area->x;
+	*y_root = *y + area->y;
 	
 	return TRUE;
 }
@@ -201,9 +200,11 @@ ccm_mosaic_send_leave_event(CCMWindow* window, int x, int y)
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(window));
 	CCMWindow* root = ccm_screen_get_root_window (screen);
 	XCrossingEvent evt;
-	XWindowAttributes* attribs = _ccm_window_get_attribs (window);
+	const cairo_rectangle_t* area = ccm_window_get_area(window);
 	
-	ccm_debug_window(window, "LEAVE: %i,%i %i,%i", x, y, attribs->x, attribs->y);
+	if (!area) return;
+	
+	ccm_debug_window(window, "LEAVE: %i,%i %i,%i", x, y, area->x, area->y);
 	evt.type = LeaveNotify;
 	evt.serial = 0;
 	evt.send_event = True;
@@ -212,8 +213,8 @@ ccm_mosaic_send_leave_event(CCMWindow* window, int x, int y)
 	evt.window = CCM_WINDOW_XWINDOW(window);
 	evt.subwindow = 0;
 	evt.time = CurrentTime;
-	evt.x = x - attribs->x;
-	evt.y = y - attribs->y;
+	evt.x = x - area->x;
+	evt.y = y - area->y;
 	evt.x_root = x;
 	evt.y_root = y;
 	evt.mode = NotifyNormal;
@@ -235,9 +236,11 @@ ccm_mosaic_send_enter_event(CCMWindow* window, int x, int y)
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(window));
 	CCMWindow* root = ccm_screen_get_root_window (screen);
 	XCrossingEvent evt;
-	XWindowAttributes* attribs = _ccm_window_get_attribs (window);
+	const cairo_rectangle_t* area = ccm_window_get_area(window);
 	
-	ccm_debug_window(window, "ENTER: %i,%i %i,%i", x, y, attribs->x, attribs->y);
+	if (!area) return;
+	
+	ccm_debug_window(window, "ENTER: %i,%i %i,%i", x, y, area->x, area->y);
 	
 	evt.type = EnterNotify;
 	evt.serial = 0;
@@ -247,8 +250,8 @@ ccm_mosaic_send_enter_event(CCMWindow* window, int x, int y)
 	evt.window = CCM_WINDOW_XWINDOW(window);
 	evt.subwindow = 0;
 	evt.time = CurrentTime;
-	evt.x = x - attribs->x;
-	evt.y = y - attribs->y;
+	evt.x = x - area->x;
+	evt.y = y - area->y;
 	evt.x_root = x;
 	evt.y_root = y;
 	evt.mode = NotifyNormal;
@@ -433,8 +436,9 @@ ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 												 &x_root, &y_root))
 					{
 						CCMWindow* window = self->priv->areas[cpt].window;
-						XWindowAttributes* attribs = 
-											_ccm_window_get_attribs (window);
+						const cairo_rectangle_t* area = ccm_window_get_area(window);
+	
+						if (!area) break;
 						
 						ccm_mosaic_simulate_enter_leave_event(self, cpt,
 															  button_event->x, 
@@ -443,7 +447,7 @@ ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 															  button_event->y_root);
 						ccm_mosaic_broadcast_event(CCM_WINDOW_XWINDOW(window), 
 												   x_root, y_root,
-												   attribs->x, attribs->y,
+												   area->x, area->y,
 												   event);
 						break;
 					}
@@ -460,7 +464,6 @@ static void
 ccm_mosaic_on_key_press(CCMMosaic* self)
 {
 	self->priv->enabled = ~self->priv->enabled;
-	ccm_screen_set_filtered_damage (self->priv->screen, !self->priv->enabled);
 	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
 	if (self->priv->enabled)
 	{
@@ -604,8 +607,10 @@ ccm_mosaic_get_damaged_area(CCMMosaic* self, CCMMosaicArea* area)
 				
 	if (ccm_drawable_is_damaged (CCM_DRAWABLE(area->window)))
 	{
-		XWindowAttributes* attribs = _ccm_window_get_attribs (area->window);
+		const cairo_rectangle_t* win_area = ccm_window_get_area(area->window);
 		gfloat scale;
+		
+		if (!win_area) return NULL;
 		
 		damaged = ccm_region_rectangle (&area->geometry);
 		
@@ -640,9 +645,11 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 	CCMRegion* damaged;
 	CCMMosaicArea* area;
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	XWindowAttributes* attribs = _ccm_window_get_attribs (window);
+	const cairo_rectangle_t* win_area = ccm_window_get_area(window);
+		
+	if (!win_area) return FALSE;
 				
-	area = ccm_mosaic_find_area(self, window, attribs->width, attribs->height);
+	area = ccm_mosaic_find_area(self, window, win_area->width, win_area->height);
 	if (!area) return FALSE;
 	
 	damaged = ccm_mosaic_get_damaged_area (self, area);
@@ -650,8 +657,8 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 	ccm_screen_add_damaged_region (screen, damaged);
 	ccm_region_destroy (damaged);
 
-	scale = MIN(area->geometry.height / attribs->height,
-				area->geometry.width / attribs->width);
+	scale = MIN(area->geometry.height / win_area->height,
+				area->geometry.width / win_area->width);
 	
 	ctx = cairo_create (self->priv->surface);
 	
@@ -665,19 +672,19 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 					 area->geometry.y + area->geometry.height / 2);
 	cairo_scale(ctx, scale, scale);
 	
-	cairo_translate (ctx, -(attribs->width / 2) - attribs->x,
-					 -(attribs->height / 2) - attribs->y);
+	cairo_translate (ctx, -(win_area->width / 2) - win_area->x,
+					 -(win_area->height / 2) - win_area->y);
 	path = ccm_drawable_get_damage_path (CCM_DRAWABLE(window), ctx);
 	cairo_clip (ctx);
 	cairo_path_destroy (path);
 	
-	if (ccm_window_get_format (window) == CAIRO_FORMAT_ARGB32)
+	if (ccm_drawable_get_format (CCM_DRAWABLE(window)) == CAIRO_FORMAT_ARGB32)
 	{
 		cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
 		cairo_paint(ctx);
 	}
 	cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_surface (ctx, surface, attribs->x, attribs->y);
+	cairo_set_source_surface (ctx, surface, win_area->x, win_area->y);
 	pattern = cairo_get_source (ctx);
 	cairo_pattern_set_filter (pattern, CAIRO_FILTER_FAST);
 	cairo_paint (ctx);
@@ -703,8 +710,7 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		{
 			CCMWindowType type = ccm_window_get_hint_type (item->data);
 			if (CCM_WINDOW_XWINDOW(item->data) != self->priv->window &&
-				((CCMWindow*)item->data)->is_viewable && 
-				!((CCMWindow*)item->data)->is_input_only &&
+				ccm_window_is_viewable(item->data) &&
 				type == CCM_WINDOW_TYPE_NORMAL) 
 			{
 				nb_windows++;
@@ -785,7 +791,8 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		if (ccm_drawable_is_damaged (CCM_DRAWABLE(window)))
 		{	
 			if (CCM_WINDOW_XWINDOW(window) != self->priv->window &&
-				window->is_viewable && !window->is_input_only && 
+				ccm_window_is_viewable(window) && 
+				!ccm_window_is_input_only(window) && 
 				type == CCM_WINDOW_TYPE_NORMAL) 
 			{
 				if (self->priv->surface)

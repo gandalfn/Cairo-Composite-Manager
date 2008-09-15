@@ -76,35 +76,6 @@ SOFTWARE.
 #include "ccm-debug.h"
 #include "ccm-region.h"
 
-typedef struct RegionBox RegionBox;
-typedef struct Point Point;
-
-struct RegionBox
-{
-    int x1;
-    int y1;
-    int x2;
-    int y2;
-};
-
-struct Point
-{
-    int x;
-    int y;
-};
-
-/* 
- *   clip region
- */
-
-struct _CCMRegion
-{
-    long size;
-    long numRects;
-    RegionBox *rects;
-    RegionBox extents;
-};
-
 /*  1 if two BOXs overlap.
  *  0 if two BOXs do not overlap.
  *  Remember, x2 and y2 are not in the region 

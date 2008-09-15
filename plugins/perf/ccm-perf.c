@@ -392,8 +392,9 @@ ccm_perf_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 {
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 	CCMPerf* self = CCM_PERF(_ccm_screen_get_plugin (screen, CCM_TYPE_PERF));
-	CCMRegion *damaged = _ccm_drawable_get_damaged (CCM_DRAWABLE (window));
+	CCMRegion *damaged = NULL;
 	
+	g_object_get(G_OBJECT(window), "damaged", &damaged, NULL);
 	if (damaged && self->priv->enabled && !self->priv->need_refresh) 
 	{
 		CCMRegion *area = ccm_region_rectangle (&self->priv->area);

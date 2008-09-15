@@ -180,15 +180,13 @@ void			ccm_screen_remove_window		(CCMScreen* self,
 												 CCMWindow* window);
 void            ccm_screen_damage               (CCMScreen* self);
 void            ccm_screen_damage_region        (CCMScreen* self, 
-                                                 CCMRegion* region);
+                                                 const CCMRegion* region);
 GList*          ccm_screen_get_windows          (CCMScreen *self);
 CCMRegion*      ccm_screen_get_damaged          (CCMScreen *self);
 void            ccm_screen_add_damaged_region   (CCMScreen *self, 
                                                  CCMRegion* region);
 void            ccm_screen_undamage_region      (CCMScreen *self, 
                                                  CCMRegion* region);
-void            ccm_screen_set_filtered_damage  (CCMScreen* self, 
-                                                 gboolean filtered);
 CCMWindow*      ccm_screen_find_window          (CCMScreen* self, 
                                                  Window xwindow);
 CCMWindow*      ccm_screen_find_window_or_child (CCMScreen* self, 
@@ -206,16 +204,15 @@ CCMScreen*		 ccm_drawable_get_screen			(CCMDrawable* self);
 CCMDisplay*		 ccm_drawable_get_display			(CCMDrawable* self);
 XID				 ccm_drawable_get_xid				(CCMDrawable* self);
 Visual*		     ccm_drawable_get_visual			(CCMDrawable* self);
-CCMRegion* 		 ccm_drawable_query_geometry 		(CCMDrawable* self);
-void             ccm_drawable_unset_geometry        (CCMDrawable* self);
-CCMRegion*		 ccm_drawable_get_geometry			(CCMDrawable* self);
+cairo_format_t   ccm_drawable_get_format            (CCMDrawable* self);
+guint            ccm_drawable_get_depth             (CCMDrawable* self);
+void     		 ccm_drawable_query_geometry 		(CCMDrawable* self);
+const CCMRegion* ccm_drawable_get_geometry			(CCMDrawable* self);
 gboolean 		 ccm_drawable_get_geometry_clipbox	(CCMDrawable* self, 
 													 cairo_rectangle_t* area);
-cairo_surface_t* ccm_drawable_get_surface			(CCMDrawable* self);
-cairo_t*		 ccm_drawable_create_context		(CCMDrawable* self);
 gboolean		 ccm_drawable_is_damaged			(CCMDrawable* self);
 void 			 ccm_drawable_damage_region 		(CCMDrawable* self, 
-													 CCMRegion* area);
+													 const CCMRegion* area);
 void 			 ccm_drawable_damage				(CCMDrawable* self);
 void			 ccm_drawable_undamage_region		(CCMDrawable* self, 
 													 CCMRegion* region);
@@ -227,6 +224,8 @@ void			 ccm_drawable_resize				(CCMDrawable* self,
 void			 ccm_drawable_flush					(CCMDrawable* self);
 void             ccm_drawable_flush_region          (CCMDrawable* self, 
                                                      CCMRegion* region);
+cairo_surface_t* ccm_drawable_get_surface			(CCMDrawable* self);
+cairo_t*		 ccm_drawable_create_context		(CCMDrawable* self);
 cairo_path_t*	 ccm_drawable_get_geometry_path		(CCMDrawable* self, 
 													 cairo_t* context);
 cairo_path_t*	 ccm_drawable_get_damage_path		(CCMDrawable* self, 
@@ -234,36 +233,42 @@ cairo_path_t*	 ccm_drawable_get_damage_path		(CCMDrawable* self,
 /******************************************************************************/
 
 /******************************** Window **************************************/
-CCMWindow*  	ccm_window_new          			(CCMScreen* screen, 
+CCMWindow*  	 ccm_window_new          			(CCMScreen* screen, 
 											 		 Window xwindow);
-gboolean		ccm_window_is_managed				(CCMWindow* self);
-void			ccm_window_make_output_only			(CCMWindow* self);
-void            ccm_window_make_input_output        (CCMWindow* self);
-void			ccm_window_redirect 				(CCMWindow* self);
-void			ccm_window_redirect_subwindows		(CCMWindow* self);
-void			ccm_window_unredirect 				(CCMWindow* self);
-void			ccm_window_unredirect_subwindows 	(CCMWindow* self);
-CCMPixmap*		ccm_window_get_pixmap				(CCMWindow* self);
-cairo_format_t	ccm_window_get_format 				(CCMWindow* self);
-guint			ccm_window_get_depth 				(CCMWindow* self);
-gboolean		ccm_window_paint 					(CCMWindow* self,
+gboolean         ccm_window_is_viewable             (CCMWindow* self);
+gboolean         ccm_window_is_input_only           (CCMWindow* self);
+gboolean		 ccm_window_is_managed				(CCMWindow* self);
+void			 ccm_window_make_output_only		(CCMWindow* self);
+void             ccm_window_make_input_output       (CCMWindow* self);
+void			 ccm_window_redirect 				(CCMWindow* self);
+void			 ccm_window_redirect_subwindows		(CCMWindow* self);
+void			 ccm_window_unredirect 				(CCMWindow* self);
+void			 ccm_window_unredirect_subwindows 	(CCMWindow* self);
+CCMPixmap*		 ccm_window_get_pixmap				(CCMWindow* self);
+CCMPixmap*       ccm_window_create_pixmap           (CCMWindow* self, 
+                                                     int width, int height,
+                                                     int depth);
+gboolean		 ccm_window_paint 					(CCMWindow* self,
                                                      cairo_t* ctx,
                                                      gboolean buffered);
-void			ccm_window_map						(CCMWindow* self);
-void			ccm_window_unmap					(CCMWindow* self);
-void 			ccm_window_query_opacity			(CCMWindow* self,
+void			 ccm_window_map						(CCMWindow* self);
+void			 ccm_window_unmap					(CCMWindow* self);
+void 			 ccm_window_query_opacity			(CCMWindow* self,
                                                      gboolean deleted);
-void            ccm_window_query_transient_for      (CCMWindow* self);
-void            ccm_window_query_wm_hints           (CCMWindow* self);
-void            ccm_window_query_hint_type          (CCMWindow* self);
-CCMWindowType	ccm_window_get_hint_type			(CCMWindow* self);
-const gchar*	ccm_window_get_name					(CCMWindow* self);
-void            ccm_window_add_alpha_region         (CCMWindow* self, 
+void             ccm_window_query_transient_for     (CCMWindow* self);
+void             ccm_window_query_wm_hints          (CCMWindow* self);
+void             ccm_window_query_hint_type         (CCMWindow* self);
+CCMWindowType	 ccm_window_get_hint_type			(CCMWindow* self);
+const gchar*	 ccm_window_get_name				(CCMWindow* self);
+void             ccm_window_add_alpha_region        (CCMWindow* self, 
                                                      CCMRegion* region);
-void            ccm_window_set_alpha                (CCMWindow* self);
-void            ccm_window_set_opaque               (CCMWindow* self);
-void            ccm_window_set_opaque_region        (CCMWindow* self, 
-                                                     CCMRegion* region);
+void             ccm_window_set_alpha               (CCMWindow* self);
+void             ccm_window_set_opaque              (CCMWindow* self);
+const CCMRegion* ccm_window_get_opaque_region       (CCMWindow* self);
+gboolean         ccm_window_get_opaque_clipbox      (CCMWindow* self, 
+                                                     cairo_rectangle_t* clipbox);
+void             ccm_window_set_opaque_region       (CCMWindow* self, 
+                                                     const CCMRegion* region);
 gfloat			ccm_window_get_opacity 				(CCMWindow* self);
 void			ccm_window_set_opacity 				(CCMWindow* self, 
 													 gfloat opacity);
@@ -284,15 +289,12 @@ gboolean        ccm_window_keep_above               (CCMWindow* self);
 gboolean        ccm_window_keep_below               (CCMWindow* self);
 CCMWindow*      ccm_window_transient_for            (CCMWindow* self);
 CCMWindow*      ccm_window_get_group_leader         (CCMWindow* self);
+const cairo_rectangle_t* ccm_window_get_area        (CCMWindow* self);
 gboolean        ccm_window_get_frame_extends        (CCMWindow* self, 
                                                      int* left_frame, 
                                                      int* right_frame, 
                                                      int* top_frame, 
                                                      int* bottom_frame);
-guint32*        ccm_window_get_property             (CCMWindow* self, 
-                                                     Atom property_atom, 
-                                                     Atom req_type, 
-                                                     guint *n_items);
 void            ccm_window_init_transfrom           (CCMWindow* self);
 void            ccm_window_get_transform            (CCMWindow* self, 
                                                      cairo_matrix_t* matrix);

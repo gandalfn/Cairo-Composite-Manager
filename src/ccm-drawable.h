@@ -42,18 +42,18 @@ struct _CCMDrawableClass
 {
 	GObjectClass parent_class;
 	
-	Visual*	 		  (*get_visual)			(CCMDrawable* self);
-	cairo_surface_t*  (*get_surface) 		(CCMDrawable* self);
-	CCMRegion*		  (*query_geometry)		(CCMDrawable* self);
-	void			  (*move)				(CCMDrawable* self, 
-											 int x, int y);
-	void			  (*resize)				(CCMDrawable* self, 
-											 int width, int height);
-	gboolean		  (*repair)				(CCMDrawable* self,
-											 CCMRegion* damaged);
-	void			  (*flush)				(CCMDrawable* self);
-	void			  (*flush_region)		(CCMDrawable* self,
-											 CCMRegion* region);
+	cairo_t*          (*create_context)		    (CCMDrawable* self);
+	cairo_surface_t*  (*get_surface) 		    (CCMDrawable* self);
+	void    		  (*query_geometry)		    (CCMDrawable* self);
+	void			  (*move)				    (CCMDrawable* self, 
+											     int x, int y);
+	void			  (*resize)				    (CCMDrawable* self, 
+											     int width, int height);
+	gboolean		  (*repair)				    (CCMDrawable* self,
+											     CCMRegion* damaged);
+	void			  (*flush)				    (CCMDrawable* self);
+	void			  (*flush_region)		    (CCMDrawable* self,
+											     CCMRegion* region);
 };
 
 typedef struct _CCMDrawablePrivate CCMDrawablePrivate;
@@ -61,11 +61,11 @@ typedef struct _CCMDrawablePrivate CCMDrawablePrivate;
 struct _CCMDrawable
 {
 	GObject 			parent_instance;
+	
 	CCMDrawablePrivate*	priv;
 };
 
 GType ccm_drawable_get_type (void) G_GNUC_CONST;
-CCMRegion* _ccm_drawable_get_damaged(CCMDrawable* self);
 
 G_END_DECLS
 

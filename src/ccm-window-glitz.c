@@ -27,9 +27,11 @@
 #include <cairo-glitz.h>
 
 #include "ccm-debug.h"
+#include "ccm-region.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-display.h"
+#include "ccm-pixmap.h"
 #include "ccm-window-glitz.h"
 
 G_DEFINE_TYPE (CCMWindowGlitz, ccm_window_glitz, CCM_TYPE_WINDOW);
@@ -45,10 +47,12 @@ struct _CCMWindowGlitzPrivate
    ((CCMWindowGlitzPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_GLITZ, CCMWindowGlitzClass))
 
 static cairo_surface_t* ccm_window_glitz_get_surface(CCMDrawable* drawable);
-static Visual*	ccm_window_glitz_get_visual(CCMDrawable* drawable);
 static void ccm_window_glitz_flush(CCMDrawable* drawable);
 static void ccm_window_glitz_flush_region(CCMDrawable* drawable, 
 										  CCMRegion* region);
+
+static CCMPixmap* ccm_window_glitz_create_pixmap(CCMWindow* self, int width, 
+												 int height, int depth);
 
 static void
 ccm_window_glitz_init (CCMWindowGlitz *self)
@@ -78,9 +82,10 @@ ccm_window_glitz_class_init (CCMWindowGlitzClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMWindowGlitzPrivate));
 
 	CCM_DRAWABLE_CLASS(klass)->get_surface =  ccm_window_glitz_get_surface;
-	CCM_DRAWABLE_CLASS(klass)->get_visual = ccm_window_glitz_get_visual;
 	CCM_DRAWABLE_CLASS(klass)->flush = ccm_window_glitz_flush;
 	CCM_DRAWABLE_CLASS(klass)->flush_region = ccm_window_glitz_flush_region;
+
+	CCM_WINDOW_CLASS(klass)->create_pixmap = ccm_window_glitz_create_pixmap;
 	
 	object_class->finalize = ccm_window_glitz_finalize;
 }
@@ -97,14 +102,17 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 	if (!self->priv->gl_drawable)
 	{
 		glitz_format_t templ;
-		XWindowAttributes* attribs = _ccm_window_get_attribs(CCM_WINDOW(self));
+		Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
+		cairo_rectangle_t geometry;
 		
-		if (!attribs) return FALSE;
+		if (!visual ||
+			!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
+			return FALSE;
 		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
 				screen->number,
-				XVisualIDFromVisual (attribs->visual));
+				XVisualIDFromVisual (visual));
 		
 		if (!format)
 		{
@@ -123,7 +131,7 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 											screen->number,
 											format,
 											CCM_WINDOW_XWINDOW(self),
-											attribs->width, attribs->height);
+											geometry.width, geometry.height);
 		if (!self->priv->gl_drawable)
 		{
 			g_warning("Error on create glitz drawable");
@@ -158,14 +166,15 @@ ccm_window_glitz_create_gl_surface(CCMWindowGlitz* self)
 	if (!self->priv->gl_surface && 
 		ccm_window_glitz_create_gl_drawable(self))
 	{
-		XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_WINDOW(self));
+		cairo_rectangle_t geometry;
 		
-		if (!attribs) return FALSE;
+		if (!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
+			return FALSE;
 		
 		self->priv->gl_surface = glitz_surface_create(
 											self->priv->gl_drawable,
 											self->priv->gl_format,
-											attribs->width, attribs->height,
+											geometry.width, geometry.height,
 											0, NULL);
 		if (self->priv->gl_surface)
 		{
@@ -195,32 +204,6 @@ ccm_window_glitz_get_surface(CCMDrawable* drawable)
 	return surface;
 }
 
-static Visual*
-ccm_window_glitz_get_visual(CCMDrawable* drawable)
-{
-	g_return_val_if_fail(drawable != NULL, NULL);
-	
-	CCMWindowGlitz* self = CCM_WINDOW_GLITZ(drawable);
-	Visual* visual = NULL;
-	
-	if (ccm_window_glitz_create_gl_drawable(self))
-	{
-		XVisualInfo *visinfo = NULL;
-		glitz_drawable_format_t* gformat = 
-			glitz_drawable_get_format(self->priv->gl_drawable);
-		CCMScreen* screen = ccm_drawable_get_screen(drawable);
-		CCMDisplay* display = ccm_drawable_get_display(drawable);
-		
-		visinfo = glitz_glx_get_visual_info_from_format(
-											  CCM_DISPLAY_XDISPLAY(display),
-											  screen->number, gformat);		
-		visual = g_memdup(visinfo->visual, sizeof(Visual));
-		XFree(visinfo);
-	}
-	
-	return visual;
-}
-
 static void
 ccm_window_glitz_flush(CCMDrawable* drawable)
 {
@@ -246,29 +229,18 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 			
 		if (ccm_drawable_get_geometry_clipbox (drawable, &geometry))
 		{
-			cairo_rectangle_t* rects;
-			gint cpt, nb_rects, nbox = 0;
+			gint cpt, nbox = 0;
 			glitz_box_t* box = NULL;
 			
-			ccm_region_get_rectangles(region, &rects, &nb_rects);
-			box = g_new(glitz_box_t, nb_rects);
-			for (cpt = 0; cpt < nb_rects; cpt++)
+			nbox = region->numRects;	
+			box = g_new(glitz_box_t, nbox);
+			for (cpt = 0; cpt < nbox; cpt++)
 			{
-				gint x = rects[cpt].x > 0 ? rects[cpt].x : 0;
-				gint y = rects[cpt].y > 0 ? rects[cpt].y : 0;
-				gint width = rects[cpt].width;
-				gint height = rects[cpt].height;
-				ccm_debug("FLUSH: %i,%i %i,%i", x, y, width, height);
-				if (width > 0 && height > 0)
-				{
-					box[nbox].x1 = x;
-					box[nbox].y1 = y;
-					box[nbox].x2 = x + width;
-					box[nbox].y2 = y + height;
-					nbox++;
-				}
-			}					
-			g_free(rects);
+				box[cpt].x1 = region->rects[cpt].x1 > 0 ? region->rects[cpt].x1 : 0;
+				box[cpt].y1 = region->rects[cpt].y1 > 0 ? region->rects[cpt].y1 : 0;
+				box[cpt].x2 = region->rects[cpt].x2;
+				box[cpt].y2 = region->rects[cpt].y2;
+			}		
 			glitz_drawable_swap_buffer_region (self->priv->gl_drawable,
 											   geometry.x, geometry.y, 
 											   box, nbox);
@@ -277,4 +249,55 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 		else
 			glitz_drawable_swap_buffers(self->priv->gl_drawable);
 	}
+}
+
+static CCMPixmap*
+ccm_window_glitz_create_pixmap(CCMWindow* self, int width, int height, int depth)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
+	CCMDisplay* display = ccm_screen_get_display (screen);
+	XVisualInfo* vinfo;
+	Pixmap xpixmap;
+	glitz_drawable_format_t* format, templ;
+	unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
+						 GLITZ_FORMAT_RED_SIZE_MASK |
+						 GLITZ_FORMAT_GREEN_SIZE_MASK |
+						 GLITZ_FORMAT_BLUE_SIZE_MASK;
+	
+	templ.doublebuffer = 1;
+	templ.color.red_size = 8;
+	templ.color.green_size = 8;
+	templ.color.blue_size = 8;
+	
+#ifdef ENABLE_GLITZ_TFP_BACKEND
+	glitz_glx_set_render_type(CCM_DISPLAY_XDISPLAY(display),
+							  screen->number, 
+							  !_ccm_screen_indirect_rendering (screen));
+#endif
+	
+	if (depth == 32)
+	{
+		templ.color.alpha_size = 8;
+		mask |= GLITZ_FORMAT_ALPHA_SIZE_MASK;
+	}
+	format = glitz_glx_find_window_format (CCM_DISPLAY_XDISPLAY(display),
+										   screen->number, mask,
+										   &templ, 0);
+	
+	if (!format) return NULL;
+	
+	vinfo = glitz_glx_get_visual_info_from_format (CCM_DISPLAY_XDISPLAY(display),
+												   screen->number, format);
+	if (!vinfo)	return NULL;
+	
+	xpixmap = XCreatePixmap(CCM_DISPLAY_XDISPLAY(display), 
+							CCM_WINDOW_XWINDOW(self), 
+							width, height, depth);
+
+	if (xpixmap == None)
+		return NULL;
+		
+	return ccm_pixmap_new_from_visual(screen, vinfo->visual, xpixmap);
 }

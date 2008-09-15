@@ -81,10 +81,12 @@ ccm_pixmap_xrender_bind (CCMPixmap* pixmap)
 	g_return_if_fail(pixmap != NULL);
 	
 	CCMPixmapXRender* self = CCM_PIXMAP_XRENDER(pixmap);
-
-	XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_PIXMAP(self)->window);
 	
-	if (attribs && !self->priv->surface)
+	Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
+	cairo_rectangle_t geometry;
+	
+	if (!self->priv->surface && visual &&
+		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
 	{
 		CCMPixmapXRender* self = CCM_PIXMAP_XRENDER(pixmap);
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
@@ -92,9 +94,9 @@ ccm_pixmap_xrender_bind (CCMPixmap* pixmap)
 		self->priv->surface = cairo_xlib_surface_create (
 									CCM_DISPLAY_XDISPLAY(display),
 									CCM_PIXMAP_XPIXMAP(self), 
-									attribs->visual,
-									attribs->width, 
-									attribs->height);
+									visual,
+									geometry.width, 
+									geometry.height);
 	}
 }
 
@@ -114,4 +116,3 @@ ccm_pixmap_xrender_get_surface (CCMDrawable* drawable)
 	
 	return surface;
 }
-

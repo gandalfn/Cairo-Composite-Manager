@@ -145,7 +145,7 @@ ccm_opacity_on_increase_key_press(CCMOpacity* self)
 	if (ccm_screen_query_pointer (self->priv->screen, &window, &x, &y) &&
 		window)
 	{
-		if (window->is_viewable)
+		if (ccm_window_is_viewable (window))
 		{
 			gfloat opacity = ccm_window_get_opacity (window);
 				
@@ -165,7 +165,7 @@ ccm_opacity_on_decrease_key_press(CCMOpacity* self)
 	if (ccm_screen_query_pointer (self->priv->screen, &window, &x, &y) &&
 		window)
 	{
-		if (window->is_viewable)
+		if (ccm_window_is_viewable (window))
 		{
 			gfloat opacity = ccm_window_get_opacity (window);
 				

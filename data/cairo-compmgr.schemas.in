@@ -113,5 +113,16 @@
             <long>Use indirect rendering</long>
          </locale>
       </schema>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/screen/background</key>
+         <applyto>/apps/cairo-compmgr/default/screen/background</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+		 <default></default>
+         <locale name="C">
+            <short>Default background pixmap</short>
+            <long>Default background pixmap</long>
+         </locale>
+      </schema>
    </schemalist>
 </gconfschemafile>

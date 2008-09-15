@@ -75,6 +75,35 @@ SOFTWARE.
 
 #include "ccm.h"
 
+typedef struct RegionBox RegionBox;
+typedef struct Point Point;
+
+struct RegionBox
+{
+    int x1;
+    int y1;
+    int x2;
+    int y2;
+};
+
+struct Point
+{
+    int x;
+    int y;
+};
+
+/* 
+ *   clip region
+ */
+
+struct _CCMRegion
+{
+    long size;
+    long numRects;
+    RegionBox *rects;
+    RegionBox extents;
+};
+
 void _ccm_region_print(CCMRegion *self);
 
 #endif /* _CCM_REGION_H */

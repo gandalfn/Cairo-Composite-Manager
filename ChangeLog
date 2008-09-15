@@ -1,3 +1,102 @@
+2008-09-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac:
+	* data/cairo-compmgr.schemas.in:
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_on_event),
+	(ccm_freeze_ping), (ccm_freeze_paint), (ccm_freeze_map),
+	(ccm_freeze_add_window):
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_screen_paint),
+	(ccm_magnifier_window_paint):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_recalc_coords),
+	(ccm_mosaic_send_leave_event), (ccm_mosaic_send_enter_event),
+	(ccm_mosaic_on_event), (ccm_mosaic_on_key_press),
+	(ccm_mosaic_get_damaged_area), (ccm_mosaic_paint_area),
+	(ccm_mosaic_screen_paint), (ccm_mosaic_window_paint):
+	* plugins/opacity/ccm-opacity.c
+	(ccm_opacity_on_increase_key_press),
+	(ccm_opacity_on_decrease_key_press):
+	* plugins/perf/ccm-perf.c (ccm_perf_window_paint):
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_check_needed),
+	(ccm_shadow_need_shadow), (ccm_shadow_set_opaque_region):
+	* src/ccm-config.c (ccm_config_new):
+	* src/ccm-debug.c (ccm_log_region):
+	* src/ccm-debug.h:
+	* src/ccm-display.h:
+	* src/ccm-drawable.c (ccm_drawable_set_property),
+	(ccm_drawable_get_property), (ccm_drawable_init),
+	(ccm_drawable_finalize), (ccm_drawable_class_init),
+	(__ccm_drawable_query_geometry), (ccm_drawable_get_visual),
+	(ccm_drawable_get_depth), (ccm_drawable_get_format),
+	(ccm_drawable_get_xid), (ccm_drawable_query_geometry),
+	(ccm_drawable_damage_region), (ccm_drawable_get_surface),
+	(ccm_drawable_create_context):
+	* src/ccm-drawable.h:
+	* src/ccm-image.c (ccm_image_get_sub_image):
+	* src/ccm-pixmap-buffered-image.c (ccm_pixmap_buffered_image_sync):
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_class_init),
+	(ccm_pixmap_glitz_create_gl_drawable), (ccm_pixmap_glitz_bind),
+	(ccm_pixmap_glitz_get_surface), (ccm_pixmap_glitz_create_context):
+	* src/ccm-pixmap-image.c (ccm_pixmap_image_bind),
+	(ccm_pixmap_image_get_surface):
+	* src/ccm-pixmap-xrender.c (ccm_pixmap_xrender_bind),
+	(ccm_pixmap_xrender_get_surface):
+	* src/ccm-pixmap.c (ccm_pixmap_init), (ccm_pixmap_finalize),
+	(ccm_pixmap_class_init), (ccm_pixmap_on_damage),
+	(ccm_pixmap_register_damage), (ccm_pixmap_new),
+	(ccm_pixmap_new_from_visual):
+	* src/ccm-pixmap.h:
+	* src/ccm-region.c:
+	* src/ccm-region.h:
+	* src/ccm-screen.c (ccm_screen_init), (ccm_screen_finalize),
+	(ccm_screen_update_background), (ccm_screen_destroy_window),
+	(ccm_screen_find_window_or_child), (ccm_screen_check_stack),
+	(ccm_screen_check_stack_position), (ccm_screen_restack),
+	(impl_ccm_screen_paint), (ccm_screen_on_window_property_changed),
+	(impl_ccm_screen_add_window), (impl_ccm_screen_remove_window),
+	(ccm_screen_paint), (ccm_screen_on_option_changed),
+	(ccm_screen_on_window_damaged), (ccm_screen_new),
+	(ccm_screen_add_window), (ccm_screen_remove_window),
+	(ccm_screen_damage_region):
+	* src/ccm-window-glitz.c (ccm_window_glitz_class_init),
+	(ccm_window_glitz_create_gl_drawable),
+	(ccm_window_glitz_create_gl_surface),
+	(ccm_window_glitz_flush_region), (ccm_window_glitz_create_pixmap):
+	* src/ccm-window-plugin.c (ccm_window_plugin_set_opaque_region):
+	* src/ccm-window-plugin.h:
+	* src/ccm-window-xrender.c (ccm_window_xrender_class_init),
+	(ccm_window_xrender_create_backbuffer),
+	(ccm_window_xrender_get_surface),
+	(ccm_window_xrender_create_pixmap):
+	* src/ccm-window.c (ccm_window_set_gobject_property),
+	(ccm_window_get_gobject_property), (ccm_window_init),
+	(ccm_window_finalize), (ccm_window_class_init),
+	(ccm_window_get_plugins), (ccm_window_get_attribs),
+	(ccm_window_query_geometry), (ccm_window_move),
+	(ccm_window_resize), (impl_ccm_window_query_geometry),
+	(impl_ccm_window_move), (impl_ccm_window_resize),
+	(impl_ccm_window_paint), (impl_ccm_window_unmap),
+	(impl_ccm_window_set_opaque_region),
+	(ccm_window_on_property_async_error),
+	(ccm_window_on_get_property_async), (_ccm_window_get_plugin),
+	(ccm_window_new), (ccm_window_is_viewable),
+	(ccm_window_is_input_only), (ccm_window_get_opaque_region),
+	(ccm_window_get_opaque_clipbox), (ccm_window_get_pixmap),
+	(ccm_window_create_pixmap), (ccm_window_set_opacity),
+	(ccm_window_paint), (ccm_window_map), (ccm_window_unmap),
+	(ccm_window_add_alpha_region), (ccm_window_set_alpha),
+	(ccm_window_set_opaque_region), (ccm_window_set_opaque),
+	(ccm_window_get_area), (ccm_window_set_transform),
+	(ccm_window_transform):
+	* src/ccm-window.h:
+	* src/ccm.h:
+      API review: 
+      - Prefer to use g_object_[get,set] than public value.
+      - Move some API in CCMDrawable.
+      - Fix TFP mode and enable it by default.
+      - Fix no desktop mode.
+      - Add default pixmap background key.
+      - Bump to 0.2.2 version.
+
 2008-09-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-window-glitz.c (ccm_window_glitz_flush),

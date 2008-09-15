@@ -25,7 +25,6 @@
 
 #include <glib-object.h>
 #include <X11/X.h>
-#include <X11/extensions/Xdamage.h>
 
 #include "ccm.h"
 
@@ -61,7 +60,6 @@ void		_ccm_display_trap_error			(CCMDisplay* self);
 gint		_ccm_display_pop_error			(CCMDisplay* self);
 gboolean	_ccm_display_use_xshm			(CCMDisplay* self);
 gboolean	_ccm_display_xshm_shared_pixmap (CCMDisplay* self);
-
 									 
 G_END_DECLS
 

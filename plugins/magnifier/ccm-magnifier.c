@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <X11/extensions/Xfixes.h>
 
 #include "ccm-debug.h"
 #include "ccm-drawable.h"
@@ -717,6 +718,18 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		{
 			cairo_rectangle_t clipbox;
 			cairo_pattern_t* pattern;
+			cairo_t* ctx = cairo_create(self->priv->surface);
+			
+			ccm_debug("MAGNIFIER PAINT SCREEN FILL PAINT MOUSE");
+			cairo_set_source_surface (ctx, self->priv->surface_mouse, 
+									  self->priv->x_mouse - 
+									  self->priv->x_offset - 
+									  self->priv->x_hot, 
+									  self->priv->y_mouse - 
+									  self->priv->y_offset -
+									  self->priv->y_hot);
+			cairo_paint(ctx);
+			cairo_destroy (ctx);
 			
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL CONTENT");
 	
@@ -744,18 +757,6 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL PAINT");
 			
-			cairo_set_source_surface (context, self->priv->surface_mouse, 
-									  self->priv->x_mouse - 
-									  self->priv->x_offset - 
-									  self->priv->x_hot, 
-									  self->priv->y_mouse - 
-									  self->priv->y_offset -
-									  self->priv->y_hot);
-			pattern = cairo_get_source (context);
-			cairo_pattern_set_filter (pattern, self->priv->quality);
-			cairo_paint(context);
-			
-			ccm_debug("MAGNIFIER PAINT SCREEN FILL PAINT MOUSE");
 			cairo_restore (context);
 			
 			ccm_region_destroy (self->priv->damaged);
@@ -777,8 +778,9 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 	CCMMagnifier* self = CCM_MAGNIFIER(_ccm_screen_get_plugin (screen, 
 														CCM_TYPE_MAGNIFIER));
-	CCMRegion *damaged = _ccm_drawable_get_damaged (CCM_DRAWABLE (window));
+	CCMRegion *damaged = NULL;
 	
+	g_object_get(G_OBJECT(window), "damaged", &damaged, NULL);
 	if (damaged && self->priv->enabled) 
 	{
 		CCMRegion *area = ccm_region_rectangle (&self->priv->area);

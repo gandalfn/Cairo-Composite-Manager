@@ -51,15 +51,14 @@ typedef struct {
     unsigned long decorations;
 } MotifWmHints;
 
-
 static void 		ccm_window_iface_init		(CCMWindowPluginClass* iface);
-static CCMRegion* 	ccm_window_query_geometry	(CCMDrawable* drawable);
+static void			ccm_window_query_geometry	(CCMDrawable* drawable);
 static void 		ccm_window_move				(CCMDrawable* drawable, 
 												 int x, int y);
 static void 		ccm_window_resize			(CCMDrawable* drawable, 
 												 int width, int height);
 
-static CCMRegion* 	impl_ccm_window_query_geometry(CCMWindowPlugin* plugin,
+static CCMRegion*	impl_ccm_window_query_geometry(CCMWindowPlugin* plugin,
 												   CCMWindow* self);
 static gboolean 	impl_ccm_window_paint		  (CCMWindowPlugin* plugin, 
 												   CCMWindow* self, 
@@ -80,7 +79,9 @@ static void			impl_ccm_window_resize		  (CCMWindowPlugin* plugin,
 												   int width, int height);
 static void			impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, 
 													  CCMWindow* self,
-													  CCMRegion* area);
+													  const CCMRegion* area);
+static void			ccm_window_on_property_async_error(CCMWindow* self, 
+													   CCMPropertyASync* prop);
 static void			ccm_window_get_property_async (CCMWindow* self, 
 												   Atom property_atom, 
 												   Atom req_type, long length);
@@ -89,6 +90,12 @@ static void			ccm_window_on_get_property_async(CCMWindow* self,
 													 CCMPropertyASync* property);
 static void			ccm_window_on_plugins_changed(CCMWindow* self, 
 												  CCMScreen* screen);
+
+enum
+{
+    PROP_0,
+	PROP_CHILD
+};
 
 enum
 {
@@ -109,11 +116,16 @@ struct _CCMWindowPrivate
 	gchar*				name;
 	gchar*				class_name;
 	
+	Window				root;
 	Window				child;
 	Window				transient_for;
 	Window				group_leader;
 	
+	cairo_rectangle_t   area;
+	gboolean 			is_input_only;
+	gboolean 			is_viewable;
 	gboolean			visible;
+	gboolean			unmap_pending;
 	gboolean			is_shaped;
 	gboolean			is_shaded;
 	gboolean			is_fullscreen;
@@ -123,16 +135,14 @@ struct _CCMWindowPrivate
 	gboolean			skip_pager;
 	gboolean			keep_above;
 	gboolean			keep_below;
-	gboolean			has_format;
-	cairo_format_t		format;
 	gboolean			override_redirect;
-	XWindowAttributes   attribs;
 	
 	GSList*				properties_pending;
 	CCMPixmap*			pixmap;
 	
 	CCMWindowPlugin*	plugin;
 	
+	CCMRegion*			opaque;
 	CCMRegion*			orig_opaque;
 	double				opacity;
 	cairo_matrix_t		transform;
@@ -142,12 +152,44 @@ struct _CCMWindowPrivate
    ((CCMWindowPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW, CCMWindowClass))
 
 static void
+ccm_window_set_gobject_property(GObject *object,
+								guint prop_id,
+								const GValue *value,
+								GParamSpec *pspec)
+{
+	CCMWindowPrivate* priv = CCM_WINDOW_GET_PRIVATE(object);
+    
+	switch (prop_id)
+    {
+    	case PROP_CHILD:
+			priv->child = (Window)g_value_get_pointer (value);
+			break;
+    	default:
+			break;
+    }
+}
+
+static void
+ccm_window_get_gobject_property (GObject* object,
+								 guint prop_id,
+								 GValue* value,
+								 GParamSpec* pspec)
+{
+    CCMWindowPrivate* priv = CCM_WINDOW_GET_PRIVATE(object);
+    
+    switch (prop_id)
+    {
+    	case PROP_CHILD:
+			g_value_set_pointer (value, (gpointer)priv->child);
+			break;
+		default:
+			break;
+    }
+}
+
+static void
 ccm_window_init (CCMWindow *self)
 {
-	self->is_input_only = FALSE;
-	self->is_viewable = FALSE;
-	self->unmap_pending = FALSE;
-	self->opaque = NULL;
 	self->priv = CCM_WINDOW_GET_PRIVATE(self);
 	self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
 	self->priv->name = NULL;
@@ -155,7 +197,14 @@ ccm_window_init (CCMWindow *self)
 	self->priv->child = None;
 	self->priv->transient_for = None;
 	self->priv->group_leader = None;
+	self->priv->area.x = 0;
+	self->priv->area.y = 0;
+	self->priv->area.width = 0;
+	self->priv->area.height = 0;
+	self->priv->is_input_only = FALSE;
 	self->priv->visible = FALSE;
+	self->priv->is_viewable = FALSE;
+	self->priv->unmap_pending = FALSE;
 	self->priv->is_shaped = FALSE;
 	self->priv->is_shaded = FALSE;
 	self->priv->is_fullscreen = FALSE;
@@ -165,9 +214,8 @@ ccm_window_init (CCMWindow *self)
 	self->priv->skip_pager = FALSE;
 	self->priv->keep_above = FALSE;
 	self->priv->keep_below = FALSE;
-	self->priv->has_format = FALSE;
-	self->priv->format = CAIRO_FORMAT_ARGB32;
 	self->priv->override_redirect = FALSE;
+	self->priv->opaque = NULL;
 	self->priv->orig_opaque = NULL;
 	self->priv->opacity = 1.0f;
 	self->priv->properties_pending = NULL;
@@ -187,15 +235,36 @@ ccm_window_finalize (GObject *object)
 										  ccm_window_on_plugins_changed, 
 										  self);
 	
-	if (self->opaque) ccm_region_destroy(self->opaque);
-	if (self->priv->orig_opaque) ccm_region_destroy(self->priv->orig_opaque);
-	if (self->priv->pixmap) g_object_unref(self->priv->pixmap);
-	if (self->priv->name) g_free(self->priv->name);
-	if (self->priv->plugin) g_object_unref(self->priv->plugin);
+	if (self->priv->opaque) 
+	{
+		ccm_region_destroy(self->priv->opaque);
+		self->priv->opaque = NULL;
+	}
+	if (self->priv->orig_opaque) 
+	{
+		ccm_region_destroy(self->priv->orig_opaque);
+		self->priv->orig_opaque = NULL;
+	}
+	if (self->priv->pixmap) 
+	{
+		g_object_unref(self->priv->pixmap);
+		self->priv->pixmap = NULL;
+	}
+	if (self->priv->name) 
+	{
+		g_free(self->priv->name);
+		self->priv->name = NULL;
+	}
+	if (self->priv->plugin) 
+	{
+		g_object_unref(self->priv->plugin);
+		self->priv->plugin = NULL;
+	}
 	if (self->priv->properties_pending)
 	{
 		g_slist_foreach (self->priv->properties_pending, (GFunc)g_object_unref, NULL);
 		g_slist_free (self->priv->properties_pending);
+		self->priv->properties_pending = NULL;
 	}
 	G_OBJECT_CLASS (ccm_window_parent_class)->finalize (object);
 }
@@ -207,11 +276,19 @@ ccm_window_class_init (CCMWindowClass *klass)
 	
 	g_type_class_add_private (klass, sizeof (CCMWindowPrivate));
 	
-	klass->opacity_atom = None;
-	
+	object_class->get_property = ccm_window_get_gobject_property;
+    object_class->set_property = ccm_window_set_gobject_property;
+	object_class->finalize = ccm_window_finalize;
+
 	CCM_DRAWABLE_CLASS(klass)->query_geometry = ccm_window_query_geometry;
 	CCM_DRAWABLE_CLASS(klass)->move = ccm_window_move;
 	CCM_DRAWABLE_CLASS(klass)->resize = ccm_window_resize;
+	
+	g_object_class_install_property(object_class, PROP_CHILD,
+		g_param_spec_pointer ("child",
+		 					  "Child",
+			     			  "Child of window",
+			     			  G_PARAM_READWRITE));
 	
 	signals[PROPERTY_CHANGED] = g_signal_new ("property-changed",
 									 G_OBJECT_CLASS_TYPE (object_class),
@@ -224,8 +301,6 @@ ccm_window_class_init (CCMWindowClass *klass)
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__VOID,
 								   G_TYPE_NONE, 0);
-	
-	object_class->finalize = ccm_window_finalize;
 }
 
 static void
@@ -378,7 +453,7 @@ create_atoms(CCMWindow* self)
 	}
 }
 
-guint32 *
+static guint32 *
 ccm_window_get_property(CCMWindow* self, Atom property_atom, 
 						Atom req_type, guint *n_items)
 {
@@ -415,168 +490,6 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom,
     return result;
 }
 
-static void
-ccm_window_on_property_async_error(CCMWindow* self, CCMPropertyASync* prop)
-{
-	self->priv->properties_pending = 
-			g_slist_remove (self->priv->properties_pending, prop);
-	g_object_unref(prop);
-}
-
-static void
-ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result, 
-								 CCMPropertyASync* prop)
-{
-	if (!CCM_IS_WINDOW(self)) 
-	{
-		self->priv->properties_pending = 
-			g_slist_remove (self->priv->properties_pending, prop);
-		g_object_unref(prop);
-		return;
-	}
-	
-	g_return_if_fail(CCM_IS_PROPERTY_ASYNC(prop));
-	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
-	
-	Atom property = ccm_property_async_get_property (prop);
-		
-	if (property == CCM_WINDOW_GET_CLASS(self)->type_atom)
-	{
-		if (result)
-		{
-			CCMWindowType old = self->priv->hint_type;
-			Atom atom;
-			memcpy (&atom, result, sizeof (Atom));
-			
-			if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_menu_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_MENU;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_desktop_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DESKTOP;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dock_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DOCK;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_toolbar_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_TOOLBAR;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_util_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_UTILITY;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_splash_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_SPLASH;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dialog_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dropdown_menu_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DROPDOWN_MENU;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_popup_menu_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_POPUP_MENU;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_tooltip_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_TOOLTIP;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_notification_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_NOTIFICATION;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_combo_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_COMBO;
-			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dnd_atom)
-				self->priv->hint_type = CCM_WINDOW_TYPE_DND;
-			
-			if (old != self->priv->hint_type)
-			{
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
-							  CCM_PROPERTY_HINT_TYPE);
-			}
-		}
-	}
-	else if (property == CCM_WINDOW_GET_CLASS(self)->transient_for_atom)
-	{
-		gboolean updated = FALSE;
-		
-		if (result)
-		{
-			Window old = self->priv->transient_for;
-			
-			memcpy (&self->priv->transient_for, result, sizeof (Window));
-			updated = old != self->priv->transient_for;
-			
-			if (self->priv->transient_for != None && 
-				self->priv->hint_type == CCM_WINDOW_TYPE_NORMAL)
-			{
-				self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
-				updated = TRUE;
-			}
-		}
-		if (updated)
-		{
-			ccm_debug_window(self, "TRANSIENT FOR 0x%lx", self->priv->transient_for);
-			g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
-						  CCM_PROPERTY_TRANSIENT);
-		}
-	}
-	else if (property == CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom)
-	{
-		if (result)
-		{
-			MotifWmHints* hints;
-			gboolean old = self->priv->is_decorated;
-		
-			hints = (MotifWmHints*)result;
-		
-			if (hints->flags & MWM_HINTS_DECORATIONS)
-				self->priv->is_decorated = hints->decorations != 0;
-			if (old != self->priv->is_decorated)
-			{
-				ccm_debug_window(self, "IS_DECORATED %i", self->priv->is_decorated);
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
-							  CCM_PROPERTY_MWM_HINTS);
-			}
-		}
-	}
-	else if (property == CCM_WINDOW_GET_CLASS(self)->state_atom)
-	{
-		if (result) 
-		{
-			Atom *atom = (Atom *) result;
-			gulong cpt;
-			gboolean updated = FALSE;
-			
-			for (cpt = 0; cpt < n_items; cpt++)
-			{
-				updated |= ccm_window_set_state (self, atom[cpt]);
-			}
-			if (updated) 
-			{
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
-							  CCM_PROPERTY_STATE);
-			}
-		}
-	}
-	else if (property == CCM_WINDOW_GET_CLASS(self)->opacity_atom)
-	{
-		if (result) 
-		{
-			gdouble old = self->priv->opacity;
-			guint32 value;
-			memcpy (&value, result, sizeof (guint32));
-			self->priv->opacity = (double)value/ (double)0xffffffff;
-			
-			ccm_debug_window(self, "OPACITY 0x%x %f", value, self->priv->opacity);
-			if (self->priv->opacity == 1.0f && 
-				ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 &&
-				!self->opaque)
-				ccm_window_set_opaque(self);
-			else
-				ccm_window_set_alpha(self);
-			if (old != self->priv->opacity)
-			{
-				ccm_drawable_damage (CCM_DRAWABLE(self));
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
-							  CCM_PROPERTY_OPACITY);
-			}
-		}
-	}		
-
-	self->priv->properties_pending = 
-			g_slist_remove (self->priv->properties_pending, prop);
-	g_object_unref(prop);
-}
-								 
 static void
 ccm_window_get_property_async(CCMWindow* self, Atom property_atom, 
 							  Atom req_type, long length)
@@ -784,6 +697,31 @@ ccm_window_get_child_text_property (CCMWindow* self, Atom atom)
 }
 
 static void
+ccm_window_get_plugins(CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
+	GSList* item, *plugins = _ccm_screen_get_window_plugins(screen);
+	
+	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin)) 
+		g_object_unref(self->priv->plugin);
+	
+	self->priv->plugin = (CCMWindowPlugin*)self;
+	
+	for (item = plugins; item; item = item->next)
+	{
+		GType type = GPOINTER_TO_INT(item->data);
+		GObject* prev = G_OBJECT(self->priv->plugin);
+		
+		self->priv->plugin = g_object_new(type, "parent", prev, NULL);
+	}
+	g_slist_free(plugins);
+	
+	ccm_window_plugin_load_options(self->priv->plugin, self);
+}
+
+static void
 ccm_window_query_child(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
@@ -830,6 +768,70 @@ ccm_window_query_child(CCMWindow* self)
 	if (windows) XFree(windows);
 }
 
+static gboolean
+ccm_window_get_attribs (CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+
+	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+	XWindowAttributes attribs;
+	
+	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
+							   CCM_WINDOW_XWINDOW(self), &attribs))
+		return FALSE;
+	
+	self->priv->root = attribs.root;
+	
+	self->priv->area.x = attribs.x - attribs.border_width;
+	self->priv->area.y = attribs.y - attribs.border_width;
+	self->priv->area.width = attribs.width + (attribs.border_width * 2);
+	self->priv->area.height = attribs.height + (attribs.border_width * 2);
+	
+	g_object_set(self, "visual", attribs.visual, NULL);
+	g_object_set(self, "depth", attribs.depth, NULL);
+	
+	self->priv->is_viewable = attribs.map_state == IsViewable;
+	self->priv->is_input_only = attribs.class == InputOnly;
+	self->priv->override_redirect = attribs.override_redirect;
+	
+	return TRUE;
+}
+
+static void
+ccm_window_query_geometry(CCMDrawable* drawable)
+{
+	g_return_if_fail(drawable != NULL);
+
+	CCMWindow* self = CCM_WINDOW(drawable);
+	CCMRegion* geometry = NULL;
+	
+	geometry = ccm_window_plugin_query_geometry(self->priv->plugin, self);
+	
+	g_object_set(self, "geometry", geometry, NULL);
+	
+	ccm_region_destroy (geometry);
+}
+
+static void
+ccm_window_move(CCMDrawable* drawable, int x, int y)
+{
+	g_return_if_fail(drawable != NULL);
+	
+	CCMWindow* self = CCM_WINDOW(drawable);
+
+	ccm_window_plugin_move(self->priv->plugin, self, x , y);
+}
+
+static void
+ccm_window_resize(CCMDrawable* drawable, int width, int height)
+{
+	g_return_if_fail(drawable != NULL);
+	
+	CCMWindow* self = CCM_WINDOW(drawable);
+
+	ccm_window_plugin_resize(self->priv->plugin, self, width, height);
+}
+
 static CCMRegion*
 impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 {
@@ -839,17 +841,8 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	int bx, by, cs, cx, cy, o; /* dummies */
 	unsigned int bw, bh, cw, ch; /* dummies */
-	cairo_rectangle_t area;
 	
-	_ccm_display_trap_error (display);
-	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
-							   CCM_WINDOW_XWINDOW(self), &self->priv->attribs))
-	{
-		g_signal_emit (self, signals[ERROR], 0);
-		return NULL;
-	}
-	
-	if (_ccm_display_pop_error (display))
+	if (!ccm_window_get_attribs(self))
 	{
 		g_signal_emit (self, signals[ERROR], 0);
 		return NULL;
@@ -872,8 +865,7 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 			for (cpt = 0; cpt < nb; cpt++)
 				ccm_region_union_with_xrect(geometry, &shapes[cpt]);
 			ccm_region_offset(geometry, 
-							  self->priv->attribs.x - self->priv->attribs.border_width, 
-							  self->priv->attribs.y - self->priv->attribs.border_width);
+							  self->priv->area.x, self->priv->area.y);
 		}
 		else
 			self->priv->is_shaped = FALSE;
@@ -882,23 +874,42 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	
 	if (!self->priv->is_shaped)
 	{
-		area.x = self->priv->attribs.x - self->priv->attribs.border_width;
-		area.y = self->priv->attribs.y - self->priv->attribs.border_width;
-		area.width = self->priv->attribs.width + self->priv->attribs.border_width * 2;
-		area.height = self->priv->attribs.height + self->priv->attribs.border_width * 2;
-		geometry = ccm_region_rectangle(&area);
+		geometry = ccm_region_rectangle(&self->priv->area);
 	}
 	
 	ccm_window_set_alpha(self);
 	if (geometry &&
-		ccm_window_get_format(self) != CAIRO_FORMAT_ARGB32 && 
+		ccm_drawable_get_format(CCM_DRAWABLE(self)) != CAIRO_FORMAT_ARGB32 && 
 		self->priv->opacity == 1.0f)
 	{
 		CCMRegion* area = ccm_region_copy(geometry);
 		ccm_window_set_opaque_region (self, area);
 		ccm_region_destroy (area);
 	}
+	
+	if (geometry)
+	{
+		cairo_rectangle_t clipbox;
+		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
 		
+		ccm_region_get_clipbox (geometry, &clipbox);
+		if (clipbox.x <= 0 && clipbox.y <= 0 && 
+			clipbox.width >= CCM_SCREEN_XSCREEN(screen)->width &&
+			clipbox.height >= CCM_SCREEN_XSCREEN(screen)->height &&
+			!self->priv->is_fullscreen)
+		{
+			self->priv->is_fullscreen = TRUE;
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+						  CCM_PROPERTY_STATE);
+		}
+		else if (self->priv->is_fullscreen)
+		{
+			self->priv->is_fullscreen = FALSE;
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+						  CCM_PROPERTY_STATE);
+		}
+	}
+
 	if (self->priv->pixmap)
 	{
 		g_object_unref(self->priv->pixmap);
@@ -906,54 +917,6 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	}
 	
 	return geometry;
-}
-
-static CCMRegion*
-ccm_window_query_geometry(CCMDrawable* drawable)
-{
-	g_return_val_if_fail(drawable != NULL, NULL);
-
-	CCMWindow* self = CCM_WINDOW(drawable);
-	CCMRegion* geometry = NULL;
-	
-	geometry = ccm_window_plugin_query_geometry(self->priv->plugin, self);
-	
-	return geometry;
-}
-
-static void
-ccm_window_move(CCMDrawable* drawable, int x, int y)
-{
-	g_return_if_fail(drawable != NULL);
-	
-	CCMWindow* self = CCM_WINDOW(drawable);
-
-	ccm_window_plugin_move(self->priv->plugin, self, x , y);
-}
-
-static void
-ccm_window_get_plugins(CCMWindow* self)
-{
-	g_return_if_fail(self != NULL);
-	
-	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
-	GSList* item, *plugins = _ccm_screen_get_window_plugins(screen);
-	
-	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin)) 
-		g_object_unref(self->priv->plugin);
-	
-	self->priv->plugin = (CCMWindowPlugin*)self;
-	
-	for (item = plugins; item; item = item->next)
-	{
-		GType type = GPOINTER_TO_INT(item->data);
-		GObject* prev = G_OBJECT(self->priv->plugin);
-		
-		self->priv->plugin = g_object_new(type, "parent", prev, NULL);
-	}
-	g_slist_free(plugins);
-	
-	ccm_window_plugin_load_options(self->priv->plugin, self);
 }
 
 static void
@@ -967,33 +930,23 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
 		
-		if (self->is_viewable && !self->is_input_only && 
+		if (self->priv->is_viewable && !self->priv->is_input_only && 
 			self->priv->is_decorated && !self->priv->override_redirect) 
 			_ccm_screen_set_buffered (screen, TRUE);
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
-		if (self->opaque)
-			ccm_region_offset(self->opaque, x - geometry.x, y - geometry.y);
-		if ((self->is_viewable || self->unmap_pending) &&
+		if (self->priv->opaque)
+			ccm_region_offset(self->priv->opaque, x - geometry.x, y - geometry.y);
+		if ((self->priv->is_viewable || self->priv->unmap_pending) &&
 			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
 		{
 			ccm_region_union_with_rect (old_geometry, &geometry);
 			ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
 		}
 		ccm_region_destroy (old_geometry);
-		self->priv->attribs.x = x;
-		self->priv->attribs.y = y;
+		self->priv->area.x = x;
+		self->priv->area.y = y;
 	}
-}
-
-static void
-ccm_window_resize(CCMDrawable* drawable, int width, int height)
-{
-	g_return_if_fail(drawable != NULL);
-	
-	CCMWindow* self = CCM_WINDOW(drawable);
-
-	ccm_window_plugin_resize(self->priv->plugin, self, width, height);
 }
 
 static void
@@ -1014,21 +967,23 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 															width, height);
 		
 		if (self->priv->hint_type != CCM_WINDOW_TYPE_DESKTOP &&
-			((ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) &&
-			 geometry.x <= 0 && geometry.y <= 0 && 
+			(ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) &&
+			 ((geometry.x <= 0 && geometry.y <= 0 && 
 			 geometry.width >= CCM_SCREEN_XSCREEN(screen)->width &&
 			 geometry.height >= CCM_SCREEN_XSCREEN(screen)->height) || 
-			 self->priv->is_fullscreen))
+			 !self->priv->is_fullscreen)))
 		{
-			self->priv->is_fullscreen = !self->priv->is_fullscreen;
+			ccm_window_switch_state (self, CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom);
 			ccm_screen_damage (screen);
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+						  CCM_PROPERTY_STATE);
 		}
 		else
 		{
 			ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
 			ccm_drawable_damage (CCM_DRAWABLE(self));
 		}
-		ccm_region_destroy (old_geometry);
+		if (old_geometry) ccm_region_destroy (old_geometry);
 		
 		if (self->priv->pixmap)
 		{
@@ -1057,6 +1012,7 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 		cairo_paint_with_alpha(context, self->priv->opacity);
 		if (cairo_status (context) != CAIRO_STATUS_SUCCESS)
 		{
+			ccm_debug_window(self, "PAINT ERROR %i", cairo_status (context));
 			g_object_unref(self->priv->pixmap);
 			self->priv->pixmap = NULL;
 			g_signal_emit (self, signals[ERROR], 0);
@@ -1089,19 +1045,22 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	
-	CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self));
+	const CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self));
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 	
-	self->is_viewable = FALSE;
+	self->priv->is_viewable = FALSE;
 	self->priv->visible = FALSE;
-	self->unmap_pending = FALSE;
+	self->priv->unmap_pending = FALSE;
 	ccm_debug_window(self, "IMPL WINDOW UNMAP");
 	if (self->priv->pixmap)
 	{
 		g_object_unref(self->priv->pixmap);
 		self->priv->pixmap = NULL;
 	}
-	ccm_screen_damage_region (screen, geometry);
+	if (geometry)
+		ccm_screen_damage_region (screen, geometry);
+	else
+		ccm_screen_damage (screen);
 }
 	
 static void
@@ -1118,19 +1077,187 @@ impl_ccm_window_query_opacity(CCMWindowPlugin* plugin, CCMWindow* self)
 
 static void
 impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* self,
-								  CCMRegion* area)
+								  const CCMRegion* area)
 {
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(area != NULL);
 
-	ccm_window_set_alpha(self);
-	if (!ccm_region_empty(area))
+	if (!ccm_region_empty((CCMRegion*)area))
 	{
-		self->priv->orig_opaque = ccm_region_copy(area);
-		self->opaque = ccm_region_copy(area);
-		ccm_region_transform (self->opaque, &self->priv->transform);
+		ccm_window_set_alpha(self);
+		self->priv->orig_opaque = ccm_region_copy((CCMRegion*)area);
+		self->priv->opaque = ccm_region_copy((CCMRegion*)area);
+		ccm_region_transform (self->priv->opaque, &self->priv->transform);
 	}
+}
+
+static void
+ccm_window_on_property_async_error(CCMWindow* self, CCMPropertyASync* prop)
+{
+	self->priv->properties_pending = 
+			g_slist_remove (self->priv->properties_pending, prop);
+	g_object_unref(prop);
+}
+
+static void
+ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result, 
+								 CCMPropertyASync* prop)
+{
+	if (!CCM_IS_WINDOW(self)) 
+	{
+		self->priv->properties_pending = 
+			g_slist_remove (self->priv->properties_pending, prop);
+		g_object_unref(prop);
+		return;
+	}
+	
+	g_return_if_fail(CCM_IS_PROPERTY_ASYNC(prop));
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
+	
+	Atom property = ccm_property_async_get_property (prop);
+		
+	if (property == CCM_WINDOW_GET_CLASS(self)->type_atom)
+	{
+		if (result)
+		{
+			CCMWindowType old = self->priv->hint_type;
+			Atom atom;
+			memcpy (&atom, result, sizeof (Atom));
+			
+			if (atom == CCM_WINDOW_GET_CLASS(self)->type_normal_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_menu_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_MENU;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_desktop_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_DESKTOP;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dock_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_DOCK;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_toolbar_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_TOOLBAR;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_util_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_UTILITY;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_splash_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_SPLASH;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dialog_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dropdown_menu_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_DROPDOWN_MENU;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_popup_menu_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_POPUP_MENU;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_tooltip_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_TOOLTIP;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_notification_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_NOTIFICATION;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_combo_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_COMBO;
+			else if (atom == CCM_WINDOW_GET_CLASS(self)->type_dnd_atom)
+				self->priv->hint_type = CCM_WINDOW_TYPE_DND;
+			
+			if (old != self->priv->hint_type)
+			{
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+							  CCM_PROPERTY_HINT_TYPE);
+			}
+		}
+	}
+	else if (property == CCM_WINDOW_GET_CLASS(self)->transient_for_atom)
+	{
+		gboolean updated = FALSE;
+		
+		if (result)
+		{
+			Window old = self->priv->transient_for;
+			
+			memcpy (&self->priv->transient_for, result, sizeof (Window));
+			updated = old != self->priv->transient_for;
+			
+			if (self->priv->transient_for != None && 
+				self->priv->hint_type == CCM_WINDOW_TYPE_NORMAL)
+			{
+				self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
+				updated = TRUE;
+			}
+		}
+		if (updated)
+		{
+			ccm_debug_window(self, "TRANSIENT FOR 0x%lx", self->priv->transient_for);
+			g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+						  CCM_PROPERTY_TRANSIENT);
+		}
+	}
+	else if (property == CCM_WINDOW_GET_CLASS(self)->mwm_hints_atom)
+	{
+		if (result)
+		{
+			MotifWmHints* hints;
+			gboolean old = self->priv->is_decorated;
+		
+			hints = (MotifWmHints*)result;
+		
+			if (hints->flags & MWM_HINTS_DECORATIONS)
+				self->priv->is_decorated = hints->decorations != 0;
+			if (old != self->priv->is_decorated)
+			{
+				ccm_debug_window(self, "IS_DECORATED %i", self->priv->is_decorated);
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+							  CCM_PROPERTY_MWM_HINTS);
+			}
+		}
+	}
+	else if (property == CCM_WINDOW_GET_CLASS(self)->state_atom)
+	{
+		if (result) 
+		{
+			Atom *atom = (Atom *) result;
+			gulong cpt;
+			gboolean updated = FALSE;
+			
+			for (cpt = 0; cpt < n_items; cpt++)
+			{
+				updated |= ccm_window_set_state (self, atom[cpt]);
+			}
+			if (updated) 
+			{
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+							  CCM_PROPERTY_STATE);
+			}
+		}
+	}
+	else if (property == CCM_WINDOW_GET_CLASS(self)->opacity_atom)
+	{
+		if (result) 
+		{
+			gdouble old = self->priv->opacity;
+			guint32 value;
+			memcpy (&value, result, sizeof (guint32));
+			self->priv->opacity = (double)value/ (double)0xffffffff;
+			
+			if (self->priv->opacity == 1.0f && 
+				ccm_drawable_get_format(CCM_DRAWABLE(self)) != CAIRO_FORMAT_ARGB32 &&
+				!self->priv->opaque)
+				ccm_window_set_opaque(self);
+			else
+				ccm_window_set_alpha(self);
+			if (old != self->priv->opacity)
+			{
+				ccm_drawable_damage (CCM_DRAWABLE(self));
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+							  CCM_PROPERTY_OPACITY);
+			}
+		}
+	}		
+
+	self->priv->properties_pending = 
+			g_slist_remove (self->priv->properties_pending, prop);
+	g_object_unref(prop);
+}
+								 
+static void
+ccm_window_on_plugins_changed(CCMWindow* self, CCMScreen* screen)
+{
+	ccm_window_get_plugins (self);
+	ccm_drawable_damage (CCM_DRAWABLE(self));
 }
 
 CCMWindowPlugin*
@@ -1149,37 +1276,15 @@ _ccm_window_get_plugin(CCMWindow *self, GType type)
 	return NULL;
 }
 
-Window
-_ccm_window_get_child(CCMWindow* self)
-{
-	g_return_val_if_fail(self != NULL, None);
-	
-	return self->priv->child;
-}
-
-XWindowAttributes*
-_ccm_window_get_attribs(CCMWindow* self)
-{
-	g_return_val_if_fail(self != NULL, None);
-	
-	return &self->priv->attribs;
-}
-
-void
-_ccm_window_set_child(CCMWindow* self, Window child)
-{
-	g_return_if_fail(self != NULL);
-	
-	self->priv->child = child;
-}
-
-static void
-ccm_window_on_plugins_changed(CCMWindow* self, CCMScreen* screen)
-{
-	ccm_window_get_plugins (self);
-	ccm_drawable_damage (CCM_DRAWABLE(self));
-}
-
+/**
+ * ccm_window_new:
+ * @screen: #CCMScreen of window
+ * @xwindow: window xid
+ *
+ * Create a new #CCMWindow reference which point on @xwindow
+ *
+ * Returns: #CCMWindow
+ **/
 CCMWindow *
 ccm_window_new (CCMScreen* screen, Window xwindow)
 {
@@ -1196,16 +1301,18 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	ccm_display_sync(display);
 	
 	ccm_window_get_plugins (self);
-	
-	if (!ccm_drawable_query_geometry(CCM_DRAWABLE(self)))
+	if (!ccm_window_get_attribs (self))
 	{
 		g_object_unref(self);
 		return NULL;
 	}
 	
-	if (self->priv->attribs.root != None && 
+	if (!self->priv->is_input_only)
+	    ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+	
+	if (self->priv->root != None && 
 		xwindow != RootWindowOfScreen(CCM_SCREEN_XSCREEN(screen)) &&
-		self->priv->attribs.root != RootWindowOfScreen(CCM_SCREEN_XSCREEN(screen)))
+		self->priv->root != RootWindowOfScreen(CCM_SCREEN_XSCREEN(screen)))
 	{
 		g_object_unref(self);
 		return NULL;
@@ -1214,11 +1321,10 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	g_signal_connect_swapped(screen, "plugins-changed", 
 							 G_CALLBACK(ccm_window_on_plugins_changed), self);
 	
-	ccm_window_get_format (self);
 	ccm_window_set_opacity(self, 1.0f);
 	ccm_window_init_transfrom (self);
 	
-	if (!self->is_input_only)
+	if (!self->priv->is_input_only)
 	{
 		CCMDisplay* display = ccm_screen_get_display(screen);
 	
@@ -1241,12 +1347,90 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	return self;
 }
 
+/**
+ * ccm_window_is_viewable:
+ * @self: #CCMWindow
+ *
+ * Indicate if window is visible
+ *
+ * Returns: window is visible
+ **/
+gboolean
+ccm_window_is_viewable (CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	return self->priv->is_viewable || self->priv->unmap_pending;
+}
+
+/**
+ * ccm_window_is_input_only:
+ * @self: #CCMWindow
+ *
+ * Indicate if window is input only
+ *
+ * Returns: window is input only
+ **/
+gboolean
+ccm_window_is_input_only (CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	return self->priv->is_input_only;
+}
+
+/**
+ * ccm_window_is_managed:
+ * @self: #CCMWindow
+ *
+ * Indicate if window is managed by WM
+ *
+ * Returns: window is managed
+ **/
 gboolean
 ccm_window_is_managed(CCMWindow* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 
 	return !self->priv->override_redirect;
+}
+
+/**
+ * ccm_window_get_opaque_region:
+ * @self: #CCMWindow
+ *
+ * Get opaque region of window
+ *
+ * Returns: #CCMRegion
+ **/
+const CCMRegion*
+ccm_window_get_opaque_region(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	return self->priv->opaque;
+}
+
+/**
+ * ccm_window_get_opaque_clipbox:
+ * @self: #CCMWindow
+ * @clipbox: #cairo_rectangle_t
+ *
+ * Get opaque clipbox of window
+ *
+ * Returns: TRUE if window have opaque region
+ **/
+gboolean
+ccm_window_get_opaque_clipbox(CCMWindow* self, cairo_rectangle_t* clipbox)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	if (self->priv->opaque && !ccm_region_empty(self->priv->opaque))
+	{
+		ccm_region_get_clipbox (self->priv->opaque, clipbox);
+		return TRUE;
+	}
+	return FALSE;
 }
 
 void
@@ -1685,7 +1869,7 @@ ccm_window_get_pixmap(CCMWindow* self)
 		ccm_display_sync(display);
 		if (xpixmap && !_ccm_display_pop_error (display))
 		{
-			self->priv->pixmap = ccm_pixmap_new(self, xpixmap);
+			self->priv->pixmap = ccm_pixmap_new(CCM_DRAWABLE(self), xpixmap);
 			if (self->priv->pixmap)
 				g_signal_connect_swapped(self->priv->pixmap, "damaged", 
 										 G_CALLBACK(on_pixmap_damaged), self);
@@ -1695,78 +1879,18 @@ ccm_window_get_pixmap(CCMWindow* self)
 	return self->priv->pixmap;
 }
 
-cairo_format_t
-ccm_window_get_format (CCMWindow* self)
+CCMPixmap*
+ccm_window_create_pixmap(CCMWindow* self, int width, int height, int depth)
 {
-    g_return_val_if_fail(self != NULL, 0);
+	g_return_val_if_fail(self != NULL, NULL);
 	
-    if (self->priv->has_format) return self->priv->format;
-    
-    self->is_viewable = self->priv->attribs.map_state == IsViewable;
-	self->priv->override_redirect = self->priv->attribs.override_redirect;
+	CCMPixmap* pixmap = NULL;
 	
-    if (self->priv->attribs.class == InputOnly)
-    {
-		self->is_input_only = TRUE;
-    }
-    else if (self->priv->attribs.depth == 16 &&
-			 self->priv->attribs.visual->red_mask == 0xf800 &&
-			 self->priv->attribs.visual->green_mask == 0x7e0 &&
-			 self->priv->attribs.visual->blue_mask == 0x1f)
-    {
-		self->priv->format = CAIRO_FORMAT_A8;
-    }
-    else if (self->priv->attribs.depth == 24 &&
-	     	 self->priv->attribs.visual->red_mask == 0xff0000 &&
-			 self->priv->attribs.visual->green_mask == 0xff00 &&
-			 self->priv->attribs.visual->blue_mask == 0xff)
-    {
-		self->priv->format = CAIRO_FORMAT_RGB24;
-    }
-    else if (self->priv->attribs.depth == 32 &&
-			 self->priv->attribs.visual->red_mask == 0xff0000 &&
-			 self->priv->attribs.visual->green_mask == 0xff00 &&
-			 self->priv->attribs.visual->blue_mask == 0xff)
-    {
-		self->priv->format = CAIRO_FORMAT_ARGB32;
-    }
-    else
-    {
-		g_warning ("Unknown visual format depth=%d, r=%#lx/g=%#lx/b=%#lx",
-				   self->priv->attribs.depth, 
-				   self->priv->attribs.visual->red_mask,
-				   self->priv->attribs.visual->green_mask, 
-				   self->priv->attribs.visual->blue_mask);
-	
-		self->priv->format = CAIRO_FORMAT_ARGB32;
-    }
-    
-	self->priv->has_format = TRUE;
-    
-    return self->priv->format;
-}
-
-guint
-ccm_window_get_depth (CCMWindow* self)
-{
-    g_return_val_if_fail(self != NULL, 0);
-	
-    switch (ccm_window_get_format(self))
-    {
-    	case CAIRO_FORMAT_A8:
-		return 16;
-
-    	case CAIRO_FORMAT_RGB24:
-		return 24;
-	
-    	case CAIRO_FORMAT_ARGB32:
-		return 32;
-
-		default:
-		break;
-    };
-
-    return 0;
+	if (CCM_WINDOW_GET_CLASS(self)->create_pixmap)
+		pixmap = CCM_WINDOW_GET_CLASS(self)->create_pixmap(self, width, 
+														   height, depth);
+	   
+	return pixmap;
 }
 
 gfloat
@@ -1785,7 +1909,7 @@ ccm_window_set_opacity (CCMWindow* self, gfloat opacity)
 	self->priv->opacity = opacity;
 	if (self->priv->opacity < 1.0f)
 		ccm_window_set_alpha(self);
-	else if (self->priv->format != CAIRO_FORMAT_ARGB32)
+	else if (ccm_drawable_get_format (CCM_DRAWABLE(self)) != CAIRO_FORMAT_ARGB32)
 		ccm_window_set_opaque(self);
 }
 
@@ -1799,7 +1923,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 	
 	cairo_path_t* damaged;
 			
-	if (!self->is_viewable && !self->unmap_pending &&
+	if (!self->priv->is_viewable && !self->priv->unmap_pending &&
 		!self->priv->is_shaded)
 	{
 		ccm_drawable_repair(CCM_DRAWABLE(self));
@@ -1859,8 +1983,8 @@ ccm_window_map(CCMWindow* self)
 	if (!self->priv->visible)
 	{
 		self->priv->visible = TRUE;
-		self->is_viewable = TRUE;
-		self->unmap_pending = FALSE;
+		self->priv->is_viewable = TRUE;
+		self->priv->unmap_pending = FALSE;
 		
 		ccm_debug_window(self, "WINDOW MAP");
 		ccm_window_plugin_map(self->priv->plugin, self);
@@ -1876,8 +2000,8 @@ ccm_window_unmap(CCMWindow* self)
 	if (self->priv->visible)
 	{
 		self->priv->visible = FALSE;
-		self->is_viewable = FALSE;
-		self->unmap_pending = TRUE;
+		self->priv->is_viewable = FALSE;
+		self->priv->unmap_pending = TRUE;
 		
 		if (self->priv->is_fullscreen)
 			ccm_window_switch_state (self, CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom);
@@ -2011,13 +2135,13 @@ ccm_window_add_alpha_region(CCMWindow* self, CCMRegion* region)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(region != NULL);
 	
-	if (self->opaque && self->priv->orig_opaque)
+	if (self->priv->opaque && self->priv->orig_opaque)
 	{
 		ccm_region_subtract(self->priv->orig_opaque, region);
-		if (ccm_region_empty(self->opaque))
+		if (ccm_region_empty(self->priv->opaque))
 		{
-			ccm_region_destroy(self->opaque);
-			self->opaque = NULL;
+			ccm_region_destroy(self->priv->opaque);
+			self->priv->opaque = NULL;
 		}
 	}
 }
@@ -2027,10 +2151,10 @@ ccm_window_set_alpha(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->opaque)
+	if (self->priv->opaque)
 	{
-		ccm_region_destroy(self->opaque);
-		self->opaque = NULL;
+		ccm_region_destroy(self->priv->opaque);
+		self->priv->opaque = NULL;
 	}
 	if (self->priv->orig_opaque)
 	{
@@ -2040,7 +2164,7 @@ ccm_window_set_alpha(CCMWindow* self)
 }
 
 void
-ccm_window_set_opaque_region(CCMWindow* self, CCMRegion* region)
+ccm_window_set_opaque_region(CCMWindow* self, const CCMRegion* region)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(region != NULL);
@@ -2053,7 +2177,7 @@ ccm_window_set_opaque(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(self));
+	const CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(self));
 	
 	ccm_window_set_alpha(self);
 	if (geometry) ccm_window_set_opaque_region (self, geometry);
@@ -2065,6 +2189,15 @@ ccm_window_is_decorated(CCMWindow* self)
 	g_return_val_if_fail(self != NULL, TRUE);
 	
 	return self->priv->is_decorated;
+}
+
+const cairo_rectangle_t*
+ccm_window_get_area(CCMWindow* self)
+{
+	g_return_val_if_fail(self, NULL);
+	
+	return self->priv->area.width <= 0 || self->priv->area.height <= 0 ?
+		   NULL : &self->priv->area;
 }
 
 gboolean
@@ -2126,7 +2259,7 @@ ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix, gboolean damag
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(matrix != NULL);
 	
-	CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(self));
+	CCMRegion* geometry = (CCMRegion*)ccm_drawable_get_geometry (CCM_DRAWABLE(self));
 	CCMRegion* old_geometry = NULL;
 	
 	if (damage && geometry)
@@ -2193,7 +2326,7 @@ ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 		if (y_invert)
 		{
 			cairo_matrix_scale (&matrix, 1.0, -1.0);
-			cairo_matrix_translate (&matrix, 0.0f, -self->priv->attribs.height);
+			cairo_matrix_translate (&matrix, 0.0f, -self->priv->area.height);
 		}
 		
 		cairo_identity_matrix (ctx);

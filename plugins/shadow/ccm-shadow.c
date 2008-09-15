@@ -223,10 +223,9 @@ ccm_shadow_check_needed(CCMShadow* self)
 {
 	g_return_val_if_fail(CCM_IS_SHADOW(self), FALSE);
 	
-	ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self->priv->window));
-	ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
-	
+	ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+
 	self->priv->id_check = 0;
 	
 	return FALSE;
@@ -238,13 +237,14 @@ ccm_shadow_need_shadow(CCMWindow* window)
 	g_return_val_if_fail(window != NULL, FALSE);
 	
 	CCMWindowType type = ccm_window_get_hint_type(window);
+	const CCMRegion* opaque = ccm_window_get_opaque_region (window);
 	
-	return !window->is_input_only &&
+	return !ccm_window_is_input_only (window) &&
 		   (ccm_window_is_decorated (window) || 
 		    (type != CCM_WINDOW_TYPE_NORMAL && 
 			 type != CCM_WINDOW_TYPE_DIALOG)) && 
-		   (type != CCM_WINDOW_TYPE_DOCK || window->opaque) &&
-		   ((type != CCM_WINDOW_TYPE_DOCK && window->opaque) || 
+		   (type != CCM_WINDOW_TYPE_DOCK || opaque) &&
+		   ((type != CCM_WINDOW_TYPE_DOCK && opaque) || 
 			(!ccm_window_skip_taskbar (window) &&   
 			 !ccm_window_skip_pager (window))) &&   
 		   (ccm_window_is_managed(window) ||   
@@ -428,7 +428,7 @@ ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 
 static void 
 ccm_shadow_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* window,
-							 CCMRegion* area)
+							 const CCMRegion* area)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
        
@@ -436,7 +436,7 @@ ccm_shadow_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* window,
 	{
 		CCMRegion* opaque = ccm_region_copy(self->priv->geometry);
 		
-		ccm_region_intersect (opaque, area);
+		ccm_region_intersect (opaque, (CCMRegion*)area);
 	
 		ccm_window_plugin_set_opaque_region (CCM_WINDOW_PLUGIN_PARENT(plugin), 
 											 window, opaque);

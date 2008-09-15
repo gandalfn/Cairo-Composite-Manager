@@ -166,7 +166,7 @@ ccm_pixmap_buffered_image_sync(CCMPixmapBufferedImage* self, cairo_surface_t* su
 			width = cairo_image_surface_get_width (surface);
 			height = cairo_image_surface_get_height (surface);
 
-			if (ccm_window_get_format(CCM_PIXMAP(self)->window) == CAIRO_FORMAT_ARGB32) 
+			if (ccm_drawable_get_format(CCM_DRAWABLE(self)) == CAIRO_FORMAT_ARGB32) 
 				content = CAIRO_CONTENT_COLOR_ALPHA;
 			else
 				content = CAIRO_CONTENT_COLOR;
@@ -198,7 +198,7 @@ ccm_pixmap_buffered_image_sync(CCMPixmapBufferedImage* self, cairo_surface_t* su
 		ccm_region_destroy (self->priv->need_to_sync);
 		self->priv->need_to_sync = NULL;
 		
-		if (ccm_window_get_format (CCM_PIXMAP(self)->window) == CAIRO_FORMAT_ARGB32)
+		if (ccm_drawable_get_format (CCM_DRAWABLE(self)) == CAIRO_FORMAT_ARGB32)
 		{
 			cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
 			cairo_paint (cr);

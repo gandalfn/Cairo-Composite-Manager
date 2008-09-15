@@ -87,6 +87,9 @@ struct _CCMWindowClass
 	Atom			 frame_extends_atom;
 	
 	Atom			 transient_for_atom;
+	
+	CCMPixmap*       (*create_pixmap) (CCMWindow* self, int width, int height,
+	                                   int depth);
 };
 
 typedef struct _CCMWindowPrivate CCMWindowPrivate;
@@ -95,20 +98,11 @@ struct _CCMWindow
 {
 	CCMDrawable       parent_instance;
 	
-	gboolean 		  is_viewable;
-	gboolean		  unmap_pending;
-	gboolean 		  is_input_only;
-	
-	CCMRegion*		  opaque;
-	
 	CCMWindowPrivate* priv;
 };
 
 GType ccm_window_get_type (void) G_GNUC_CONST;
 CCMWindowPlugin* _ccm_window_get_plugin(CCMWindow *self, GType type);
-Window _ccm_window_get_child(CCMWindow* self);
-void _ccm_window_set_child(CCMWindow* self, Window child);
-XWindowAttributes* _ccm_window_get_attribs(CCMWindow* self);
 
 G_END_DECLS
 

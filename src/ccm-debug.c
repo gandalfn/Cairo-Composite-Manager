@@ -95,7 +95,7 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 {
 	va_list args;
 	gchar* formatted;
-	CCMRegion* damaged,* geometry;
+	const CCMRegion* damaged,* geometry;
 	va_start (args, format);
 	formatted = g_strdup_vprintf (format, args);
 	va_end (args);
@@ -107,7 +107,7 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 	if (geometry)
 	{
 		g_print("-> geometry : \n");
-		ccm_region_get_rectangles (geometry, &rects, &nb_rects);
+		ccm_region_get_rectangles ((CCMRegion*)geometry, &rects, &nb_rects);
 	
 		for (cpt = 0; cpt < nb_rects; cpt++)
 			g_print("--> %i, %i, %i, %i\n", (int)rects[cpt].x, (int)rects[cpt].y,
@@ -115,11 +115,11 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 		g_free(rects);
 	}	
 	
-	damaged = _ccm_drawable_get_damaged (drawable);
+	g_object_get (drawable, "damaged", &damaged, NULL);
 	if (damaged)
 	{
 		g_print("-> damaged : \n");
-		ccm_region_get_rectangles (damaged, &rects, &nb_rects);
+		ccm_region_get_rectangles ((CCMRegion*)damaged, &rects, &nb_rects);
 		
 		for (cpt = 0; cpt < nb_rects; cpt++)
 			g_print("--> %i, %i, %i, %i\n", (int)rects[cpt].x, (int)rects[cpt].y,

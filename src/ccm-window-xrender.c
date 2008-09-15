@@ -27,6 +27,7 @@
 
 #include "ccm-display.h"
 #include "ccm-screen.h"
+#include "ccm-pixmap.h"
 #include "ccm-window-xrender.h"
 
 G_DEFINE_TYPE (CCMWindowXRender, ccm_window_xrender, CCM_TYPE_WINDOW);
@@ -41,9 +42,10 @@ struct _CCMWindowXRenderPrivate
    ((CCMWindowXRenderPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_X_RENDER, CCMWindowXRenderClass))
 
 static cairo_surface_t* ccm_window_xrender_get_surface(CCMDrawable* drawable);
-static Visual*	ccm_window_xrender_get_visual(CCMDrawable* drawable);
 static void ccm_window_xrender_flush(CCMDrawable* drawable);
 static void ccm_window_xrender_flush_region(CCMDrawable* drawable, CCMRegion* region);
+static CCMPixmap* ccm_window_xrender_create_pixmap(CCMWindow* self, int width,
+												   int height, int depth);
 
 static void
 ccm_window_xrender_init (CCMWindowXRender *self)
@@ -75,9 +77,10 @@ ccm_window_xrender_class_init (CCMWindowXRenderClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMWindowXRenderPrivate));
 
 	CCM_DRAWABLE_CLASS(klass)->get_surface =  ccm_window_xrender_get_surface;
-	CCM_DRAWABLE_CLASS(klass)->get_visual = ccm_window_xrender_get_visual;
 	CCM_DRAWABLE_CLASS(klass)->flush = ccm_window_xrender_flush;
 	CCM_DRAWABLE_CLASS(klass)->flush_region = ccm_window_xrender_flush_region;
+	
+	CCM_WINDOW_CLASS(klass)->create_pixmap = ccm_window_xrender_create_pixmap;
 	
 	object_class->finalize = ccm_window_xrender_finalize;
 }
@@ -90,21 +93,25 @@ ccm_window_xrender_create_backbuffer(CCMWindowXRender* self)
 	if (!self->priv->back_buffer)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-		XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_WINDOW(self));
+		cairo_rectangle_t geometry;
 		XGCValues gcv;
 		
-		self->priv->back_buffer = XCreatePixmap (CCM_DISPLAY_XDISPLAY(display), 
+		if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry))
+		{
+			self->priv->back_buffer = XCreatePixmap (
+									CCM_DISPLAY_XDISPLAY(display), 
 									CCM_WINDOW_XWINDOW(self), 
-									attribs->width, attribs->height,
-									ccm_window_get_depth (CCM_WINDOW(self)));
+									geometry.width, geometry.height,
+									ccm_drawable_get_depth (CCM_DRAWABLE(self)));
 		
-		gcv.graphics_exposures = FALSE;
-		gcv.subwindow_mode = IncludeInferiors;
+			gcv.graphics_exposures = FALSE;
+			gcv.subwindow_mode = IncludeInferiors;
 		
-		self->priv->gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display),
+			self->priv->gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display),
 								   self->priv->back_buffer,
 								   GCGraphicsExposures | GCSubwindowMode,
 								   &gcv);
+		}
 	}
 	
 	return self->priv->back_buffer != None;
@@ -121,37 +128,19 @@ ccm_window_xrender_get_surface(CCMDrawable* drawable)
 	if (ccm_window_xrender_create_backbuffer(self))
 	{
 		CCMDisplay* display = ccm_drawable_get_display(drawable);
-		CCMScreen* screen = ccm_drawable_get_screen(drawable);
-		XWindowAttributes* attribs = _ccm_window_get_attribs (CCM_WINDOW(self));
-		Visual* visual = DefaultVisual(CCM_DISPLAY_XDISPLAY(display), 
-									   screen->number);
+		Visual* visual = ccm_drawable_get_visual(CCM_DRAWABLE(self));
+		cairo_rectangle_t geometry;
 		
-		if (attribs)
+		if (visual &&
+			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
 			surface = cairo_xlib_surface_create(CCM_DISPLAY_XDISPLAY(display),
 											self->priv->back_buffer, 
 											visual,
-											attribs->width, 
-											attribs->height);
+											geometry.width, 
+											geometry.height);
 	}
 	
 	return surface;
-}
-
-static Visual*
-ccm_window_xrender_get_visual(CCMDrawable* drawable)
-{
-	g_return_val_if_fail(drawable != NULL, NULL);
-	
-	Visual* visual = NULL;
-	cairo_surface_t* surface = ccm_drawable_get_surface(drawable);
-	
-	if (surface)
-	{
-		visual = g_memdup(cairo_xlib_surface_get_visual(surface), sizeof(Visual));
-		cairo_surface_destroy(surface);
-	}
-	
-	return visual;
 }
 
 static void
@@ -204,4 +193,28 @@ ccm_window_xrender_flush_region(CCMDrawable* drawable, CCMRegion* region)
 		ccm_display_sync(display);
 		g_free(rects);
 	}
+}
+
+static CCMPixmap*
+ccm_window_xrender_create_pixmap(CCMWindow* self, int width, int height, int depth)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
+	CCMDisplay* display = ccm_screen_get_display (screen);
+	XVisualInfo vinfo;
+	Pixmap xpixmap;
+		
+	if (!XMatchVisualInfo (CCM_DISPLAY_XDISPLAY(display), screen->number,
+						   depth, TrueColor, &vinfo))
+		return NULL;
+	
+	xpixmap = XCreatePixmap(CCM_DISPLAY_XDISPLAY(display), 
+							CCM_WINDOW_XWINDOW(self), 
+							width, height, depth);
+
+	if (xpixmap == None)
+		return NULL;
+		
+	return ccm_pixmap_new_from_visual(screen, vinfo.visual, xpixmap);
 }

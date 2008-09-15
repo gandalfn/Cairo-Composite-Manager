@@ -140,7 +140,9 @@ ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
 	
 	if (self->priv->window && event->type == ClientMessage)
 	{
-		Window window = _ccm_window_get_child (self->priv->window);
+		Window window = None;
+		
+		g_object_get (G_OBJECT(self->priv->window), "child", &window, NULL);
     	
 		if (!window) window = CCM_WINDOW_XWINDOW(self->priv->window);
 		
@@ -157,7 +159,7 @@ ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
 static gboolean
 ccm_freeze_ping(CCMFreeze* self)
 {
-	if (self->priv->window && self->priv->window->is_viewable)
+	if (self->priv->window && ccm_window_is_viewable (self->priv->window))
 	{
 		CCMWindowType type = ccm_window_get_hint_type (self->priv->window);
 		
@@ -171,7 +173,9 @@ ccm_freeze_ping(CCMFreeze* self)
 		XEvent event;
 		CCMDisplay* display = 
 			ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));
-		Window window = _ccm_window_get_child (self->priv->window);
+		Window window = None;
+		
+		g_object_get (G_OBJECT(self->priv->window), "child", &window, NULL);
 		
 		if (!window) window = CCM_WINDOW_XWINDOW(self->priv->window);
 		
@@ -254,7 +258,7 @@ ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window, 
 								  context, surface, y_invert);
 	
-	if (window->is_viewable && !self->priv->alive)
+	if (ccm_window_is_viewable (window) && !self->priv->alive)
 	{
 		cairo_set_source_rgba(context, 0, 0, 0, self->priv->opacity);
 		cairo_paint(context);
@@ -272,9 +276,10 @@ ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	self->priv->window = window;
 		
-	if (!self->priv->id_ping && !window->is_input_only && window->is_viewable &&
+	if (!self->priv->id_ping && !ccm_window_is_input_only (window) && 
+		ccm_window_is_viewable (window) &&
 		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_UNKNOWN) &&
-		_ccm_window_get_child (window) && ccm_window_is_managed (self->priv->window))	
+		ccm_window_is_managed (self->priv->window))	
 	{
 		gint delay = 
 			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
@@ -313,9 +318,10 @@ ccm_freeze_add_window(CCMScreenPlugin* plugin, CCMScreen* screen,
 	
 	self->priv->window = window;
 		
-	if (!self->priv->id_ping && !window->is_input_only && window->is_viewable &&
+	if (!self->priv->id_ping && !ccm_window_is_input_only (window) && 
+		ccm_window_is_viewable (window) &&
 		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_UNKNOWN) &&
-		_ccm_window_get_child (window) && ccm_window_is_managed (self->priv->window))	
+		ccm_window_is_managed (self->priv->window))	
 	{
 		gint delay = 
 			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);

@@ -162,9 +162,11 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 			if (entry) gconf_entry_unref(entry);
 		}
 	}
-	else
+	else if (screen == -1)
 		self->priv->key = g_strdup_printf("%s/general/%s", 
 										  CCM_CONFIG_PREFIX, key);
+	else
+		self->priv->key = g_strdup(key);
 	
 	self->priv->id_notify = gconf_client_notify_add(
 									CCM_CONFIG_GET_CLASS(self)->client,

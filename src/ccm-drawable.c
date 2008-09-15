@@ -29,7 +29,11 @@ enum
 {
     PROP_0,
 	PROP_SCREEN,
-    PROP_XDRAWABLE
+    PROP_XDRAWABLE,
+	PROP_GEOMETRY,
+	PROP_DEPTH,
+	PROP_VISUAL,
+	PROP_DAMAGED
 };
 
 enum
@@ -47,6 +51,10 @@ struct _CCMDrawablePrivate
 	Drawable			drawable;
 	CCMScreen* 			screen;
 	CCMRegion*			geometry;
+	guint				depth;
+	Visual*				visual;
+	
+	cairo_surface_t*	surface;
 	
 	CCMRegion*			damaged;
 };
@@ -54,11 +62,10 @@ struct _CCMDrawablePrivate
 #define CCM_DRAWABLE_GET_PRIVATE(o)  \
    ((CCMDrawablePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DRAWABLE, CCMDrawableClass))
 
-static CCMRegion* __ccm_drawable_query_geometry(CCMDrawable* self);
-static void 	  __ccm_drawable_move		   (CCMDrawable* self, 
-												int x, int y);
-static void 	  __ccm_drawable_resize		   (CCMDrawable* self, 
-											    int width, int height);
+static void __ccm_drawable_query_geometry (CCMDrawable* self);
+static void __ccm_drawable_move		      (CCMDrawable* self, int x, int y);
+static void __ccm_drawable_resize		  (CCMDrawable* self, 
+										   int width, int height);
 
 static void
 ccm_drawable_set_property(GObject *object,
@@ -71,10 +78,23 @@ ccm_drawable_set_property(GObject *object,
 	switch (prop_id)
     {
     	case PROP_SCREEN:
-			priv->screen= g_value_get_pointer (value);
+			priv->screen = g_value_get_pointer (value);
 			break;
 		case PROP_XDRAWABLE:
 			priv->drawable = g_value_get_ulong (value);
+			break;
+		case PROP_GEOMETRY:
+			if (priv->geometry) ccm_region_destroy (priv->geometry);
+			if (g_value_get_pointer (value))
+				priv->geometry = ccm_region_copy(g_value_get_pointer (value));
+			else
+				priv->geometry = NULL;
+			break;
+		case PROP_DEPTH:
+			priv->depth = g_value_get_uint (value);
+			break;
+		case PROP_VISUAL:
+			priv->visual = g_value_get_pointer (value);
 			break;
     	default:
 			break;
@@ -97,7 +117,18 @@ ccm_drawable_get_property (GObject* object,
 		case PROP_XDRAWABLE:
 			g_value_set_ulong (value, priv->drawable);
 			break;
-		
+		case PROP_DEPTH:
+			g_value_set_uint (value, priv->depth);
+			break;
+		case PROP_VISUAL:
+			g_value_set_pointer (value, priv->visual);
+			break;
+		case PROP_GEOMETRY:
+			g_value_set_pointer (value, priv->geometry);
+			break;
+		case PROP_DAMAGED:
+			g_value_set_pointer (value, priv->damaged);
+			break;
     	default:
 			break;
     }
@@ -109,6 +140,9 @@ ccm_drawable_init (CCMDrawable *self)
 	self->priv = CCM_DRAWABLE_GET_PRIVATE(self);
 	self->priv->drawable = 0;
 	self->priv->geometry = NULL;
+	self->priv->depth = 0;
+	self->priv->visual = NULL;
+	self->priv->surface = NULL;
 	self->priv->damaged = NULL;
 }
 
@@ -117,7 +151,14 @@ ccm_drawable_finalize (GObject *object)
 {
 	CCMDrawable* self = CCM_DRAWABLE(object);
 	
+	if (self->priv->surface)
+	{
+		cairo_surface_destroy (self->priv->surface);
+		self->priv->surface = NULL;
+	}
 	self->priv->drawable = 0;
+	self->priv->depth = 0;
+	self->priv->visual = NULL;
 	if (self->priv->geometry) 
 	{
 		ccm_region_destroy(self->priv->geometry);
@@ -160,6 +201,31 @@ ccm_drawable_class_init (CCMDrawableClass *klass)
 			     			0, G_MAXLONG, None,
 			     			G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 	
+	g_object_class_install_property(object_class, PROP_GEOMETRY,
+		g_param_spec_pointer ("geometry",
+		 					  "Geometry",
+			     			  "Geometry of the drawable",
+			     			  G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+
+	g_object_class_install_property(object_class, PROP_VISUAL,
+		g_param_spec_pointer ("visual",
+		 					  "Visual",
+			     			  "Visual of the drawable",
+			     			  G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+
+	g_object_class_install_property(object_class, PROP_DEPTH,
+		g_param_spec_uint ("depth",
+		 				   "Depth",
+						   "Depth of the drawable",
+						    0, G_MAXUINT, None,
+			     			G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+
+	g_object_class_install_property(object_class, PROP_DAMAGED,
+		g_param_spec_pointer ("damaged",
+		 					  "Damaged",
+			     			  "Damaged region of the drawable",
+			     			  G_PARAM_READABLE));
+
 	signals[DAMAGED] = g_signal_new ("damaged",
 									 G_OBJECT_CLASS_TYPE (object_class),
 									 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -167,14 +233,14 @@ ccm_drawable_class_init (CCMDrawableClass *klass)
 									 G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
 
-static CCMRegion*
+static void
 __ccm_drawable_query_geometry(CCMDrawable* self)
 {
-	g_return_val_if_fail(self != NULL, NULL);
+	g_return_if_fail(self != NULL);
 	
 	CCMDisplay* display = ccm_screen_get_display(self->priv->screen);
 	Window root;		/* dummy */
-    guint bw, depth;		/* dummies */
+    guint bw;		/* dummies */
 	gint x, y;
 	guint width, height;
 	cairo_rectangle_t rectangle;
@@ -185,16 +251,17 @@ __ccm_drawable_query_geometry(CCMDrawable* self)
 	if (!XGetGeometry (CCM_DISPLAY_XDISPLAY(display),
 					   self->priv->drawable, &root, 
 					   &x, &y, &width, &height,
-					   &bw, &depth))
+					   &bw, &self->priv->depth))
     {
 		g_warning("Error on get drawable geometry");
-		return NULL;
+		return;
     }
 	rectangle.x = (double)x;
 	rectangle.y = (double)y;
 	rectangle.width = (double)width;
 	rectangle.height = (double)height;
-	return ccm_region_rectangle(&rectangle);
+	
+	self->priv->geometry =  ccm_region_rectangle(&rectangle);
 }
 
 static void
@@ -224,14 +291,6 @@ __ccm_drawable_resize(CCMDrawable* self, int width, int height)
 	{
 		ccm_drawable_query_geometry(self);
 	}
-}
-
-CCMRegion*
-_ccm_drawable_get_damaged(CCMDrawable* self)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	
-	return self->priv->damaged;
 }
 
 /**
@@ -279,11 +338,70 @@ ccm_drawable_get_visual(CCMDrawable* self)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
-	if (CCM_DRAWABLE_GET_CLASS(self)->get_visual)
-	{
-		return CCM_DRAWABLE_GET_CLASS(self)->get_visual(self);
+	return self->priv->visual;
+}
+
+/**
+ * ccm_drawable_get_depth:
+ * @self: #CCMDrawable
+ *
+ * Get depth of drawable.
+ *
+ * Returns: drawable depth
+ **/
+guint
+ccm_drawable_get_depth(CCMDrawable* self)
+{
+	g_return_val_if_fail(self != NULL, 32);
+
+	return self->priv->depth;
+}
+
+/**
+ * ccm_drawable_get_format:
+ * @self: #CCMDrawable
+ *
+ * Get cairo format of drawable.
+ *
+ * Returns: #cairo_format_t
+ **/
+cairo_format_t
+ccm_drawable_get_format(CCMDrawable* self)
+{
+	g_return_val_if_fail(self != NULL, CAIRO_FORMAT_ARGB32);
+	g_return_val_if_fail(self->priv->visual != NULL, CAIRO_FORMAT_ARGB32);
+	
+	if (self->priv->depth == 16 &&
+	    self->priv->visual->red_mask == 0xf800 &&
+		self->priv->visual->green_mask == 0x7e0 &&
+		self->priv->visual->blue_mask == 0x1f)
+    {
+		return CAIRO_FORMAT_A8;
+    }
+    else if ((self->priv->depth == 24 || self->priv->depth == 0) &&
+	     	 self->priv->visual->red_mask == 0xff0000 &&
+			 self->priv->visual->green_mask == 0xff00 &&
+			 self->priv->visual->blue_mask == 0xff)
+    {
+		return CAIRO_FORMAT_RGB24;
+    }
+    else if (self->priv->depth == 32 &&
+			 self->priv->visual->red_mask == 0xff0000 &&
+			 self->priv->visual->green_mask == 0xff00 &&
+			 self->priv->visual->blue_mask == 0xff)
+    {
+		return CAIRO_FORMAT_ARGB32;
+    }
+    else
+    {
+		g_warning ("Unknown visual format depth=%d, r=%#lx/g=%#lx/b=%#lx",
+				   self->priv->depth, 
+				   self->priv->visual->red_mask,
+				   self->priv->visual->green_mask, 
+				   self->priv->visual->blue_mask);
 	}
-	return NULL;
+	
+	return CAIRO_FORMAT_ARGB32;
 }
 
 /**
@@ -308,42 +426,15 @@ ccm_drawable_get_xid(CCMDrawable* self)
  *
  * Gets the region covered by the Drawable. The coordinates are relative 
  * to the parent Drawable. 
- *
- * Returns: #CCMRegion
- **/
-CCMRegion*
-ccm_drawable_query_geometry(CCMDrawable* self)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	
-	if (CCM_DRAWABLE_GET_CLASS(self)->query_geometry)
-	{
-		if (self->priv->geometry) 
-		{
-			ccm_region_destroy(self->priv->geometry);
-			self->priv->geometry = NULL;
-		}
-		self->priv->geometry = CCM_DRAWABLE_GET_CLASS(self)->query_geometry(self);
-	}
-	
-	return self->priv->geometry;
-}
-
-/**
- * ccm_drawable_unset_geometry:
- * @self: #CCMDrawable
- *
- * Unset geometry covered by the drawable
  **/
 void
-ccm_drawable_unset_geometry(CCMDrawable* self)
+ccm_drawable_query_geometry(CCMDrawable* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->priv->geometry)
+	if (CCM_DRAWABLE_GET_CLASS(self)->query_geometry)
 	{
-		ccm_region_destroy (self->priv->geometry);
-		self->priv->geometry = NULL;
+		CCM_DRAWABLE_GET_CLASS(self)->query_geometry(self);
 	}
 }
 
@@ -354,9 +445,9 @@ ccm_drawable_unset_geometry(CCMDrawable* self)
  * Gets the region covered by the Drawable. The coordinates are 
  * relative to the parent Drawable. 
  *
- * Returns: #CCMRegion
+ * Returns: const #CCMRegion
  **/
-CCMRegion*
+const CCMRegion*
 ccm_drawable_get_geometry(CCMDrawable* self)
 {
 	g_return_val_if_fail(self != NULL, NULL);
@@ -464,51 +555,6 @@ ccm_drawable_flush_region(CCMDrawable* self, CCMRegion* region)
 }
 
 /**
- * ccm_drawable_get_surface:
- * @self: #CCMDrawable
- *
- * Gets cairo surface of drawable
- *
- * Returns: #cairo_surface_t
- **/
-cairo_surface_t*
-ccm_drawable_get_surface(CCMDrawable* self)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	
-	if (CCM_DRAWABLE_GET_CLASS(self)->get_surface)
-	{
-		return CCM_DRAWABLE_GET_CLASS(self)->get_surface(self);
-	}
-	return NULL;
-}
-
-/**
- * ccm_drawable_create_context:
- * @self: #CCMDrawable
- *
- * Create cairo context for a drawable
- *
- * Returns: #cairo_t
- **/
-cairo_t*
-ccm_drawable_create_context(CCMDrawable* self)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	
-	cairo_surface_t* surface = ccm_drawable_get_surface(self);
-	
-	if (surface)
-	{
-		cairo_t* ctx = cairo_create(surface);
-		cairo_surface_destroy(surface);
-		return ctx;
-	}
-	
-	return NULL;
-}
-
-/**
  * ccm_drawable_is_damaged:
  * @self: #CCMDrawable
  *
@@ -532,17 +578,17 @@ ccm_drawable_is_damaged(CCMDrawable* self)
  * Add a damaged region for a drawable
  **/
 void 
-ccm_drawable_damage_region(CCMDrawable* self, CCMRegion* area)
+ccm_drawable_damage_region(CCMDrawable* self, const CCMRegion* area)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(area != NULL);
 
-	if (!ccm_region_empty (area))
+	if (!ccm_region_empty((CCMRegion*)area))
  	{
 		if (self->priv->damaged)
-			ccm_region_union(self->priv->damaged, area);
+			ccm_region_union(self->priv->damaged, (CCMRegion*)area);
 		else
-			self->priv->damaged = ccm_region_copy(area);
+			self->priv->damaged = ccm_region_copy ((CCMRegion*)area);
 		
 		if (self->priv->geometry)
 			 ccm_region_intersect (self->priv->damaged, self->priv->geometry);
@@ -620,6 +666,59 @@ ccm_drawable_repair(CCMDrawable* self)
 			self->priv->damaged = NULL;
 		}
 	}
+}
+
+/**
+ * ccm_drawable_get_surface:
+ * @self: #CCMDrawable
+ *
+ * Gets cairo surface of drawable
+ *
+ * Returns: #cairo_surface_t
+ **/
+cairo_surface_t*
+ccm_drawable_get_surface(CCMDrawable* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	if (CCM_DRAWABLE_GET_CLASS(self)->get_surface)
+	{
+		return CCM_DRAWABLE_GET_CLASS(self)->get_surface(self);
+	}
+	
+	return NULL;
+}
+
+/**
+ * ccm_drawable_create_context:
+ * @self: #CCMDrawable
+ *
+ * Create cairo context for a drawable
+ *
+ * Returns: #cairo_t
+ **/
+cairo_t*
+ccm_drawable_create_context(CCMDrawable* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	if (CCM_DRAWABLE_GET_CLASS(self)->create_context)
+	{
+		return CCM_DRAWABLE_GET_CLASS(self)->create_context(self);
+	}
+	else
+	{
+		cairo_surface_t* surface = ccm_drawable_get_surface(self);
+	
+		if (surface)
+		{
+			cairo_t* ctx = cairo_create(surface);
+			cairo_surface_destroy(surface);
+			return ctx;
+		}
+	}
+	
+	return NULL;
 }
 
 /**

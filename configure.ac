@@ -1,4 +1,4 @@
-AC_INIT(cairo-compmgr, 0.2.1)
+AC_INIT(cairo-compmgr, 0.2.2)
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AM_CONFIG_HEADER(config.h)
@@ -99,8 +99,8 @@ AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
 AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 
 AC_ARG_ENABLE(glitz-tfp,
-  [  --enable-glitz-tfp        Enable glitz tfp],
-  [glitztfpbackend=$enableval], [glitztfpbackend=no])
+  [  --disable-glitz-tfp        Disable glitz tfp],
+  [glitztfpbackend=$enableval], [glitztfpbackend=yes])
 
 if [ test x$glitzbackend = xyes ]; then
     if [ test x$glitztfpbackend = xyes ]; then

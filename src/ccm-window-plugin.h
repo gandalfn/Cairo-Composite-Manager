@@ -84,7 +84,7 @@ struct _CCMWindowPluginClass
 											 int width, int height);
 	void			  (*set_opaque_region)	(CCMWindowPlugin* self, 
 											 CCMWindow* window,
-											 CCMRegion* area);
+											 const CCMRegion* area);
 };
 
 GType ccm_window_plugin_get_type (void) G_GNUC_CONST;
@@ -113,7 +113,7 @@ void		ccm_window_plugin_resize			(CCMWindowPlugin* self,
 											 	 int width, int height);
 void		ccm_window_plugin_set_opaque_region (CCMWindowPlugin* self, 
 											 	 CCMWindow* window,
-											 	 CCMRegion* area);
+											 	 const CCMRegion* area);
 
 G_END_DECLS
 
