@@ -69,6 +69,9 @@ enum
 	CCM_SCREEN_SYNC_WITH_VBLANK,
 	CCM_SCREEN_INDIRECT,
 	CCM_SCREEN_BACKGROUND,
+	CCM_SCREEN_COLOR_BACKGROUND,
+	CCM_SCREEN_BACKGROUND_X,
+	CCM_SCREEN_BACKGROUND_Y,
 	CCM_SCREEN_OPTION_N
 };
 
@@ -80,7 +83,10 @@ static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 	"refresh_rate",
 	"sync_with_vblank",
 	"indirect",
-	"background"
+	"background",
+	"color_background",
+	"background_x",
+	"background_y"
 };
 
 struct _CCMScreenPrivate
@@ -266,8 +272,12 @@ ccm_screen_update_background (CCMScreen* self)
 	
 	gchar* filename = 
 		ccm_config_get_string (self->priv->options[CCM_SCREEN_BACKGROUND]);
+	const GdkColor* color = 
+		ccm_config_get_color (self->priv->options[CCM_SCREEN_COLOR_BACKGROUND]);
+	int x = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_X]),
+		y = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_Y]);
 	
-	if (filename)
+	if (filename && color)
 	{
 		cairo_t* ctx;
 		
@@ -285,25 +295,31 @@ ccm_screen_update_background (CCMScreen* self)
 			GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file (filename, NULL);
 			cairo_rectangle_t area;
 			
-			if (pixbuf)
-			{
-				cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-				gdk_cairo_set_source_pixbuf (ctx, pixbuf, 0, 0);
-				g_object_unref(pixbuf);
-				cairo_paint(ctx);
-			}
-			else
-			{
-				cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
-				cairo_paint(ctx);				
-			}
-			ccm_drawable_damage (CCM_DRAWABLE(self->priv->background));
-			cairo_destroy (ctx);
-			
 			area.x = 0;
 			area.y = 0;
 			area.width = self->xscreen->width;
 			area.height = self->xscreen->height;
+			
+			cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
+			gdk_cairo_set_source_color (ctx, (GdkColor*)color);
+			cairo_rectangle (ctx, area.x, area.y, area.width, area.height);
+			cairo_fill(ctx);
+				
+			if (pixbuf)
+			{
+				int width = gdk_pixbuf_get_width (pixbuf),
+					height = gdk_pixbuf_get_height (pixbuf);
+				
+				cairo_translate (ctx, x ? x : (area.width - width) / 2, 
+								 y ? y : (area.height - height) / 2);
+				gdk_cairo_set_source_pixbuf (ctx, pixbuf, 0, 0);
+				g_object_unref(pixbuf);
+				cairo_paint(ctx);
+			}
+			ccm_drawable_damage (CCM_DRAWABLE(self->priv->background));
+			cairo_destroy (ctx);
+			
+			ccm_screen_damage (self);
 			self->priv->root_damage = ccm_region_rectangle (&area);
 		}
 		else
@@ -1194,7 +1210,10 @@ ccm_screen_on_option_changed (CCMScreen* self, CCMConfig* config)
 	{
 		ccm_screen_update_refresh_rate (self);
 	}
-	else if (config == self->priv->options[CCM_SCREEN_BACKGROUND])
+	else if (config == self->priv->options[CCM_SCREEN_BACKGROUND] ||
+			 config == self->priv->options[CCM_SCREEN_COLOR_BACKGROUND] ||
+			 config == self->priv->options[CCM_SCREEN_BACKGROUND_X] ||
+			 config == self->priv->options[CCM_SCREEN_BACKGROUND_Y])
 	{
 		ccm_screen_update_background (self);
 	}

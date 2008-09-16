@@ -1,3 +1,12 @@
+2008-09-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/cairo-compmgr.schemas.in:
+	* src/ccm-config.c (ccm_config_get_color):
+	* src/ccm-screen.c (ccm_screen_update_background),
+	(ccm_screen_on_option_changed):
+	* src/ccm.h:
+      Add background color and background pixmap position.
+
 2008-09-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* configure.ac:

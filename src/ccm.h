@@ -30,6 +30,7 @@
 #include <glib-object.h>
 #include <X11/Xutil.h>
 #include <X11/Xlib.h>
+#include <gdk/gdk.h>
 
 G_BEGIN_DECLS
 
@@ -328,6 +329,8 @@ void 			ccm_config_set_string_list			(CCMConfig* self,
 GSList*			ccm_config_get_integer_list			(CCMConfig* self);
 void			ccm_config_set_integer_list			(CCMConfig* self, 
 													 GSList * value);
+const GdkColor* ccm_config_get_color                (CCMConfig* self);
+
 /******************************************************************************/
 
 G_END_DECLS
