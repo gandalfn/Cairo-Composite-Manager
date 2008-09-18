@@ -1,3 +1,12 @@
+2008-09-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-screen.c (ccm_screen_print_stack),
+	(ccm_screen_print_real_stack), (ccm_screen_check_stack):
+	* src/ccm-window.c (ccm_window_query_geometry),
+	(impl_ccm_window_query_geometry):
+     Let check stack to remove window on unmap, ccm can't block it, since the
+     WM restack window in bottom before unmap.
+
 2008-09-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* data/cairo-compmgr.schemas.in:

@@ -809,7 +809,7 @@ ccm_window_query_geometry(CCMDrawable* drawable)
 	
 	g_object_set(self, "geometry", geometry, NULL);
 	
-	ccm_region_destroy (geometry);
+	if (geometry) ccm_region_destroy (geometry);
 }
 
 static void
@@ -843,10 +843,7 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 	unsigned int bw, bh, cw, ch; /* dummies */
 	
 	if (!ccm_window_get_attribs(self))
-	{
-		g_signal_emit (self, signals[ERROR], 0);
 		return NULL;
-	}
 	
 	if (XShapeQueryExtents (CCM_DISPLAY_XDISPLAY(display), 
 							CCM_WINDOW_XWINDOW(self), 

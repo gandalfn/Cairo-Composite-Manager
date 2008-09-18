@@ -471,14 +471,16 @@ ccm_screen_print_stack(CCMScreen* self)
 	
 	GList* item;
 	
-	ccm_debug("STACK: XID\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\tName\n");
+	ccm_log("XID\t\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\tName");
 	for (item = self->priv->windows; item; item = item->next)
 	{
 		CCMWindow* transient = ccm_window_transient_for (item->data);
 		CCMWindow* leader = ccm_window_get_group_leader (item->data);
-		ccm_debug("STACK: 0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t0x%lx\t0x%lx\t%s\n", 
+
+		if (ccm_window_is_viewable (item->data))
+		ccm_log("0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t0x%lx\t0x%lx\t%s", 
 				CCM_WINDOW_XWINDOW(item->data), 
-				CCM_WINDOW(item->data)->is_viewable,
+				ccm_window_is_viewable (item->data),
 				ccm_window_get_hint_type (item->data),
 				ccm_window_is_managed (item->data),
 				ccm_window_is_decorated (item->data),
@@ -512,7 +514,7 @@ ccm_screen_print_real_stack(CCMScreen* self)
 			CCMWindow* leader = ccm_window_get_group_leader (window);
 			g_print("0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t0x%lx\t0x%lx\t%s\n", 
 				CCM_WINDOW_XWINDOW(window), 
-				CCM_WINDOW(window)->is_viewable,
+				ccm_window_is_viewable (window),
 				ccm_window_get_hint_type (window),
 				ccm_window_is_managed (window),
 				ccm_window_is_decorated (window),
@@ -688,7 +690,7 @@ ccm_screen_check_stack(CCMScreen* self)
 	g_return_if_fail(self != NULL);
 
 	guint cpt;
-	GList* stack = NULL, *item, *last = NULL;
+	GList* stack = NULL, *item;
 	GList* removed = NULL, *viewable = NULL, *new_viewable = NULL;
 	
 	ccm_debug("CHECK_STACK");
@@ -742,34 +744,12 @@ ccm_screen_check_stack(CCMScreen* self)
 		if (link && ccm_window_is_viewable (item->data))
 		{
 			ccm_debug_window(item->data, "CHECK STACK LAST");
-			last = link;
 			new_viewable = g_list_append(new_viewable, item->data);
 		}
 		else if (!link) 
 		{
-			ccm_debug_window(item->data, "STACK NOT FOUND");
-			
-			if (!ccm_window_is_viewable (item->data) &&
-				!ccm_window_is_input_only (item->data))
-			{
-				ccm_debug_window(item->data, "CHECK STACK UNMAP PENDING");
-				
-				if (last)
-				{
-					ccm_debug_window(item->data, "STACK ADD UNMAP AFTER 0x%x", 
-									 CCM_WINDOW_XWINDOW(last->data));
-					stack = g_list_insert_before (stack,
-											      last->next,
-												  item->data);
-				}
-				else
-					stack = g_list_append(stack, item->data);
-			}
-			else
-			{
-				ccm_debug_window(item->data, "CHECK STACK REMOVED");
-				removed = g_list_append (removed, item->data);
-			}
+			ccm_debug_window(item->data, "CHECK STACK REMOVED");
+			removed = g_list_append (removed, item->data);
 		}
 	}
 	for (item = g_list_first(removed); item; item = item->next)
