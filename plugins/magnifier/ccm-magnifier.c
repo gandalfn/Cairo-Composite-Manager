@@ -364,7 +364,7 @@ ccm_magnifier_get_size(CCMMagnifier* self)
 	val = MAX(10, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_WIDTH]));
 	val = MIN(80, val);
 	
-	width = (gdouble)self->priv->screen->xscreen->width * (gdouble)val / 100.0;
+	width = (gdouble)CCM_SCREEN_XSCREEN(self->priv->screen)->width * (gdouble)val / 100.0;
 	if (self->priv->area.width != width)
 	{
 		self->priv->area.width = width;
@@ -374,7 +374,7 @@ ccm_magnifier_get_size(CCMMagnifier* self)
 	
 	val = MAX(10, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT]));
 	val = MIN(80, val);
-	height = (gdouble)self->priv->screen->xscreen->height * (gdouble)val / 100.0;
+	height = (gdouble)CCM_SCREEN_XSCREEN(self->priv->screen)->height * (gdouble)val / 100.0;
 	
 	if (self->priv->area.height != height)
 	{
@@ -459,8 +459,8 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 							   (self->priv->area.width / self->priv->scale);
 		if (self->priv->x_offset + 
 			(self->priv->area.width / self->priv->scale) > 
-			self->priv->screen->xscreen->width)
-			self->priv->x_offset = self->priv->screen->xscreen->width - 
+			CCM_SCREEN_XSCREEN(self->priv->screen)->width)
+			self->priv->x_offset = CCM_SCREEN_XSCREEN(self->priv->screen)->width - 
 								   (self->priv->area.width / self->priv->scale);
 		damaged = TRUE;
 	}
@@ -471,8 +471,8 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 							   (self->priv->area.height / self->priv->scale);
 		if (self->priv->y_offset + 
 			(self->priv->area.height / self->priv->scale) > 
-			self->priv->screen->xscreen->height)
-			self->priv->y_offset = self->priv->screen->xscreen->height - 
+			CCM_SCREEN_XSCREEN(self->priv->screen)->height)
+			self->priv->y_offset = CCM_SCREEN_XSCREEN(self->priv->screen)->height - 
 								  (self->priv->area.height / self->priv->scale);
 		damaged = TRUE;
 	}
@@ -568,7 +568,8 @@ ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	for (cpt = 0; cpt < CCM_MAGNIFIER_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "magnifier", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "magnifier", 
 												  CCMMagnifierOptions[cpt]);
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_magnifier_on_option_changed), 
@@ -613,9 +614,9 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	if (self->priv->enabled) 
 	{
 		CCMRegion* area = ccm_region_rectangle (&self->priv->area);
-		int x = (self->priv->screen->xscreen->width - 
+		int x = (CCM_SCREEN_XSCREEN(self->priv->screen)->width - 
 				 self->priv->area.width) / 2;
-		int y = (self->priv->screen->xscreen->height - 
+		int y = (CCM_SCREEN_XSCREEN(self->priv->screen)->height - 
 				 self->priv->area.height) / 2;
 		cairo_rectangle_t screen_size, *rects;
 		CCMRegion* geometry;
@@ -626,8 +627,8 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		
 		screen_size.x = 0;
 		screen_size.y = 0;
-		screen_size.width = self->priv->screen->xscreen->width;
-		screen_size.height = self->priv->screen->xscreen->height;
+		screen_size.width = CCM_SCREEN_XSCREEN(self->priv->screen)->width;
+		screen_size.height = CCM_SCREEN_XSCREEN(self->priv->screen)->height;
 		geometry = ccm_region_rectangle (&screen_size);
 		ccm_region_offset(area, x, y);
 		ccm_region_subtract (geometry, area);
@@ -644,7 +645,8 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		
 		ccm_magnifier_cursor_get_position (self);
 		
-		_ccm_screen_set_buffered(self->priv->screen, FALSE);
+		g_object_set(G_OBJECT(self->priv->screen), "buffered_pixmap", 
+					 FALSE, NULL);
 		ccm_debug("MAGNIFIER PAINT SCREEN");
 	}
 	
@@ -657,9 +659,9 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	if (ret && self->priv->enabled) 
 	{
 		CCMRegion* area = ccm_region_rectangle (&self->priv->area);
-		int x = (self->priv->screen->xscreen->width - 
+		int x = (CCM_SCREEN_XSCREEN(self->priv->screen)->width - 
 				 self->priv->area.width) / 2;
-		int y = (self->priv->screen->xscreen->height - 
+		int y = (CCM_SCREEN_XSCREEN(self->priv->screen)->height - 
 				 self->priv->area.height) / 2;
 		
 		

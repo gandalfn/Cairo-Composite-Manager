@@ -224,7 +224,8 @@ ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "freeze", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "freeze", 
 												  CCMFreezeOptions[cpt]);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);

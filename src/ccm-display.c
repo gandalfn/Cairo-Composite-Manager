@@ -40,6 +40,14 @@ G_DEFINE_TYPE (CCMDisplay, ccm_display, G_TYPE_OBJECT);
 
 enum
 {
+    PROP_0,
+	PROP_XDISPLAY,
+	PROP_USE_XSHM,
+	PROP_SHM_SHARED_PIXMAP
+};
+
+enum
+{
 	CCM_DISPLAY_OPTION_USE_XSHM,
 	CCM_DISPLAY_UNMANAGED_SCREEN,
 	CCM_DISPLAY_OPTION_N
@@ -69,6 +77,8 @@ typedef struct
 
 struct _CCMDisplayPrivate
 {
+	Display*	xdisplay;
+	
 	gint 		nb_screens;
 	CCMScreen 	**screens;
 	
@@ -91,9 +101,55 @@ static gint   CCMLastXError = 0;
    ((CCMDisplayPrivate *)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayClass))
 
 static void
+ccm_display_set_property(GObject *object,
+						 guint prop_id,
+						 const GValue *value,
+						 GParamSpec *pspec)
+{
+	CCMDisplayPrivate* priv = CCM_DISPLAY_GET_PRIVATE(object);
+    
+	switch (prop_id)
+    {
+    	case PROP_XDISPLAY:
+			priv->xdisplay = g_value_get_pointer (value);
+			break;
+		default:
+			break;
+    }
+}
+
+static void
+ccm_display_get_property (GObject* object,
+						  guint prop_id,
+						  GValue* value,
+						  GParamSpec* pspec)
+{
+	CCMDisplayPrivate* priv = CCM_DISPLAY_GET_PRIVATE(object);
+    
+    switch (prop_id)
+    {
+    	case PROP_XDISPLAY:
+			g_value_set_pointer (value, priv->xdisplay);
+			break;
+		case PROP_USE_XSHM:
+			g_value_set_boolean (value, priv->use_shm);
+			break;
+		case PROP_SHM_SHARED_PIXMAP:
+			g_value_set_boolean (value, 
+				ccm_config_get_boolean(priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
+		   		priv->shm.available && priv->shm_shared_pixmap);
+			break;
+		default:
+			break;
+    }
+}
+
+static void
 ccm_display_init (CCMDisplay *self)
 {
 	self->priv = CCM_DISPLAY_GET_PRIVATE(self);
+	
+	self->priv->xdisplay = NULL;
 	self->priv->nb_screens = 0;
 	self->priv->fd = 0;
 	self->priv->screens = NULL;
@@ -136,6 +192,30 @@ ccm_display_class_init (CCMDisplayClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 	
 	g_type_class_add_private (klass, sizeof (CCMDisplayPrivate));
+
+	object_class->get_property = ccm_display_get_property;
+    object_class->set_property = ccm_display_set_property;
+	object_class->finalize = ccm_display_finalize;
+
+	g_object_class_install_property(object_class, PROP_XDISPLAY,
+		g_param_spec_pointer ("xdisplay",
+		 					  "XDisplay",
+			     			  "Display xid",
+			     			  G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	
+	g_object_class_install_property(object_class, PROP_USE_XSHM,
+		g_param_spec_boolean ("use_xshm",
+		 					  "UseXShm",
+			     			  "Use XSHM",
+							  TRUE,
+			     			  G_PARAM_READWRITE));
+	
+	g_object_class_install_property(object_class, PROP_SHM_SHARED_PIXMAP,
+		g_param_spec_boolean ("shm_shared_pixmap",
+		 					  "ShmSharedPixmap",
+			     			  "SHM Shared Pixmap",
+							  TRUE,
+			     			  G_PARAM_READWRITE));
 	
 	signals[EVENT] = g_signal_new ("event",
 								   G_OBJECT_CLASS_TYPE (object_class),
@@ -154,8 +234,6 @@ ccm_display_class_init (CCMDisplayClass *klass)
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__POINTER,
 								   G_TYPE_NONE, 1, G_TYPE_POINTER);
-	
-	object_class->finalize = ccm_display_finalize;
 }
 
 static void
@@ -179,7 +257,7 @@ ccm_display_init_shape(CCMDisplay *self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	if (XShapeQueryExtension (self->xdisplay,
+	if (XShapeQueryExtension (self->priv->xdisplay,
 							  &self->priv->shape.event_base,
 							  &self->priv->shape.error_base))
     {
@@ -196,7 +274,7 @@ ccm_display_init_composite(CCMDisplay *self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	if (XCompositeQueryExtension (self->xdisplay,
+	if (XCompositeQueryExtension (self->priv->xdisplay,
 								  &self->priv->composite.event_base,
 	    						  &self->priv->composite.error_base))
     {
@@ -213,7 +291,7 @@ ccm_display_init_damage(CCMDisplay *self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	if (XDamageQueryExtension (self->xdisplay,
+	if (XDamageQueryExtension (self->priv->xdisplay,
 							   &self->priv->damage.event_base,
 							   &self->priv->damage.error_base))
     {
@@ -231,8 +309,8 @@ ccm_display_init_shm(CCMDisplay *self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	int major,  minor;
 	
-	if (XShmQueryExtension (self->xdisplay) && 
-		XShmQueryVersion(self->xdisplay, &major, &minor, 
+	if (XShmQueryExtension (self->priv->xdisplay) && 
+		XShmQueryVersion(self->priv->xdisplay, &major, &minor, 
 						 &self->priv->shm_shared_pixmap))
     {
 		self->priv->shm.available = TRUE;
@@ -247,7 +325,7 @@ ccm_display_init_xfixes(CCMDisplay *self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	if (XFixesQueryExtension (self->xdisplay,
+	if (XFixesQueryExtension (self->priv->xdisplay,
 							  &self->priv->fixes.event_base,
 							  &self->priv->fixes.error_base))
     {
@@ -309,51 +387,24 @@ ccm_display_process_events(CCMDisplay* self)
 	}
 }
 
-void
-_ccm_display_trap_error(CCMDisplay* self)
-{
-	CCMLastXError = 0;
-}
-
-gint
-_ccm_display_pop_error(CCMDisplay* self)
-{
-	return CCMLastXError;
-}
-
-gboolean
-_ccm_display_use_xshm(CCMDisplay* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	return self->priv->use_shm;
-}
-
-gboolean
-_ccm_display_xshm_shared_pixmap(CCMDisplay* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	return ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
-		   self->priv->shm.available && self->priv->shm_shared_pixmap;
-}
-
 CCMDisplay*
 ccm_display_new(gchar* display)
 {
 	CCMDisplay *self;
 	gint cpt;
 	GSList* unmanaged = NULL;
+	Display* xdisplay;
 	
-	self = g_object_new(CCM_TYPE_DISPLAY, NULL);
-	
-	self->xdisplay = XOpenDisplay(display);
-	if (!self->xdisplay)
+	xdisplay = XOpenDisplay(display);
+	if (!xdisplay)
 	{
-		g_object_unref(self);
 		g_warning("Unable to open display %s", display);
 		return NULL;
 	}
+	
+	self = g_object_new(CCM_TYPE_DISPLAY, 
+						"xdisplay", xdisplay,
+						NULL);
 	
 	if (!ccm_display_init_shape(self))
 	{
@@ -394,7 +445,7 @@ ccm_display_new(gchar* display)
 	
 	XSetErrorHandler(ccm_display_error_handler);
 	
-	self->priv->nb_screens = ScreenCount(self->xdisplay);
+	self->priv->nb_screens = ScreenCount(self->priv->xdisplay);
 	self->priv->screens = g_slice_alloc0(sizeof(CCMScreen*) * (self->priv->nb_screens + 1));
 	
 	unmanaged = ccm_config_get_integer_list(self->priv->options[CCM_DISPLAY_UNMANAGED_SCREEN]);
@@ -430,6 +481,14 @@ ccm_display_new(gchar* display)
 	return self;
 }
 
+Display*
+ccm_display_get_xdisplay(CCMDisplay* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	return self->priv->xdisplay;
+}
+
 CCMScreen *
 ccm_display_get_screen(CCMDisplay* self, guint number)
 {
@@ -452,8 +511,8 @@ ccm_display_sync(CCMDisplay* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	XFlush(self->xdisplay);
-	XSync(self->xdisplay, FALSE);
+	XFlush(self->priv->xdisplay);
+	XSync(self->priv->xdisplay, FALSE);
 }
 
 void
@@ -461,7 +520,7 @@ ccm_display_grab(CCMDisplay* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	XGrabServer(self->xdisplay);
+	XGrabServer(self->priv->xdisplay);
 }
 
 void
@@ -469,5 +528,18 @@ ccm_display_ungrab(CCMDisplay* self)
 {
 	g_return_if_fail(self != NULL);
 	
-	XUngrabServer(self->xdisplay);
+	XUngrabServer(self->priv->xdisplay);
 }
+
+void
+ccm_display_trap_error(CCMDisplay* self)
+{
+	CCMLastXError = 0;
+}
+
+gint
+ccm_display_pop_error(CCMDisplay* self)
+{
+	return CCMLastXError;
+}
+

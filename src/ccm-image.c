@@ -83,7 +83,7 @@ ccm_image_new(CCMDisplay* display, Visual* visual, cairo_format_t format,
 	CCMImage* image = g_new0(CCMImage, 1);
 	
 	image->display = display;
-	image->xshm = _ccm_display_use_xshm (display);
+	g_object_get(G_OBJECT(display), "use_xshm", &image->xshm, NULL);
 	image->visual = visual;
 	image->format = format;
 	image->depth = depth;

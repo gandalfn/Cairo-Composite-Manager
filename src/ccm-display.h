@@ -37,7 +37,7 @@ G_BEGIN_DECLS
 #define CCM_IS_DISPLAY_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_DISPLAY))
 #define CCM_DISPLAY_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_DISPLAY, CCMDisplayClass))
 
-#define CCM_DISPLAY_XDISPLAY(obj)    (CCM_DISPLAY(obj)->xdisplay)
+#define CCM_DISPLAY_XDISPLAY(obj)    (ccm_display_get_xdisplay (CCM_DISPLAY(obj)))
 
 struct _CCMDisplayClass
 {
@@ -50,16 +50,10 @@ struct _CCMDisplay
 {
 	GObject 	parent_instance;
 	
-	Display*	xdisplay;
-	
 	CCMDisplayPrivate* priv;
 };
 
 GType 		ccm_display_get_type 			(void) G_GNUC_CONST;
-void		_ccm_display_trap_error			(CCMDisplay* self);
-gint		_ccm_display_pop_error			(CCMDisplay* self);
-gboolean	_ccm_display_use_xshm			(CCMDisplay* self);
-gboolean	_ccm_display_xshm_shared_pixmap (CCMDisplay* self);
 									 
 G_END_DECLS
 

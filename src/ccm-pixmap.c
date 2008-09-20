@@ -229,12 +229,12 @@ ccm_pixmap_register_damage(CCMPixmap* self)
 	
 	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self));
 	
-	_ccm_display_trap_error (display);
+	ccm_display_trap_error (display);
 	self->priv->damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (display),
 								  		CCM_PIXMAP_XPIXMAP (self),
 								  		XDamageReportDeltaRectangles);
 	ccm_display_sync (display);
-	if (!_ccm_display_pop_error (display))
+	if (!ccm_display_pop_error (display))
 	{
     	XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
 						 None, None);

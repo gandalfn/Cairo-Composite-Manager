@@ -37,7 +37,8 @@ G_BEGIN_DECLS
 #define CCM_IS_SCREEN_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_SCREEN))
 #define CCM_SCREEN_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_SCREEN, CCMScreenClass))
 
-#define CCM_SCREEN_XSCREEN(obj)     (CCM_SCREEN(obj)->xscreen)
+#define CCM_SCREEN_XSCREEN(obj)     (ccm_screen_get_xscreen(CCM_SCREEN(obj)))
+#define CCM_SCREEN_NUMBER(obj)      (ccm_screen_get_number(CCM_SCREEN(obj)))
 
 struct _CCMScreenClass
 {
@@ -50,23 +51,12 @@ struct _CCMScreen
 {
 	GObject 	parent_instance;
 	
-	Screen* 	xscreen;
-	guint 		number;
-	
 	CCMScreenPrivate* priv;
 };
 
 GType 			 ccm_screen_get_type			(void) G_GNUC_CONST;
-gboolean	     _ccm_screen_use_buffered		(CCMScreen* self);
-gboolean		 _ccm_screen_sync_with_blank 	(CCMScreen* self);
-guint			 _ccm_screen_get_refresh_rate   (CCMScreen* self);
-GSList*			 _ccm_screen_get_window_plugins	(CCMScreen* self);
-gchar*			 _ccm_screen_get_window_backend	(CCMScreen* self);
-gboolean		 _ccm_screen_native_pixmap_bind (CCMScreen* self);
-gboolean		 _ccm_screen_indirect_rendering (CCMScreen* self);
 CCMScreenPlugin* _ccm_screen_get_plugin			(CCMScreen *self, GType type);
-void 			 _ccm_screen_set_buffered		(CCMScreen* self, 
-												 gboolean buffered);
+
 G_END_DECLS
 
 #endif /* _CCM_SCREEN_H_ */

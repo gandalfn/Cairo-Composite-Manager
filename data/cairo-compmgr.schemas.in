@@ -91,17 +91,6 @@
             <long>Refresh rate in Hz</long>
          </locale>
       </schema>
-	  <schema>
-         <key>/schemas/apps/cairo-compmgr/default/screen/sync_with_vblank</key>
-         <applyto>/apps/cairo-compmgr/default/screen/sync_with_vblank</applyto>
-         <owner>gnome</owner>
-         <type>bool</type>
-		 <default>true</default>
-         <locale name="C">
-            <short>Sync redraw with vblank</short>
-            <long>Sync redraw with vblank</long>
-         </locale>
-      </schema>
       <schema>
          <key>/schemas/apps/cairo-compmgr/default/screen/indirect</key>
          <applyto>/apps/cairo-compmgr/default/screen/indirect</applyto>

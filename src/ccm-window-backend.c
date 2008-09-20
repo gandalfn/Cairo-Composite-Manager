@@ -33,7 +33,7 @@ ccm_window_backend_get_type(CCMScreen* screen)
 	GType type = 0;
 #endif
 	
-	backend = _ccm_screen_get_window_backend(screen);
+	g_object_get(G_OBJECT(screen), "backend", &backend, NULL);
 	if (backend)
 	{
 #ifndef DISABLE_GLITZ_BACKEND
@@ -44,6 +44,7 @@ ccm_window_backend_get_type(CCMScreen* screen)
 		if (!g_ascii_strcasecmp(backend, "openvg"))
 			type = ccm_window_openvg_get_type();
 #endif
+		g_free(backend);
 	}
 	
 	return type;

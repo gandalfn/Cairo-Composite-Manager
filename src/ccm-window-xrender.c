@@ -205,7 +205,8 @@ ccm_window_xrender_create_pixmap(CCMWindow* self, int width, int height, int dep
 	XVisualInfo vinfo;
 	Pixmap xpixmap;
 		
-	if (!XMatchVisualInfo (CCM_DISPLAY_XDISPLAY(display), screen->number,
+	if (!XMatchVisualInfo (CCM_DISPLAY_XDISPLAY(display), 
+						   CCM_SCREEN_NUMBER(screen),
 						   depth, TrueColor, &vinfo))
 		return NULL;
 	

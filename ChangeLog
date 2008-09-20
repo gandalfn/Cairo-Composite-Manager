@@ -1,3 +1,55 @@
+2008-09-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/cairo-compmgr.schemas.in:
+	* plugins/fade/ccm-fade.c (ccm_fade_get_duration),
+	(ccm_fade_window_load_options):
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_load_options):
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_get_size),
+	(ccm_magnifier_cursor_get_position),
+	(ccm_magnifier_screen_load_options), (ccm_magnifier_screen_paint):
+	* plugins/menu-animation/ccm-menu-animation.c
+	(ccm_menu_animation_get_duration),
+	(ccm_menu_animation_window_load_options):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_create_window),
+	(ccm_mosaic_on_key_press), (ccm_mosaic_screen_load_options),
+	(ccm_mosaic_create_areas):
+	* plugins/opacity/ccm-opacity.c (ccm_opacity_screen_load_options),
+	(ccm_opacity_window_load_options):
+	* plugins/perf/ccm-perf.c (ccm_perf_screen_load_options):
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_load_options):
+	* src/ccm-display.c (ccm_display_set_property),
+	(ccm_display_get_property), (ccm_display_init),
+	(ccm_display_class_init), (ccm_display_init_shape),
+	(ccm_display_init_composite), (ccm_display_init_damage),
+	(ccm_display_init_shm), (ccm_display_init_xfixes),
+	(ccm_display_new), (ccm_display_get_xdisplay), (ccm_display_sync),
+	(ccm_display_grab), (ccm_display_ungrab), (ccm_display_trap_error),
+	(ccm_display_pop_error):
+	* src/ccm-display.h:
+	* src/ccm-image.c (ccm_image_new):
+	* src/ccm-pixmap-backend.c (ccm_pixmap_backend_get_type):
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
+	* src/ccm-pixmap.c (ccm_pixmap_register_damage):
+	* src/ccm-screen.c (ccm_screen_set_property),
+	(ccm_screen_get_property), (ccm_screen_init),
+	(ccm_screen_class_init), (ccm_screen_update_background),
+	(ccm_screen_load_config), (ccm_screen_unset_selection_owner),
+	(ccm_screen_set_selection_owner), (ccm_screen_get_window_plugins),
+	(ccm_screen_paint), (ccm_screen_on_window_damaged),
+	(ccm_screen_new), (ccm_screen_get_display),
+	(ccm_screen_get_xscreen), (ccm_screen_get_number),
+	(ccm_screen_get_root_window):
+	* src/ccm-screen.h:
+	* src/ccm-window-backend.c (ccm_window_backend_get_type):
+	* src/ccm-window-glitz.c (ccm_window_glitz_create_gl_drawable),
+	(ccm_window_glitz_create_pixmap):
+	* src/ccm-window-xrender.c (ccm_window_xrender_create_pixmap):
+	* src/ccm-window.c (ccm_window_get_plugins),
+	(impl_ccm_window_move), (ccm_window_get_pixmap):
+	* src/ccm.h:
+      API Review of CCMDisplay and CCMScreen :
+      - Prefer to use g_object_[get,set] than public value.
+
 2008-09-18  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-screen.c (ccm_screen_print_stack),

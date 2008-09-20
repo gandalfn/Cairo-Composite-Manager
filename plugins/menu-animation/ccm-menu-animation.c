@@ -299,7 +299,9 @@ ccm_menu_animation_get_duration(CCMMenuAnimation* self)
 	if (duration != self->priv->duration)
 	{
 		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self->priv->window));
-		guint refresh_rate = _ccm_screen_get_refresh_rate (screen);
+		guint refresh_rate;
+		
+		g_object_get (G_OBJECT(screen), "refresh_rate", &refresh_rate, NULL);
 		
 		if (self->priv->timeline) g_object_unref (self->priv->timeline);
 
@@ -341,7 +343,8 @@ ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* windo
 	
 	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "menu-animation", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "menu-animation", 
 												  CCMMenuAnimationOptions[cpt]);
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_menu_animation_on_option_changed), 

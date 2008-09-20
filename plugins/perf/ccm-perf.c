@@ -292,7 +292,8 @@ ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "perf", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "perf", 
 												  CCMPerfOptions[cpt]);
 	}
 

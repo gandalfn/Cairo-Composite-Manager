@@ -291,7 +291,8 @@ ccm_opacity_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "opacity", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "opacity", 
 												  CCMOpacityOptions[cpt]);
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_opacity_on_option_changed), 
@@ -315,7 +316,8 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "opacity", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "opacity", 
 												  CCMOpacityOptions[cpt]);
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_opacity_on_option_changed), 

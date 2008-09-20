@@ -104,6 +104,7 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 		glitz_format_t templ;
 		Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
 		cairo_rectangle_t geometry;
+		gboolean indirect;
 		
 		if (!visual ||
 			!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
@@ -111,7 +112,7 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
-				screen->number,
+				CCM_SCREEN_NUMBER(screen),
 				XVisualIDFromVisual (visual));
 		
 		if (!format)
@@ -120,15 +121,16 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 			return FALSE;
 		}
 
+		g_object_get(G_OBJECT(screen), "indirect_rendering", &indirect, NULL);
 #ifdef ENABLE_GLITZ_TFP_BACKEND
 		glitz_glx_set_render_type(CCM_DISPLAY_XDISPLAY(display),
-								  screen->number, 
-								  !_ccm_screen_indirect_rendering (screen));
+								  CCM_SCREEN_NUMBER(screen), 
+								  !indirect);
 #endif
 		
 		self->priv->gl_drawable = glitz_glx_create_drawable_for_window(
 											CCM_DISPLAY_XDISPLAY(display),
-											screen->number,
+											CCM_SCREEN_NUMBER(screen),
 											format,
 											CCM_WINDOW_XWINDOW(self),
 											geometry.width, geometry.height);
@@ -260,6 +262,7 @@ ccm_window_glitz_create_pixmap(CCMWindow* self, int width, int height, int depth
 	CCMDisplay* display = ccm_screen_get_display (screen);
 	XVisualInfo* vinfo;
 	Pixmap xpixmap;
+	gboolean indirect;
 	glitz_drawable_format_t* format, templ;
 	unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
 						 GLITZ_FORMAT_RED_SIZE_MASK |
@@ -271,11 +274,12 @@ ccm_window_glitz_create_pixmap(CCMWindow* self, int width, int height, int depth
 	templ.color.green_size = 8;
 	templ.color.blue_size = 8;
 	
+	g_object_get(G_OBJECT(screen), "indirect_rendering", &indirect, NULL);
 #ifdef ENABLE_GLITZ_TFP_BACKEND
 	glitz_glx_set_render_type(CCM_DISPLAY_XDISPLAY(display),
-							  screen->number, 
-							  !_ccm_screen_indirect_rendering (screen));
-#endif
+							  CCM_SCREEN_NUMBER(screen), 
+							  !indirect);
+#endif	
 	
 	if (depth == 32)
 	{
@@ -283,13 +287,14 @@ ccm_window_glitz_create_pixmap(CCMWindow* self, int width, int height, int depth
 		mask |= GLITZ_FORMAT_ALPHA_SIZE_MASK;
 	}
 	format = glitz_glx_find_window_format (CCM_DISPLAY_XDISPLAY(display),
-										   screen->number, mask,
+										   CCM_SCREEN_NUMBER(screen), mask,
 										   &templ, 0);
 	
 	if (!format) return NULL;
 	
 	vinfo = glitz_glx_get_visual_info_from_format (CCM_DISPLAY_XDISPLAY(display),
-												   screen->number, format);
+												   CCM_SCREEN_NUMBER(screen), 
+												   format);
 	if (!vinfo)	return NULL;
 	
 	xpixmap = XCreatePixmap(CCM_DISPLAY_XDISPLAY(display), 

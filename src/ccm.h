@@ -160,19 +160,24 @@ void            ccm_region_transform        (CCMRegion *region,
 
 /********************************** Display ***********************************/
 CCMDisplay* 	ccm_display_new        		(gchar* display);
-void            ccm_display_destroy         (CCMDisplay* self);
+Display*        ccm_display_get_xdisplay    (CCMDisplay* self);
 CCMScreen*	 	ccm_display_get_screen 		(CCMDisplay* self, 
 											 guint number);
 int				ccm_display_get_shape_notify_event_type(CCMDisplay* self);
 void			ccm_display_sync			(CCMDisplay* self);
 void			ccm_display_grab			(CCMDisplay* self);
 void			ccm_display_ungrab			(CCMDisplay* self);
+void		    ccm_display_trap_error		(CCMDisplay* self);
+gint		    ccm_display_pop_error		(CCMDisplay* self);
+
 /******************************************************************************/
 
 /********************************** Screen ************************************/
 CCMScreen* 		ccm_screen_new					(CCMDisplay* display, 
 										 	 	 guint number);
 CCMDisplay*		ccm_screen_get_display			(CCMScreen* self);
+Screen*         ccm_screen_get_xscreen          (CCMScreen* self);
+guint           ccm_screen_get_number           (CCMScreen* self);
 CCMWindow* 		ccm_screen_get_root_window		(CCMScreen* self);
 CCMWindow* 		ccm_screen_get_overlay_window 	(CCMScreen* self);
 gboolean		ccm_screen_add_window			(CCMScreen* self, 

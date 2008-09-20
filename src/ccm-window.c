@@ -702,7 +702,9 @@ ccm_window_get_plugins(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
-	GSList* item, *plugins = _ccm_screen_get_window_plugins(screen);
+	GSList* item, *plugins = NULL;
+	
+	g_object_get(G_OBJECT(screen), "window_plugins", &plugins, NULL);
 	
 	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin)) 
 		g_object_unref(self->priv->plugin);
@@ -927,9 +929,11 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
 		
-		if (self->priv->is_viewable && !self->priv->is_input_only && 
+		if (screen &&
+			self->priv->is_viewable && !self->priv->is_input_only && 
 			self->priv->is_decorated && !self->priv->override_redirect) 
-			_ccm_screen_set_buffered (screen, TRUE);
+			g_object_set(G_OBJECT(screen), "buffered_pixmap", TRUE, NULL);
+		
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
 		if (self->priv->opaque)
@@ -1858,13 +1862,13 @@ ccm_window_get_pixmap(CCMWindow* self)
 		Pixmap xpixmap;
 		
 		ccm_display_sync(display);
-		_ccm_display_trap_error (display);
+		ccm_display_trap_error (display);
 		ccm_display_grab(display);
 		xpixmap = XCompositeNameWindowPixmap(CCM_DISPLAY_XDISPLAY(display),
 											 CCM_WINDOW_XWINDOW(self));
 		ccm_display_ungrab(display);
 		ccm_display_sync(display);
-		if (xpixmap && !_ccm_display_pop_error (display))
+		if (xpixmap && !ccm_display_pop_error (display))
 		{
 			self->priv->pixmap = ccm_pixmap_new(CCM_DRAWABLE(self), xpixmap);
 			if (self->priv->pixmap)

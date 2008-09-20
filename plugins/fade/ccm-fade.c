@@ -205,7 +205,8 @@ ccm_fade_get_duration(CCMFade* self)
 	if (duration != self->priv->duration)
 	{
 		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self->priv->window));
-		guint refresh_rate = _ccm_screen_get_refresh_rate (screen);
+		guint refresh_rate;
+		g_object_get (G_OBJECT(screen), "refresh_rate", &refresh_rate, NULL);
 		
 		if (self->priv->timeline) g_object_unref (self->priv->timeline);
 
@@ -244,7 +245,8 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "fade", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "fade", 
 												  CCMFadeOptions[cpt]);
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_fade_on_option_changed), 

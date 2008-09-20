@@ -264,7 +264,8 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "shadow", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "shadow", 
 												  CCMShadowOptions[cpt]);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);

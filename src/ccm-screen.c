@@ -39,6 +39,19 @@
 
 enum
 {
+    PROP_0,
+	PROP_DISPLAY,
+	PROP_NUMBER,
+	PROP_REFRESH_RATE,
+	PROP_WINDOW_PLUGINS,
+	PROP_BACKEND,
+	PROP_NATIVE_PIXMAP_BIND,
+	PROP_BUFFERED_PIXMAP,
+    PROP_INDIRECT_RENDERING
+};
+
+enum
+{
 	PLUGINS_CHANGED,
 	REFRESH_RATE_CHANGED,
     N_SIGNALS
@@ -46,14 +59,16 @@ enum
 
 static guint signals[N_SIGNALS] = { 0 };
 
-static void ccm_screen_paint(CCMScreen* self, int num_frame, 
-							 CCMTimeline* timeline);
-static void ccm_screen_iface_init(CCMScreenPluginClass* iface);
-static void ccm_screen_unset_selection_owner(CCMScreen* self);
-static void ccm_screen_on_window_error(CCMScreen* self, CCMWindow* window);
-static void ccm_screen_on_window_property_changed(CCMScreen* self, 
-												  CCMPropertyType changed,
-												  CCMWindow* window);
+static GSList* 	ccm_screen_get_window_plugins	(CCMScreen* self);
+static void 	ccm_screen_paint				(CCMScreen* self, int num_frame, 
+							 					 CCMTimeline* timeline);
+static void 	ccm_screen_iface_init			(CCMScreenPluginClass* iface);
+static void 	ccm_screen_unset_selection_owner(CCMScreen* self);
+static void 	ccm_screen_on_window_error		(CCMScreen* self, 
+												 CCMWindow* window);
+static void 	ccm_screen_on_window_property_changed(CCMScreen* self, 
+												  	  CCMPropertyType changed,
+												      CCMWindow* window);
 
 G_DEFINE_TYPE_EXTENDED (CCMScreen, ccm_screen, G_TYPE_OBJECT, 0,
 						G_IMPLEMENT_INTERFACE(CCM_TYPE_SCREEN_PLUGIN,
@@ -92,6 +107,8 @@ static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 struct _CCMScreenPrivate
 {
 	CCMDisplay* 		display;
+	Screen* 			xscreen;
+	guint 				number;
 	
 	cairo_t*			ctx;
 	
@@ -135,6 +152,79 @@ static void ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area,
 										 CCMWindow* window);
 static void ccm_screen_on_option_changed(CCMScreen* self, CCMConfig* config);
 
+static void
+ccm_screen_set_property(GObject *object,
+						guint prop_id,
+						const GValue *value,
+						GParamSpec *pspec)
+{
+	CCMScreenPrivate* priv = CCM_SCREEN_GET_PRIVATE(object);
+    
+	switch (prop_id)
+    {
+    	case PROP_DISPLAY:
+			priv->display = g_value_get_pointer (value);
+			break;
+		case PROP_NUMBER:
+			priv->number = g_value_get_uint (value);
+			priv->xscreen = ScreenOfDisplay(CCM_DISPLAY_XDISPLAY(priv->display),
+											priv->number);
+			break;
+		case PROP_BUFFERED_PIXMAP:
+			priv->buffered = g_value_get_boolean (value) &&
+				ccm_config_get_boolean(priv->options[CCM_SCREEN_USE_BUFFERED]);
+			break;
+		default:
+			break;
+    }
+}
+
+static void
+ccm_screen_get_property (GObject* object,
+						 guint prop_id,
+						 GValue* value,
+						 GParamSpec* pspec)
+{
+    CCMScreenPrivate* priv = CCM_SCREEN_GET_PRIVATE(object);
+    
+    switch (prop_id)
+    {
+    	case PROP_DISPLAY:
+			g_value_set_pointer (value, priv->display);
+			break;
+		case PROP_NUMBER:
+			g_value_set_uint (value, priv->number);
+			break;
+		case PROP_REFRESH_RATE:
+			g_value_set_uint (value, priv->refresh_rate);
+			break;
+		case PROP_WINDOW_PLUGINS:
+			g_value_set_pointer (value, 
+								 ccm_screen_get_window_plugins (CCM_SCREEN(object)));
+			break;
+		case PROP_BACKEND:
+		{
+			gchar* backend = 
+				ccm_config_get_string(priv->options[CCM_SCREEN_BACKEND]);
+			g_value_set_string (value, backend);
+			g_free(backend);
+			break;
+		}
+		case PROP_NATIVE_PIXMAP_BIND:
+			g_value_set_boolean (value, 
+					ccm_config_get_boolean(priv->options[CCM_SCREEN_PIXMAP]));
+			break;
+		case PROP_BUFFERED_PIXMAP:
+			g_value_set_boolean (value, priv->buffered);
+			break;
+		case PROP_INDIRECT_RENDERING:
+			g_value_set_boolean (value, 
+					ccm_config_get_boolean(priv->options[CCM_SCREEN_INDIRECT]));
+			break;
+		default:
+			break;
+    }
+}
 
 static void
 ccm_screen_init (CCMScreen *self)
@@ -142,6 +232,8 @@ ccm_screen_init (CCMScreen *self)
 	self->priv = CCM_SCREEN_GET_PRIVATE(self);
 	
 	self->priv->display = NULL;
+	self->priv->xscreen = NULL;
+	self->priv->number = 0;
 	self->priv->ctx = NULL;
 	self->priv->root = NULL;
 	self->priv->cow = NULL;
@@ -241,6 +333,64 @@ ccm_screen_class_init (CCMScreenClass *klass)
 	
 	g_type_class_add_private (klass, sizeof (CCMScreenPrivate));
 	
+	object_class->get_property = ccm_screen_get_property;
+    object_class->set_property = ccm_screen_set_property;
+	object_class->finalize = ccm_screen_finalize;
+	
+	g_object_class_install_property(object_class, PROP_DISPLAY,
+		g_param_spec_pointer ("display",
+		 					  "Display",
+			     			  "Display of screen",
+			     			  G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	
+	g_object_class_install_property(object_class, PROP_NUMBER,
+		g_param_spec_uint ("number",
+		 				   "Number",
+						   "Screen number",
+						    0, G_MAXUINT, None,
+			     			G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+	
+	g_object_class_install_property(object_class, PROP_REFRESH_RATE,
+		g_param_spec_uint ("refresh_rate",
+		 				   "RefreshRate",
+						   "Screen paint refresh rate",
+						    0, G_MAXUINT, None,
+			     			G_PARAM_READABLE));
+	
+	g_object_class_install_property(object_class, PROP_WINDOW_PLUGINS,
+		g_param_spec_pointer ("window_plugins",
+		 					  "WindowPlugins",
+			     			  "Window plugins list",
+			     			  G_PARAM_READABLE));
+	
+	g_object_class_install_property(object_class, PROP_BACKEND,
+		g_param_spec_string ("backend",
+		 					  "Backend",
+			     			  "Screen backend",
+							  "xrender",
+			     			  G_PARAM_READABLE));
+	
+	g_object_class_install_property(object_class, PROP_NATIVE_PIXMAP_BIND,
+		g_param_spec_boolean ("native_pixmap_bind",
+		 					  "NativePixmapBind",
+			     			  "Native pixmap bind",
+							  TRUE,
+			     			  G_PARAM_READABLE));
+	
+	g_object_class_install_property(object_class, PROP_BUFFERED_PIXMAP,
+		g_param_spec_boolean ("buffered_pixmap",
+		 					  "BufferedPixmap",
+			     			  "Buffered pixmap",
+							  TRUE,
+			     			  G_PARAM_READWRITE));
+	
+	g_object_class_install_property(object_class, PROP_INDIRECT_RENDERING,
+		g_param_spec_boolean ("indirect_rendering",
+		 					  "IndirectRendering",
+			     			  "Indirect rendering",
+							  TRUE,
+			     			  G_PARAM_READABLE));
+	
 	signals[PLUGINS_CHANGED] = g_signal_new ("plugins-changed",
 											 G_OBJECT_CLASS_TYPE (object_class),
 											 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -252,8 +402,6 @@ ccm_screen_class_init (CCMScreenClass *klass)
 											 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 											 g_cclosure_marshal_VOID__VOID,
 											 G_TYPE_NONE, 0, G_TYPE_NONE);
-	
-	object_class->finalize = ccm_screen_finalize;
 }
 
 static void
@@ -286,8 +434,8 @@ ccm_screen_update_background (CCMScreen* self)
 		
 		self->priv->background = ccm_window_create_pixmap(
 												self->priv->root,
-												self->xscreen->width,
-												self->xscreen->height, 
+												self->priv->xscreen->width,
+												self->priv->xscreen->height, 
 												32);
 		ctx = ccm_drawable_create_context (CCM_DRAWABLE(self->priv->background));
 		if (ctx)
@@ -297,8 +445,8 @@ ccm_screen_update_background (CCMScreen* self)
 			
 			area.x = 0;
 			area.y = 0;
-			area.width = self->xscreen->width;
-			area.height = self->xscreen->height;
+			area.width = self->priv->xscreen->width;
+			area.height = self->priv->xscreen->height;
 			
 			cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
 			gdk_cairo_set_source_color (ctx, (GdkColor*)color);
@@ -375,13 +523,14 @@ ccm_screen_load_config(CCMScreen* self)
 	
 	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(self->number, NULL, 
+		self->priv->options[cpt] = ccm_config_new(self->priv->number, NULL, 
 												  CCMScreenOptions[cpt]);
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_screen_on_option_changed), 
 								 self);
 	}
-	self->priv->buffered = _ccm_screen_use_buffered(self);
+	self->priv->buffered = 
+		ccm_config_get_boolean(self->priv->options[CCM_SCREEN_USE_BUFFERED]);
 	ccm_screen_update_refresh_rate (self);
 }
 
@@ -580,7 +729,8 @@ ccm_screen_unset_selection_owner(CCMScreen* self)
 	
 	if (self->priv->selection_owner != None)
 	{
-		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", self->number);
+		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", 
+											  self->priv->number);
 		Atom cm_atom = XInternAtom(CCM_DISPLAY_XDISPLAY(self->priv->display), 
 								   cm_atom_name, 0);
 		g_free(cm_atom_name);
@@ -600,7 +750,8 @@ ccm_screen_set_selection_owner(CCMScreen* self)
 	
 	if (self->priv->selection_owner == None)
 	{
-		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", self->number);
+		gchar* cm_atom_name = g_strdup_printf("_NET_WM_CM_S%i", 
+											  self->priv->number);
 		Atom cm_atom = XInternAtom(CCM_DISPLAY_XDISPLAY(self->priv->display), 
 								   cm_atom_name, 0);
 		CCMWindow* root = ccm_screen_get_root_window(self);
@@ -612,7 +763,7 @@ ccm_screen_set_selection_owner(CCMScreen* self)
 		{
 			g_critical("\nScreen %d already has a composite manager running, \n"
 					   "try to stop it before run cairo-compmgr", 
-					   self->number);
+					   self->priv->number);
 			return FALSE;
 		}
 		
@@ -1047,6 +1198,22 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	}
 }
 
+static GSList*
+ccm_screen_get_window_plugins(CCMScreen* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	GSList* filter, *plugins = NULL;
+	
+	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
+	plugins = ccm_extension_loader_get_window_plugins(self->priv->plugin_loader,
+													  filter);
+	g_slist_foreach(filter, (GFunc)g_free, NULL);
+	g_slist_free(filter);
+	
+	return plugins;
+}
+
 static void
 ccm_screen_get_plugins(CCMScreen* self)
 {
@@ -1089,7 +1256,8 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 			if (self->priv->ctx)
 			{
 				cairo_rectangle(self->priv->ctx, 0, 0, 
-								self->xscreen->width, self->xscreen->height);
+								self->priv->xscreen->width, 
+								self->priv->xscreen->height);
 				cairo_clip(self->priv->ctx);
 				cairo_set_operator (self->priv->ctx, CAIRO_OPERATOR_CLEAR);
 				cairo_paint(self->priv->ctx);
@@ -1327,8 +1495,8 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 			
 			area.x = 0;
 			area.y = 0;
-			area.width = self->xscreen->width;
-			area.height = self->xscreen->height;
+			area.width = self->priv->xscreen->width;
+			area.height = self->priv->xscreen->height;
 			geometry = ccm_region_rectangle (&area);
 			ccm_region_intersect (damage_below, geometry);
 			ccm_region_destroy (geometry);
@@ -1688,59 +1856,6 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 	}
 }
 
-gboolean
-_ccm_screen_sync_with_blank(CCMScreen* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_SYNC_WITH_VBLANK]);
-}
-
-gchar*
-_ccm_screen_get_window_backend(CCMScreen* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	static gchar* backend = NULL;
-	
-	if (backend) g_free(backend);
-	backend = ccm_config_get_string(self->priv->options[CCM_SCREEN_BACKEND]);
-	
-	return backend;
-}
-
-gboolean
-_ccm_screen_native_pixmap_bind(CCMScreen* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_PIXMAP]);
-}
-
-gboolean
-_ccm_screen_indirect_rendering(CCMScreen* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_INDIRECT]);
-}
-
-gboolean
-_ccm_screen_use_buffered(CCMScreen* self)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	
-	return ccm_config_get_boolean(self->priv->options[CCM_SCREEN_USE_BUFFERED]);
-}
-
-guint
-_ccm_screen_get_refresh_rate(CCMScreen* self)
-{
-	g_return_val_if_fail(self != NULL, 60);
-	
-	return self->priv->refresh_rate;
-}
-
 CCMScreenPlugin*
 _ccm_screen_get_plugin(CCMScreen *self, GType type)
 {
@@ -1758,41 +1873,23 @@ _ccm_screen_get_plugin(CCMScreen *self, GType type)
 	return NULL;
 }
 
-GSList*
-_ccm_screen_get_window_plugins(CCMScreen* self)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	
-	GSList* filter, *plugins = NULL;
-	
-	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
-	plugins = ccm_extension_loader_get_window_plugins(self->priv->plugin_loader,
-													  filter);
-	g_slist_foreach(filter, (GFunc)g_free, NULL);
-	g_slist_free(filter);
-	
-	return plugins;
-}
-
-void 
-_ccm_screen_set_buffered(CCMScreen* self, gboolean buffered)
-{
-	self->priv->buffered = buffered && _ccm_screen_use_buffered(self);
-}
-
 CCMScreen*
 ccm_screen_new(CCMDisplay* display, guint number)
 {
 	g_return_val_if_fail(display != NULL, NULL);
 	
-	CCMScreen *self = g_object_new(CCM_TYPE_SCREEN, NULL);
 	CCMWindow* root;
 	cairo_rectangle_t area;
+	CCMScreen *self = g_object_new(CCM_TYPE_SCREEN, 
+								   "display", display,
+								   "number", number,
+								   NULL);
 	
-	self->priv->display = display;
-	
-	self->xscreen = ScreenOfDisplay(CCM_DISPLAY_XDISPLAY(display), number);
-	self->number = number;
+	if (!self->priv->xscreen)
+	{
+		g_object_unref(self);
+		return NULL;
+	}
 	
 	self->priv->plugin_loader = ccm_extension_loader_new();
 	
@@ -1807,11 +1904,13 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	if (!ccm_screen_create_overlay_window(self))
 	{
 		g_warning("Error on create overlay window");
+		g_object_unref(self);
 		return NULL;
 	}
 	
 	if (!ccm_screen_set_selection_owner(self))
 	{
+		g_object_unref(self);
 		return NULL;
 	}
 	
@@ -1821,8 +1920,8 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	
 	area.x = 0;
 	area.y = 0;
-	area.width = self->xscreen->width;
-	area.height = self->xscreen->height;
+	area.width = self->priv->xscreen->width;
+	area.height = self->priv->xscreen->height;
 	self->priv->root_damage = ccm_region_rectangle (&area);
 	
 	return self;
@@ -1831,9 +1930,25 @@ ccm_screen_new(CCMDisplay* display, guint number)
 CCMDisplay*
 ccm_screen_get_display(CCMScreen* self)
 {
-	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(CCM_IS_SCREEN(self), NULL);
 	
 	return self->priv->display;
+}
+
+Screen*
+ccm_screen_get_xscreen(CCMScreen* self)
+{
+	g_return_val_if_fail(CCM_IS_SCREEN(self), NULL);
+	
+	return self->priv->xscreen;
+}
+
+guint
+ccm_screen_get_number(CCMScreen* self)
+{
+	g_return_val_if_fail(CCM_IS_SCREEN(self), 0);
+	
+	return self->priv->number;
 }
 
 CCMWindow*
@@ -1851,7 +1966,7 @@ ccm_screen_get_root_window(CCMScreen* self)
 	
 	if (!self->priv->root)
 	{
-		Window root = RootWindowOfScreen(self->xscreen);
+		Window root = RootWindowOfScreen(self->priv->xscreen);
 		
 		self->priv->root = ccm_window_new(self, root);
 		XSelectInput (CCM_DISPLAY_XDISPLAY(ccm_screen_get_display(self)), 

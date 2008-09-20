@@ -147,8 +147,8 @@ ccm_mosaic_create_window(CCMMosaic* self)
 	attr.override_redirect = True;
 	self->priv->window = XCreateWindow (CCM_DISPLAY_XDISPLAY(display), 
 										CCM_WINDOW_XWINDOW(root), 0, 0,
-										self->priv->screen->xscreen->width,
-										self->priv->screen->xscreen->height,
+										CCM_SCREEN_XSCREEN(self->priv->screen)->width,
+										CCM_SCREEN_XSCREEN(self->priv->screen)->height,
 										0, CopyFromParent, InputOnly, 
 										CopyFromParent, CWOverrideRedirect, 
 										&attr);
@@ -463,14 +463,18 @@ ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 static void
 ccm_mosaic_on_key_press(CCMMosaic* self)
 {
+	g_return_if_fail(self != NULL);
+	
 	self->priv->enabled = ~self->priv->enabled;
-	_ccm_screen_set_buffered(self->priv->screen, !self->priv->enabled);
+	g_object_set(G_OBJECT(self->priv->screen), "buffered_pixmap", 
+				 !self->priv->enabled, NULL);
+	
 	if (self->priv->enabled)
 	{
 		self->priv->surface = cairo_image_surface_create (
 										CAIRO_FORMAT_ARGB32, 
-										self->priv->screen->xscreen->width, 
-										self->priv->screen->xscreen->height);
+										CCM_SCREEN_XSCREEN(self->priv->screen)->width, 
+										CCM_SCREEN_XSCREEN(self->priv->screen)->height);
 		ccm_mosaic_create_window(self);
 	}
 	else
@@ -501,7 +505,8 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
 	{
-		self->priv->options[cpt] = ccm_config_new(screen->number, "mosaic", 
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "mosaic", 
 												  CCMMosaicOptions[cpt]);
 	}
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
@@ -534,13 +539,13 @@ ccm_mosaic_create_areas(CCMMosaic* self, gint nb_windows)
     self->priv->nb_areas = 0;
     
 	y = spacing;
-    height = (self->priv->screen->xscreen->height - (lines + 1) * spacing) / lines;
+    height = (CCM_SCREEN_XSCREEN(self->priv->screen)->height - (lines + 1) * spacing) / lines;
 
     for (i = 0; i < lines; i++)
     {
 	    n = MIN (nb_windows - self->priv->nb_areas, ceilf ((float)nb_windows / lines));
     	x = spacing;
-	    width = (self->priv->screen->xscreen->width - (n + 1) * spacing) / n;
+	    width = (CCM_SCREEN_XSCREEN(self->priv->screen)->width - (n + 1) * spacing) / n;
         for (j = 0; j < n; j++)
 	    {
 	        self->priv->areas[self->priv->nb_areas].geometry.x = x;

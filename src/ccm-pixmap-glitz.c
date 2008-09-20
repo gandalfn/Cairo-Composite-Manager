@@ -109,6 +109,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		glitz_format_t templ;
 		Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
 		cairo_rectangle_t geometry;
+		gboolean indirect;
 		
 		if (!visual ||
 			!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
@@ -116,7 +117,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		
 		format = glitz_glx_find_drawable_format_for_visual(
 				CCM_DISPLAY_XDISPLAY(display),
-				screen->number,
+				CCM_SCREEN_NUMBER(screen),
 				XVisualIDFromVisual (visual));
 		if (!format)
 		{
@@ -126,13 +127,14 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		
 		g_object_set(self, "y_invert", format->y_inverted ? TRUE : FALSE, NULL);
 		
+		g_object_get(G_OBJECT(screen), "indirect_rendering", &indirect, NULL);
 		glitz_glx_set_render_type(CCM_DISPLAY_XDISPLAY(display),
-								  screen->number, 
-								  !_ccm_screen_indirect_rendering (screen));
+								  CCM_SCREEN_NUMBER(screen), 
+								  !indirect);
 		
 		self->priv->gl_pixmap = glitz_glx_create_drawable_for_pixmap (
 											CCM_DISPLAY_XDISPLAY(display),
-											screen->number,
+											CCM_SCREEN_NUMBER(screen),
 											format,
 											CCM_PIXMAP_XPIXMAP(self),
 											geometry.width, geometry.height);
