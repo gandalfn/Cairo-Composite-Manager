@@ -288,13 +288,11 @@ ccm_config_set_integer_list(CCMConfig* self, GSList * value)
 						  (GSList *)value, NULL);
 }
 
-const GdkColor*
+GdkColor*
 ccm_config_get_color(CCMConfig* self)
 {
 	gchar* value = ccm_config_get_string (self);
-	static GdkColor* color = NULL;
-	
-	if (!color) color = g_new0(GdkColor, 1);
+	GdkColor* color = NULL;
 	
 	if (value && value[0] == '#')
     {
@@ -302,13 +300,14 @@ ccm_config_get_color(CCMConfig* self)
 
     	if (sscanf(value, "#%2x%2x%2x", &c[0], &c[1], &c[2]) == 3)
     	{
+			color = g_new0(GdkColor, 1);
+	
 			color->red = c[0] << 8 | c[0];
             color->green = c[1] << 8 | c[1];
             color->blue = c[2] << 8 | c[2];
-			
-			return color;
     	}
     }
+	if (value) g_free(value);
 	
 	return color;
 }

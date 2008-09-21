@@ -46,8 +46,11 @@ static gchar* CCMOpacityOptions[CCM_OPACITY_OPTION_N] = {
 	"step"
 };
 
-static void ccm_opacity_screen_iface_init(CCMScreenPluginClass* iface);
-static void ccm_opacity_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_opacity_screen_iface_init  (CCMScreenPluginClass* iface);
+static void ccm_opacity_window_iface_init  (CCMWindowPluginClass* iface);
+static void ccm_opacity_on_property_changed(CCMOpacity* self, 
+											CCMPropertyType changed,
+											CCMWindow* window);
 
 CCM_DEFINE_PLUGIN (CCMOpacity, ccm_opacity, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_opacity,
@@ -95,6 +98,10 @@ ccm_opacity_finalize (GObject *object)
 {
 	CCMOpacity* self = CCM_OPACITY(object);
 	gint cpt;
+	
+	g_signal_handlers_disconnect_by_func(self->priv->window, 
+										 ccm_opacity_on_property_changed, 
+										 self);	
 	
 	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
@@ -275,7 +282,7 @@ ccm_opacity_on_option_changed(CCMOpacity* self, CCMConfig* config)
 	else if (config == self->priv->options[CCM_OPACITY_STEP])
 		ccm_opacity_get_opacity_step (self);
 	else if (config == self->priv->options[CCM_OPACITY_OPACITY] &&
-			 ccm_opacity_get_opacity (self))
+			 ccm_opacity_get_opacity (self) && self->priv->window)
 	{
 		ccm_opacity_on_property_changed (self, CCM_PROPERTY_HINT_TYPE, 
 										 self->priv->window);
@@ -291,6 +298,7 @@ ccm_opacity_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
 	{
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "opacity", 
 												  CCMOpacityOptions[cpt]);
@@ -316,6 +324,7 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
 	{
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "opacity", 
 												  CCMOpacityOptions[cpt]);

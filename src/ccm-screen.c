@@ -264,7 +264,7 @@ ccm_screen_finalize (GObject *object)
 	
 	ccm_screen_unset_selection_owner(self);
 	
-	if (self->priv->plugin)
+	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin))
 		g_object_unref(self->priv->plugin);
 	
 	if (self->priv->plugin_loader)
@@ -420,7 +420,7 @@ ccm_screen_update_background (CCMScreen* self)
 	
 	gchar* filename = 
 		ccm_config_get_string (self->priv->options[CCM_SCREEN_BACKGROUND]);
-	const GdkColor* color = 
+	GdkColor* color = 
 		ccm_config_get_color (self->priv->options[CCM_SCREEN_COLOR_BACKGROUND]);
 	int x = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_X]),
 		y = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_Y]);
@@ -476,6 +476,8 @@ ccm_screen_update_background (CCMScreen* self)
 			self->priv->background = NULL;
 		}
 	}
+	if (filename) g_free(filename);
+	if (color) g_free(color);
 }
 
 static gboolean
@@ -899,8 +901,29 @@ ccm_screen_check_stack(CCMScreen* self)
 		}
 		else if (!link) 
 		{
+			GList* last_viewable = NULL;
+			
 			ccm_debug_window(item->data, "CHECK STACK REMOVED");
-			removed = g_list_append (removed, item->data);
+			if (ccm_window_is_viewable (item->data) &&
+				!ccm_window_is_input_only (item->data))
+			{
+				if (new_viewable && g_list_last (new_viewable))
+				{
+					last_viewable = g_list_find(stack, 
+											  g_list_last (new_viewable)->data);
+					if (last_viewable)
+						stack = g_list_insert_before (stack, 
+													  last_viewable->next,
+													  item->data);
+					else
+						stack = g_list_append (stack, item->data);
+				}
+			}
+			
+			if (last_viewable)
+				removed = g_list_append (removed, item->data);
+			else
+				ccm_screen_destroy_window (self, item->data);
 		}
 	}
 	for (item = g_list_first(removed); item; item = item->next)
@@ -1235,8 +1258,9 @@ ccm_screen_get_plugins(CCMScreen* self)
 	{
 		GType type = GPOINTER_TO_INT(item->data);
 		GObject* prev = G_OBJECT(self->priv->plugin);
+		CCMScreenPlugin* plugin = g_object_new(type, "parent", prev, NULL);
 		
-		self->priv->plugin = g_object_new(type, "parent", prev, NULL);
+		if (plugin) self->priv->plugin = plugin;
 	}
 	g_slist_free(plugins);
 	ccm_screen_plugin_load_options(self->priv->plugin, self);

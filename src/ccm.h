@@ -334,7 +334,7 @@ void 			ccm_config_set_string_list			(CCMConfig* self,
 GSList*			ccm_config_get_integer_list			(CCMConfig* self);
 void			ccm_config_set_integer_list			(CCMConfig* self, 
 													 GSList * value);
-const GdkColor* ccm_config_get_color                (CCMConfig* self);
+GdkColor*       ccm_config_get_color                (CCMConfig* self);
 
 /******************************************************************************/
 

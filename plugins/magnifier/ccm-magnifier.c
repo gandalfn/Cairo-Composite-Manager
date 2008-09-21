@@ -568,6 +568,7 @@ ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	for (cpt = 0; cpt < CCM_MAGNIFIER_OPTION_N; cpt++)
 	{
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "magnifier", 
 												  CCMMagnifierOptions[cpt]);

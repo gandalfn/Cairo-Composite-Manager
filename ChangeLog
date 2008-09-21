@@ -1,3 +1,26 @@
+2008-09-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c (ccm_fade_window_load_options):
+	* plugins/magnifier/ccm-magnifier.c
+	(ccm_magnifier_screen_load_options):
+	* plugins/menu-animation/ccm-menu-animation.c
+	(ccm_menu_animation_window_load_options):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_on_event),
+	(ccm_mosaic_screen_load_options), (ccm_mosaic_get_damaged_area),
+	(ccm_mosaic_paint_area), (ccm_mosaic_screen_paint):
+	* plugins/opacity/ccm-opacity.c (ccm_opacity_finalize),
+	(ccm_opacity_on_option_changed), (ccm_opacity_screen_load_options),
+	(ccm_opacity_window_load_options):
+	* plugins/perf/ccm-perf.c (ccm_perf_screen_load_options):
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_load_options):
+	* src/ccm-config.c (ccm_config_get_color):
+	* src/ccm-screen.c (ccm_screen_finalize),
+	(ccm_screen_update_background), (ccm_screen_check_stack),
+	(ccm_screen_get_plugins):
+	* src/ccm-window.c (ccm_window_finalize), (ccm_window_get_plugins):
+	* src/ccm.h:
+      Fix some memory leaks.
+
 2008-09-20  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* data/cairo-compmgr.schemas.in:

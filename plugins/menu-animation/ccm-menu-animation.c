@@ -343,6 +343,7 @@ ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* windo
 	
 	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; cpt++)
 	{
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "menu-animation", 
 												  CCMMenuAnimationOptions[cpt]);

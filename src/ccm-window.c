@@ -255,7 +255,7 @@ ccm_window_finalize (GObject *object)
 		g_free(self->priv->name);
 		self->priv->name = NULL;
 	}
-	if (self->priv->plugin) 
+	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin)) 
 	{
 		g_object_unref(self->priv->plugin);
 		self->priv->plugin = NULL;
@@ -715,8 +715,9 @@ ccm_window_get_plugins(CCMWindow* self)
 	{
 		GType type = GPOINTER_TO_INT(item->data);
 		GObject* prev = G_OBJECT(self->priv->plugin);
+		CCMWindowPlugin* plugin = g_object_new(type, "parent", prev, NULL);
 		
-		self->priv->plugin = g_object_new(type, "parent", prev, NULL);
+		if (plugin) self->priv->plugin = plugin;
 	}
 	g_slist_free(plugins);
 	
