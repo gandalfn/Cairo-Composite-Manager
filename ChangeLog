@@ -1,5 +1,11 @@
 2008-09-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* src/ccm-screen.c (ccm_screen_check_stack),
+	(impl_ccm_screen_paint), (ccm_screen_on_event):
+      Fix remove window on reparent.
+
+2008-09-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/fade/ccm-fade.c (ccm_fade_window_load_options):
 	* plugins/magnifier/ccm-magnifier.c
 	(ccm_magnifier_screen_load_options):

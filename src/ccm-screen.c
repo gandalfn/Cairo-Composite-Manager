@@ -844,7 +844,7 @@ ccm_screen_check_stack(CCMScreen* self)
 
 	guint cpt;
 	GList* stack = NULL, *item;
-	GList* removed = NULL, *viewable = NULL, *new_viewable = NULL;
+	GList* viewable = NULL, *new_viewable = NULL;
 	
 	ccm_debug("CHECK_STACK");
 	
@@ -901,12 +901,14 @@ ccm_screen_check_stack(CCMScreen* self)
 		}
 		else if (!link) 
 		{
-			GList* last_viewable = NULL;
+			gboolean found = FALSE;
 			
 			ccm_debug_window(item->data, "CHECK STACK REMOVED");
 			if (ccm_window_is_viewable (item->data) &&
 				!ccm_window_is_input_only (item->data))
 			{
+				GList* last_viewable = NULL;
+				
 				if (new_viewable && g_list_last (new_viewable))
 				{
 					last_viewable = g_list_find(stack, 
@@ -915,20 +917,17 @@ ccm_screen_check_stack(CCMScreen* self)
 						stack = g_list_insert_before (stack, 
 													  last_viewable->next,
 													  item->data);
-					else
-						stack = g_list_append (stack, item->data);
 				}
+				if (!last_viewable) stack = g_list_append (stack, item->data);
+				found = TRUE;
 			}
 			
-			if (last_viewable)
-				removed = g_list_append (removed, item->data);
+			if (found)
+				ccm_screen_remove_window (self, item->data);
 			else
 				ccm_screen_destroy_window (self, item->data);
 		}
 	}
-	for (item = g_list_first(removed); item; item = item->next)
-		ccm_screen_remove_window (self, item->data);
-	g_list_free(removed);
 	
 	g_list_free(self->priv->windows);
 	self->priv->windows = stack;
@@ -1089,13 +1088,13 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 			
 			ccm_debug_window(window, "PAINT SCREEN");
 			ret |= ccm_window_paint(window, self->priv->ctx, self->priv->buffered);
-			
-			if (!ccm_window_is_viewable(window) &&
-				g_list_find(self->priv->removed, window))
-			{
-				self->priv->removed = g_list_remove (self->priv->removed, window);
-				destroy = g_list_append(destroy, window);
-			}
+		}
+		if ((!ccm_window_is_viewable(window) || 
+			 ccm_window_is_input_only (window)) &&
+			g_list_find(self->priv->removed, window))
+		{
+			self->priv->removed = g_list_remove (self->priv->removed, window);
+			destroy = g_list_append(destroy, window);
 		}
 	}
 	if (destroy)
@@ -1654,7 +1653,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			else if (parent && window)
 			{
 				ccm_debug_window(window, "REPARENT REMOVE");
-				ccm_screen_remove_window (self, window);
+				ccm_screen_destroy_window (self, window);
 				ccm_drawable_damage(CCM_DRAWABLE(parent));
 			}
 		}
