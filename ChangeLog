@@ -1,5 +1,10 @@
 2008-09-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* src/ccm-screen.c (ccm_screen_check_stack):
+      Prepend window in stack on remove instead append to avoid bliking.
+
+2008-09-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* src/ccm-screen.c (ccm_screen_check_stack),
 	(impl_ccm_screen_paint), (ccm_screen_on_event):
       Fix remove window on reparent.

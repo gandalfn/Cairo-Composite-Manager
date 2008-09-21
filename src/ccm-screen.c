@@ -918,7 +918,7 @@ ccm_screen_check_stack(CCMScreen* self)
 													  last_viewable->next,
 													  item->data);
 				}
-				if (!last_viewable) stack = g_list_append (stack, item->data);
+				if (!last_viewable) stack = g_list_prepend (stack, item->data);
 				found = TRUE;
 			}
 			
