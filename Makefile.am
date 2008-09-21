@@ -1,8 +1,4 @@
-## Process this file with automake to produce Makefile.in
-## Created by Anjuta
-
-SUBDIRS = src po \
-	data  plugins
+SUBDIRS = lib src plugins data po
 
 cairo_compmgrdocdir = ${prefix}/doc/cairo-compmgr
 cairo_compmgrdoc_DATA = \

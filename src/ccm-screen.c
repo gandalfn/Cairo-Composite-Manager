@@ -27,6 +27,7 @@
 
 #include "ccm.h"
 #include "ccm-debug.h"
+#include "ccm-config.h"
 #include "ccm-screen.h"
 #include "ccm-screen-plugin.h"
 #include "ccm-display.h"

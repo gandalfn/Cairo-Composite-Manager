@@ -1,3 +1,73 @@
+2008-09-22  Nicolas Bruguier  <gandalfn@rohan>
+
+	reviewed by: <delete if not using a buddy>
+
+	* lib/Makefile.am:
+	* lib/ccm-config.c (ccm_config_init), (ccm_config_finalize),
+	(ccm_config_class_init), (ccm_config_on_change),
+	(ccm_config_copy_entry), (ccm_config_new),
+	(ccm_config_get_boolean), (ccm_config_set_boolean),
+	(ccm_config_get_integer), (ccm_config_set_integer),
+	(ccm_config_get_float), (ccm_config_set_float),
+	(ccm_config_get_string), (ccm_config_set_string),
+	(ccm_config_get_string_list), (ccm_config_set_string_list),
+	(ccm_config_get_integer_list), (ccm_config_set_integer_list),
+	(ccm_config_get_color):
+	* lib/ccm-config.h:
+	* lib/ccm-timeline.c (timeout_add), (timeout_remove),
+	(timeline_marker_new), (timeline_marker_free),
+	(ccm_timeline_set_property), (ccm_timeline_get_property),
+	(ccm_timeline_finalize), (ccm_timeline_dispose),
+	(ccm_timeline_class_init), (ccm_timeline_init),
+	(timeline_timeout_func), (timeline_timeout_add),
+	(delay_timeout_func), (ccm_timeline_start), (ccm_timeline_pause),
+	(ccm_timeline_stop), (ccm_timeline_set_loop),
+	(ccm_timeline_get_loop), (ccm_timeline_rewind),
+	(ccm_timeline_skip), (ccm_timeline_advance),
+	(ccm_timeline_get_current_frame), (ccm_timeline_get_n_frames),
+	(ccm_timeline_set_n_frames), (ccm_timeline_set_speed),
+	(ccm_timeline_get_speed), (ccm_timeline_is_playing),
+	(ccm_timeline_clone), (ccm_timeline_new_for_duration),
+	(ccm_timeline_new), (ccm_timeline_get_delay),
+	(ccm_timeline_set_delay), (ccm_timeline_get_duration),
+	(ccm_timeline_set_duration), (ccm_timeline_get_progress),
+	(ccm_timeline_get_direction), (ccm_timeline_set_direction),
+	(ccm_timeline_get_delta), (ccm_timeline_add_marker_internal),
+	(ccm_timeline_add_marker_at_frame),
+	(ccm_timeline_add_marker_at_time), (ccm_timeline_list_markers),
+	(ccm_timeline_advance_to_marker), (ccm_timeline_remove_marker):
+	* lib/ccm-timeline.h:
+	* lib/ccm-timeout-pool.c (ccm_timeout_sort),
+	(ccm_timeout_find_by_id), (ccm_timeout_pool_get_ticks),
+	(ccm_timeout_prepare), (ccm_timeout_dispatch), (ccm_timeout_new),
+	(ccm_timeout_ref), (ccm_timeout_unref), (ccm_timeout_free),
+	(ccm_timeout_pool_prepare), (ccm_timeout_pool_check),
+	(ccm_timeout_pool_dispatch), (ccm_timeout_pool_finalize),
+	(ccm_timeout_pool_new), (ccm_timeout_pool_add),
+	(ccm_timeout_pool_remove):
+	* lib/ccm-timeout-pool.h:
+	* lib/eggaccelerators.c (is_alt), (is_ctl), (is_modx), (is_ctrl),
+	(is_shft), (is_shift), (is_control), (is_release), (is_meta),
+	(is_super), (is_hyper), (is_keycode), (is_button),
+	(egg_accelerator_parse_virtual), (egg_virtual_accelerator_name),
+	(egg_keymap_resolve_virtual_modifiers),
+	(egg_keymap_virtualize_modifiers), (reload_modmap),
+	(egg_keymap_get_modmap):
+	* lib/eggaccelerators.h:
+	* src/ccm-config.c:
+	* src/ccm-config.h:
+	* src/ccm-extension.c:
+	* src/ccm-plugin.c (_ccm_plugin_lock_method),
+	(_ccm_plugin_unlock_method):
+	* src/ccm-timeline.c:
+	* src/ccm-timeline.h:
+	* src/ccm-timeout-pool.c:
+	* src/ccm-timeout-pool.h:
+	* src/eggaccelerators.c:
+	* src/eggaccelerators.h:
+      Create libcairo_compmgr to expose common objects and functions to prepare 
+      ccm preference application.
+
 2008-09-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-screen.c (ccm_screen_check_stack):

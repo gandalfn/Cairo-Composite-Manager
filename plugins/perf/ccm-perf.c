@@ -32,6 +32,7 @@
 #include <unistd.h>
 
 #include "ccm-drawable.h"
+#include "ccm-config.h"
 #include "ccm-window.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"

@@ -1,4 +1,5 @@
 INCLUDES = \
+    -I../lib \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
 	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
 	-DPACKAGE_PLUGIN_DIR=\""$(libdir)/cairo-compmgr"\" \
@@ -31,61 +32,53 @@ endif
 bin_PROGRAMS = cairo-compmgr
 
 cairo_compmgr_SOURCES = \
-    eggaccelerators.c \
-    eggaccelerators.h \
-	ccm-debug.h \
+    ccm-debug.h \
     ccm-debug.c \
     ccm-region.c \
 	ccm-region.h \
+	ccm-plugin.h \
+	ccm-plugin.c \
 	ccm-drawable.h \
 	ccm-drawable.c \
-	ccm-pixmap.h \
+	ccm-image.h \
+	ccm-image.c \
+    ccm-pixmap.h \
 	ccm-pixmap.c \
+	ccm-pixmap-backend.h \
+	ccm-pixmap-backend.c \
+	ccm-pixmap-image.h \
+	ccm-pixmap-image.c \
+    ccm-pixmap-buffered-image.h \
+	ccm-pixmap-buffered-image.c \
 	ccm-window.h \
 	ccm-window.c \
-	cairo-compmgr.c\
+	ccm-window-backend.h \
+	ccm-window-backend.c \
+	ccm-window-plugin.h \
+	ccm-window-plugin.c \
 	ccm-screen.h \
 	ccm-screen.c \
+	ccm-screen-plugin.h \
+	ccm-screen-plugin.c \
 	ccm-display.h \
 	ccm-display.c \
 	ccm-watch.c \
 	ccm-watch.h \
-	ccm-plugin.h \
-	ccm-plugin.c \
-	ccm-window-plugin.h \
-	ccm-window-plugin.c \
-	ccm-config.h \
-	ccm-config.c \
 	ccm-extension.h \
 	ccm-extension.c \
 	ccm-extension-loader.h \
 	ccm-extension-loader.c \
-	ccm-screen-plugin.h \
-	ccm-screen-plugin.c \
-	ccm-window-backend.h \
-	ccm-window-backend.c \
-	ccm.h \
 	ccm-tray-menu.h \
 	ccm-tray-menu.c \
 	ccm-tray-icon.h \
 	ccm-tray-icon.c \
-	ccm-pixmap-backend.h \
-	ccm-pixmap-backend.c \
-	ccm-image.h \
-	ccm-image.c \
-    ccm-pixmap-image.h \
-	ccm-pixmap-image.c \
-    ccm-pixmap-buffered-image.h \
-	ccm-pixmap-buffered-image.c \
 	ccm-keybind.h \
 	ccm-keybind.c \
 	ccm-property-async.h \
 	ccm-property-async.c \
-	ccm-timeline.h \
-	ccm-timeline.c \
-	ccm-timeout-pool.c \
-	ccm-timeout-pool.h
-
+	ccm.h \
+	cairo-compmgr.c
+	
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \
 	ccm-pixmap-xrender.h \
@@ -114,7 +107,7 @@ endif
 
 cairo_compmgr_LDFLAGS = -rdynamic
 
-cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS)
+cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS) ../lib/libcairo_compmgr.la
 
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_LDADD += $(CCM_XRENDER_BACKEND_LIBS)

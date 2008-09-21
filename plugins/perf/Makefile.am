@@ -1,5 +1,6 @@
 INCLUDES = \
 	-I../../src \
+	-I../../lib \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
 	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
 	-DPACKAGE_PIXMAP_DIR=\""$(datadir)/pixmaps/cairo-compmgr"\" \
@@ -14,6 +15,8 @@ libccm_perf_la_SOURCES = \
 	ccm-perf.c ccm-perf.h
 
 libccm_perf_la_LDFLAGS =  -module -avoid-version -no-undefined
+
+libccm_perf_la_LIBADD =  ../../lib/libcairo_compmgr.la
 
 plugin_in_files = ccm-perf.plugin.desktop.in
 %.plugin: %.plugin.desktop.in $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*po) ; $(INTLTOOL_MERGE) $(top_srcdir)/po $< $@ -d -u -c $(top_builddir)/po/.intltool-merge-cache

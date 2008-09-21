@@ -23,6 +23,7 @@
 #include <X11/Xatom.h>
 
 #include "ccm-drawable.h"
+#include "ccm-config.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-window.h"

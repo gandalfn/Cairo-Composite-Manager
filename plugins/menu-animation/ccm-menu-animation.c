@@ -23,6 +23,7 @@
 
 //#define CCM_DEBUG_ENABLE
 #include "ccm.h"
+#include "ccm-config.h"
 #include "ccm-debug.h"
 #include "ccm-drawable.h"
 #include "ccm-window.h"

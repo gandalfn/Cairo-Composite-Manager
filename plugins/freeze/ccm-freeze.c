@@ -28,6 +28,7 @@
 #include "ccm-display.h"
 #include "ccm-timeline.h"
 #include "ccm-freeze.h"
+#include "ccm-config.h"
 #include "ccm.h"
 
 enum

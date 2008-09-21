@@ -26,6 +26,7 @@
 #include <X11/extensions/Xfixes.h>
 
 #include "ccm-debug.h"
+#include "ccm-config.h"
 #include "ccm-drawable.h"
 #include "ccm-window.h"
 #include "ccm-display.h"

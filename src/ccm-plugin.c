@@ -20,7 +20,6 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
-#include "ccm-debug.h"
 #include "ccm-plugin.h"
 
 enum
@@ -201,8 +200,6 @@ _ccm_plugin_lock_method(GObject* obj, gpointer func,
 		cb->data = data;
 		lock->callbacks = g_slist_append(lock->callbacks, cb);
 	}
-		
-	ccm_debug("LOCK COUNT %i", lock->count);
 }
 
 void
@@ -217,11 +214,7 @@ _ccm_plugin_unlock_method(GObject* obj, gpointer func)
 	
 	CCMPluginLock* lock = g_hash_table_lookup (lock_table, func);
 	
-	if (!lock)
-	{
-		ccm_debug("UNLOCK NOTLOCKED");
-	}
-	else if (!(--lock->count))
+	if (!(--lock->count))
 	{
 		if (lock->callbacks)
 		{
@@ -235,10 +228,7 @@ _ccm_plugin_unlock_method(GObject* obj, gpointer func)
 			}
 		}
 		g_hash_table_remove (lock_table, func);
-		ccm_debug("UNLOCK");
 	}
-	else
-		ccm_debug("UNLOCK LOCK COUNT %i", lock->count);
 }
 
 GObject*

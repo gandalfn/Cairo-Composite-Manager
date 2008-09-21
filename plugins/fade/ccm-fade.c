@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "ccm-debug.h"
+#include "ccm-config.h"
 #include "ccm-drawable.h"
 #include "ccm-window.h"
 #include "ccm-screen.h"
@@ -119,7 +120,7 @@ ccm_fade_on_new_frame(CCMFade* self, gint num_frame, CCMTimeline* timeline)
 	g_return_if_fail(timeline != NULL);
 	
 	gdouble progress = ccm_timeline_get_progress (timeline);
-	gfloat opacity = self->priv->origin * progress;
+	gfloat opacity = self->priv->origin * progress * progress;
 	
 	ccm_debug_window(self->priv->window, "FADE %i %f %f", num_frame, progress, opacity);
 	

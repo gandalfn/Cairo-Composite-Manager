@@ -20,7 +20,6 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
-#include "ccm-window-backend.h"
 #include "ccm-extension.h"
 
 #define PLUGIN_SECTION "CCMPlugin"

@@ -24,6 +24,7 @@
 
 #include "ccm.h"
 #include "ccm-debug.h"
+#include "ccm-config.h"
 #include "ccm-display.h"
 #include "ccm-tray-menu.h"
 

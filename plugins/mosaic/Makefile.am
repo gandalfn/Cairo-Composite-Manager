@@ -1,5 +1,6 @@
 INCLUDES = \
 	-I../../src \
+	-I../../lib \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
 	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
 	-DPACKAGE_DATA_DIR=\""$(datadir)"\" $(CAIRO_COMPMGR_CFLAGS)
@@ -13,6 +14,8 @@ libccm_mosaic_la_SOURCES = \
 	ccm-mosaic.c ccm-mosaic.h
 
 libccm_mosaic_la_LDFLAGS =  -module -avoid-version -no-undefined
+
+libccm_mosaic_la_LIBADD =  ../../lib/libcairo_compmgr.la
 
 plugin_in_files = ccm-mosaic.plugin.desktop.in
 %.plugin: %.plugin.desktop.in $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*po) ; $(INTLTOOL_MERGE) $(top_srcdir)/po $< $@ -d -u -c $(top_builddir)/po/.intltool-merge-cache

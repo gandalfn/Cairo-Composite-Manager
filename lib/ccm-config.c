@@ -20,7 +20,6 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
-#include "ccm.h"
 #include "ccm-config.h"
 
 #define CCM_CONFIG_PREFIX "/apps/cairo-compmgr"

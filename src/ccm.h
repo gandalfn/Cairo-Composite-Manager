@@ -30,7 +30,6 @@
 #include <glib-object.h>
 #include <X11/Xutil.h>
 #include <X11/Xlib.h>
-#include <gdk/gdk.h>
 
 G_BEGIN_DECLS
 
@@ -86,11 +85,6 @@ typedef struct _CCMWindow 		 CCMWindow;
 /******************************** Pixmap **************************************/
 typedef struct _CCMPixmapClass   CCMPixmapClass;
 typedef struct _CCMPixmap        CCMPixmap;
-/******************************************************************************/
-
-/******************************** Config **************************************/
-typedef struct _CCMConfigClass   CCMConfigClass;
-typedef struct _CCMConfig        CCMConfig;
 /******************************************************************************/
 
 /******************************** Region **************************************/
@@ -310,32 +304,6 @@ void            ccm_window_set_transform            (CCMWindow* self,
 gboolean        ccm_window_transform                (CCMWindow* self, 
                                                      cairo_t* ctx, 
                                                      gboolean y_invert);
-/******************************************************************************/
-
-/******************************** Config **************************************/
-CCMConfig* 		ccm_config_new 						(int screen,
-													 gchar* extension, 
-													 gchar* key);
-gboolean 		ccm_config_get_boolean				(CCMConfig* self);
-void 			ccm_config_set_boolean				(CCMConfig* self, 
-													 gboolean value);
-gint 			ccm_config_get_integer				(CCMConfig* self);
-void 			ccm_config_set_integer				(CCMConfig* self, 
-													 gint value);
-gfloat 			ccm_config_get_float				(CCMConfig* self);
-void 			ccm_config_set_float				(CCMConfig* self, 
-													 gfloat value);
-gchar* 			ccm_config_get_string				(CCMConfig* self);
-void 			ccm_config_set_string				(CCMConfig* self, 
-													 gchar * value);
-GSList* 		ccm_config_get_string_list			(CCMConfig* self);
-void 			ccm_config_set_string_list			(CCMConfig* self, 
-													 GSList * value);
-GSList*			ccm_config_get_integer_list			(CCMConfig* self);
-void			ccm_config_set_integer_list			(CCMConfig* self, 
-													 GSList * value);
-GdkColor*       ccm_config_get_color                (CCMConfig* self);
-
 /******************************************************************************/
 
 G_END_DECLS

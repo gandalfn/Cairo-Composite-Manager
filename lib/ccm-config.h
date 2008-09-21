@@ -25,6 +25,7 @@
 
 #include <glib-object.h>
 #include <gconf/gconf-client.h>
+#include <gdk/gdk.h>
 
 G_BEGIN_DECLS
 
@@ -35,7 +36,9 @@ G_BEGIN_DECLS
 #define CCM_IS_CONFIG_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_CONFIG))
 #define CCM_CONFIG_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_CONFIG, CCMConfigClass))
 
+typedef struct _CCMConfigClass   CCMConfigClass;
 typedef struct _CCMConfigPrivate CCMConfigPrivate;
+typedef struct _CCMConfig        CCMConfig;
 
 struct _CCMConfigClass
 {
@@ -51,7 +54,30 @@ struct _CCMConfig
 	CCMConfigPrivate* priv;
 };
 
-GType ccm_config_get_type (void) G_GNUC_CONST;
+GType 			ccm_config_get_type 				(void) G_GNUC_CONST;
+CCMConfig* 		ccm_config_new 						(int screen,
+													 gchar* extension, 
+													 gchar* key);
+gboolean 		ccm_config_get_boolean				(CCMConfig* self);
+void 			ccm_config_set_boolean				(CCMConfig* self, 
+													 gboolean value);
+gint 			ccm_config_get_integer				(CCMConfig* self);
+void 			ccm_config_set_integer				(CCMConfig* self, 
+													 gint value);
+gfloat 			ccm_config_get_float				(CCMConfig* self);
+void 			ccm_config_set_float				(CCMConfig* self, 
+													 gfloat value);
+gchar* 			ccm_config_get_string				(CCMConfig* self);
+void 			ccm_config_set_string				(CCMConfig* self, 
+													 gchar * value);
+GSList* 		ccm_config_get_string_list			(CCMConfig* self);
+void 			ccm_config_set_string_list			(CCMConfig* self, 
+													 GSList * value);
+GSList*			ccm_config_get_integer_list			(CCMConfig* self);
+void			ccm_config_set_integer_list			(CCMConfig* self, 
+													 GSList * value);
+GdkColor*       ccm_config_get_color                (CCMConfig* self);
+
 
 G_END_DECLS
 

@@ -24,6 +24,7 @@
 #include "ccm-screen.h"
 #include "ccm-window.h"
 #include "ccm-shadow.h"
+#include "ccm-config.h"
 #include "ccm.h"
 
 enum

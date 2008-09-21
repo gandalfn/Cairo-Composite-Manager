@@ -23,7 +23,6 @@
  *      Emmanuele Bassi <ebassi@openedhand.com>
  */
 
-#include "ccm-debug.h"
 #include "ccm-timeout-pool.h"
 #include "ccm-timeline.h"
 
