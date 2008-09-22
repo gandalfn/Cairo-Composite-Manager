@@ -1,6 +1,9 @@
-2008-09-22  Nicolas Bruguier  <gandalfn@rohan>
+2008-09-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
-	reviewed by: <delete if not using a buddy>
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
+      if glx find visual fail try to find visual manually.
+
+2008-09-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* lib/Makefile.am:
 	* lib/ccm-config.c (ccm_config_init), (ccm_config_finalize),

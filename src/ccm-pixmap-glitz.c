@@ -121,8 +121,31 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 				XVisualIDFromVisual (visual));
 		if (!format)
 		{
-			g_warning("Error on get glitz format drawable");
-			return FALSE;
+			glitz_drawable_format_t tmp;
+			unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
+								 GLITZ_FORMAT_RED_SIZE_MASK |
+								 GLITZ_FORMAT_GREEN_SIZE_MASK |
+								 GLITZ_FORMAT_BLUE_SIZE_MASK;
+			tmp.doublebuffer = 0;
+			tmp.color.red_size = 8;
+			tmp.color.green_size = 8;
+			tmp.color.blue_size = 8;
+
+			if (ccm_drawable_get_format(CCM_DRAWABLE(self)) == CAIRO_FORMAT_ARGB32)
+			{
+				mask |= GLITZ_FORMAT_ALPHA_SIZE_MASK;
+				tmp.color.alpha_size = 8;
+			}
+				
+			format = glitz_glx_find_window_format (
+					CCM_DISPLAY_XDISPLAY(display),
+					CCM_SCREEN_NUMBER(screen),
+					mask, &tmp, 0);
+			if (!format)
+			{
+				g_warning("Error on get glitz format drawable");
+				return FALSE;
+			}
 		}
 		
 		g_object_set(self, "y_invert", format->y_inverted ? TRUE : FALSE, NULL);
