@@ -26,7 +26,6 @@
 #include <cairo-xlib.h>
 #include <cairo-glitz.h>
 
-#include "ccm-debug.h"
 #include "ccm-pixmap-glitz.h"
 #include "ccm-window.h"
 #include "ccm-screen.h"
@@ -87,7 +86,7 @@ ccm_pixmap_glitz_class_init (CCMPixmapGlitzClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 	
 	g_type_class_add_private (klass, sizeof (CCMPixmapGlitzPrivate));
-	
+
 	//CCM_DRAWABLE_CLASS(klass)->create_context = ccm_pixmap_glitz_create_context;
 	CCM_DRAWABLE_CLASS(klass)->get_surface = ccm_pixmap_glitz_get_surface;
 	CCM_DRAWABLE_CLASS(klass)->repair = ccm_pixmap_glitz_repair;
@@ -103,73 +102,50 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 	
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-		
+	glitz_drawable_format_t* format = NULL;
+	
 	if (!self->priv->gl_pixmap)
 	{
 		glitz_format_t templ;
+		Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
 		cairo_rectangle_t geometry;
 		gboolean indirect;
-		glitz_drawable_format_t* format = NULL, *f, tmp;
-		gint cpt = 0, depth = ccm_drawable_get_depth(CCM_DRAWABLE(self));
-		unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
-							 GLITZ_FORMAT_RGB_TEXTURE_MASK;
 		
-		tmp.doublebuffer = 0;
-		tmp.rgb_texture = 1;
-		
-		if (!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
+		if (!visual ||
+			!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
 			return FALSE;
 		
-		do
-		{
-			f = glitz_glx_find_window_format (CCM_DISPLAY_XDISPLAY(display),
-											  CCM_SCREEN_NUMBER(screen),
-											  mask, &tmp, cpt);
-			cpt++;
-			if (f)
-			{
-				XVisualInfo* vinfo = 
-					glitz_glx_get_visual_info_from_format (
-												CCM_DISPLAY_XDISPLAY(display),
-												CCM_SCREEN_NUMBER(screen), f);
-				gint vdepth = vinfo->depth;
-				
-				gint buffer_size = f->color.red_size +
-								   f->color.green_size +
-								   f->color.blue_size +
-								   f->color.alpha_size;
-								   
-				XFree (vinfo);
-				
-				if (vdepth == depth && 
-					(buffer_size == depth || 
-					 buffer_size - f->color.alpha_size == depth) &&
-					(!format || (f->stencil_size <= format->stencil_size && 
-								 f->depth_size <= format->depth_size)))
-				{
-					format = f;
-					break;
-				}
-			}
-		} while (f);
-		
-		if (0 && format)
-		{
-			Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
-		
-			XVisualInfo* vinfo = 
-				glitz_glx_get_visual_info_from_format (CCM_DISPLAY_XDISPLAY(display),
-													   CCM_SCREEN_NUMBER(screen),
-													   format);
-    		ccm_log("glitz = 0x%x, real = 0x%x",vinfo->visualid, 
-					XVisualIDFromVisual (visual));
-			XFree (vinfo);
-		}
-		
+		format = glitz_glx_find_drawable_format_for_visual(
+				CCM_DISPLAY_XDISPLAY(display),
+				CCM_SCREEN_NUMBER(screen),
+				XVisualIDFromVisual (visual));
 		if (!format)
 		{
-			g_warning("Error on get pixmap glitz format drawable");
-			return FALSE;
+			glitz_drawable_format_t tmp;
+			unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
+								 GLITZ_FORMAT_RED_SIZE_MASK |
+								 GLITZ_FORMAT_GREEN_SIZE_MASK |
+								 GLITZ_FORMAT_BLUE_SIZE_MASK;
+			tmp.doublebuffer = 0;
+			tmp.color.red_size = 8;
+			tmp.color.green_size = 8;
+			tmp.color.blue_size = 8;
+
+			if (ccm_drawable_get_format(CCM_DRAWABLE(self)) == CAIRO_FORMAT_ARGB32)
+			{
+				mask |= GLITZ_FORMAT_ALPHA_SIZE_MASK;
+				tmp.color.alpha_size = 8;
+			}
+				
+			format = glitz_glx_find_window_format (
+					CCM_DISPLAY_XDISPLAY(display),
+					CCM_SCREEN_NUMBER(screen),
+					mask, &tmp, 0);
+			if (!format)
+			{
+				g_warning("Error on get glitz format drawable");
+				return FALSE;
+			}
 		}
 		
 		g_object_set(self, "y_invert", format->y_inverted ? TRUE : FALSE, NULL);
