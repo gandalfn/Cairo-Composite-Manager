@@ -103,56 +103,72 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 	
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-		
+	
 	if (!self->priv->gl_pixmap)
 	{
+		glitz_drawable_format_t* format = NULL;
 		glitz_format_t templ;
+		Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
 		cairo_rectangle_t geometry;
 		gboolean indirect;
-		glitz_drawable_format_t* format = NULL, *f, tmp;
-		gint cpt = 0, depth = ccm_drawable_get_depth(CCM_DRAWABLE(self));
-		unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
-							 GLITZ_FORMAT_RGB_TEXTURE_MASK;
 		
-		tmp.doublebuffer = 0;
-		tmp.rgb_texture = 1;
-		
-		if (!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
+		if (!visual ||
+			!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
 			return FALSE;
 		
-		do
+		if (ccm_drawable_get_format(CCM_DRAWABLE(self)) != CAIRO_FORMAT_ARGB32)
 		{
-			f = glitz_glx_find_window_format (CCM_DISPLAY_XDISPLAY(display),
-											  CCM_SCREEN_NUMBER(screen),
-											  mask, &tmp, cpt);
-			cpt++;
-			if (f)
+			format = glitz_glx_find_drawable_format_for_visual(
+												CCM_DISPLAY_XDISPLAY(display),
+												CCM_SCREEN_NUMBER(screen),
+												XVisualIDFromVisual (visual));
+		}
+		else
+		{
+			glitz_drawable_format_t tmp, *f;
+			unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
+								 GLITZ_FORMAT_RED_SIZE_MASK |
+								 GLITZ_FORMAT_GREEN_SIZE_MASK |
+								 GLITZ_FORMAT_BLUE_SIZE_MASK |
+								 GLITZ_FORMAT_ALPHA_SIZE_MASK;
+			gint cpt = 0;
+			
+			tmp.doublebuffer = 0;
+			tmp.color.red_size = 8;
+			tmp.color.green_size = 8;
+			tmp.color.blue_size = 8;
+			tmp.color.alpha_size = 8;
+			do 
 			{
-				XVisualInfo* vinfo = 
-					glitz_glx_get_visual_info_from_format (
+				f = glitz_glx_find_window_format (
+						CCM_DISPLAY_XDISPLAY(display),
+						CCM_SCREEN_NUMBER(screen),
+						mask, &tmp, cpt);
+				cpt++;
+				if (f)
+				{
+					XVisualInfo* vinfo = 
+						glitz_glx_get_visual_info_from_format (
 												CCM_DISPLAY_XDISPLAY(display),
 												CCM_SCREEN_NUMBER(screen), f);
-				gint vdepth = vinfo->depth;
-				
-				gint buffer_size = f->color.red_size +
-								   f->color.green_size +
-								   f->color.blue_size +
-								   f->color.alpha_size;
-								   
-				XFree (vinfo);
-				
-				if (vdepth == depth && 
-					(buffer_size == depth || 
-					 buffer_size - f->color.alpha_size == depth) &&
-					(!format || (f->stencil_size <= format->stencil_size && 
-								 f->depth_size <= format->depth_size)))
-				{
-					format = f;
-					break;
+					gint depth = vinfo->depth;
+					XFree(vinfo);
+						
+					if (depth == 32)
+					{
+						format = f;
+						break;
+					}
 				}
+			} while (f);
+			
+			if (!format)
+			{
+				g_warning("Error on get glitz format drawable");
+				return FALSE;
 			}
-		} while (f);
-		
+		}
+
 		if (0 && format)
 		{
 			Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
@@ -203,7 +219,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 										  		  &templ, 0);
 		if (!self->priv->gl_format)
 		{
-			g_warning("Error on get gl drawable format");
+			g_warning("Error on get pixmap gl drawable format");
 			return FALSE;
 		}
 	}
