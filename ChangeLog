@@ -1,3 +1,8 @@
+2008-09-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
+      Find pixmap format rework need review for nvidia cards.
+
 2008-09-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
