@@ -1,5 +1,24 @@
 2008-09-29  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_on_key_press),
+	(ccm_magnifier_window_paint):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_on_key_press),
+	(ccm_mosaic_screen_paint), (ccm_mosaic_window_paint):
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_class_init),
+	(ccm_pixmap_glitz_get_surface):
+	* src/ccm-pixmap.c (ccm_pixmap_new), (ccm_pixmap_new_from_visual),
+	(ccm_pixmap_image_new):
+	* src/ccm-pixmap.h:
+	* src/ccm-window.c (ccm_window_set_gobject_property),
+	(ccm_window_init), (ccm_window_class_init),
+	(ccm_window_get_pixmap), (ccm_window_paint):
+	  Add use_image property to window for set/unset image pixmap backend 
+	  instead than the configured, its improve magnifier and mosaic plugin
+	  performances. Its due of slowness of get_image of xrender/glitz backend
+	  when this plugins draw windows.
+
+2008-09-29  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/fade/ccm-fade.c (ccm_fade_get_duration):
 	* plugins/menu-animation/ccm-menu-animation.c
 	(ccm_menu_animation_get_duration):

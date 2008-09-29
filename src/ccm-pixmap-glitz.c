@@ -46,7 +46,6 @@ struct _CCMPixmapGlitzPrivate
 #define CCM_PIXMAP_GLITZ_GET_PRIVATE(o) \
 	((CCMPixmapGlitzPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_GLITZ, CCMPixmapGlitzClass))
 
-static cairo_t*			ccm_pixmap_glitz_create_context (CCMDrawable* drawable);
 static cairo_surface_t* ccm_pixmap_glitz_get_surface	(CCMDrawable* drawable);
 static void		  		ccm_pixmap_glitz_bind 		  	(CCMPixmap* self);
 static gboolean			ccm_pixmap_glitz_repair 		(CCMDrawable* drawable, 
@@ -88,7 +87,6 @@ ccm_pixmap_glitz_class_init (CCMPixmapGlitzClass *klass)
 	
 	g_type_class_add_private (klass, sizeof (CCMPixmapGlitzPrivate));
 	
-	//CCM_DRAWABLE_CLASS(klass)->create_context = ccm_pixmap_glitz_create_context;
 	CCM_DRAWABLE_CLASS(klass)->get_surface = ccm_pixmap_glitz_get_surface;
 	CCM_DRAWABLE_CLASS(klass)->repair = ccm_pixmap_glitz_repair;
 	CCM_PIXMAP_CLASS(klass)->bind = ccm_pixmap_glitz_bind;
@@ -284,38 +282,4 @@ ccm_pixmap_glitz_get_surface (CCMDrawable* drawable)
 		surface = cairo_surface_reference (self->priv->surface);
 	
 	return surface;
-}
-
-static cairo_t*
-ccm_pixmap_glitz_create_context (CCMDrawable* drawable)
-{
-	g_return_val_if_fail(drawable != NULL, NULL);
-	
-	CCMPixmapGlitz* self = CCM_PIXMAP_GLITZ(drawable);
-	
-	Visual* visual = ccm_drawable_get_visual (drawable);
-	cairo_t* ctx = NULL;
-	cairo_rectangle_t geometry;
-	
-	if (visual &&
-		ccm_drawable_get_geometry_clipbox (drawable, &geometry))
-	{
-		CCMDisplay* display = ccm_drawable_get_display(drawable);
-		cairo_surface_t* surface;
-		
-		surface = cairo_xlib_surface_create (
-									CCM_DISPLAY_XDISPLAY(display),
-									CCM_PIXMAP_XPIXMAP(self), 
-									visual,
-									geometry.width, 
-									geometry.height);
-		
-		if (surface)
-		{
-			ctx = cairo_create(surface);
-			cairo_surface_destroy (surface);
-		}
-	}
-		
-	return ctx;
 }
