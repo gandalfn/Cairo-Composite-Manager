@@ -187,15 +187,18 @@ ccm_opacity_on_decrease_key_press(CCMOpacity* self)
 static gboolean
 ccm_opacity_get_opacity_step(CCMOpacity* self)
 {
-	gfloat step = 
+	gfloat real_step = 
 		ccm_config_get_float (self->priv->options[CCM_OPACITY_STEP]);
+	gfloat step;
 	
-	step = MAX(0.01f, step);
-	step = MIN(0.5f, step);
+	step = MAX(0.01f, real_step);
+	step = MIN(0.5f, real_step);
 	if (self->priv->step != step)
 	{
 		self->priv->step = step;
-		ccm_config_set_float (self->priv->options[CCM_OPACITY_STEP], step);
+		if (real_step != step)
+			ccm_config_set_float (self->priv->options[CCM_OPACITY_STEP], step);
+		
 		return TRUE;
 	}
 	
@@ -205,16 +208,18 @@ ccm_opacity_get_opacity_step(CCMOpacity* self)
 static gboolean
 ccm_opacity_get_opacity(CCMOpacity* self)
 {
-	gfloat opacity = 
+	gfloat real_opacity = 
 		ccm_config_get_float (self->priv->options[CCM_OPACITY_OPACITY]);
+	gfloat opacity;
 	
-	opacity = MAX(0.1f, opacity);
-	opacity = MIN(1.0f, opacity);
+	opacity = MAX(0.1f, real_opacity);
+	opacity = MIN(1.0f, real_opacity);
 	if (self->priv->opacity != opacity)
 	{
 		self->priv->opacity = opacity;
-		ccm_config_set_float (self->priv->options[CCM_OPACITY_OPACITY], 
-							  opacity);
+		if (opacity != real_opacity)
+			ccm_config_set_float (self->priv->options[CCM_OPACITY_OPACITY], 
+								  opacity);
 		return TRUE;
 	}
 	

@@ -164,24 +164,18 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 			
 			if (!format)
 			{
+				format = glitz_glx_find_drawable_format_for_visual(
+												CCM_DISPLAY_XDISPLAY(display),
+												CCM_SCREEN_NUMBER(screen),
+												XVisualIDFromVisual (visual));
+			}
+			if (!format)
+			{
 				g_warning("Error on get glitz format drawable");
 				return FALSE;
 			}
 		}
 
-		if (0 && format)
-		{
-			Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
-		
-			XVisualInfo* vinfo = 
-				glitz_glx_get_visual_info_from_format (CCM_DISPLAY_XDISPLAY(display),
-													   CCM_SCREEN_NUMBER(screen),
-													   format);
-    		ccm_log("glitz = 0x%x, real = 0x%x",vinfo->visualid, 
-					XVisualIDFromVisual (visual));
-			XFree (vinfo);
-		}
-		
 		if (!format)
 		{
 			g_warning("Error on get pixmap glitz format drawable");

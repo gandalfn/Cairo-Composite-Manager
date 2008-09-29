@@ -1,3 +1,15 @@
+2008-09-29  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/ccm-fade.c (ccm_fade_get_duration):
+	* plugins/menu-animation/ccm-menu-animation.c
+	(ccm_menu_animation_get_duration):
+	* plugins/opacity/ccm-opacity.c (ccm_opacity_get_opacity_step),
+	(ccm_opacity_get_opacity):
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_paint):
+	  Update config value only if outside the margins.
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
+	  If ccm don't found 32 drawable format try to use visual drawable format.
+
 2008-09-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):

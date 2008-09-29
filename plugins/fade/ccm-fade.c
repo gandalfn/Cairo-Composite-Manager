@@ -198,11 +198,12 @@ ccm_fade_on_property_changed(CCMFade* self, CCMPropertyType changed,
 static gboolean
 ccm_fade_get_duration(CCMFade* self)
 {
-	gfloat duration = 
+	gfloat real_duration = 
 		ccm_config_get_float(self->priv->options[CCM_FADE_DURATION]);
+	gfloat duration;
 	
-	duration = MAX(0.1f, duration);
-	duration = MIN(2.0f, duration);
+	duration = MAX(0.1f, real_duration);
+	duration = MIN(2.0f, real_duration);
 	if (duration != self->priv->duration)
 	{
 		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self->priv->window));
@@ -212,8 +213,9 @@ ccm_fade_get_duration(CCMFade* self)
 		if (self->priv->timeline) g_object_unref (self->priv->timeline);
 
 		self->priv->duration = duration;
-		ccm_config_set_float(self->priv->options[CCM_FADE_DURATION],
-							 self->priv->duration);
+		if (duration != real_duration)
+			ccm_config_set_float(self->priv->options[CCM_FADE_DURATION],
+								 self->priv->duration);
 		
 		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), refresh_rate);
 	
