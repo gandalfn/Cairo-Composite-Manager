@@ -1,3 +1,9 @@
+============ Version 0.2.2
+
+2008-10-01  Nicolas Bruguier  <gandalfn@rohan>
+
+	* NEWS: Prepare 0.2.2 version
+
 2008-09-29  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_on_key_press),
