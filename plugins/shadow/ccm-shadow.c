@@ -341,7 +341,7 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
 	}
 	
-	if (self->priv->shadow_right && self->priv->shadow_bottom)
+	if (need && self->priv->shadow_right && self->priv->shadow_bottom)
 	{
 		cairo_rectangle_t area;
 		

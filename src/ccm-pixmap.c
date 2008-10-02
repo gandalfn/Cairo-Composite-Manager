@@ -268,10 +268,11 @@ ccm_pixmap_new (CCMDrawable* drawable, Pixmap xpixmap)
 	g_return_val_if_fail(screen != NULL && visual != None, NULL);
 	
 	self = g_object_new(ccm_pixmap_backend_get_type(screen), 
-								   "screen", screen,
-								   "drawable", xpixmap,
-								   "visual", visual,
-								   NULL);
+						"screen", screen,
+						"drawable", xpixmap,
+						"visual", visual,
+						NULL);
+	
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
 	ccm_pixmap_register_damage(self);
 	if (!self->priv->damage)
@@ -295,10 +296,42 @@ ccm_pixmap_new_from_visual (CCMScreen* screen, Visual* visual, Pixmap xpixmap)
 	CCMPixmap* self;
 	
 	self = g_object_new(ccm_pixmap_backend_get_type(screen), 
-								   "screen", screen,
-								   "drawable", xpixmap,
-								   "visual", visual,
-								   NULL);
+						"screen", screen,
+						"drawable", xpixmap,
+						"visual", visual,
+						NULL);
+	
+	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+	ccm_pixmap_register_damage(self);
+	if (!self->priv->damage)
+	{
+		g_object_unref(self);
+		return NULL;
+	}
+	ccm_pixmap_bind(self);
+	ccm_drawable_damage(CCM_DRAWABLE(self));
+	
+	return self;
+}
+
+CCMPixmap*
+ccm_pixmap_image_new (CCMDrawable* drawable, Pixmap xpixmap)
+{
+	g_return_val_if_fail(drawable != NULL, NULL);
+	g_return_val_if_fail(xpixmap != None, NULL);
+	
+	CCMScreen* screen = ccm_drawable_get_screen(drawable);
+	Visual* visual = ccm_drawable_get_visual(drawable);
+	CCMPixmap* self;
+	
+	g_return_val_if_fail(screen != NULL && visual != None, NULL);
+	
+	self = g_object_new(ccm_pixmap_image_get_type(), 
+						"screen", screen,
+						"drawable", xpixmap,
+						"visual", visual,
+						NULL);
+	
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
 	ccm_pixmap_register_damage(self);
 	if (!self->priv->damage)

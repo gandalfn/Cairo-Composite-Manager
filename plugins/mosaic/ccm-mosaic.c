@@ -471,9 +471,19 @@ ccm_mosaic_on_key_press(CCMMosaic* self)
 {
 	g_return_if_fail(self != NULL);
 	
+	GList* item = ccm_screen_get_windows(self->priv->screen);
+		
 	self->priv->enabled = ~self->priv->enabled;
 	g_object_set(G_OBJECT(self->priv->screen), "buffered_pixmap", 
 				 !self->priv->enabled, NULL);
+	ccm_screen_damage(self->priv->screen);
+	
+	for (;item; item = item->next)
+	{
+		if (ccm_window_is_viewable(item->data))
+			g_object_set(G_OBJECT(item->data), "use_image", 
+						 self->priv->enabled ? TRUE : FALSE, NULL);
+	}
 	
 	if (self->priv->enabled)
 	{
@@ -805,18 +815,6 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		cairo_clip(context);
 		cairo_set_source_surface (context, self->priv->surface, 0, 0);
 		cairo_paint(context);
-		cairo_set_operator (context, CAIRO_OPERATOR_OVER);
-		static gint color = 0;
-		color++;
-		if (color == 4) color = 1;
-		if (color == 1)
-		cairo_set_source_rgba (context, 1, 0, 0, 0.5);
-		else if (color == 2)
-		cairo_set_source_rgba (context, 0, 1, 0, 0.5);
-		else if (color == 3)
-		cairo_set_source_rgba (context, 0, 0, 1, 0.5);
-		
-		cairo_paint(context);
 		cairo_restore (context);
 	}
 	
@@ -845,6 +843,7 @@ ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 				if (self->priv->surface)
 				{
 					cairo_surface_t* target = cairo_get_target (context);
+					g_object_set(G_OBJECT(window), "use_image", TRUE, NULL);
 					ret = ccm_mosaic_paint_area (self, window, target,
 												 surface, y_invert);
 				}

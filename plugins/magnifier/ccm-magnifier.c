@@ -232,9 +232,17 @@ ccm_magnifier_on_key_press(CCMMagnifier* self)
 {
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
-	
+	GList* item = ccm_screen_get_windows(self->priv->screen);
+		
 	self->priv->enabled = ~self->priv->enabled;
 	ccm_screen_damage(self->priv->screen);
+	
+	for (;item; item = item->next)
+	{
+		if (ccm_window_is_viewable(item->data))
+			g_object_set(G_OBJECT(item->data), "use_image", 
+						 self->priv->enabled ? TRUE : FALSE, NULL);
+	}
 	
 	if (self->priv->enabled)
 	{
@@ -825,6 +833,7 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			cairo_clip (ctx);
 			cairo_path_destroy (damaged_path);
 			
+			g_object_set(G_OBJECT(window), "use_image", TRUE, NULL);
 			ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window,
 								    ctx, surface, y_invert);
 			cairo_destroy (ctx);

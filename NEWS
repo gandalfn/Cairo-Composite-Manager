@@ -1,3 +1,10 @@
+Overview of Changes in Cairo Composite Manager 0.2.2
+====================================
+
+* API cleanup.
+* Fix TFP mode.
+* Magnifier performance improvement.
+
 Overview of Changes in Cairo Composite Manager 0.2.1
 ====================================
 

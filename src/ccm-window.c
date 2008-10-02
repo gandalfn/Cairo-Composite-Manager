@@ -94,7 +94,8 @@ static void			ccm_window_on_plugins_changed(CCMWindow* self,
 enum
 {
     PROP_0,
-	PROP_CHILD
+	PROP_CHILD,
+	PROP_IMAGE
 };
 
 enum
@@ -139,6 +140,7 @@ struct _CCMWindowPrivate
 	
 	GSList*				properties_pending;
 	CCMPixmap*			pixmap;
+	gboolean			use_pixmap_image;
 	
 	CCMWindowPlugin*	plugin;
 	
@@ -164,6 +166,20 @@ ccm_window_set_gobject_property(GObject *object,
     	case PROP_CHILD:
 			priv->child = (Window)g_value_get_pointer (value);
 			break;
+		case PROP_IMAGE:
+		{
+			gboolean use_pixmap_image = g_value_get_boolean (value);
+			if (use_pixmap_image != priv->use_pixmap_image)
+			{
+				priv->use_pixmap_image = use_pixmap_image;
+				if (priv->pixmap)
+				{
+					g_object_unref(priv->pixmap);
+					priv->pixmap = NULL;
+				}
+			}
+			break;
+		}
     	default:
 			break;
     }
@@ -220,6 +236,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->opacity = 1.0f;
 	self->priv->properties_pending = NULL;
 	self->priv->pixmap = NULL;
+	self->priv->use_pixmap_image = FALSE;
 	self->priv->plugin = NULL;
 	cairo_matrix_init_identity (&self->priv->transform);
 }
@@ -289,6 +306,13 @@ ccm_window_class_init (CCMWindowClass *klass)
 		 					  "Child",
 			     			  "Child of window",
 			     			  G_PARAM_READWRITE));
+	
+	g_object_class_install_property(object_class, PROP_IMAGE,
+		g_param_spec_boolean ("use_image",
+		 					  "UseImage",
+			     			  "Use image backend for pixmap",
+							  FALSE,
+		     				  G_PARAM_WRITABLE));
 	
 	signals[PROPERTY_CHANGED] = g_signal_new ("property-changed",
 									 G_OBJECT_CLASS_TYPE (object_class),
@@ -1871,14 +1895,23 @@ ccm_window_get_pixmap(CCMWindow* self)
 		ccm_display_sync(display);
 		if (xpixmap && !ccm_display_pop_error (display))
 		{
-			self->priv->pixmap = ccm_pixmap_new(CCM_DRAWABLE(self), xpixmap);
+			if (self->priv->use_pixmap_image)
+			{
+				self->priv->pixmap = ccm_pixmap_image_new(CCM_DRAWABLE(self), 
+														  xpixmap);
+			}
+			else 
+			{
+				self->priv->pixmap = ccm_pixmap_new(CCM_DRAWABLE(self), 
+													xpixmap);
+			}
 			if (self->priv->pixmap)
 				g_signal_connect_swapped(self->priv->pixmap, "damaged", 
 										 G_CALLBACK(on_pixmap_damaged), self);
 		}
 	}
 	
-	return self->priv->pixmap;
+	return self->priv->pixmap ? g_object_ref(self->priv->pixmap) : NULL;
 }
 
 CCMPixmap*
@@ -1966,6 +1999,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 				self->priv->pixmap = NULL;
 				g_signal_emit (self, signals[ERROR], 0);
 			}
+			g_object_unref(pixmap);
 		}
 		cairo_reset_clip (context);
 		cairo_path_destroy(damaged);
