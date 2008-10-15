@@ -38,6 +38,7 @@
 
 enum
 {
+	CCM_MAGNIFIER_ENABLE,
 	CCM_MAGNIFIER_ZOOM_LEVEL,
 	CCM_MAGNIFIER_ZOOM_QUALITY,
 	CCM_MAGNIFIER_HEIGHT,
@@ -48,6 +49,7 @@ enum
 };
 
 static gchar* CCMMagnifierOptions[CCM_MAGNIFIER_OPTION_N] = {
+	"enable",
 	"zoom-level",
 	"zoom-quality",
 	"height",
@@ -230,12 +232,21 @@ ccm_magnifier_class_init (CCMMagnifierClass *klass)
 static void
 ccm_magnifier_on_key_press(CCMMagnifier* self)
 {
+	gboolean enabled = 
+		ccm_config_get_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE]);
+	ccm_config_set_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE], !enabled);
+}
+
+static void
+ccm_magnifier_get_enable(CCMMagnifier *self)
+{
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
 	GList* item = ccm_screen_get_windows(self->priv->screen);
-		
-	self->priv->enabled = ~self->priv->enabled;
+	
 	ccm_screen_damage(self->priv->screen);
+	self->priv->enabled = 
+		ccm_config_get_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE]);
 	
 	for (;item; item = item->next)
 	{
@@ -533,7 +544,11 @@ ccm_magnifier_on_cursor_notify_event(CCMMagnifier* self,
 static void
 ccm_magnifier_on_option_changed(CCMMagnifier* self, CCMConfig* config)
 {
-	if (config == self->priv->options[CCM_MAGNIFIER_ZOOM_LEVEL] &&
+	if (config == self->priv->options[CCM_MAGNIFIER_ENABLE])
+	{
+		ccm_magnifier_get_enable (self);
+	}
+	else if (config == self->priv->options[CCM_MAGNIFIER_ZOOM_LEVEL] &&
 		ccm_magnifier_get_scale (self))
 	{
 		if (self->priv->surface) 
