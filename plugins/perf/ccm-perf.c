@@ -39,6 +39,7 @@
 #include "ccm-extension-loader.h"
 #include "ccm-perf.h"
 #include "ccm-keybind.h"
+#include "ccm-cairo-utils.h"
 #include "ccm.h"
 
 #define CCM_LOGO_PIXMAP 	PACKAGE_PIXMAP_DIR "/cairo-compmgr.png"
@@ -94,67 +95,6 @@ struct _CCMPerfPrivate
 
 #define CCM_PERF_GET_PRIVATE(o)  \
    ((CCMPerfPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PERF, CCMPerfClass))
-
-static void
-cairo_rectangle_round (cairo_t *cr,
-                       double x0,    double y0,
-                       double width, double height,
-                       double radius)
-{
-  double x1,y1;
-
-  x1=x0+width;
-  y1=y0+height;
-
-  if (!width || !height)
-    return;
-  if (width/2<radius)
-    {
-      if (height/2<radius)
-        {
-          cairo_move_to  (cr, x0, (y0 + y1)/2);
-          cairo_curve_to (cr, x0 ,y0, x0, y0, (x0 + x1)/2, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, (y0 + y1)/2);
-          cairo_curve_to (cr, x1, y1, x1, y1, (x1 + x0)/2, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, (y0 + y1)/2);
-        }
-      else
-        {
-          cairo_move_to  (cr, x0, y0 + radius);
-          cairo_curve_to (cr, x0 ,y0, x0, y0, (x0 + x1)/2, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, y0 + radius);
-          cairo_line_to (cr, x1 , y1 - radius);
-          cairo_curve_to (cr, x1, y1, x1, y1, (x1 + x0)/2, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, y1- radius);
-        }
-    }
-  else
-    {
-      if (height/2<radius)
-        {
-          cairo_move_to  (cr, x0, (y0 + y1)/2);
-          cairo_curve_to (cr, x0 , y0, x0 , y0, x0 + radius, y0);
-          cairo_line_to (cr, x1 - radius, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, (y0 + y1)/2);
-          cairo_curve_to (cr, x1, y1, x1, y1, x1 - radius, y1);
-          cairo_line_to (cr, x0 + radius, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, (y0 + y1)/2);
-        }
-      else
-        {
-          cairo_move_to  (cr, x0, y0 + radius);
-          cairo_curve_to (cr, x0 , y0, x0 , y0, x0 + radius, y0);
-          cairo_line_to (cr, x1 - radius, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, y0 + radius);
-          cairo_line_to (cr, x1 , y1 - radius);
-          cairo_curve_to (cr, x1, y1, x1, y1, x1 - radius, y1);
-          cairo_line_to (cr, x0 + radius, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, y1- radius);
-        }
-    }
-
-  cairo_close_path (cr);
-}
 
 static void
 ccm_perf_init (CCMPerf *self)
@@ -354,7 +294,7 @@ ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			cairo_save(context);
 			cairo_rectangle_round (context, self->priv->area.x, self->priv->area.y, 
 								   self->priv->area.width, self->priv->area.height, 
-								   20);
+								   20, CAIRO_CORNER_ALL);
 			cairo_set_source_rgba (context, 1.0f, 1.0f, 1.0f, 0.6f);
 			cairo_fill(context);
 			icon = cairo_image_surface_create_from_png (CCM_LOGO_PIXMAP);

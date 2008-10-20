@@ -2172,7 +2172,7 @@ ccm_screen_query_pointer(CCMScreen* self, CCMWindow** below,
 					  &state))
 	{
 		if (below) *below = ccm_screen_find_window_or_child (self, w);
-		ret = TRUE;
+		ret = CCM_WINDOW_XWINDOW(root) == r;
 	}
 	
 	return ret;

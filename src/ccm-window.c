@@ -1114,7 +1114,7 @@ impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* self,
 		ccm_window_set_alpha(self);
 		self->priv->orig_opaque = ccm_region_copy((CCMRegion*)area);
 		self->priv->opaque = ccm_region_copy((CCMRegion*)area);
-		ccm_region_transform (self->priv->opaque, &self->priv->transform);
+		ccm_region_device_transform (self->priv->opaque, &self->priv->transform);
 	}
 }
 
@@ -2302,7 +2302,7 @@ ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix, gboolean damag
 	{
 		old_geometry = ccm_region_copy (geometry);
 		
-		ccm_region_transform (old_geometry, &self->priv->transform);
+		ccm_region_device_transform (old_geometry, &self->priv->transform);
 	}
 	memcpy (&self->priv->transform, matrix, sizeof(cairo_matrix_t));
 	
@@ -2318,7 +2318,7 @@ ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix, gboolean damag
 	{
 		CCMRegion* tmp = ccm_region_copy (geometry);
 		
-		ccm_region_transform (tmp, &self->priv->transform);
+		ccm_region_device_transform (tmp, &self->priv->transform);
 		ccm_region_union (tmp, old_geometry);
 		ccm_region_destroy (old_geometry);
 		ccm_drawable_damage_region (CCM_DRAWABLE(self), tmp);

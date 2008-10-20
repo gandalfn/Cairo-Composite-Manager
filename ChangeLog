@@ -1,6 +1,38 @@
+2008-10-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac:
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_init),
+	(ccm_magnifier_on_key_press), (ccm_magnifier_get_scale),
+	(ccm_magnifier_get_border), (ccm_magnifier_get_restrict_area),
+	(ccm_magnifier_get_size), (ccm_magnifier_cursor_get_surface),
+	(ccm_magnifier_cursor_get_position),
+	(ccm_magnifier_on_option_changed),
+	(ccm_magnifier_screen_load_options), (ccm_magnifier_screen_paint),
+	(ccm_magnifier_window_paint):
+	* plugins/magnifier/ccm-magnifier.schemas.in:
+	* src/ccm-screen.c (ccm_screen_query_pointer):
+      Add restricted area.
+    * src/ccm-pixmap.c (ccm_pixmap_register_damage): 
+      Set Report NonEmpty for damage
+	
+2008-10-16  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac: Bump to 0.2.3
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_init),
+	(ccm_magnifier_on_key_press), (ccm_magnifier_get_scale),
+	(ccm_magnifier_get_border), (ccm_magnifier_get_size),
+	(ccm_magnifier_cursor_get_surface),
+	(ccm_magnifier_cursor_get_position),
+	(ccm_magnifier_on_option_changed),
+	(ccm_magnifier_screen_load_options), (ccm_magnifier_screen_paint),
+	(ccm_magnifier_window_paint):
+	* plugins/magnifier/ccm-magnifier.schemas.in:
+	* src/ccm-screen.c (ccm_screen_query_pointer):
+      - Prepare magnifier for our machine
+
 ============ Version 0.2.2
 
-2008-10-01  Nicolas Bruguier  <gandalfn@rohan>
+2008-10-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* NEWS: Prepare 0.2.2 version
 

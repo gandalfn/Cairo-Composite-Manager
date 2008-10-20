@@ -845,6 +845,7 @@ ccm_region_transform (CCMRegion *region, cairo_matrix_t* matrix)
     
     int nbox;
     RegionBox *pbox;
+    double x, y;
         
     pbox = region->rects;
     nbox = region->numRects;
@@ -857,23 +858,44 @@ ccm_region_transform (CCMRegion *region, cairo_matrix_t* matrix)
     
     while(nbox--)
     {
-        pbox->x1 += matrix->x0;
-	    pbox->x2 = _cairo_lround(((double)pbox->x2 - (double)pbox->x1) * 
-                                 matrix->xx) + pbox->x1;
-        pbox->y1 += matrix->y0;
-	    pbox->y2 = _cairo_lround(((double)pbox->y2 - (double)pbox->y1) * 
-                                 matrix->yy) + pbox->y1;
+        x = pbox->x1; y = pbox->y1;
+        cairo_matrix_transform_point(matrix, &x, &y);
+        pbox->x1 = x; pbox->y1 = y;
+        
+        x = pbox->x2; y = pbox->y2;
+        cairo_matrix_transform_point(matrix, &x, &y);
+        pbox->x2 = x; pbox->y2 = y;
 	    pbox++;
     }
     
-    region->extents.x1 += matrix->x0;
-    region->extents.x2 = _cairo_lround(((double)region->extents.x2 - 
-                                        (double)region->extents.x1) * 
-                                       matrix->xx) + region->extents.x1;
-    region->extents.y1 += matrix->y0;
-    region->extents.y2 = _cairo_lround(((double)region->extents.y2 - 
-                                        (double)region->extents.y1) * 
-                                       matrix->yy) + region->extents.y1;
+    x = region->extents.x1; y = region->extents.y1;
+    cairo_matrix_transform_point(matrix, &x, &y);
+    region->extents.x1 = x; region->extents.y1 = y;
+    
+    x = region->extents.x2; y = region->extents.y2;
+    cairo_matrix_transform_point(matrix, &x, &y);
+    region->extents.x2 = x; region->extents.y2 = y;
+}
+
+/* DeviceTransform(pRegion, matrix)
+   transform a region with keep device coords
+   added by gandalfn for ccm
+*/
+void
+ccm_region_device_transform (CCMRegion *region, cairo_matrix_t* matrix)
+{
+    g_return_if_fail (region != NULL);
+	g_return_if_fail (matrix != NULL);
+  
+    cairo_matrix_t device;
+    double x = region->extents.x1,
+           y = region->extents.y1;
+    
+    cairo_matrix_init_translate(&device, -x, -y);
+    ccm_region_transform(region, &device);
+    ccm_region_transform(region, matrix);
+    cairo_matrix_init_translate(&device, x, y);
+    ccm_region_transform(region, &device);
 }
 
 void

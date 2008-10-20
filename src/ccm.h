@@ -133,22 +133,24 @@ void			ccm_region_resize 			(CCMRegion*   region,
 void            ccm_region_scale            (CCMRegion*   region,
                                              gdouble      scale_width,
                                              gdouble      scale_height);
-void          	ccm_region_shrink          (CCMRegion     *region,
-											gint          dx,
-											gint          dy);
-void          	ccm_region_union_with_rect (CCMRegion     *region,
-											cairo_rectangle_t  *rect);
+void          	ccm_region_shrink           (CCMRegion     *region,
+											 gint          dx,
+											 gint          dy);
+void          	ccm_region_union_with_rect  (CCMRegion     *region,
+											 cairo_rectangle_t  *rect);
 void			ccm_region_union_with_xrect (CCMRegion    *region,
 											 XRectangle   *rect);
-void          	ccm_region_intersect       (CCMRegion     *source1,
-											CCMRegion     *source2);
-void          	ccm_region_union           (CCMRegion     *source1,
-											CCMRegion     *source2);	
-void          	ccm_region_subtract        (CCMRegion     *source1,
-											CCMRegion     *source2);
-void          	ccm_region_xor             (CCMRegion     *source1,
-											CCMRegion     *source2);
+void          	ccm_region_intersect        (CCMRegion     *source1,
+											 CCMRegion     *source2);
+void          	ccm_region_union            (CCMRegion     *source1,
+											 CCMRegion     *source2);	
+void          	ccm_region_subtract         (CCMRegion     *source1,
+											 CCMRegion     *source2);
+void          	ccm_region_xor              (CCMRegion     *source1,
+											 CCMRegion     *source2);
 void            ccm_region_transform        (CCMRegion *region, 
+                                             cairo_matrix_t* matrix);
+void            ccm_region_device_transform (CCMRegion *region, 
                                              cairo_matrix_t* matrix);
 /******************************************************************************/
 

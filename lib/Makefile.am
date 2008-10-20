@@ -16,7 +16,9 @@ libcairo_compmgr_la_SOURCES =  \
 	ccm-timeline.h \
 	ccm-timeline.c \
 	ccm-timeout-pool.c \
-	ccm-timeout-pool.h
+	ccm-timeout-pool.h \
+	ccm-cairo-utils.c \
+	ccm-cairo-utils.h
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
 

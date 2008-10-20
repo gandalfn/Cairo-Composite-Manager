@@ -34,15 +34,27 @@
 #include "ccm-extension-loader.h"
 #include "ccm-magnifier.h"
 #include "ccm-keybind.h"
+#include "ccm-cairo-utils.h"
+#include "ccm-timeline.h"
 #include "ccm.h"
+
+#define CCM_MAGNIFIER_WINDOW_INFO_WIDTH 30
+#define CCM_MAGNIFIER_WINDOW_INFO_HEIGHT 7
 
 enum
 {
 	CCM_MAGNIFIER_ENABLE,
 	CCM_MAGNIFIER_ZOOM_LEVEL,
 	CCM_MAGNIFIER_ZOOM_QUALITY,
+	CCM_MAGNIFIER_X,
+	CCM_MAGNIFIER_Y,
 	CCM_MAGNIFIER_HEIGHT,
 	CCM_MAGNIFIER_WIDTH,
+	CCM_MAGNIFIER_RESTRICT_AREA_X,
+	CCM_MAGNIFIER_RESTRICT_AREA_Y,
+	CCM_MAGNIFIER_RESTRICT_AREA_WIDTH,
+	CCM_MAGNIFIER_RESTRICT_AREA_HEIGHT,
+	CCM_MAGNIFIER_BORDER,
 	CCM_MAGNIFIER_SHORTCUT,
 	CCM_MAGNIFIER_SHADE_DESKTOP,
 	CCM_MAGNIFIER_OPTION_N
@@ -52,14 +64,25 @@ static gchar* CCMMagnifierOptions[CCM_MAGNIFIER_OPTION_N] = {
 	"enable",
 	"zoom-level",
 	"zoom-quality",
+	"x",
+	"y",
 	"height",
 	"width",
+	"restrict_area_x",
+	"restrict_area_y",
+	"restrict_area_width",
+	"restrict_area_height",
+	"border",
 	"shortcut",
 	"shade_desktop"
 };
 
 static void ccm_magnifier_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_magnifier_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_magnifier_on_option_changed(CCMMagnifier* self, 
+											CCMConfig* config);
+static void ccm_magnifier_on_new_frame     (CCMMagnifier* self, int num_frame, 
+											CCMTimeline* timeline);
 
 CCM_DEFINE_PLUGIN (CCMMagnifier, ccm_magnifier, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_magnifier,
@@ -74,6 +97,7 @@ struct _CCMMagnifierPrivate
 	CCMScreen*			 screen;
 	gboolean 			 enabled;
 	gfloat				 scale;
+	gfloat				 new_scale;
 	gboolean 			 shade;
 	
 	int					 x_mouse;
@@ -86,78 +110,22 @@ struct _CCMMagnifierPrivate
 	cairo_surface_t*     surface_mouse;
 	int					 x_offset;
 	int 				 y_offset;
+	int 				 border;
 	cairo_surface_t*     surface;
 	cairo_rectangle_t    area;
+	cairo_rectangle_t    restrict_area;
 	cairo_filter_t		 quality;
 	CCMRegion*			 damaged;
 	CCMKeybind*			 keybind;
+	
+	cairo_surface_t*     surface_window_info;
+	CCMTimeline*		 timeline;
 	
 	CCMConfig*           options[CCM_MAGNIFIER_OPTION_N];
 };
 
 #define CCM_MAGNIFIER_GET_PRIVATE(o)  \
    ((CCMMagnifierPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MAGNIFIER, CCMMagnifierClass))
-
-static void
-cairo_rectangle_round (cairo_t *cr,
-                       double x0,    double y0,
-                       double width, double height,
-                       double radius)
-{
-  double x1,y1;
-
-  x1=x0+width;
-  y1=y0+height;
-
-  if (!width || !height)
-    return;
-  if (width/2<radius)
-    {
-      if (height/2<radius)
-        {
-          cairo_move_to  (cr, x0, (y0 + y1)/2);
-          cairo_curve_to (cr, x0 ,y0, x0, y0, (x0 + x1)/2, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, (y0 + y1)/2);
-          cairo_curve_to (cr, x1, y1, x1, y1, (x1 + x0)/2, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, (y0 + y1)/2);
-        }
-      else
-        {
-          cairo_move_to  (cr, x0, y0 + radius);
-          cairo_curve_to (cr, x0 ,y0, x0, y0, (x0 + x1)/2, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, y0 + radius);
-          cairo_line_to (cr, x1 , y1 - radius);
-          cairo_curve_to (cr, x1, y1, x1, y1, (x1 + x0)/2, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, y1- radius);
-        }
-    }
-  else
-    {
-      if (height/2<radius)
-        {
-          cairo_move_to  (cr, x0, (y0 + y1)/2);
-          cairo_curve_to (cr, x0 , y0, x0 , y0, x0 + radius, y0);
-          cairo_line_to (cr, x1 - radius, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, (y0 + y1)/2);
-          cairo_curve_to (cr, x1, y1, x1, y1, x1 - radius, y1);
-          cairo_line_to (cr, x0 + radius, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, (y0 + y1)/2);
-        }
-      else
-        {
-          cairo_move_to  (cr, x0, y0 + radius);
-          cairo_curve_to (cr, x0 , y0, x0 , y0, x0 + radius, y0);
-          cairo_line_to (cr, x1 - radius, y0);
-          cairo_curve_to (cr, x1, y0, x1, y0, x1, y0 + radius);
-          cairo_line_to (cr, x1 , y1 - radius);
-          cairo_curve_to (cr, x1, y1, x1, y1, x1 - radius, y1);
-          cairo_line_to (cr, x0 + radius, y1);
-          cairo_curve_to (cr, x0, y1, x0, y1, x0, y1- radius);
-        }
-    }
-
-  cairo_close_path (cr);
-}
 
 static void
 ccm_magnifier_init (CCMMagnifier *self)
@@ -169,6 +137,7 @@ ccm_magnifier_init (CCMMagnifier *self)
 	self->priv->enabled = FALSE;
 	self->priv->shade = TRUE;
 	self->priv->scale = 1.0f;
+	self->priv->new_scale = 1.0f;
 	self->priv->x_mouse = 0;
 	self->priv->y_mouse = 0;
 	self->priv->x_hot = 0;
@@ -179,9 +148,16 @@ ccm_magnifier_init (CCMMagnifier *self)
 	self->priv->surface_mouse = NULL;
 	self->priv->x_offset = 0;
 	self->priv->y_offset = 0;
+	self->priv->border = 0;
 	self->priv->surface = NULL;
 	self->priv->damaged = NULL;
 	self->priv->keybind = NULL;
+	self->priv->surface_window_info = NULL;
+	self->priv->timeline = ccm_timeline_new_for_duration(5000);
+	g_object_set(G_OBJECT(self->priv->timeline), "fps", 30, NULL);
+	g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+							 G_CALLBACK(ccm_magnifier_on_new_frame), 
+							 self);
 	bzero(&self->priv->area, sizeof(cairo_rectangle_t));
 	for (cpt = 0; cpt < CCM_MAGNIFIER_OPTION_N; cpt++) 
 		self->priv->options[cpt] = NULL;
@@ -215,6 +191,10 @@ ccm_magnifier_finalize (GObject *object)
 		ccm_region_destroy (self->priv->damaged);
 	if (self->priv->keybind) 
 		g_object_unref(self->priv->keybind);
+	if (self->priv->surface_window_info)
+		cairo_surface_destroy (self->priv->surface_window_info);
+	if (self->priv->timeline)
+		g_object_unref(self->priv->timeline);
 	
 	G_OBJECT_CLASS (ccm_magnifier_parent_class)->finalize (object);
 }
@@ -232,9 +212,40 @@ ccm_magnifier_class_init (CCMMagnifierClass *klass)
 static void
 ccm_magnifier_on_key_press(CCMMagnifier* self)
 {
-	gboolean enabled = 
-		ccm_config_get_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE]);
-	ccm_config_set_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE], !enabled);
+	g_return_if_fail(self != NULL);
+	
+	int x, y;
+	
+	if (ccm_screen_query_pointer(self->priv->screen, NULL, &x, &y))
+	{
+		gboolean enabled = 
+			ccm_config_get_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE]);
+		ccm_config_set_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE], !enabled);
+	}
+}
+
+static void
+ccm_magnifier_on_new_frame (CCMMagnifier* self, int num_frame, 
+							CCMTimeline* timeline)
+{
+	gdouble progress = ccm_timeline_get_progress(timeline);
+	
+	if (progress <= 0.25 || progress >= 0.75)
+	{
+		cairo_rectangle_t geometry;
+		CCMRegion* area;
+	
+		geometry.width = self->priv->restrict_area.width * 
+						 (CCM_MAGNIFIER_WINDOW_INFO_WIDTH / 100.f);
+		geometry.height = self->priv->restrict_area.height * 
+				          (CCM_MAGNIFIER_WINDOW_INFO_HEIGHT / 100.f);
+		geometry.x = (self->priv->restrict_area.width - geometry.width) / 2;
+		geometry.y = 0;
+	
+		area = ccm_region_rectangle(&geometry);
+		ccm_screen_damage_region(self->priv->screen, area);
+		ccm_region_destroy(area);
+	}
 }
 
 static void
@@ -261,6 +272,8 @@ ccm_magnifier_get_enable(CCMMagnifier *self)
 		XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(display), 
 								CCM_WINDOW_XWINDOW(root), 
 								XFixesDisplayCursorNotifyMask);
+		ccm_timeline_rewind(self->priv->timeline);
+		ccm_timeline_start(self->priv->timeline);
 	}
 	else
 	{
@@ -277,6 +290,7 @@ ccm_magnifier_get_enable(CCMMagnifier *self)
 		if (self->priv->surface_mouse) 
 			cairo_surface_destroy (self->priv->surface_mouse);
 		self->priv->surface_mouse = NULL;
+		ccm_timeline_stop(self->priv->timeline);
 	}
 }
 
@@ -298,16 +312,35 @@ ccm_magnifier_get_keybind(CCMMagnifier *self)
 static gboolean
 ccm_magnifier_get_scale(CCMMagnifier *self)
 {
-	gfloat scale = 
+	gfloat scale, real = 
 		ccm_config_get_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL]);
 	
-	scale = MAX(1.0f, scale);
+	scale = MAX(1.0f, real);
 	scale = MIN(5.0f, scale);
-	if (self->priv->scale != scale)
-	{
-		self->priv->scale = scale;
+	if (real != scale)
 		ccm_config_set_float (self->priv->options [CCM_MAGNIFIER_ZOOM_LEVEL],
-							  self->priv->scale);
+							  scale);
+		
+	if (self->priv->new_scale != scale)
+	{
+		gdouble progress = ccm_timeline_get_progress(self->priv->timeline);
+		
+		self->priv->new_scale = scale;
+		if (ccm_timeline_is_playing(self->priv->timeline))
+		{
+			if (progress > 0.75)
+				ccm_timeline_advance(self->priv->timeline, 
+									 (progress - 0.75) * 
+									 ccm_timeline_get_n_frames(self->priv->timeline));
+		}
+		else if (self->priv->enabled) 
+		{
+			ccm_timeline_start(self->priv->timeline);
+			ccm_timeline_rewind(self->priv->timeline);
+		}
+		cairo_surface_destroy(self->priv->surface_window_info);
+		self->priv->surface_window_info = NULL;
+		
 		return TRUE;
 	}
 	
@@ -373,37 +406,286 @@ ccm_magnifier_get_shade_desktop(CCMMagnifier *self)
 }
 
 static gboolean
+ccm_magnifier_get_border(CCMMagnifier *self)
+{
+	gint val, real =
+	 ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_BORDER]);
+	
+	val = MAX(0, real);
+	val = MIN(self->priv->area.width, val);
+	val = MIN(self->priv->area.height, val);
+	if (val != real)
+		ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_BORDER], val);
+	
+	if (self->priv->border != val)
+	{
+		self->priv->border = val;
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+static gboolean
+ccm_magnifier_get_restrict_area(CCMMagnifier* self)
+{
+	gint val, real;
+	gdouble x, y, width, height;
+	gboolean ret = FALSE;
+
+	real = ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_RESTRICT_AREA_WIDTH]);
+	if (real < 0)
+	{
+		self->priv->restrict_area.width = CCM_SCREEN_XSCREEN(self->priv->screen)->width;
+	}
+	else
+	{
+		val = MAX(0, real);
+		val = MIN(CCM_SCREEN_XSCREEN(self->priv->screen)->width, val);
+		if (real != val)
+			ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_RESTRICT_AREA_WIDTH], val);
+			
+		width = val;
+		if (self->priv->restrict_area.width != width)
+		{
+			self->priv->restrict_area.width = width;
+			ret = TRUE;
+		}
+	}
+	
+	real = ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_RESTRICT_AREA_HEIGHT]);
+	if (real < 0)
+	{
+		self->priv->restrict_area.height = CCM_SCREEN_XSCREEN(self->priv->screen)->height;
+	}
+	else
+	{
+		val = MAX(0, real);
+		val = MIN(CCM_SCREEN_XSCREEN(self->priv->screen)->height, val);
+		if (real != val)
+			ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_RESTRICT_AREA_HEIGHT], val);
+			
+		height = val;
+		if (self->priv->restrict_area.height != height)
+		{
+			self->priv->restrict_area.height = height;
+			ret = TRUE;
+		}
+	}
+	
+	real = ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_RESTRICT_AREA_X]);
+	if (real < 0)
+	{
+		self->priv->restrict_area.x = 0;
+	}
+	else
+	{
+		val = MAX(0, real);
+		val = MIN(self->priv->restrict_area.width, val);
+		if (real != val)
+			ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_RESTRICT_AREA_X], val);
+			
+		x = val;
+		if (self->priv->restrict_area.x != x)
+		{
+			self->priv->restrict_area.x = x;
+			ret = TRUE;
+		}
+	}
+		
+	real = ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_RESTRICT_AREA_Y]);
+	if (real < 0)
+	{
+		self->priv->restrict_area.y = 0;
+	}
+	else
+	{
+		val = MAX(0, real);
+		val = MIN(self->priv->restrict_area.height, val);
+		if (real != val)
+			ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_RESTRICT_AREA_Y], val);
+			
+		y = val;
+		if (self->priv->restrict_area.y != y)
+		{
+			self->priv->restrict_area.y = y;
+			ret = TRUE;
+		}
+	}
+	
+	return ret;
+}
+
+static gboolean
 ccm_magnifier_get_size(CCMMagnifier* self)
 {
-	gint val;
-	gdouble width, height;
+	gint val, real;
+	gdouble x, y, width, height;
 	gboolean ret = FALSE;
 
 	self->priv->area.x = 0;
 	self->priv->area.y = 0;
-	val = MAX(10, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_WIDTH]));
-	val = MIN(80, val);
 	
-	width = (gdouble)CCM_SCREEN_XSCREEN(self->priv->screen)->width * (gdouble)val / 100.0;
+	real = ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_WIDTH]);
+	val = MAX(10, real);
+	val = MIN(80, val);
+	if (real != val)
+		ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_WIDTH], val);
+		
+	width = (gdouble)self->priv->restrict_area.width * (gdouble)val / 100.0;
 	if (self->priv->area.width != width)
 	{
 		self->priv->area.width = width;
-		ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_WIDTH], val);
 		ret = TRUE;
 	}
 	
-	val = MAX(10, ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT]));
+	real = ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT]);
+	val = MAX(10, real);
 	val = MIN(80, val);
-	height = (gdouble)CCM_SCREEN_XSCREEN(self->priv->screen)->height * (gdouble)val / 100.0;
+	if (real != val)
+		ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT], val);
+	
+	height = (gdouble)self->priv->restrict_area.height * (gdouble)val / 100.0;
 	
 	if (self->priv->area.height != height)
 	{
 		self->priv->area.height = height;
-		ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_HEIGHT], val);
 		ret = TRUE;
 	}
 	
+	real = ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_X]);
+	if (real < 0)
+	{
+		self->priv->area.x = (self->priv->restrict_area.width - self->priv->area.width) / 2;
+	}
+	else
+	{
+		val = MAX(0, real);
+		val = MIN(CCM_SCREEN_XSCREEN(self->priv->screen)->width, val);
+		if (real != val)
+			ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_X], val);
+		
+		x = val;
+		if (self->priv->area.x != x)
+		{
+			self->priv->area.x = x;
+			ret = TRUE;
+		}
+	}
+		
+	real = ccm_config_get_integer (self->priv->options [CCM_MAGNIFIER_Y]);
+	if (real < 0)
+	{
+		self->priv->area.y = (self->priv->restrict_area.height - self->priv->area.height) / 2;
+	}
+	else
+	{
+		val = MAX(0, real);
+		val = MIN(CCM_SCREEN_XSCREEN(self->priv->screen)->height, val);
+		if (real != val)
+			ccm_config_set_integer (self->priv->options [CCM_MAGNIFIER_Y], val);
+		
+		y = val;
+		if (self->priv->area.y != y)
+		{
+			self->priv->area.y = y;
+			ret = TRUE;
+		}
+	}
+	
 	return ret;
+}
+
+static void
+ccm_magnifier_create_window_info(CCMMagnifier *self)
+{
+	PangoLayout *layout;
+	PangoFontDescription *desc;
+	cairo_rectangle_t geometry;
+	cairo_t* context;
+	int width, height;
+	char* text;
+	
+	if (self->priv->surface_window_info) 
+		cairo_surface_destroy(self->priv->surface_window_info);
+	
+	self->priv->surface_window_info = 
+		cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+								   self->priv->restrict_area.width * 
+								   (CCM_MAGNIFIER_WINDOW_INFO_WIDTH / 100.f),
+								   self->priv->restrict_area.height * 
+								   (CCM_MAGNIFIER_WINDOW_INFO_HEIGHT / 100.f));
+	context = cairo_create(self->priv->surface_window_info);
+	cairo_set_operator(context, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(context);
+	cairo_set_operator(context, CAIRO_OPERATOR_SOURCE);
+	
+	geometry.width = self->priv->restrict_area.width * 
+					 (CCM_MAGNIFIER_WINDOW_INFO_WIDTH / 100.f),
+	geometry.height = self->priv->restrict_area.height * 
+					  (CCM_MAGNIFIER_WINDOW_INFO_HEIGHT / 100.f),
+	geometry.x = 0,
+	geometry.y = 0;
+	
+	cairo_rectangle_round (context, geometry.x, geometry.y, geometry.width, 
+						   geometry.height, 20, 
+						   CAIRO_CORNER_BOTTOMLEFT | CAIRO_CORNER_BOTTOMRIGHT);
+	cairo_set_source_rgba (context, 1.0f, 1.0f, 1.0f, 0.8f);
+	cairo_fill_preserve(context);
+	cairo_set_line_width(context, 2.0f);
+	cairo_set_source_rgba (context, 0.f, 0.f, 0.f, 1.0f);
+	cairo_stroke(context);
+			
+	layout = pango_cairo_create_layout(context);
+	text = g_strdup_printf("Zoom level = %i %%", (int)(self->priv->new_scale * 100));
+	pango_layout_set_text (layout, text, -1);
+	g_free(text);
+	desc = pango_font_description_from_string("Sans Bold 18");
+	pango_layout_set_font_description(layout, desc);
+	pango_font_description_free(desc);
+	pango_layout_get_pixel_size(layout, &width, &height);
+	
+	cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 1.0f);
+	pango_cairo_update_layout (context, layout);
+	cairo_move_to(context, (geometry.width - width) / 2.0f, 
+				  (geometry.height - height) / 2.0f);
+	pango_cairo_show_layout (context, layout);
+	g_object_unref(layout);
+	cairo_destroy(context);
+}
+
+static void
+ccm_magnifier_paint_window_info(CCMMagnifier *self, cairo_t* context)
+{
+	if (!self->priv->surface_window_info)
+	{
+		ccm_magnifier_create_window_info(self);
+	}
+	
+	if (self->priv->surface_window_info && 
+		ccm_timeline_is_playing(self->priv->timeline))
+	{
+		cairo_rectangle_t geometry;
+		gdouble progress = ccm_timeline_get_progress(self->priv->timeline);
+		
+		geometry.width = self->priv->restrict_area.width * 
+						 (CCM_MAGNIFIER_WINDOW_INFO_WIDTH / 100.f);
+		geometry.height = self->priv->restrict_area.height * 
+			              (CCM_MAGNIFIER_WINDOW_INFO_HEIGHT / 100.f);
+		geometry.x = (self->priv->restrict_area.width - geometry.width) / 2;
+		if (progress <= 0.25)
+			geometry.y = -geometry.height * (1 - (progress / 0.25));
+		else if (progress > 0.25 && progress < 0.75)
+			geometry.y = 0;
+		else
+			geometry.y = -geometry.height * ((progress - 0.75) / 0.25);	
+		
+		cairo_save(context);
+		cairo_translate(context, geometry.x, geometry.y);
+		cairo_set_source_surface(context, self->priv->surface_window_info, 0, 0);
+		cairo_paint(context);
+		cairo_restore(context);
+	}
 }
 
 static void
@@ -424,6 +706,7 @@ ccm_magnifier_cursor_get_surface(CCMMagnifier* self)
 {
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	XFixesCursorImage *cursor_image;
+	gint cpt;
 	
 	if (self->priv->image_mouse)
 		g_free (self->priv->image_mouse);
@@ -433,8 +716,14 @@ ccm_magnifier_cursor_get_surface(CCMMagnifier* self)
 	cursor_image = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(display));
 	ccm_magnifier_cursor_convert_to_rgba (self, cursor_image);
 	
-	self->priv->image_mouse = g_memdup(cursor_image->pixels, 
-									   cursor_image->width * cursor_image->height * 4);
+	self->priv->image_mouse = g_new0(guchar, cursor_image->width * cursor_image->height * 4);
+	for (cpt = 0; cpt < cursor_image->width * cursor_image->height; cpt++)
+	{
+		self->priv->image_mouse[(cpt * 4) + 3] = (guchar)(cursor_image->pixels[cpt] >> 24);
+		self->priv->image_mouse[(cpt * 4) + 2] = (guchar)((cursor_image->pixels[cpt] >> 16) & 0xff);
+		self->priv->image_mouse[(cpt * 4) + 1] = (guchar)((cursor_image->pixels[cpt] >> 8) & 0xff);
+		self->priv->image_mouse[(cpt * 4) + 0] = (guchar)(cursor_image->pixels[cpt] & 0xff);
+	}
 	self->priv->surface_mouse = cairo_image_surface_create_for_data (
 												self->priv->image_mouse, 
 												CAIRO_FORMAT_ARGB32,
@@ -462,73 +751,76 @@ ccm_magnifier_cursor_get_position(CCMMagnifier*self)
 	
 	ccm_magnifier_cursor_get_surface (self);
 	
-	if (self->priv->x_offset > self->priv->x_mouse)
+	if (self->priv->x_offset > self->priv->x_mouse - self->priv->border)
 	{
-		self->priv->x_offset = self->priv->x_mouse;
+		self->priv->x_offset = MAX(self->priv->restrict_area.x, self->priv->x_mouse - self->priv->border);
 		damaged = TRUE;
 	}
-	if (self->priv->y_offset > self->priv->y_mouse)
+	if (self->priv->y_offset > self->priv->y_mouse  - self->priv->border)
 	{
-		self->priv->y_offset = self->priv->y_mouse;
+		self->priv->y_offset = MAX(self->priv->restrict_area.y, self->priv->y_mouse - self->priv->border);
 		damaged = TRUE;
 	}
-	if (self->priv->x_offset + 
-		(self->priv->area.width / self->priv->scale) < self->priv->x_mouse)
+	if (self->priv->x_offset + (self->priv->area.width / self->priv->scale) < 
+		self->priv->x_mouse + self->priv->border)
 	{
-		self->priv->x_offset = self->priv->x_mouse + 20 - 
+		self->priv->x_offset = self->priv->x_mouse + self->priv->border + 
+							   self->priv->mouse_width - 
 							   (self->priv->area.width / self->priv->scale);
 		if (self->priv->x_offset + 
 			(self->priv->area.width / self->priv->scale) > 
-			CCM_SCREEN_XSCREEN(self->priv->screen)->width)
-			self->priv->x_offset = CCM_SCREEN_XSCREEN(self->priv->screen)->width - 
+			self->priv->restrict_area.width)
+			self->priv->x_offset = self->priv->restrict_area.width - 
 								   (self->priv->area.width / self->priv->scale);
 		damaged = TRUE;
 	}
 	if (self->priv->y_offset + (self->priv->area.height / self->priv->scale) < 
-		self->priv->y_mouse)
+		self->priv->y_mouse + self->priv->border)
 	{
-		self->priv->y_offset = self->priv->y_mouse + 20 - 
-							   (self->priv->area.height / self->priv->scale);
+		self->priv->y_offset = self->priv->y_mouse + self->priv->border + 
+							   self->priv->mouse_height - 
+							   (self->priv->area.height / self->priv->scale) ;
 		if (self->priv->y_offset + 
 			(self->priv->area.height / self->priv->scale) > 
-			CCM_SCREEN_XSCREEN(self->priv->screen)->height)
-			self->priv->y_offset = CCM_SCREEN_XSCREEN(self->priv->screen)->height - 
+			self->priv->restrict_area.height)
+			self->priv->y_offset = self->priv->restrict_area.height - 
 								  (self->priv->area.height / self->priv->scale);
 		damaged = TRUE;
 	}
 	
-	if (damaged)
+	if (old_x - old_xhot != self->priv->x_mouse - self->priv->x_hot || 
+	    old_y - old_yhot != self->priv->y_mouse - self->priv->y_hot)
 	{
-		CCMRegion* damage;
-		cairo_rectangle_t area;
+		if (damaged)
+		{
+			CCMRegion* damage;
+			cairo_rectangle_t area;
 		
-		area.x = self->priv->x_offset;
-		area.y = self->priv->y_offset;
-		area.width = self->priv->area.width / self->priv->scale;
-		area.height = self->priv->area.height / self->priv->scale;
-		damage = ccm_region_rectangle (&area);
-		ccm_debug("MAGNIFIER POSITION CHANGED");
-		ccm_screen_damage_region (self->priv->screen, damage);
-		ccm_region_destroy (damage);
-	}
-	else if (old_x - old_xhot != self->priv->x_mouse - self->priv->x_hot || 
-			 old_y - old_yhot != self->priv->y_mouse - self->priv->y_hot)
-	{
-		CCMRegion* damage;
-		cairo_rectangle_t area;
+			area.x = self->priv->x_offset;
+			area.y = self->priv->y_offset;
+			area.width = self->priv->area.width / self->priv->scale;
+			area.height = self->priv->area.height / self->priv->scale;
+			damage = ccm_region_rectangle (&area);
+			ccm_debug("MAGNIFIER POSITION CHANGED");
+			ccm_screen_damage_region (self->priv->screen, damage);
+			ccm_region_destroy (damage);
+		}
+		else
+		{
+			CCMRegion* damage;
+			cairo_rectangle_t area;
 		
-		area.x = old_x - old_xhot;
-		area.y = old_y - old_yhot;
-		area.width = self->priv->mouse_width;
-		area.height = self->priv->mouse_height;
-		damage = ccm_region_rectangle (&area);
-		ccm_screen_damage_region (self->priv->screen, damage);
-		ccm_region_destroy (damage);
-		area.x = self->priv->x_mouse - self->priv->x_hot;
-		area.y = self->priv->y_mouse - self->priv->y_hot;
-		damage = ccm_region_rectangle (&area);
-		ccm_screen_damage_region (self->priv->screen, damage);
-		ccm_region_destroy (damage);
+			area.x = old_x - old_xhot;
+			area.y = old_y - old_yhot;
+			area.width = self->priv->mouse_width;
+			area.height = self->priv->mouse_height;
+			damage = ccm_region_rectangle (&area);
+			area.x = self->priv->x_mouse - self->priv->x_hot;
+			area.y = self->priv->y_mouse - self->priv->y_hot;
+			ccm_region_union_with_rect(damage, &area);
+			ccm_screen_damage_region (self->priv->screen, damage);
+			ccm_region_destroy (damage);
+		}
 	}
 }
 
@@ -548,14 +840,9 @@ ccm_magnifier_on_option_changed(CCMMagnifier* self, CCMConfig* config)
 	{
 		ccm_magnifier_get_enable (self);
 	}
-	else if (config == self->priv->options[CCM_MAGNIFIER_ZOOM_LEVEL] &&
-		ccm_magnifier_get_scale (self))
+	else if (config == self->priv->options[CCM_MAGNIFIER_ZOOM_LEVEL])
 	{
-		if (self->priv->surface) 
-			cairo_surface_destroy (self->priv->surface);
-		self->priv->surface = NULL;
-		ccm_magnifier_cursor_get_surface(self);
-		ccm_screen_damage (self->priv->screen);
+		ccm_magnifier_get_scale (self);
 	}
 	else if (config == self->priv->options[CCM_MAGNIFIER_ZOOM_QUALITY] &&
 			 ccm_magnifier_get_zoom_quality (self))
@@ -567,14 +854,26 @@ ccm_magnifier_on_option_changed(CCMMagnifier* self, CCMConfig* config)
 	{
 		ccm_magnifier_get_keybind (self);
 	}
+	else if (config == self->priv->options[CCM_MAGNIFIER_BORDER] &&
+			 ccm_magnifier_get_border (self))
+	{
+		ccm_screen_damage (self->priv->screen);
+	}
 	else if (config == self->priv->options[CCM_MAGNIFIER_SHADE_DESKTOP] &&
 			 ccm_magnifier_get_shade_desktop (self))
 	{
 		ccm_screen_damage (self->priv->screen);
 	}
 	else if ((config == self->priv->options[CCM_MAGNIFIER_WIDTH] ||
-			  config == self->priv->options[CCM_MAGNIFIER_HEIGHT]) &&
-			 ccm_magnifier_get_size (self))
+			  config == self->priv->options[CCM_MAGNIFIER_HEIGHT] ||
+			  config == self->priv->options[CCM_MAGNIFIER_X] ||
+			  config == self->priv->options[CCM_MAGNIFIER_Y] ||
+			  config == self->priv->options[CCM_MAGNIFIER_RESTRICT_AREA_WIDTH] ||
+			  config == self->priv->options[CCM_MAGNIFIER_RESTRICT_AREA_HEIGHT] ||
+			  config == self->priv->options[CCM_MAGNIFIER_RESTRICT_AREA_X] ||
+			  config == self->priv->options[CCM_MAGNIFIER_RESTRICT_AREA_Y]) &&
+			 (ccm_magnifier_get_restrict_area(self) ||
+			  ccm_magnifier_get_size (self)))
 	{
 		if (self->priv->surface) 
 			cairo_surface_destroy (self->priv->surface);
@@ -604,10 +903,13 @@ ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	self->priv->screen = screen;
 	
+	ccm_magnifier_get_enable(self);
 	ccm_magnifier_get_scale(self);
 	ccm_magnifier_get_zoom_quality (self);
 	ccm_magnifier_get_shade_desktop (self);
+	ccm_magnifier_get_restrict_area(self);
 	ccm_magnifier_get_size(self);
+	ccm_magnifier_get_border(self);
 	ccm_magnifier_get_keybind(self);
 	g_signal_connect_swapped(display, "xfixes-cursor-event", 
 							 G_CALLBACK(ccm_magnifier_on_cursor_notify_event), 
@@ -639,23 +941,14 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	if (self->priv->enabled) 
 	{
 		CCMRegion* area = ccm_region_rectangle (&self->priv->area);
-		int x = (CCM_SCREEN_XSCREEN(self->priv->screen)->width - 
-				 self->priv->area.width) / 2;
-		int y = (CCM_SCREEN_XSCREEN(self->priv->screen)->height - 
-				 self->priv->area.height) / 2;
-		cairo_rectangle_t screen_size, *rects;
+		cairo_rectangle_t *rects;
 		CCMRegion* geometry;
 		gint cpt, nb_rects;
 		
 		ccm_debug("MAGNIFIER PAINT SCREEN CLIP");
 		cairo_save(context);
 		
-		screen_size.x = 0;
-		screen_size.y = 0;
-		screen_size.width = CCM_SCREEN_XSCREEN(self->priv->screen)->width;
-		screen_size.height = CCM_SCREEN_XSCREEN(self->priv->screen)->height;
-		geometry = ccm_region_rectangle (&screen_size);
-		ccm_region_offset(area, x, y);
+		geometry = ccm_region_rectangle (&self->priv->restrict_area);
 		ccm_region_subtract (geometry, area);
 		
 		ccm_region_get_rectangles(geometry, &rects, &nb_rects);
@@ -684,66 +977,65 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	if (ret && self->priv->enabled) 
 	{
 		CCMRegion* area = ccm_region_rectangle (&self->priv->area);
-		int x = (CCM_SCREEN_XSCREEN(self->priv->screen)->width - 
-				 self->priv->area.width) / 2;
-		int y = (CCM_SCREEN_XSCREEN(self->priv->screen)->height - 
-				 self->priv->area.height) / 2;
-		
-		
+				
 		ccm_debug("MAGNIFIER PAINT SCREEN CONTENT");
 	
-		ccm_region_offset(area, x, y);
+		ccm_screen_undamage_region(self->priv->screen, area);
 		
 		if (self->priv->shade)
 		{
-			CCMRegion* region = ccm_screen_get_damaged (self->priv->screen);
+			CCMRegion* damaged = ccm_screen_get_damaged (self->priv->screen);
 			
-			if (region)
+			if (damaged)
 			{
-				CCMRegion* tmp = ccm_region_copy(region);
-			
-				ccm_region_subtract (tmp, area);
-				if (!ccm_region_empty(tmp))
+				gint cpt, nb_rects;
+				cairo_rectangle_t* rects;
+				
+				ccm_debug("MAGNIFIER PAINT SCREEN SHADE");
+
+				cairo_save(context);
+				cairo_rectangle(context, self->priv->restrict_area.x, 
+								self->priv->restrict_area.y,
+								self->priv->restrict_area.width,
+								self->priv->restrict_area.height);
+				cairo_clip(context);
+				ccm_region_get_rectangles(damaged, &rects, &nb_rects);
+				cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 0.6f);
+				for (cpt = 0; cpt < nb_rects; cpt++)
 				{
-					gint cpt, nb_rects;
-					cairo_rectangle_t* rects;
-					
-					ccm_debug("MAGNIFIER PAINT SCREEN SHADE");
-	
-					cairo_save(context);
-					ccm_region_get_rectangles(tmp, &rects, &nb_rects);
-					cairo_set_source_rgba (context, 0.0f, 0.0f, 0.0f, 0.6f);
-					for (cpt = 0; cpt < nb_rects; cpt++)
-					{
-						cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
-										 rects[cpt].width, rects[cpt].height);
-						cairo_fill(context);
-					}
-					g_free(rects);
-					
-					cairo_set_source_rgba(context, 1.0f, 1.0f, 1.0f, 0.8f);
-					cairo_set_line_width (context, 10.0f);
-					cairo_rectangle_round(context, x - 5, y - 5,
-										  self->priv->area.width + 10, 
-										  self->priv->area.height + 10, 
-										  10.0f);
-					cairo_stroke(context);
-					cairo_set_source_rgba(context, 0.0f, 0.0f, 0.0f, 0.9f);
-					cairo_set_line_width (context, 2.0f);
-					cairo_rectangle_round(context, x - 1, y - 1,
-										  self->priv->area.width + 2, 
-										  self->priv->area.height + 2, 
-										  10.0f);
-					cairo_stroke(context);
-					cairo_restore(context);
+					cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
+									 rects[cpt].width, rects[cpt].height);
+					cairo_fill(context);
 				}
-				ccm_region_destroy (tmp);
+				g_free(rects);
+				
+				cairo_set_source_rgba(context, 1.0f, 1.0f, 1.0f, 0.8f);
+				cairo_set_line_width (context, 10.0f);
+				cairo_rectangle_round(context, self->priv->area.x - 5, 
+									  self->priv->area.y - 5,
+									  self->priv->area.width + 10, 
+									  self->priv->area.height + 10, 
+									  10.0f, CAIRO_CORNER_ALL);
+				cairo_stroke(context);
+				cairo_set_source_rgba(context, 0.0f, 0.0f, 0.0f, 0.9f);
+				cairo_set_line_width (context, 2.0f);
+				cairo_rectangle_round(context, self->priv->area.x - 1, 
+									  self->priv->area.y - 1,
+									  self->priv->area.width + 2, 
+									  self->priv->area.height + 2, 
+									  10.0f, CAIRO_CORNER_ALL);
+				cairo_stroke(context);
+				
+				ccm_magnifier_paint_window_info(self, context);
+				
+				cairo_restore(context);
 			}
 		}
 	
 		if (self->priv->damaged)
 		{
-			cairo_rectangle_t clipbox;
+			gint cpt, nb_rects;
+			cairo_rectangle_t* rects;
 			cairo_pattern_t* pattern;
 			cairo_t* ctx = cairo_create(self->priv->surface);
 			
@@ -760,23 +1052,23 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL CONTENT");
 	
-			ccm_region_union(ccm_screen_get_damaged (screen), area);
+			ccm_screen_add_damaged_region(screen, self->priv->damaged);
 		
 			cairo_save(context);
 		
-			ccm_region_offset(self->priv->damaged, -self->priv->x_offset, 
-							  -self->priv->y_offset);
-			cairo_translate (context, x, y);
-			cairo_scale(context, self->priv->scale, self->priv->scale);
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL TRANSLATE SCALE");
 					
-			ccm_region_get_clipbox (self->priv->damaged, &clipbox);
-			cairo_rectangle (context, clipbox.x, clipbox.y,
-							 clipbox.width, clipbox.height);
+			ccm_region_get_rectangles(self->priv->damaged, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+				cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
+								 rects[cpt].width, rects[cpt].height);
+			g_free(rects);
 			cairo_clip(context);
 				
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL CLIP");
 	
+			cairo_translate(context, self->priv->area.x, self->priv->area.y);
+			cairo_scale(context, self->priv->scale, self->priv->scale);
 			cairo_set_source_surface (context, self->priv->surface, 0, 0);
 			pattern = cairo_get_source (context);
 			cairo_pattern_set_filter (pattern, self->priv->quality);
@@ -792,6 +1084,13 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		ccm_debug("MAGNIFIER PAINT SCREEN END");
 	
 		ccm_region_destroy (area);
+	}
+	
+	if (self->priv->scale != self->priv->new_scale)
+	{
+		self->priv->scale = self->priv->new_scale;
+		if (self->priv->surface) cairo_surface_destroy(self->priv->surface);
+		self->priv->surface = NULL;
 	}
 
 	return ret;
@@ -811,12 +1110,17 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	if (damaged && self->priv->enabled) 
 	{
 		CCMRegion *area = ccm_region_rectangle (&self->priv->area);
-	
-		ccm_region_scale(area, 1 / self->priv->scale, 1 / self->priv->scale);
-		ccm_region_offset (area, self->priv->x_offset, self->priv->y_offset);
-		ccm_region_intersect (area, damaged);
+		CCMRegion* tmp = ccm_region_copy(damaged);
+		cairo_matrix_t matrix;
 		
-		if (!ccm_region_empty (area)) 
+		cairo_matrix_init_scale(&matrix, self->priv->scale, self->priv->scale);
+		cairo_matrix_translate(&matrix, -self->priv->x_offset, -self->priv->y_offset);
+		ccm_region_transform(tmp, &matrix);
+		cairo_matrix_init_translate(&matrix, self->priv->area.x, self->priv->area.y);
+		ccm_region_transform(tmp, &matrix);
+		ccm_region_intersect (tmp, area);
+		
+		if (!ccm_region_empty (tmp)) 
 		{
 			cairo_t* ctx = cairo_create (self->priv->surface);
 			cairo_path_t* damaged_path;
@@ -825,9 +1129,9 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			ccm_debug_window(window, "MAGNIFIER PAINT WINDOW");
 
 			if (!self->priv->damaged)
-				self->priv->damaged = ccm_region_copy (area);
+				self->priv->damaged = ccm_region_copy (tmp);
 			else
-				ccm_region_union (self->priv->damaged, area);
+				ccm_region_union (self->priv->damaged, tmp);
 			
 			ccm_window_get_transform (window, &initial);
 			ccm_window_get_transform (window, &matrix);
@@ -855,6 +1159,7 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			ccm_window_set_transform (window, &initial, FALSE);
 		}
 		
+		ccm_region_destroy(tmp);
 		ccm_region_destroy(area);
 	}
 	

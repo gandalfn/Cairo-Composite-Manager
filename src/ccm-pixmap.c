@@ -232,7 +232,7 @@ ccm_pixmap_register_damage(CCMPixmap* self)
 	ccm_display_trap_error (display);
 	self->priv->damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (display),
 								  		CCM_PIXMAP_XPIXMAP (self),
-								  		XDamageReportDeltaRectangles);
+								  		XDamageReportNonEmpty);
 	ccm_display_sync (display);
 	if (!ccm_display_pop_error (display))
 	{
