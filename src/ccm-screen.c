@@ -48,7 +48,8 @@ enum
 	PROP_BACKEND,
 	PROP_NATIVE_PIXMAP_BIND,
 	PROP_BUFFERED_PIXMAP,
-    PROP_INDIRECT_RENDERING
+    PROP_INDIRECT_RENDERING,
+	PROP_FILTERED_DAMAGE
 };
 
 enum
@@ -120,6 +121,7 @@ struct _CCMScreenPrivate
 	
 	CCMRegion*			damaged;
 	CCMRegion*			root_damage;
+	gboolean			filtered_damage;
 	
 	Window*				stack;
 	guint				n_windows;
@@ -175,6 +177,9 @@ ccm_screen_set_property(GObject *object,
 			priv->buffered = g_value_get_boolean (value) &&
 				ccm_config_get_boolean(priv->options[CCM_SCREEN_USE_BUFFERED]);
 			break;
+		case PROP_FILTERED_DAMAGE:
+			priv->filtered_damage = g_value_get_boolean (value);
+			break;
 		default:
 			break;
     }
@@ -222,6 +227,9 @@ ccm_screen_get_property (GObject* object,
 			g_value_set_boolean (value, 
 					ccm_config_get_boolean(priv->options[CCM_SCREEN_INDIRECT]));
 			break;
+		case PROP_FILTERED_DAMAGE:
+			g_value_set_boolean (value, priv->filtered_damage);
+			break;
 		default:
 			break;
     }
@@ -242,6 +250,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->fullscreen = NULL;
 	self->priv->damaged = NULL;
 	self->priv->root_damage = NULL;
+	self->priv->filtered_damage = TRUE;
 	self->priv->stack = NULL;
 	self->priv->n_windows = 0;
 	self->priv->windows = NULL;
@@ -391,6 +400,13 @@ ccm_screen_class_init (CCMScreenClass *klass)
 			     			  "Indirect rendering",
 							  TRUE,
 			     			  G_PARAM_READABLE));
+	
+	g_object_class_install_property(object_class, PROP_FILTERED_DAMAGE,
+		g_param_spec_boolean ("filtered_damage",
+		 					  "Filtered Damage",
+			     			  "Use filtered damage",
+							  TRUE,
+			     			  G_PARAM_READWRITE));
 	
 	signals[PLUGINS_CHANGED] = g_signal_new ("plugins-changed",
 											 G_OBJECT_CLASS_TYPE (object_class),
@@ -1415,13 +1431,15 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 		
 		// Substract opaque region of window to damage region below
 		opaque = ccm_window_get_opaque_region(window);
-		if (opaque && ccm_window_is_viewable(window))
+		if (self->priv->filtered_damage && opaque && 
+			ccm_window_is_viewable(window))
 		{
 			ccm_region_subtract(damage_below, (CCMRegion*)opaque);
 		}
 		
 		// Substract all obscured area to damage region
-		for (item = g_list_last(self->priv->windows); item; item = item->prev)
+		for (item = g_list_last(self->priv->windows); 
+			 self->priv->filtered_damage && item; item = item->prev)
 		{
 			if (!ccm_window_is_input_only(item->data) &&
 				ccm_window_is_viewable(item->data) && 
@@ -1479,7 +1497,8 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 				else
 				{
 					opaque = ccm_window_get_opaque_region(window);
-					if (ccm_window_is_viewable(window) &&
+					if (ccm_window_is_viewable(window) && 
+						self->priv->filtered_damage && 
 						opaque && !ccm_region_empty((CCMRegion*)opaque))
 					{
 						ccm_debug_window(item->data, "UNDAMAGE BELOW");
@@ -1497,7 +1516,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 													  self);
 					opaque = ccm_window_get_opaque_region(item->data);
 					
-					if (opaque) 
+					if (self->priv->filtered_damage && opaque) 
 					{
 						ccm_region_subtract (damage_below, (CCMRegion*)opaque);
 					}
@@ -1512,7 +1531,7 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 			}
 		}
 		
-		if (!ccm_region_empty (damage_below))
+		if (self->priv->filtered_damage && !ccm_region_empty (damage_below))
 		{
 			cairo_rectangle_t area;
 			CCMRegion* geometry;
