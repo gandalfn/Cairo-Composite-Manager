@@ -356,6 +356,7 @@ ccm_opacity_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->paint 			= NULL;
 	iface->add_window 		= NULL;
 	iface->remove_window 	= NULL;
+	iface->damage			= NULL;
 }
 
 static void

@@ -1,3 +1,68 @@
+2008-10-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_screen_iface_init):
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_screen_paint),
+	(ccm_magnifier_screen_iface_init):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_init),
+	(ccm_mosaic_broadcast_event), (ccm_mosaic_on_event),
+	(ccm_mosaic_on_key_press), (ccm_mosaic_get_damaged_area),
+	(ccm_mosaic_paint_area), (ccm_mosaic_screen_paint),
+	(ccm_mosaic_screen_damage), (ccm_mosaic_window_paint),
+	(ccm_mosaic_screen_iface_init):
+	* plugins/opacity/ccm-opacity.c (ccm_opacity_screen_iface_init):
+	* plugins/perf/ccm-perf.c (ccm_perf_screen_paint),
+	(ccm_perf_screen_iface_init):
+	* src/ccm-drawable.c (ccm_drawable_damage_region_silently):
+	* src/ccm-screen-plugin.c (ccm_screen_plugin_damage):
+	* src/ccm-screen-plugin.h:
+	* src/ccm-screen.c (ccm_screen_set_property),
+	(ccm_screen_get_property), (ccm_screen_init),
+	(ccm_screen_iface_init), (ccm_screen_check_stack),
+	(impl_ccm_screen_damage), (ccm_screen_on_window_damaged),
+	(ccm_screen_on_event), (ccm_screen_undamage_region),
+	(ccm_screen_remove_damaged_region), (ccm_screen_activate_window):
+	* src/ccm-window.c (create_atoms):
+	* src/ccm-window.h:
+	* src/ccm.h:
+	  - Generally use ccm_region_transform instead ccm_region_offset and 
+	    ccm_region_scale.
+	  - Add damage interface to screen plugin
+	  - Remove filtered damage property to screen
+	  - Fix mosaic plugin 
+	  - Rename ccm_screen_undamage to ccm_screen_remove_damaged
+	  - Define a real ccm_screen_undamage
+	  - Add ccm_drawable_damage_silently method instead block signal.
+	  - Fix perf plugin
+
+2008-10-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_screen_iface_init):
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_screen_paint),
+	(ccm_magnifier_screen_iface_init):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_init),
+	(ccm_mosaic_broadcast_event), (ccm_mosaic_on_event),
+	(ccm_mosaic_on_key_press), (ccm_mosaic_get_damaged_area),
+	(ccm_mosaic_paint_area), (ccm_mosaic_screen_paint),
+	(ccm_mosaic_screen_damage), (ccm_mosaic_window_paint),
+	(ccm_mosaic_screen_iface_init):
+	* plugins/opacity/ccm-opacity.c (ccm_opacity_screen_iface_init):
+	* plugins/perf/ccm-perf.c (ccm_perf_screen_paint),
+	(ccm_perf_screen_iface_init):
+	* src/ccm-drawable.c (ccm_drawable_damage_region_silently):
+	* src/ccm-screen-plugin.c (ccm_screen_plugin_damage):
+	* src/ccm-screen-plugin.h:
+	* src/ccm-screen.c (ccm_screen_set_property),
+	(ccm_screen_get_property), (ccm_screen_init),
+	(ccm_screen_iface_init), (ccm_screen_check_stack),
+	(impl_ccm_screen_damage), (ccm_screen_on_window_damaged),
+	(ccm_screen_on_event), (ccm_screen_undamage_region),
+	(ccm_screen_remove_damaged_region), (ccm_screen_activate_window):
+	* src/ccm-window.c (create_atoms):
+	* src/ccm-window.h:
+	* src/ccm.h: 
+	  - Add damage interface to screen plugin.
+	  - Fix mosaic plugin.
+
 2008-10-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* configure.ac:

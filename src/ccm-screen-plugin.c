@@ -179,3 +179,33 @@ ccm_screen_plugin_remove_window (CCMScreenPlugin* self, CCMScreen* screen,
 																	window);
 	}
 }
+
+void
+ccm_screen_plugin_damage (CCMScreenPlugin* self, CCMScreen* screen,
+						  CCMRegion* area, CCMWindow* window)
+{
+	g_return_if_fail (CCM_IS_SCREEN_PLUGIN (self));
+	g_return_if_fail (screen != NULL);
+	g_return_if_fail (area != NULL);
+	g_return_if_fail (window != NULL);
+	
+  	CCMScreenPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->damage)
+			break;
+	}
+    
+	if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->damage)
+	{
+		if (!_ccm_plugin_method_locked ((GObject*)plugin, 
+					CCM_SCREEN_PLUGIN_GET_INTERFACE  (plugin)->damage))
+  			CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->damage(plugin, 
+															 screen,
+															 area,
+															 window);
+	}
+}

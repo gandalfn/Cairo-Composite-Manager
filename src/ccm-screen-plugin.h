@@ -69,6 +69,8 @@ struct _CCMScreenPluginClass
 								 CCMWindow* window);
 	void	 (*remove_window) 	(CCMScreenPlugin* self, CCMScreen* screen,
 								 CCMWindow* window);
+    void	 (*damage) 	        (CCMScreenPlugin* self, CCMScreen* screen,
+								 CCMRegion* area, CCMWindow* window);
 };
 
 GType 		ccm_screen_plugin_get_type 		(void) G_GNUC_CONST;
@@ -84,6 +86,11 @@ gboolean 	ccm_screen_plugin_add_window  	(CCMScreenPlugin* self,
 void	 	ccm_screen_plugin_remove_window (CCMScreenPlugin* self, 
 											 CCMScreen* screen,
 											 CCMWindow* window);
+void	 	ccm_screen_plugin_damage        (CCMScreenPlugin* self, 
+											 CCMScreen* screen,
+                                             CCMRegion* area,
+											 CCMWindow* window);
+
 G_END_DECLS
 
 #endif /* _CCM_SCREEN_PLUGIN_H_ */

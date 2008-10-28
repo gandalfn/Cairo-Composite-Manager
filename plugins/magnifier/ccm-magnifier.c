@@ -980,7 +980,7 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 				
 		ccm_debug("MAGNIFIER PAINT SCREEN CONTENT");
 	
-		ccm_screen_undamage_region(self->priv->screen, area);
+		ccm_screen_remove_damaged_region(self->priv->screen, area);
 		
 		if (self->priv->shade)
 		{
@@ -1174,6 +1174,7 @@ ccm_magnifier_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->paint 			= ccm_magnifier_screen_paint;
 	iface->add_window 		= NULL;
 	iface->remove_window 	= NULL;
+	iface->damage			= NULL;
 }
 
 static void

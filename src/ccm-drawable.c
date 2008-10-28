@@ -603,6 +603,37 @@ ccm_drawable_damage_region(CCMDrawable* self, const CCMRegion* area)
 }
 
 /**
+ * ccm_drawable_damage_region_silently:
+ * @self: #CCMDrawable
+ * @region: #CCMRegion damaged
+ *
+ * Add a damaged region for a drawable without generate an event
+ **/
+void 
+ccm_drawable_damage_region_silently(CCMDrawable* self, const CCMRegion* area)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(area != NULL);
+
+	if (!ccm_region_empty((CCMRegion*)area))
+ 	{
+		if (self->priv->damaged)
+			ccm_region_union(self->priv->damaged, (CCMRegion*)area);
+		else
+			self->priv->damaged = ccm_region_copy ((CCMRegion*)area);
+		
+		if (self->priv->geometry)
+			 ccm_region_intersect (self->priv->damaged, self->priv->geometry);
+		if (!self->priv->geometry || ccm_region_empty(self->priv->damaged))
+		{
+			ccm_region_destroy (self->priv->damaged);
+			self->priv->damaged = NULL;
+		}
+		ccm_debug_region(self, "DAMAGE_REGION:");
+	 }
+}
+
+/**
  * ccm_drawable_damage:
  * @self: #CCMDrawable
  *

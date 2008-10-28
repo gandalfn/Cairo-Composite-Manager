@@ -261,9 +261,6 @@ ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	CCMPerf* self = CCM_PERF (plugin);
 	gboolean ret = FALSE;
 	
-	ret = ccm_screen_plugin_paint(CCM_SCREEN_PLUGIN_PARENT (plugin), screen, 
-								  context);
-	
 	if (self->priv->enabled)
 	{
 		self->priv->frames++;
@@ -280,7 +277,22 @@ ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			ccm_region_destroy(area);
 		}
 		g_timer_start (self->priv->timer);
+	}
+	
+	ret = ccm_screen_plugin_paint(CCM_SCREEN_PLUGIN_PARENT (plugin), screen, 
+								  context);
+	if (self->priv->enabled)
+	{	
+		if (ret)
+		{
+			CCMRegion* area = ccm_region_rectangle(&self->priv->area);
+			CCMRegion* damaged = ccm_screen_get_damaged(screen);
 		
+			ccm_region_intersect(area, damaged);
+			self->priv->need_refresh |= !ccm_region_empty(area);
+			ccm_region_destroy(area);
+		}
+	
 		if (self->priv->need_refresh)
 		{
 			cairo_surface_t* icon;
@@ -358,6 +370,7 @@ ccm_perf_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->paint 			= ccm_perf_screen_paint;
 	iface->add_window 		= NULL;
 	iface->remove_window 	= NULL;
+	iface->damage			= NULL;
 }
 
 static void

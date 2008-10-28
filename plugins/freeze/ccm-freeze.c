@@ -377,4 +377,5 @@ ccm_freeze_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->paint			= NULL;
 	iface->add_window		= ccm_freeze_add_window;
 	iface->remove_window	= ccm_freeze_remove_window;
+	iface->damage			= NULL;
 }
