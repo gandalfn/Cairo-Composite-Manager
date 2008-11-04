@@ -312,3 +312,29 @@ ccm_window_plugin_set_opaque_region(CCMWindowPlugin* self, CCMWindow* window,
 	}
 }
 
+void
+ccm_window_plugin_get_origin(CCMWindowPlugin* self, CCMWindow* window,
+							 int* x, int* y)
+{
+	g_return_if_fail (CCM_IS_WINDOW_PLUGIN (self));
+	g_return_if_fail (window != NULL);
+	g_return_if_fail (x != NULL && y != NULL);
+
+	CCMWindowPlugin* plugin;
+       
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_origin)
+			break;
+	}
+    
+	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_origin)
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+				CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_origin))
+			CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_origin(plugin, window, 
+																 x, y);
+	}
+}

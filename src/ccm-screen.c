@@ -58,6 +58,7 @@ enum
 {
 	PLUGINS_CHANGED,
 	REFRESH_RATE_CHANGED,
+	WINDOW_DESTROYED,
     N_SIGNALS
 };
 
@@ -416,6 +417,12 @@ ccm_screen_class_init (CCMScreenClass *klass)
 											 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 											 g_cclosure_marshal_VOID__VOID,
 											 G_TYPE_NONE, 0, G_TYPE_NONE);
+	
+	signals[WINDOW_DESTROYED] = g_signal_new ("window-destroyed",
+											 G_OBJECT_CLASS_TYPE (object_class),
+											 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+											 g_cclosure_marshal_VOID__VOID,
+											 G_TYPE_NONE, 0, G_TYPE_NONE);
 }
 
 static void
@@ -627,6 +634,7 @@ ccm_screen_destroy_window (CCMScreen* self, CCMWindow* window)
 			ccm_screen_damage (self);
 	}
 	g_object_unref(window);
+	g_signal_emit (self, signals[WINDOW_DESTROYED], 0);
 }
 
 #if 0

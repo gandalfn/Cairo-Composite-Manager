@@ -1,3 +1,54 @@
+2008-11-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* lib/ccm-cairo-utils.c (kernel_1d_new), (kernel_1d_delete),
+	(cairo_image_surface_blur):
+	* lib/ccm-cairo-utils.h:
+      - add image surface blur methods.
+	
+    * plugins/fade/ccm-fade.c (ccm_fade_window_iface_init):
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_window_iface_init):
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_init),
+	(ccm_magnifier_window_iface_init):
+	* plugins/menu-animation/ccm-menu-animation.c
+	(ccm_menu_animation_window_iface_init):
+	* plugins/perf/ccm-perf.c (ccm_perf_window_iface_init):
+    * plugins/opacity/ccm-opacity.c (ccm_opacity_window_iface_init):
+	* src/ccm-window-plugin.c (ccm_window_plugin_get_origin):
+	* src/ccm-window-plugin.h:
+      - add get window origin interface.
+	
+    * plugins/mosaic/ccm-mosaic.c (ccm_mosaic_on_key_press),
+	(ccm_mosaic_screen_load_options), (ccm_mosaic_check_area),
+	(ccm_mosaic_paint_area), (ccm_mosaic_screen_add_window),
+	(ccm_mosaic_screen_paint), (ccm_mosaic_screen_damage),
+	(ccm_mosaic_screen_iface_init), (ccm_mosaic_window_iface_init):
+      - check for windows on add and destroy window instead on each paint.
+      
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_init),
+	(ccm_shadow_finalize), (ccm_shadow_create_shadow),
+	(ccm_shadow_paint_shadow), (ccm_shadow_load_options),
+	(ccm_shadow_query_geometry), (ccm_shadow_map), (ccm_shadow_paint),
+	(ccm_shadow_move), (ccm_shadow_resize), (ccm_shadow_get_origin),
+	(ccm_shadow_iface_init):
+	* plugins/shadow/ccm-shadow.schemas.in:
+      - beautify shadow with a real blur.
+      - add shadow in all side and remove offset
+      - add blur radial parameter and shadow color parameter
+      
+	* src/ccm-drawable.c (ccm_drawable_damage_region):
+      - call ccm_drawable_damage_region_silently instead a duplicate code.
+      
+	* src/ccm-screen.c (ccm_screen_class_init),
+	(ccm_screen_destroy_window):
+      - add window destroyed signal.
+    
+	* src/ccm-window.c (ccm_window_iface_init),
+	(impl_ccm_window_get_origin), (ccm_window_on_pixmap_damaged),
+	(ccm_window_make_output_only), (ccm_window_make_input_output),
+	(ccm_window_get_pixmap):
+      - fix small memory leak.
+      - add window get origin interface.
+
 2008-10-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/freeze/ccm-freeze.c (ccm_freeze_screen_iface_init):

@@ -38,5 +38,9 @@ typedef enum
 void
 cairo_rectangle_round (cairo_t *cr, double x, double y, double w, double h,
                        int radius, CairoCorners corners);
+void
+cairo_image_surface_blur (cairo_surface_t* surface,
+						  int              horzRadius,
+						  int              vertRadius);
 
 #endif /* _CCM_CAIRO_UTILS_H_ */

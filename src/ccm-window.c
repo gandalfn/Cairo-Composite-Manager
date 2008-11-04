@@ -80,6 +80,9 @@ static void			impl_ccm_window_resize		  (CCMWindowPlugin* plugin,
 static void			impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, 
 													  CCMWindow* self,
 													  const CCMRegion* area);
+static void			impl_ccm_window_get_origin	  (CCMWindowPlugin* plugin, 
+												   CCMWindow* self,
+												   int* x, int* y);
 static void			ccm_window_on_property_async_error(CCMWindow* self, 
 													   CCMPropertyASync* prop);
 static void			ccm_window_get_property_async (CCMWindow* self, 
@@ -339,6 +342,7 @@ ccm_window_iface_init(CCMWindowPluginClass* iface)
 	iface->move				 = impl_ccm_window_move;
 	iface->resize			 = impl_ccm_window_resize;
 	iface->set_opaque_region = impl_ccm_window_set_opaque_region;
+	iface->get_origin	     = impl_ccm_window_get_origin;
 }
 
 static void
@@ -1122,6 +1126,41 @@ impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* self,
 }
 
 static void
+impl_ccm_window_get_origin(CCMWindowPlugin* plugin, CCMWindow* self,
+						   int* x, int* y)
+{
+	g_return_if_fail(plugin != NULL);
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(x != NULL && y != NULL);
+	
+	cairo_rectangle_t geometry;
+	
+	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
+	{
+		*x = geometry.x;
+		*y = geometry.y;
+	}
+	else
+	{
+		*x = 0;
+		*y = 0;
+	}
+}
+				
+static void
+ccm_window_on_pixmap_damaged(CCMWindow* self, CCMRegion* area)
+{
+	g_return_if_fail (self != NULL);
+    g_return_if_fail (area != NULL);
+	
+	int x, y;
+	
+	ccm_window_plugin_get_origin(self->priv->plugin, self, &x, &y);
+	ccm_region_offset(area, x, y);
+	ccm_drawable_damage_region(CCM_DRAWABLE(self), area);
+}
+
+static void
 ccm_window_on_property_async_error(CCMWindow* self, CCMPropertyASync* prop)
 {
 	self->priv->properties_pending = 
@@ -1793,6 +1832,7 @@ ccm_window_make_output_only(CCMWindow* self)
 	XFixesSetWindowShapeRegion (CCM_DISPLAY_XDISPLAY(display),
 								CCM_WINDOW_XWINDOW(self),
 								ShapeInput, 0, 0, region);
+	XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY(display), region);
 }
 
 void
@@ -1817,6 +1857,7 @@ ccm_window_make_input_output(CCMWindow* self)
 									CCM_WINDOW_XWINDOW(self),
 									ShapeInput, 0, 0, 
 									region);
+		XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY(display), region);
 	}
 }
 
@@ -1864,21 +1905,6 @@ ccm_window_unredirect_subwindows (CCMWindow* self)
 					CompositeRedirectManual);
 }
 
-void
-on_pixmap_damaged(CCMWindow* self, CCMRegion* area)
-{
-	g_return_if_fail (self != NULL);
-    g_return_if_fail (area != NULL);
-	
-	cairo_rectangle_t geometry;
-	
-	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
-	{
-		ccm_region_offset(area, geometry.x, geometry.y);
-		ccm_drawable_damage_region(CCM_DRAWABLE(self), area);
-	}
-}
-
 CCMPixmap*
 ccm_window_get_pixmap(CCMWindow* self)
 {
@@ -1910,7 +1936,8 @@ ccm_window_get_pixmap(CCMWindow* self)
 			}
 			if (self->priv->pixmap)
 				g_signal_connect_swapped(self->priv->pixmap, "damaged", 
-										 G_CALLBACK(on_pixmap_damaged), self);
+										 G_CALLBACK(ccm_window_on_pixmap_damaged), 
+										 self);
 		}
 	}
 	

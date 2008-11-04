@@ -350,5 +350,6 @@ ccm_fade_window_iface_init(CCMWindowPluginClass* iface)
 	iface->move				 = NULL;
 	iface->resize			 = NULL;
 	iface->set_opaque_region = NULL;
+	iface->get_origin		 = NULL;
 }
 

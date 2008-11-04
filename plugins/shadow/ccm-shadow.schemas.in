@@ -13,14 +13,25 @@
          </locale>
       </schema>
 	  <schema>
-         <key>/schemas/apps/cairo-compmgr/default/shadow/offset</key>
-         <applyto>/apps/cairo-compmgr/default/shadow/offset</applyto>
+         <key>/schemas/apps/cairo-compmgr/default/shadow/radius</key>
+         <applyto>/apps/cairo-compmgr/default/shadow/radius</applyto>
          <owner>gnome</owner>
          <type>int</type>
-		 <default>4</default>
+		 <default>8</default>
          <locale name="C">
-            <short>Size of offset</short>
-            <long>Size of offset in pixel between left or top border of window</long>
+            <short>Shadow blur radius</short>
+            <long>Shadow blur radius</long>
+         </locale>
+      </schema>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/shadow/color</key>
+         <applyto>/apps/cairo-compmgr/default/shadow/color</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+		 <default>#767676</default>
+         <locale name="C">
+            <short>Shadow color</short>
+            <long>Shadow color</long>
          </locale>
       </schema>
    </schemalist>

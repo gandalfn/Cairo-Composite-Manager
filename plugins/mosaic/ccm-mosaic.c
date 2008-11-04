@@ -49,6 +49,7 @@ static gchar* CCMMosaicOptions[CCM_MOSAIC_OPTION_N] = {
 
 static void ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_mosaic_check_area(CCMMosaic* self);
 static void ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display);
 static void ccm_mosaic_on_key_press(CCMMosaic* self);
 
@@ -450,7 +451,7 @@ ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
 						const cairo_rectangle_t* area = ccm_window_get_area(window);
 	
 						if (!area) break;
-						
+												
 						ccm_mosaic_simulate_enter_leave_event(self, cpt,
 															  button_event->x, 
 															  button_event->y,
@@ -513,6 +514,7 @@ ccm_mosaic_on_key_press(CCMMosaic* self)
 		ccm_mosaic_create_window(self);
 		self->priv->clean_screen = TRUE;
 		self->priv->nb_areas = 0;
+		ccm_mosaic_check_area(self);
 	}
 	else
 	{
@@ -555,6 +557,8 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	self->priv->keybind = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
 	g_free(shortcut);
 	
+	g_signal_connect_swapped(self->priv->screen, "window-destroyed", 
+							 G_CALLBACK(ccm_mosaic_check_area), self);
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_mosaic_on_key_press), self);
 	g_signal_connect_swapped(display, "event", 
@@ -676,7 +680,67 @@ ccm_mosaic_get_damaged_area(CCMMosaic* self, CCMMosaicArea* area)
 	
 	return damaged;
 }
+
+static void
+ccm_mosaic_check_area(CCMMosaic* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	if (self->priv->enabled) 
+	{
+		GList* item = ccm_screen_get_windows(self->priv->screen);
+		gboolean changed = FALSE;
+		gint nb_windows = 0;
+
+		for (;item; item = item->next)
+		{
+			CCMWindowType type = ccm_window_get_hint_type (item->data);
+			if (CCM_WINDOW_XWINDOW(item->data) != self->priv->window &&
+				ccm_window_is_viewable(item->data) &&
+				ccm_window_is_decorated(item->data) && 
+				(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG)) 
+			{
+				gint cpt;
+				gboolean found = FALSE;
+				
+				for (cpt = 0; cpt < self->priv->nb_areas && !found; cpt++)
+					found = self->priv->areas[cpt].window == item->data;
+				
+				changed |= !found;
+				nb_windows++;
+			}
+		}
+		if (!nb_windows)
+		{
+			CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
+	
+			self->priv->enabled = FALSE;
+			cairo_surface_destroy (self->priv->surface);
+			self->priv->surface = NULL;
+			XDestroyWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
+			self->priv->window = None;
+			if (self->priv->areas)
+			{
+				g_free(self->priv->areas);
+				self->priv->areas = NULL;
+			}
+			self->priv->nb_areas = 0;
+			ccm_screen_damage (self->priv->screen);
+		}
+		else if (nb_windows != self->priv->nb_areas || changed) 
+		{
+			cairo_t* ctx = cairo_create (self->priv->surface);
+			
+			ccm_mosaic_create_areas(self, nb_windows);
 							
+			cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
+			cairo_paint(ctx);
+			cairo_destroy (ctx);
+			ccm_screen_damage (self->priv->screen);
+		}
+	}
+}
+
 static gboolean
 ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* target,
 					  cairo_surface_t* surface, gboolean y_invert)
@@ -733,7 +797,8 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 	pattern = cairo_get_source (ctx);
 	cairo_pattern_set_filter (pattern, CAIRO_FILTER_GOOD);
 	cairo_paint (ctx);
-/*	cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
+#if 0
+	cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
 	static gint i = 0;
 
 	switch (i)
@@ -753,10 +818,26 @@ ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* targe
 		default:
 			break;
 	}
-	cairo_paint(ctx);*/
+	cairo_paint(ctx);
+#endif
 	cairo_destroy (ctx);
 	
 	return TRUE;
+}
+
+static gboolean
+ccm_mosaic_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* screen,
+							 CCMWindow* window)
+{
+	CCMMosaic* self = CCM_MOSAIC (plugin);
+	gboolean ret;
+	
+	ret = ccm_screen_plugin_add_window(CCM_SCREEN_PLUGIN_PARENT (plugin), 
+									   screen, window);
+
+	ccm_mosaic_check_area(self);
+	
+	return ret;
 }
 
 static gboolean
@@ -765,53 +846,7 @@ ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 {
 	CCMMosaic* self = CCM_MOSAIC (plugin);
 	CCMRegion* damaged = NULL;
-	gboolean ret = FALSE;
-	gint nb_windows = 0;
-		
-	if (self->priv->enabled) 
-	{
-		GList* item = ccm_screen_get_windows(screen);
-		
-		for (;item; item = item->next)
-		{
-			CCMWindowType type = ccm_window_get_hint_type (item->data);
-			if (CCM_WINDOW_XWINDOW(item->data) != self->priv->window &&
-				ccm_window_is_viewable(item->data) &&
-				ccm_window_is_decorated(item->data) && 
-				(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG)) 
-			{
-				nb_windows++;
-			}
-		}
-		if (!nb_windows)
-		{
-			CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	
-			self->priv->enabled = FALSE;
-			cairo_surface_destroy (self->priv->surface);
-			self->priv->surface = NULL;
-			XDestroyWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
-			self->priv->window = None;
-			if (self->priv->areas)
-			{
-				g_free(self->priv->areas);
-				self->priv->areas = NULL;
-			}
-			self->priv->nb_areas = 0;
-			ccm_screen_damage (screen);
-		}
-		else if (nb_windows != self->priv->nb_areas) 
-		{
-			cairo_t* ctx = cairo_create (self->priv->surface);
-			
-			ccm_mosaic_create_areas(self, nb_windows);
-							
-			cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
-			cairo_paint(ctx);
-			cairo_destroy (ctx);
-			ccm_screen_damage (screen);
-		}
-	}
+	gboolean ret = FALSE;		
 	
 	if (self->priv->damage)
 	{
@@ -875,20 +910,30 @@ ccm_mosaic_screen_damage(CCMScreenPlugin* plugin, CCMScreen* screen,
 		if (win_area)
 		{
 			GList* item = ccm_screen_get_windows(self->priv->screen);
+			CCMRegion* damaged = ccm_mosaic_get_damaged_area(self, win_area);
+			gboolean top = FALSE;
+						
 			for (;item; item = item->next)
 			{
 				if (ccm_window_is_viewable(item->data))
 				{
 					gboolean found = item->data == win_area->window;
-				
-					if (found) break;
+					top |= item->data == win_area->window;
+					
 					for (cpt = 0; cpt < self->priv->nb_areas && !found; cpt++)
 						found = self->priv->areas[cpt].window == item->data;
 					
 					if (!found)
-						ccm_drawable_damage_region_silently(item->data, area);
+					{
+						ccm_drawable_damage_region_silently(item->data, 
+															damaged);
+						if (!top)
+							ccm_drawable_damage_region_silently(item->data, 
+																area);
+					}
 				}
 			}
+			ccm_region_destroy(damaged);
 		}
 		else
 		{
@@ -904,8 +949,8 @@ ccm_mosaic_screen_damage(CCMScreenPlugin* plugin, CCMScreen* screen,
 					CCMRegion* tmp = NULL;
 					if (self->priv->areas[cpt].window)
 					{
-						g_object_get(G_OBJECT(self->priv->areas[cpt].window), "damaged",
-									 &tmp, NULL);
+						g_object_get(G_OBJECT(self->priv->areas[cpt].window), 
+									 "damaged", &tmp, NULL);
 					}
 					if (tmp) damaged[cpt] = ccm_region_copy(tmp);
 				}
@@ -980,7 +1025,7 @@ ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface)
 {
 	iface->load_options 	= ccm_mosaic_screen_load_options;
 	iface->paint 			= ccm_mosaic_screen_paint;
-	iface->add_window 		= NULL;
+	iface->add_window 		= ccm_mosaic_screen_add_window;
 	iface->remove_window 	= NULL;
 	iface->damage			= ccm_mosaic_screen_damage;
 }
@@ -997,4 +1042,5 @@ ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface)
 	iface->move				 = NULL;
 	iface->resize			 = NULL;
 	iface->set_opaque_region = NULL;
+	iface->get_origin		 = NULL;
 }

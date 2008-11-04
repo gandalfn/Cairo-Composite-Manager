@@ -153,7 +153,7 @@ ccm_magnifier_init (CCMMagnifier *self)
 	self->priv->damaged = NULL;
 	self->priv->keybind = NULL;
 	self->priv->surface_window_info = NULL;
-	self->priv->timeline = ccm_timeline_new_for_duration(5000);
+	self->priv->timeline = ccm_timeline_new_for_duration(3500);
 	g_object_set(G_OBJECT(self->priv->timeline), "fps", 30, NULL);
 	g_signal_connect_swapped(self->priv->timeline, "new-frame", 
 							 G_CALLBACK(ccm_magnifier_on_new_frame), 
@@ -1189,4 +1189,5 @@ ccm_magnifier_window_iface_init(CCMWindowPluginClass* iface)
 	iface->move				 = NULL;
 	iface->resize			 = NULL;
 	iface->set_opaque_region = NULL;
+	iface->get_origin		 = NULL;
 }
