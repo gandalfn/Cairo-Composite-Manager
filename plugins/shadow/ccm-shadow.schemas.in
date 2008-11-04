@@ -28,7 +28,7 @@
          <applyto>/apps/cairo-compmgr/default/shadow/color</applyto>
          <owner>gnome</owner>
          <type>string</type>
-		 <default>#767676</default>
+		 <default>#404040</default>
          <locale name="C">
             <short>Shadow color</short>
             <long>Shadow color</long>

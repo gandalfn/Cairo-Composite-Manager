@@ -1,5 +1,12 @@
 2008-11-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_need_shadow):
+	  - Refine the window filter for shadow.
+	* plugins/shadow/ccm-shadow.schemas.in:
+	  - Set default color shadow more dark.
+
+2008-11-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* lib/ccm-cairo-utils.c (kernel_1d_new), (kernel_1d_delete),
 	(cairo_image_surface_blur):
 	* lib/ccm-cairo-utils.h:

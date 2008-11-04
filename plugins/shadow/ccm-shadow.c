@@ -381,11 +381,9 @@ ccm_shadow_need_shadow(CCMWindow* window)
 	return !ccm_window_is_input_only (window) &&
 		   (ccm_window_is_decorated (window) || 
 		    (type != CCM_WINDOW_TYPE_NORMAL && 
-			 type != CCM_WINDOW_TYPE_DIALOG)) && 
-		   (type != CCM_WINDOW_TYPE_DOCK || opaque) &&
-		   ((type != CCM_WINDOW_TYPE_DOCK && opaque) || 
-			(!ccm_window_skip_taskbar (window) &&   
-			 !ccm_window_skip_pager (window))) &&   
+			 type != CCM_WINDOW_TYPE_DIALOG && opaque)) && 
+			((type == CCM_WINDOW_TYPE_DOCK && opaque) ||
+			 type != CCM_WINDOW_TYPE_DOCK) &&
 		   (ccm_window_is_managed(window) ||   
 			type == CCM_WINDOW_TYPE_DOCK ||
 			type == CCM_WINDOW_TYPE_DROPDOWN_MENU || 
