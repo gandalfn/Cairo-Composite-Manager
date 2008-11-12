@@ -1,3 +1,10 @@
+2008-11-09  Nicolas Bruguier  <gandalfn@club-internet.r>
+
+	* configure.ac:
+	  - Don't check for glitz tfp if glitz isn't enabled
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_screen_add_window):
+	  - Check areas only if window can't be added in them
+
 2008-11-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/shadow/ccm-shadow.c (ccm_shadow_need_shadow):

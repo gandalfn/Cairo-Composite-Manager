@@ -831,11 +831,16 @@ ccm_mosaic_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* screen,
 {
 	CCMMosaic* self = CCM_MOSAIC (plugin);
 	gboolean ret;
+	CCMWindowType type = ccm_window_get_hint_type(window);
 	
 	ret = ccm_screen_plugin_add_window(CCM_SCREEN_PLUGIN_PARENT (plugin), 
 									   screen, window);
 
-	ccm_mosaic_check_area(self);
+	if (CCM_WINDOW_XWINDOW(window) != self->priv->window &&
+		ccm_window_is_viewable(window) &&
+		ccm_window_is_decorated(window) && 
+		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG)) 
+			ccm_mosaic_check_area(self);
 	
 	return ret;
 }

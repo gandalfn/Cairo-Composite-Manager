@@ -104,11 +104,11 @@ AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
 
 AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 
-AC_ARG_ENABLE(glitz-tfp,
-  [  --disable-glitz-tfp        Disable glitz tfp],
-  [glitztfpbackend=$enableval], [glitztfpbackend=yes])
-
 if [ test x$glitzbackend = xyes ]; then
+	AC_ARG_ENABLE(glitz-tfp,
+	  [  --disable-glitz-tfp        Disable glitz tfp],
+	  [glitztfpbackend=$enableval], [glitztfpbackend=yes])
+
     if [ test x$glitztfpbackend = xyes ]; then
     	cflags_save=$CFLAGS 
     	libs_save=$LIBS 
