@@ -540,6 +540,7 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	CCMMosaic* self = CCM_MOSAIC(plugin);
 	CCMDisplay* display = ccm_screen_get_display (screen);
 	gint cpt;
+	GError* error = NULL;
 	gchar* shortcut;
 	
 	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
@@ -553,7 +554,14 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	self->priv->screen = screen;
 	shortcut = 
-		ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT]);
+	   ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT], &error);
+	if (error)
+	{
+		g_error_free(error);
+		error = NULL;
+		g_warning("Error on get mosaic shortcut configuration value");
+		shortcut = g_strdup("<Super>Tab");
+	}
 	self->priv->keybind = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
 	g_free(shortcut);
 	
@@ -571,10 +579,20 @@ ccm_mosaic_create_areas(CCMMosaic* self, gint nb_windows)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(nb_windows != 0);
 	
+	GError* error = NULL;
 	int i, j, lines, n;
 	int x, y, width, height;
-    int spacing = ccm_config_get_integer (self->priv->options [CCM_MOSAIC_SPACING]);
+    int spacing = 
+		ccm_config_get_integer (self->priv->options [CCM_MOSAIC_SPACING],
+								&error);
     
+	if (error)
+	{
+		g_error_free(error);
+		error = NULL;
+		g_warning("Error on get mosaic spacing configuration value");
+		spacing = 20;
+	}
 	if (self->priv->areas) g_free(self->priv->areas);
 	self->priv->areas = g_new0(CCMMosaicArea, nb_windows);
     lines = sqrt (nb_windows + 1);

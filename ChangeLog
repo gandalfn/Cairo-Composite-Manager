@@ -1,3 +1,57 @@
+2008-11-14  Nicolas Bruguier  <gandalfn@rohan>
+
+	* lib/ccm-config.c (ccm_config_copy_entry),
+	(ccm_config_error_quark), (ccm_config_new),
+	(ccm_config_get_boolean), (ccm_config_set_boolean),
+	(ccm_config_get_integer), (ccm_config_set_integer),
+	(ccm_config_get_float), (ccm_config_set_float),
+	(ccm_config_get_string), (ccm_config_set_string),
+	(ccm_config_get_string_list), (ccm_config_set_string_list),
+	(ccm_config_get_integer_list), (ccm_config_set_integer_list),
+	(ccm_config_get_color):
+	* lib/ccm-config.h:
+	* plugins/fade/ccm-fade.c (ccm_fade_get_duration),
+	(ccm_fade_window_load_options):
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_load_options),
+	(ccm_freeze_map), (ccm_freeze_add_window):
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_on_key_press),
+	(ccm_magnifier_get_enable), (ccm_magnifier_get_keybind),
+	(ccm_magnifier_get_scale), (ccm_magnifier_get_zoom_quality),
+	(ccm_magnifier_get_shade_desktop), (ccm_magnifier_get_border),
+	(ccm_magnifier_get_restrict_area), (ccm_magnifier_get_size),
+	(ccm_magnifier_screen_load_options):
+	* plugins/menu-animation/ccm-menu-animation.c
+	(ccm_menu_animation_get_duration),
+	(ccm_menu_animation_window_load_options):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_screen_load_options),
+	(ccm_mosaic_create_areas):
+	* plugins/opacity/ccm-opacity.c (ccm_opacity_get_opacity_step),
+	(ccm_opacity_get_opacity), (ccm_opacity_get_increase_keybind),
+	(ccm_opacity_get_decrease_keybind),
+	(ccm_opacity_screen_load_options),
+	(ccm_opacity_window_load_options):
+	* plugins/perf/ccm-perf.c (ccm_perf_screen_load_options):
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_load_options),
+	(ccm_shadow_query_geometry), (ccm_shadow_paint), (ccm_shadow_move),
+	(ccm_shadow_resize):
+	* src/ccm-display.c (ccm_display_set_property),
+	(ccm_display_get_property), (ccm_display_load_config),
+	(ccm_display_init_test), (ccm_display_new):
+	* src/ccm-screen.c (ccm_screen_set_property),
+	(ccm_screen_get_property), (ccm_screen_update_background),
+	(ccm_screen_update_refresh_rate), (ccm_screen_load_config),
+	(ccm_screen_get_window_plugins), (ccm_screen_get_plugins):
+	* src/ccm-tray-icon.c (ccm_tray_icon_enable_ccm_changed),
+	(ccm_tray_icon_new):
+	* src/ccm-tray-menu.c (ccm_tray_menu_ccm_menu_activate),
+	(ccm_tray_menu_enable_ccm_changed), (ccm_tray_menu_new):
+	  - Add ccm-config error handling.
+	* src/ccm-screen.c (ccm_screen_motion_input_redirect),
+	(ccm_screen_button_input_redirect):
+	* configure.ac:
+	* src/ccm.h:
+	  - Add input redirection methods.	  
+
 2008-11-09  Nicolas Bruguier  <gandalfn@club-internet.r>
 
 	* configure.ac:

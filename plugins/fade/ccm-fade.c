@@ -198,10 +198,18 @@ ccm_fade_on_property_changed(CCMFade* self, CCMPropertyType changed,
 static gboolean
 ccm_fade_get_duration(CCMFade* self)
 {
-	gfloat real_duration = 
-		ccm_config_get_float(self->priv->options[CCM_FADE_DURATION]);
+	GError* error = NULL;
+	gfloat real_duration;
 	gfloat duration;
 	
+	real_duration = 
+		ccm_config_get_float(self->priv->options[CCM_FADE_DURATION], &error);
+	if (error)
+	{
+		g_error_free(error);
+		g_warning("Error on get fade duration configuration value");
+		real_duration = 0.25f;
+	}
 	duration = MAX(0.1f, real_duration);
 	duration = MIN(2.0f, real_duration);
 	if (duration != self->priv->duration)
@@ -215,7 +223,7 @@ ccm_fade_get_duration(CCMFade* self)
 		self->priv->duration = duration;
 		if (duration != real_duration)
 			ccm_config_set_float(self->priv->options[CCM_FADE_DURATION],
-								 self->priv->duration);
+								 self->priv->duration, NULL);
 		
 		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), refresh_rate);
 	
@@ -252,6 +260,7 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "fade", 
 												  CCMFadeOptions[cpt]);
+		if (self->priv->options[cpt])
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_fade_on_option_changed), 
 								 self);

@@ -24,6 +24,8 @@
 
 #define CCM_CONFIG_PREFIX "/apps/cairo-compmgr"
 
+#define CCM_CONFIG_ERROR_QUARK g_quark_from_string("CCMConfigError")
+
 enum
 {
 	CHANGED,
@@ -93,26 +95,36 @@ ccm_config_on_change(GConfClient *client, guint cnxn_id, GConfEntry * entry,
 	g_signal_emit(self, signals[CHANGED], 0, NULL);
 }
 
-static void
+static gboolean
 ccm_config_copy_entry(CCMConfig* self, gchar* src)
 {
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(src != NULL);
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(src != NULL, FALSE);
 	
 	GConfEntry* entry;
-		
+	gboolean ret = FALSE;
+	
 	entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
 								   src, NULL, TRUE, NULL);
-	if (entry)
-	{
+	if (entry && 
 		gconf_engine_associate_schema (CCM_CONFIG_GET_CLASS(self)->client->engine,
 									   self->priv->key,
 									   gconf_entry_get_schema_name (entry),
-									   NULL);
+									   NULL))
+	{
 		gconf_client_set (CCM_CONFIG_GET_CLASS(self)->client, 
 						  self->priv->key, entry->value, NULL);
-		gconf_entry_unref(entry);
+		ret = TRUE;
 	}
+	if (entry) gconf_entry_unref(entry);
+	
+	return ret;
+}
+
+GQuark
+ccm_config_error_quark()
+{
+	return CCM_CONFIG_ERROR_QUARK;
 }
 
 CCMConfig*
@@ -139,7 +151,12 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 				gchar * default_config = g_strdup_printf("%s/default/%s/%s", 
 														 CCM_CONFIG_PREFIX, 
 														 extension, key);
-				ccm_config_copy_entry(self, default_config);
+				if (!ccm_config_copy_entry(self, default_config))
+				{
+					g_free(default_config);
+					g_object_unref(self);
+					return NULL;
+				}
 				g_free(default_config);
 			}
 			if (entry) gconf_entry_unref(entry);
@@ -155,7 +172,12 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 			{
 				gchar * default_config = g_strdup_printf("%s/default/screen/%s", 
 														 CCM_CONFIG_PREFIX, key);
-				ccm_config_copy_entry(self, default_config);
+				if (ccm_config_copy_entry(self, default_config))
+				{
+					g_free(default_config);
+					g_object_unref(self);
+					return NULL;
+				}
 				g_free(default_config);
 			}
 			if (entry) gconf_entry_unref(entry);
@@ -177,135 +199,223 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 }
 
 gboolean
-ccm_config_get_boolean(CCMConfig* self)
+ccm_config_get_boolean(CCMConfig* self, GError** error)
 {
-	g_return_val_if_fail(self != NULL, FALSE);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		
+		return FALSE;
+	}
 	
 	return gconf_client_get_bool(CCM_CONFIG_GET_CLASS(self)->client, 
-								 self->priv->key, NULL);
+								 self->priv->key, error);
 }
 	
 void
-ccm_config_set_boolean(CCMConfig* self, gboolean value)
+ccm_config_set_boolean(CCMConfig* self, gboolean value, GError** error)
 {
-	g_return_if_fail(self != NULL);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+	}
 	
 	gconf_client_set_bool(CCM_CONFIG_GET_CLASS(self)->client, self->priv->key, 
-						  value, NULL);
+						  value, error);
 }
 	
 gint
-ccm_config_get_integer(CCMConfig* self)
+ccm_config_get_integer(CCMConfig* self, GError** error)
 {
-	g_return_val_if_fail(self != NULL, 0);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		return 0;
+	}
 	
 	return gconf_client_get_int(CCM_CONFIG_GET_CLASS(self)->client, 
-								self->priv->key, NULL);
+								self->priv->key, error);
 }
 	
 void
-ccm_config_set_integer(CCMConfig* self, gint value)
+ccm_config_set_integer(CCMConfig* self, gint value, GError** error)
 {
-	g_return_if_fail(self != NULL);
-		
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+	}
+	
 	gconf_client_set_int(CCM_CONFIG_GET_CLASS(self)->client, 
-						 self->priv->key, value, NULL);
+						 self->priv->key, value, error);
 }
 	
 gfloat
-ccm_config_get_float(CCMConfig* self)
+ccm_config_get_float(CCMConfig* self, GError** error)
 {
-	g_return_val_if_fail(self != NULL, 0.0);
-		
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		return 0.0f;
+	}
+	
 	return gconf_client_get_float(CCM_CONFIG_GET_CLASS(self)->client, 
-								  self->priv->key, NULL);
+								  self->priv->key, error);
 }
 	
 void
-ccm_config_set_float(CCMConfig* self, gfloat value)
+ccm_config_set_float(CCMConfig* self, gfloat value, GError** error)
 {
-	g_return_if_fail(self != NULL);
-		
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+	}
+	
 	gconf_client_set_float(CCM_CONFIG_GET_CLASS(self)->client, 
-						   self->priv->key, value, NULL);
+						   self->priv->key, value, error);
 }
 	
 gchar *
-ccm_config_get_string(CCMConfig* self)
+ccm_config_get_string(CCMConfig* self, GError** error)
 {
-	g_return_val_if_fail(self != NULL, NULL);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		return NULL;
+	}
 		
 	return gconf_client_get_string(CCM_CONFIG_GET_CLASS(self)->client,
-								   self->priv->key, NULL);
+								   self->priv->key, error);
 }
 	
 void
-ccm_config_set_string(CCMConfig* self, gchar * value)
+ccm_config_set_string(CCMConfig* self, gchar * value, GError** error)
 {
-	g_return_if_fail(self != NULL);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+	}
 		
 	if (value)
 		gconf_client_set_string(CCM_CONFIG_GET_CLASS(self)->client, 
-								self->priv->key, value, NULL);
+								self->priv->key, value, error);
 }
 	
 GSList*
-ccm_config_get_string_list(CCMConfig* self)
+ccm_config_get_string_list(CCMConfig* self, GError** error)
 {
-	g_return_val_if_fail(self != NULL, NULL);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		return NULL;
+	}
 		
 	return gconf_client_get_list(CCM_CONFIG_GET_CLASS(self)->client, 
-								 self->priv->key, GCONF_VALUE_STRING, NULL);
+								 self->priv->key, GCONF_VALUE_STRING, error);
 }
 	
 void
-ccm_config_set_string_list(CCMConfig* self, GSList * value)
+ccm_config_set_string_list(CCMConfig* self, GSList * value, GError** error)
 {
-	g_return_if_fail(self != NULL);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+	}
 		
 	gconf_client_set_list(CCM_CONFIG_GET_CLASS(self)->client, 
 						  self->priv->key, GCONF_VALUE_STRING, 
-						  (GSList *)value, NULL);
+						  (GSList *)value, error);
 }
 
 GSList*
-ccm_config_get_integer_list(CCMConfig* self)
+ccm_config_get_integer_list(CCMConfig* self, GError** error)
 {
-	g_return_val_if_fail(self != NULL, NULL);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		return NULL;
+	}
 		
 	return gconf_client_get_list(CCM_CONFIG_GET_CLASS(self)->client, 
-								 self->priv->key, GCONF_VALUE_INT, NULL);
+								 self->priv->key, GCONF_VALUE_INT, error);
 }
 	
 void
-ccm_config_set_integer_list(CCMConfig* self, GSList * value)
+ccm_config_set_integer_list(CCMConfig* self, GSList * value, GError** error)
 {
-	g_return_if_fail(self != NULL);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+	}
 		
 	gconf_client_set_list(CCM_CONFIG_GET_CLASS(self)->client, 
 						  self->priv->key, GCONF_VALUE_INT, 
-						  (GSList *)value, NULL);
+						  (GSList *)value, error);
 }
 
 GdkColor*
-ccm_config_get_color(CCMConfig* self)
+ccm_config_get_color(CCMConfig* self, GError** error)
 {
-	gchar* value = ccm_config_get_string (self);
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		return NULL;
+	}
+	
+	gchar* value = ccm_config_get_string (self, error);
 	GdkColor* color = NULL;
 	
 	if (value && value[0] == '#')
-    {
-        gint c[3];
+	{
+	    gint c[3];
 
-    	if (sscanf(value, "#%2x%2x%2x", &c[0], &c[1], &c[2]) == 3)
-    	{
+		if (sscanf(value, "#%2x%2x%2x", &c[0], &c[1], &c[2]) == 3)
+		{
 			color = g_new0(GdkColor, 1);
-	
+
 			color->red = c[0] << 8 | c[0];
-            color->green = c[1] << 8 | c[1];
-            color->blue = c[2] << 8 | c[2];
-    	}
-    }
+	        color->green = c[1] << 8 | c[1];
+	        color->blue = c[2] << 8 | c[2];
+		}
+	}
 	if (value) g_free(value);
 	
 	return color;

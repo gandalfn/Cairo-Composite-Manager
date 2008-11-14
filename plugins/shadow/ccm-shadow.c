@@ -397,6 +397,7 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
+	GError* error = NULL;
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; cpt++)
@@ -409,9 +410,34 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	self->priv->window = window;
-	self->priv->border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
-	self->priv->radius = ccm_config_get_integer(self->priv->options[CCM_SHADOW_RADIUS]);
-	self->priv->color = ccm_config_get_color(self->priv->options[CCM_SHADOW_COLOR]);
+	self->priv->border = 
+		ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER], &error);
+	if (error)
+	{
+		g_warning("Error on get shadow border configuration value");
+		g_error_free(error);
+		error = NULL;
+		self->priv->border = 14;
+	}
+	self->priv->radius = 
+		ccm_config_get_integer(self->priv->options[CCM_SHADOW_RADIUS], &error);
+	if (error)
+	{
+		g_warning("Error on get shadow radius configuration value");
+		g_error_free(error);
+		error = NULL;
+		self->priv->border = 8;
+	}
+	self->priv->color = 
+		ccm_config_get_color(self->priv->options[CCM_SHADOW_COLOR], &error);
+	if (error)
+	{
+		g_warning("Error on get shadow color configuration value");
+		g_error_free(error);
+		error = NULL;
+		self->priv->color = g_new0(GdkColor, 1);
+	}
+
 }
 
 static CCMRegion*
@@ -435,14 +461,13 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 												window);
 	if (geometry && ccm_shadow_need_shadow(window))
 	{
-		int border = 
-				ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
-	
 		self->priv->geometry = ccm_region_copy (geometry);
 		ccm_region_get_clipbox(geometry, &area);
 		ccm_shadow_create_shadow(self, window);
-		ccm_region_offset(geometry, -border / 2, -border / 2);
-		ccm_region_resize(geometry, area.width + border, area.height + border);
+		ccm_region_offset(geometry, -self->priv->border / 2, 
+						  -self->priv->border / 2);
+		ccm_region_resize(geometry, area.width + self->priv->border, 
+						  area.height + self->priv->border);
 	}
 	
 	return geometry;
@@ -485,8 +510,6 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		cairo_rectangle_t* rects;
 		gint cpt, nb_rects;
 		cairo_matrix_t matrix, initial;
-		int border = 
-				ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
 			
 		cairo_save(context);
 			
@@ -500,7 +523,8 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		cairo_clip(context);
 		g_free(rects);
 		
-		cairo_matrix_translate(&matrix, border / 2, border / 2);
+		cairo_matrix_translate(&matrix, self->priv->border / 2, 
+							   self->priv->border / 2);
 		ccm_window_set_transform(window, &matrix, FALSE);
 		ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
 									  window, context, surface, y_invert);
@@ -523,18 +547,12 @@ ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMShadow* self = CCM_SHADOW(plugin);
 	cairo_rectangle_t area;
 	
-	if (self->priv->shadow[0])
+	if (self->priv->geometry)
 	{
-		if (self->priv->geometry)
-		{
-			int border = 
-				ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
-		
-			ccm_region_get_clipbox(self->priv->geometry, &area);
-			ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
-			x -= border / 2;
-			y -= border / 2;
-		}
+		ccm_region_get_clipbox(self->priv->geometry, &area);
+		ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
+		x -= self->priv->border / 2;
+		y -= self->priv->border / 2;
 	}	
 	ccm_window_plugin_move (CCM_WINDOW_PLUGIN_PARENT(plugin), window, x, y);
 }
@@ -546,8 +564,7 @@ ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMShadow* self = CCM_SHADOW(plugin);
 	int border = 0;
 	
-	if (self->priv->shadow[0])
-		border = ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER]);
+	if (self->priv->geometry) border = self->priv->border;
 	
 	ccm_window_plugin_resize (CCM_WINDOW_PLUGIN_PARENT(plugin), window,
 							  width + border, height + border);

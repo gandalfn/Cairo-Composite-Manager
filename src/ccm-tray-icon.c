@@ -109,7 +109,7 @@ ccm_tray_icon_on_popup_menu (CCMTrayIcon* self, guint button,
 static void
 ccm_tray_icon_enable_ccm_changed (CCMTrayIcon* self, CCMConfig* config)
 {
-	gboolean enable = ccm_config_get_boolean (self->priv->config);
+	gboolean enable = ccm_config_get_boolean (self->priv->config, NULL);
 	GdkPixbuf * image  = gdk_pixbuf_new_from_file(enable ? CCM_LOGO_ON : CCM_LOGO_OFF,
 												  NULL);
 		
@@ -127,7 +127,7 @@ ccm_tray_icon_new (void)
 	self->priv->config = ccm_config_new (-1, NULL, "enable");
 	g_signal_connect_swapped(self->priv->config, "changed", 
 							 (GCallback)ccm_tray_icon_enable_ccm_changed, self);
-	val = ccm_config_get_boolean (self->priv->config);
+	val = ccm_config_get_boolean (self->priv->config, NULL);
 	
 	/* Create tray menu */
 	self->priv->traymenu = ccm_tray_menu_new();

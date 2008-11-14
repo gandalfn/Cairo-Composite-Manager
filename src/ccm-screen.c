@@ -24,6 +24,7 @@
 #include <X11/Xatom.h>
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/shape.h>
+#include <X11/extensions/XTest.h>
 #include <gdk/gdk.h>
 #include <strings.h>
 
@@ -39,6 +40,8 @@
 #include "ccm-extension-loader.h"
 #include "ccm-keybind.h"
 #include "ccm-timeline.h"
+
+#define DEFAULT_PLUGINS "opacity,fade,shadow,menu-animation,magnifier"
 
 enum
 {
@@ -171,17 +174,35 @@ ccm_screen_set_property(GObject *object,
 	switch (prop_id)
     {
     	case PROP_DISPLAY:
+		{
 			priv->display = g_value_get_pointer (value);
-			break;
+		}
+		break;
 		case PROP_NUMBER:
+		{
 			priv->number = g_value_get_uint (value);
 			priv->xscreen = ScreenOfDisplay(CCM_DISPLAY_XDISPLAY(priv->display),
 											priv->number);
-			break;
+		}
+		break;
 		case PROP_BUFFERED_PIXMAP:
-			priv->buffered = g_value_get_boolean (value) &&
-				ccm_config_get_boolean(priv->options[CCM_SCREEN_USE_BUFFERED]);
-			break;
+		{
+			GError* error = NULL;
+			gboolean use_buffered = 
+				ccm_config_get_boolean(priv->options[CCM_SCREEN_USE_BUFFERED],
+									   &error);
+			if (!error)
+			{
+				priv->buffered = g_value_get_boolean (value) && use_buffered;
+			}
+			else
+			{
+				g_warning("Error on get use buffered key : %s", error->message);
+				g_error_free(error);
+				priv->buffered = g_value_get_boolean (value);
+			}
+		}
+		break;
 		default:
 			break;
     }
@@ -198,39 +219,90 @@ ccm_screen_get_property (GObject* object,
     switch (prop_id)
     {
     	case PROP_DISPLAY:
+		{
 			g_value_set_pointer (value, priv->display);
-			break;
+		}
+		break;
 		case PROP_NUMBER:
+		{
 			g_value_set_uint (value, priv->number);
-			break;
+		}
+		break;
 		case PROP_REFRESH_RATE:
+		{
 			g_value_set_uint (value, priv->refresh_rate);
-			break;
+		}
+		break;
 		case PROP_WINDOW_PLUGINS:
+		{
 			g_value_set_pointer (value, 
-								 ccm_screen_get_window_plugins (CCM_SCREEN(object)));
-			break;
+						ccm_screen_get_window_plugins (CCM_SCREEN(object)));
+		}
+		break;
 		case PROP_BACKEND:
 		{
+			GError* error = NULL;
 			gchar* backend = 
-				ccm_config_get_string(priv->options[CCM_SCREEN_BACKEND]);
-			g_value_set_string (value, backend);
-			g_free(backend);
+				ccm_config_get_string(priv->options[CCM_SCREEN_BACKEND],
+									  &error);
+			if (!error && backend)
+			{
+				g_value_set_string (value, backend);
+			}
+			else
+			{
+				g_warning("Error on get backend value %s", 
+						  error ? error->message : "");
+				if (error) g_error_free(error);
+				g_value_set_string (value, "xrender");
+			}
+			if (backend) g_free(backend);
 			break;
 		}
 		case PROP_NATIVE_PIXMAP_BIND:
-			g_value_set_boolean (value, 
-					ccm_config_get_boolean(priv->options[CCM_SCREEN_PIXMAP]));
-			break;
+		{
+			GError* error = NULL;
+			gboolean native = 
+			   ccm_config_get_boolean(priv->options[CCM_SCREEN_PIXMAP], &error);
+			if (!error)
+			{
+				g_value_set_boolean (value, native);
+			}
+			else
+			{
+				g_warning("Error on get native backend conf : %s", 
+						  error->message);
+				g_error_free(error);
+				g_value_set_boolean (value, TRUE);
+			}
+		}
+		break;
 		case PROP_BUFFERED_PIXMAP:
+		{
 			g_value_set_boolean (value, priv->buffered);
-			break;
+		}
+		break;
 		case PROP_INDIRECT_RENDERING:
-			g_value_set_boolean (value, 
-					ccm_config_get_boolean(priv->options[CCM_SCREEN_INDIRECT]));
-			break;
+		{
+			GError* error = NULL;
+			gboolean indirect = 
+				ccm_config_get_boolean(priv->options[CCM_SCREEN_INDIRECT],
+									   &error);
+			if (!error)
+			{
+				g_value_set_boolean (value, indirect);
+			}
+			else
+			{
+				g_warning("Error on get indirect rendering conf : %s", 
+						  error->message);
+				g_error_free(error);
+				g_value_set_boolean (value, TRUE);
+			}
+		}
+		break;
 		default:
-			break;
+		break;
     }
 }
 
@@ -441,16 +513,39 @@ ccm_screen_update_background (CCMScreen* self)
 	g_return_if_fail(self != NULL);
 	
 	gchar* filename = 
-		ccm_config_get_string (self->priv->options[CCM_SCREEN_BACKGROUND]);
+		ccm_config_get_string (self->priv->options[CCM_SCREEN_BACKGROUND], 
+							   NULL);
 	GdkColor* color = 
-		ccm_config_get_color (self->priv->options[CCM_SCREEN_COLOR_BACKGROUND]);
-	int x = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_X]),
-		y = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_Y]);
-	
+		ccm_config_get_color (self->priv->options[CCM_SCREEN_COLOR_BACKGROUND], 
+							  NULL);
+
 	if (filename && color)
 	{
 		cairo_t* ctx;
+		int x, y;
+		GError* error = NULL;
 		
+		x = ccm_config_get_integer(self->priv->options[CCM_SCREEN_BACKGROUND_X],
+								   &error);		
+		if (error)
+		{
+			g_warning("Errror on get background x pos");
+			g_error_free(error);
+			g_free(filename);
+			g_free(color);
+			return;
+		}
+		y = ccm_config_get_integer(self->priv->options[CCM_SCREEN_BACKGROUND_Y],
+								   &error);
+		if (error)
+		{
+			g_warning("Errror on get background y pos");
+			g_error_free(error);
+			g_free(filename);
+			g_free(color);
+			return;
+		}	
+	
 		if (self->priv->background)
 			g_object_unref(self->priv->background);
 		
@@ -507,9 +602,17 @@ ccm_screen_update_refresh_rate(CCMScreen* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
+	GError* error = NULL;
 	guint refresh_rate =
-		ccm_config_get_integer (self->priv->options[CCM_SCREEN_REFRESH_RATE]);
+		ccm_config_get_integer (self->priv->options[CCM_SCREEN_REFRESH_RATE], 
+								&error);
 	
+	if (error)
+	{
+		g_warning("Error on get refresh rate configuration");
+		g_error_free(error);
+		refresh_rate = 60;
+	}
 	refresh_rate = MAX(20, refresh_rate);
 	refresh_rate = MIN(100, refresh_rate);
 	
@@ -517,7 +620,7 @@ ccm_screen_update_refresh_rate(CCMScreen* self)
 	{
 		self->priv->refresh_rate = refresh_rate;
 		ccm_config_set_integer (self->priv->options[CCM_SCREEN_REFRESH_RATE], 
-								refresh_rate);
+								refresh_rate, NULL);
 		if (self->priv->paint) 
 		{
 			ccm_timeline_stop(self->priv->paint);
@@ -543,6 +646,7 @@ ccm_screen_load_config(CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
 	
+	GError* error = NULL;
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; cpt++)
@@ -554,7 +658,14 @@ ccm_screen_load_config(CCMScreen* self)
 								 self);
 	}
 	self->priv->buffered = 
-		ccm_config_get_boolean(self->priv->options[CCM_SCREEN_USE_BUFFERED]);
+		ccm_config_get_boolean(self->priv->options[CCM_SCREEN_USE_BUFFERED],
+							   &error);
+	if (error)
+	{
+		g_warning("Error on get use buffered configuration");
+		g_error_free(error);
+		self->priv->buffered = TRUE;
+	}
 	ccm_screen_update_refresh_rate (self);
 }
 
@@ -1253,13 +1364,30 @@ ccm_screen_get_window_plugins(CCMScreen* self)
 	g_return_val_if_fail(self != NULL, NULL);
 	
 	GSList* filter, *plugins = NULL;
+	GError* error = NULL;
 	
-	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
-	plugins = ccm_extension_loader_get_window_plugins(self->priv->plugin_loader,
+	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS],
+										&error);
+	if (error)
+	{
+		gchar** default_plugins = g_strsplit(DEFAULT_PLUGINS, ",", -1);
+		gint cpt;
+		
+		g_error_free(error);
+		g_warning("Error on get plugins list set default");
+		for (cpt = 0; default_plugins[cpt]; cpt++)
+		{
+			filter = g_slist_append(filter, g_strdup(default_plugins[cpt]));
+		}
+		g_strfreev(default_plugins);
+	}
+	if (filter)
+	{
+		plugins = ccm_extension_loader_get_window_plugins(self->priv->plugin_loader,
 													  filter);
-	g_slist_foreach(filter, (GFunc)g_free, NULL);
-	g_slist_free(filter);
-	
+		g_slist_foreach(filter, (GFunc)g_free, NULL);
+		g_slist_free(filter);
+	}
 	return plugins;
 }
 
@@ -1269,27 +1397,45 @@ ccm_screen_get_plugins(CCMScreen* self)
 	g_return_if_fail(self != NULL);
 	
 	GSList* filter = NULL, *plugins = NULL, *item;
+	GError* error = NULL;
 	
 	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin))
 		g_object_unref(self->priv->plugin);
 	
 	self->priv->plugin = (CCMScreenPlugin*)self;
 	
-	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS]);
-	plugins = ccm_extension_loader_get_screen_plugins(self->priv->plugin_loader,
-													  filter);
-	g_slist_foreach(filter, (GFunc)g_free, NULL);
-	g_slist_free(filter);
-	for (item = plugins; item; item = item->next)
+	filter = ccm_config_get_string_list(self->priv->options[CCM_SCREEN_PLUGINS],
+										&error);
+	if (error)
 	{
-		GType type = GPOINTER_TO_INT(item->data);
-		GObject* prev = G_OBJECT(self->priv->plugin);
-		CCMScreenPlugin* plugin = g_object_new(type, "parent", prev, NULL);
+		gchar** default_plugins = g_strsplit(DEFAULT_PLUGINS, ",", -1);
+		gint cpt;
 		
-		if (plugin) self->priv->plugin = plugin;
+		g_error_free(error);
+		g_warning("Error on get plugins list set default");
+		for (cpt = 0; default_plugins[cpt]; cpt++)
+		{
+			filter = g_slist_append(filter, g_strdup(default_plugins[cpt]));
+		}
+		g_strfreev(default_plugins);
 	}
-	g_slist_free(plugins);
-	ccm_screen_plugin_load_options(self->priv->plugin, self);
+	if (filter)
+	{
+		plugins = ccm_extension_loader_get_screen_plugins(self->priv->plugin_loader,
+														  filter);
+		g_slist_foreach(filter, (GFunc)g_free, NULL);
+		g_slist_free(filter);
+		for (item = plugins; item; item = item->next)
+		{
+			GType type = GPOINTER_TO_INT(item->data);
+			GObject* prev = G_OBJECT(self->priv->plugin);
+			CCMScreenPlugin* plugin = g_object_new(type, "parent", prev, NULL);
+		
+			if (plugin) self->priv->plugin = plugin;
+		}
+		if (plugins) g_slist_free(plugins);
+		ccm_screen_plugin_load_options(self->priv->plugin, self);
+	}
 }
 
 static void
@@ -2222,4 +2368,29 @@ ccm_screen_query_pointer(CCMScreen* self, CCMWindow** below,
 	}
 	
 	return ret;
+}
+
+void
+ccm_screen_motion_input_redirect(CCMScreen* self, cairo_matrix_t* transform,
+								 int x, int y)
+{
+	g_return_if_fail(self != NULL);
+	
+	double x_redirect = x, y_redirect = y;
+	
+	cairo_matrix_transform_point(transform, &x_redirect, &y_redirect);
+	XTestFakeMotionEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+						 self->priv->number, 
+						 (int)x_redirect, (int)y_redirect, 0);
+}
+
+void
+ccm_screen_button_input_redirect(CCMScreen* self, cairo_matrix_t* transform,
+							     int x, int y, int button, gboolean pressed)
+{
+	g_return_if_fail(self != NULL);
+	
+	ccm_screen_motion_input_redirect(self, transform, x, y);
+	XTestFakeButtonEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+						 button, pressed, 0);
 }

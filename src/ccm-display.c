@@ -26,6 +26,7 @@
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xfixes.h>
+#include <X11/extensions/XTest.h>
 #include <X11/extensions/shape.h>
 #include <gtk/gtk.h>
 
@@ -88,6 +89,7 @@ struct _CCMDisplayPrivate
 	CCMExtension shm;
 	gboolean	 shm_shared_pixmap;
 	CCMExtension fixes;
+	CCMExtension test;
 	
 	gboolean 	 use_shm;
 	
@@ -111,10 +113,12 @@ ccm_display_set_property(GObject *object,
 	switch (prop_id)
     {
     	case PROP_XDISPLAY:
+		{
 			priv->xdisplay = g_value_get_pointer (value);
-			break;
+		}
+		break;
 		default:
-			break;
+		break;
     }
 }
 
@@ -129,18 +133,34 @@ ccm_display_get_property (GObject* object,
     switch (prop_id)
     {
     	case PROP_XDISPLAY:
+		{
 			g_value_set_pointer (value, priv->xdisplay);
-			break;
+		}
+		break;
 		case PROP_USE_XSHM:
+		{
 			g_value_set_boolean (value, priv->use_shm);
-			break;
+		}
+		break;
 		case PROP_SHM_SHARED_PIXMAP:
-			g_value_set_boolean (value, 
-				ccm_config_get_boolean(priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
-		   		priv->shm.available && priv->shm_shared_pixmap);
-			break;
+		{
+			GError* error = NULL;
+			gboolean xshm = 
+			  ccm_config_get_boolean(priv->options[CCM_DISPLAY_OPTION_USE_XSHM],
+									 &error);
+				
+			if (error)
+			{
+				g_warning("Error on get xshm configuration value");
+				g_error_free(error);
+				xshm = FALSE;
+			}
+			g_value_set_boolean (value, xshm && priv->shm.available && 
+								 priv->shm_shared_pixmap);
+		}
+		break;
 		default:
-			break;
+		break;
     }
 }
 
@@ -248,8 +268,9 @@ ccm_display_load_config(CCMDisplay* self)
 		self->priv->options[cpt] = ccm_config_new(-1, NULL, 
 												  CCMDisplayOptions[cpt]);
 	}
-	self->priv->use_shm = ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM]) &&
-						  self->priv->shm.available;
+	self->priv->use_shm = 
+		ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM],
+							   NULL) &&	self->priv->shm.available;
 }
 
 static gboolean
@@ -334,6 +355,26 @@ ccm_display_init_xfixes(CCMDisplay *self)
 		return TRUE;
     }
 	
+    return FALSE;
+}
+
+static gboolean
+ccm_display_init_test(CCMDisplay *self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	int major, minor;
+	
+	if (XTestQueryExtension (self->priv->xdisplay,
+							 &self->priv->test.event_base,
+							 &self->priv->test.error_base,
+							 &major, &minor))
+    {
+		self->priv->test.available = TRUE;
+		ccm_debug("TEST ERROR BASE: %i", self->priv->test.error_base);
+		return TRUE;
+    }
+    
     return FALSE;
 }
 
@@ -441,6 +482,13 @@ ccm_display_new(gchar* display)
 		return NULL;
 	}
 	
+	if (!ccm_display_init_test(self))
+	{
+		g_object_unref(self);
+		g_warning("TEST init failed for %s", display);
+		return NULL;
+	}
+	
 	ccm_display_load_config(self);
 	
 	XSetErrorHandler(ccm_display_error_handler);
@@ -448,7 +496,7 @@ ccm_display_new(gchar* display)
 	self->priv->nb_screens = ScreenCount(self->priv->xdisplay);
 	self->priv->screens = g_slice_alloc0(sizeof(CCMScreen*) * (self->priv->nb_screens + 1));
 	
-	unmanaged = ccm_config_get_integer_list(self->priv->options[CCM_DISPLAY_UNMANAGED_SCREEN]);
+	unmanaged = ccm_config_get_integer_list(self->priv->options[CCM_DISPLAY_UNMANAGED_SCREEN], NULL);
 	
 	for (cpt = 0; cpt < self->priv->nb_screens; cpt++)
 	{

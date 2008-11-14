@@ -235,7 +235,8 @@ ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	g_signal_connect_swapped(G_OBJECT(display), "event", 
 							 G_CALLBACK(ccm_freeze_on_event), self);
 	
-	duration = ccm_config_get_float(self->priv->options[CCM_FREEZE_DURATION]);
+	duration = ccm_config_get_float(self->priv->options[CCM_FREEZE_DURATION],
+									NULL);
 	self->priv->timeline = ccm_timeline_new((int)(60.0 * duration), 60);
 		
 	g_signal_connect_swapped(self->priv->timeline, "new-frame", 
@@ -284,7 +285,8 @@ ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		ccm_window_is_managed (self->priv->window))	
 	{
 		gint delay = 
-			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
+			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY],
+									NULL);
 		
 		self->priv->alive = TRUE;
 		self->priv->id_ping = g_timeout_add_full (G_PRIORITY_LOW, delay * 1000, 
@@ -326,7 +328,8 @@ ccm_freeze_add_window(CCMScreenPlugin* plugin, CCMScreen* screen,
 		ccm_window_is_managed (self->priv->window))	
 	{
 		gint delay = 
-			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY]);
+			ccm_config_get_integer (self->priv->options[CCM_FREEZE_DELAY],
+									NULL);
 		
 		self->priv->alive = TRUE;
 		self->priv->id_ping = g_timeout_add_full (G_PRIORITY_LOW, delay * 1000, 

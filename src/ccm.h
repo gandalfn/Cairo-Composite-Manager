@@ -201,6 +201,13 @@ void            ccm_screen_activate_window      (CCMScreen* self,
 gboolean        ccm_screen_query_pointer        (CCMScreen* self, 
                                                  CCMWindow** below, 
                                                  gint *x, gint *y);
+void			ccm_screen_motion_input_redirect(CCMScreen* self, 
+												 cairo_matrix_t* transform,
+												 int x, int y);
+void			ccm_screen_button_input_redirect(CCMScreen* self, 
+												 cairo_matrix_t* transform,
+												 int x, int y, int button, 
+												 gboolean pressed);
 /******************************************************************************/
 
 /****************************** Drawable **************************************/

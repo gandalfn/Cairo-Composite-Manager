@@ -292,10 +292,18 @@ ccm_menu_animation_on_error (CCMMenuAnimation* self, CCMWindow* window)
 static gboolean
 ccm_menu_animation_get_duration(CCMMenuAnimation* self)
 {
+	GError* error = NULL;
 	gfloat real_duration = 
-		ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION]);
+		ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION],
+							 &error);
 	gfloat duration;
 	
+	if (error)
+	{
+		g_error_free(error);
+		g_warning("Error on get menu animation duration configuration value");
+		real_duration = 0.2f;
+	}
 	duration = MAX(0.1f, real_duration);
 	duration = MIN(2.0f, real_duration);
 	if (duration != self->priv->duration)
@@ -310,7 +318,7 @@ ccm_menu_animation_get_duration(CCMMenuAnimation* self)
 		self->priv->duration = duration;
 		if (duration != real_duration)
 			ccm_config_set_float(self->priv->options[CCM_MENU_ANIMATION_DURATION],
-								 self->priv->duration);
+								 self->priv->duration, NULL);
 		
 		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), 
 												refresh_rate);
@@ -350,6 +358,7 @@ ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* windo
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "menu-animation", 
 												  CCMMenuAnimationOptions[cpt]);
+		if (self->priv->options[cpt])
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_menu_animation_on_option_changed), 
 								 self);

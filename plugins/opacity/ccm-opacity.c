@@ -187,17 +187,26 @@ ccm_opacity_on_decrease_key_press(CCMOpacity* self)
 static gboolean
 ccm_opacity_get_opacity_step(CCMOpacity* self)
 {
-	gfloat real_step = 
-		ccm_config_get_float (self->priv->options[CCM_OPACITY_STEP]);
+	GError* error = NULL;
+	gfloat real_step;
 	gfloat step;
 	
+	real_step = 
+		ccm_config_get_float (self->priv->options[CCM_OPACITY_STEP], &error);
+	if (error)
+	{
+		g_warning("Error on get opacity step configuration value");
+		g_error_free(error);
+		real_step = 0.1;
+	}
 	step = MAX(0.01f, real_step);
 	step = MIN(0.5f, real_step);
 	if (self->priv->step != step)
 	{
 		self->priv->step = step;
 		if (real_step != step)
-			ccm_config_set_float (self->priv->options[CCM_OPACITY_STEP], step);
+			ccm_config_set_float (self->priv->options[CCM_OPACITY_STEP], 
+								  step, NULL);
 		
 		return TRUE;
 	}
@@ -208,10 +217,18 @@ ccm_opacity_get_opacity_step(CCMOpacity* self)
 static gboolean
 ccm_opacity_get_opacity(CCMOpacity* self)
 {
-	gfloat real_opacity = 
-		ccm_config_get_float (self->priv->options[CCM_OPACITY_OPACITY]);
+	GError* error = NULL;
+	gfloat real_opacity;
 	gfloat opacity;
 	
+	real_opacity = 
+		ccm_config_get_float (self->priv->options[CCM_OPACITY_OPACITY], &error);
+	if (error)
+	{
+		g_warning("Error on get opacity configuration value");
+		g_error_free(error);
+		real_opacity = 0.85f;
+	}
 	opacity = MAX(0.1f, real_opacity);
 	opacity = MIN(1.0f, real_opacity);
 	if (self->priv->opacity != opacity)
@@ -219,7 +236,7 @@ ccm_opacity_get_opacity(CCMOpacity* self)
 		self->priv->opacity = opacity;
 		if (opacity != real_opacity)
 			ccm_config_set_float (self->priv->options[CCM_OPACITY_OPACITY], 
-								  opacity);
+								  opacity, NULL);
 		return TRUE;
 	}
 	
@@ -229,12 +246,20 @@ ccm_opacity_get_opacity(CCMOpacity* self)
 static void
 ccm_opacity_get_increase_keybind(CCMOpacity* self)
 {
-	gchar* shortcut;
+	GError* error = NULL;
+	gchar* shortcut = NULL;
 
 	if (self->priv->increase) g_object_unref(self->priv->increase);
 	
 	shortcut = 
-		ccm_config_get_string(self->priv->options [CCM_OPACITY_INCREASE]);
+		ccm_config_get_string(self->priv->options [CCM_OPACITY_INCREASE], 
+							  &error);
+	if (error)
+	{
+		g_warning("Error on get opacity shortcut configuration value");
+		g_error_free(error);
+		shortcut = g_strdup("<Super>Button4");
+	}
 	self->priv->increase = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
 	g_free(shortcut);
 	g_signal_connect_swapped(self->priv->increase, "key_press", 
@@ -245,12 +270,20 @@ ccm_opacity_get_increase_keybind(CCMOpacity* self)
 static void
 ccm_opacity_get_decrease_keybind(CCMOpacity* self)
 {
-	gchar* shortcut;
+	GError* error = NULL;
+	gchar* shortcut = NULL;
 
 	if (self->priv->decrease) g_object_unref(self->priv->decrease);
 	
 	shortcut = 
-		ccm_config_get_string(self->priv->options [CCM_OPACITY_DECREASE]);
+		ccm_config_get_string(self->priv->options [CCM_OPACITY_DECREASE],
+							  &error);
+	if (error)
+	{
+		g_warning("Error on get opacity shortcut configuration value");
+		g_error_free(error);
+		shortcut = g_strdup("<Super>Button5");
+	}
 	self->priv->decrease = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
 	g_free(shortcut);
 	g_signal_connect_swapped(self->priv->decrease, "key_press", 
@@ -308,6 +341,7 @@ ccm_opacity_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "opacity", 
 												  CCMOpacityOptions[cpt]);
+		if (self->priv->options[cpt])
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_opacity_on_option_changed), 
 								 self);
@@ -334,6 +368,7 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "opacity", 
 												  CCMOpacityOptions[cpt]);
+		if (self->priv->options[cpt])
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_opacity_on_option_changed), 
 								 self);

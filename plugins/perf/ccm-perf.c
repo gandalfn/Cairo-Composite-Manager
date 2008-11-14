@@ -228,6 +228,7 @@ static void
 ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMPerf* self = CCM_PERF(plugin);
+	GError* error = NULL;
 	gchar* shortcut;
 	gint cpt;
 	
@@ -240,13 +241,36 @@ ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	}
 
 	self->priv->screen = screen;
-	self->priv->area.x = ccm_config_get_integer (self->priv->options[CCM_PERF_X]);
-	self->priv->area.y = ccm_config_get_integer (self->priv->options[CCM_PERF_Y]);
+	self->priv->area.x = 
+		ccm_config_get_integer (self->priv->options[CCM_PERF_X], &error);
+	if (error)
+	{
+		g_error_free(error);
+		error = NULL;
+		self->priv->area.x = 20;
+	}
+
+	self->priv->area.y = 
+		ccm_config_get_integer (self->priv->options[CCM_PERF_Y], &error);
+	if (error)
+	{
+		g_error_free(error);
+		error = NULL;
+		self->priv->area.y = 20;
+	}
 	self->priv->area.width = 260;
 	self->priv->area.height = 100;
 		
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
-	shortcut = ccm_config_get_string(self->priv->options [CCM_PERF_SHORTCUT]);
+	shortcut = ccm_config_get_string(self->priv->options [CCM_PERF_SHORTCUT],
+									 &error);
+	if (error)
+	{
+		g_error_free(error);
+		error = NULL;
+		shortcut = g_strdup("<Super>f");
+	}
+
 	self->priv->keybind = ccm_keybind_new(screen, shortcut, TRUE);
 	g_free(shortcut);
 	

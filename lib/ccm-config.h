@@ -39,6 +39,7 @@ G_BEGIN_DECLS
 typedef struct _CCMConfigClass   CCMConfigClass;
 typedef struct _CCMConfigPrivate CCMConfigPrivate;
 typedef struct _CCMConfig        CCMConfig;
+typedef enum   _CCMConfigError   CCMConfigError;
 
 struct _CCMConfigClass
 {
@@ -54,29 +55,50 @@ struct _CCMConfig
 	CCMConfigPrivate* priv;
 };
 
+enum _CCMConfigError
+{
+	CCM_CONFIG_ERROR_NONE,
+	CCM_CONFIG_ERROR_IS_NULL
+};
+
+GQuark			ccm_config_error_quark				();
+
 GType 			ccm_config_get_type 				(void) G_GNUC_CONST;
 CCMConfig* 		ccm_config_new 						(int screen,
 													 gchar* extension, 
 													 gchar* key);
-gboolean 		ccm_config_get_boolean				(CCMConfig* self);
+gboolean 		ccm_config_get_boolean				(CCMConfig* self,
+													 GError** error);
 void 			ccm_config_set_boolean				(CCMConfig* self, 
-													 gboolean value);
-gint 			ccm_config_get_integer				(CCMConfig* self);
+													 gboolean value,
+													 GError** error);
+gint 			ccm_config_get_integer				(CCMConfig* self,
+													 GError** error);
 void 			ccm_config_set_integer				(CCMConfig* self, 
-													 gint value);
-gfloat 			ccm_config_get_float				(CCMConfig* self);
+													 gint value,
+													 GError** error);
+gfloat 			ccm_config_get_float				(CCMConfig* self,
+													 GError** error);
 void 			ccm_config_set_float				(CCMConfig* self, 
-													 gfloat value);
-gchar* 			ccm_config_get_string				(CCMConfig* self);
+													 gfloat value,
+													 GError** error);
+gchar* 			ccm_config_get_string				(CCMConfig* self,
+													 GError** error);
 void 			ccm_config_set_string				(CCMConfig* self, 
-													 gchar * value);
-GSList* 		ccm_config_get_string_list			(CCMConfig* self);
+													 gchar * value,
+													 GError** error);
+GSList* 		ccm_config_get_string_list			(CCMConfig* self,
+													 GError** error);
 void 			ccm_config_set_string_list			(CCMConfig* self, 
-													 GSList * value);
-GSList*			ccm_config_get_integer_list			(CCMConfig* self);
+													 GSList * value,
+													 GError** error);
+GSList*			ccm_config_get_integer_list			(CCMConfig* self,
+													 GError** error);
 void			ccm_config_set_integer_list			(CCMConfig* self, 
-													 GSList * value);
-GdkColor*       ccm_config_get_color                (CCMConfig* self);
+													 GSList * value,
+													 GError** error);
+GdkColor*       ccm_config_get_color                (CCMConfig* self,
+													 GError** error);
 
 
 G_END_DECLS

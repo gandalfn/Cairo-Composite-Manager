@@ -108,7 +108,7 @@ ccm_tray_menu_ccm_menu_activate (CCMTrayMenu* self, GtkWidget* ccm_menu)
 	
 	ccm_debug("CCM ACTIVATE %i", val);
 	
-	ccm_config_set_boolean (self->priv->config, val);
+	ccm_config_set_boolean (self->priv->config, val, NULL);
 }
 
 static void
@@ -141,7 +141,7 @@ ccm_tray_menu_quit_menu_activate (CCMTrayMenu* self, GtkWidget* ccm_menu)
 static void
 ccm_tray_menu_enable_ccm_changed (CCMTrayMenu * self, CCMConfig* config)
 {
-	gboolean val = ccm_config_get_boolean (config);
+	gboolean val = ccm_config_get_boolean (config, NULL);
 	
 	ccm_debug("CCM ENABLE %i", val);
 		
@@ -169,7 +169,7 @@ ccm_tray_menu_new (void)
 	self->priv->config = ccm_config_new (-1, NULL, "enable");
 	g_signal_connect_swapped(self->priv->config, "changed", 
 							 (GCallback)ccm_tray_menu_enable_ccm_changed, self);
-	val = ccm_config_get_boolean (self->priv->config);
+	val = ccm_config_get_boolean (self->priv->config, NULL);
 	
 	/* Create composite menu */
 	self->priv->ccm_menu = gtk_check_menu_item_new_with_label(_("Composite desktop"));
