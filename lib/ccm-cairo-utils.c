@@ -24,9 +24,11 @@
  *      Mirco "MacSlow" Mueller <macslow@bangang.de>
  *
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <glib.h>
 
 #include "ccm-cairo-utils.h"
 
@@ -74,7 +76,7 @@ kernel_1d_new (int    radius,
 	if (radius <= 0)
 		return NULL;
 
-	kernel = (double*) calloc (size + 1, sizeof (double));
+	kernel = (double*) g_slice_alloc ((size + 1) * sizeof (double));
 	if (!kernel)
 		return NULL;
 
@@ -100,12 +102,15 @@ kernel_1d_new (int    radius,
 }
 
 void
-kernel_1d_delete (double* kernel)
+kernel_1d_delete (int    radius,
+				  double* kernel)
 {
 	if (!kernel)
 		return;
 
-	free ((void*) kernel);
+	int     size = 2 * radius + 1;
+	
+	g_slice_free1 ((size + 1) * sizeof (double), (void*) kernel);
 }
 
 void
@@ -155,15 +160,15 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 	stride = width * channels;
 
 	/* create buffers to hold the blur-passes */
-	horzBlur = (double*) calloc (height * stride + vertRadius * stride, sizeof (double));
-	vertBlur = (double*) calloc (height * stride + vertRadius * stride, sizeof (double));
+	horzBlur = (double*) g_slice_alloc ((height * stride + vertRadius * stride) * sizeof (double));
+	vertBlur = (double*) g_slice_alloc ((height * stride + vertRadius * stride) * sizeof (double));
 	if (!horzBlur || !vertBlur)
 	{
 		if (horzBlur)
-			free ((void*) horzBlur);
+			g_slice_free1 ((height * stride + vertRadius * stride) * sizeof (double), (void*) horzBlur);
 
 		if (vertBlur)
-			free ((void*) vertBlur);
+			g_slice_free1 ((height * stride + vertRadius * stride) * sizeof (double), (void*) vertBlur);
 
 		return;
 	}
@@ -179,10 +184,10 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 		free ((void*) vertBlur);
 
 		if (horzKernel)
-			kernel_1d_delete (horzKernel);
+			kernel_1d_delete (horzRadius, horzKernel);
 
 		if (vertKernel)
-			kernel_1d_delete (vertKernel);
+			kernel_1d_delete (vertRadius, vertKernel);
 
 		return;
 	}
@@ -201,7 +206,7 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 			for (i = 0; i < (int) horzKernel[0]; i++)
 			{
 				x = iX + offset;
-				if (x >= 0 && x <= width)
+				if (x >= 0 && x < width)
 				{
 					baseOffset = iY * stride + x * channels;
 
@@ -241,7 +246,7 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 			for (i = 0; i < (int) vertKernel[0]; i++)
 			{
 				y = iY + offset;
-				if (y >= 0 && y <= height)
+				if (y >= 0 && y < height)
 				{
 					baseOffset = y * stride + iX * channels;
 
@@ -267,8 +272,8 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 		}
 	}
 
-	kernel_1d_delete (horzKernel);
-	kernel_1d_delete (vertKernel);
+	kernel_1d_delete (horzRadius, horzKernel);
+	kernel_1d_delete (vertRadius, vertKernel);
 
 	for (iY = 0; iY < height; iY++)
 	{
@@ -284,8 +289,8 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 			src[offset + 0] = (unsigned char) vertBlur[offset + 0];
 		}
 	}
-	free ((void*) vertBlur);
-	free ((void*) horzBlur);
+	g_slice_free1 ((height * stride + vertRadius * stride) * sizeof (double), (void*) vertBlur);
+	g_slice_free1 ((height * stride + vertRadius * stride) * sizeof (double), (void*) horzBlur);
 
 	/* tell cairo we did some drawing to the surface */
 	cairo_surface_mark_dirty (surface);

@@ -23,9 +23,11 @@
  */
 
 #include <config.h>
+#include <signal.h>
 #include <gnome.h>
 
 #include "ccm.h"
+#include "ccm-debug.h"
 #include "ccm-tray-icon.h"
 #include "ccm-extension-loader.h"
 
@@ -51,9 +53,31 @@
 #  define N_(String) (String)
 #endif
 
-static void session_die (GnomeClient *client, gpointer client_data)
+gboolean crashed = FALSE;
+
+static void
+crash(int signum)
+{
+	if (!crashed)
+	{
+		crashed = TRUE;
+		ccm_log_print_backtrace();
+		exit(0);
+	}
+}
+
+static void 
+session_die (GnomeClient *client, gpointer client_data)
 {
 	gtk_main_quit ();
+}
+
+static void
+log_func(const gchar *log_domain, GLogLevelFlags log_level,
+		 const gchar *message, gpointer user_data)
+{
+	ccm_log(message);
+	ccm_log_print_backtrace();
 }
 
 int
@@ -68,9 +92,12 @@ main(gint argc, gchar **argv)
 	textdomain (GETTEXT_PACKAGE);
 #endif
 
+	signal(SIGSEGV, crash);
 	gnome_program_init (PACKAGE_NAME, VERSION,
 						LIBGNOMEUI_MODULE, argc, argv,
                         GNOME_PARAM_NONE);
+	
+	g_log_set_default_handler(log_func, NULL);
 	client = gnome_master_client();
 	gnome_client_set_restart_style(client, GNOME_RESTART_IF_RUNNING);
 	g_signal_connect (client, "save_yourself", G_CALLBACK (gtk_true), NULL);

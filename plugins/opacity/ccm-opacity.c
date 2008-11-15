@@ -100,6 +100,7 @@ ccm_opacity_finalize (GObject *object)
 	CCMOpacity* self = CCM_OPACITY(object);
 	gint cpt;
 	
+	if (self->priv->window)
 	g_signal_handlers_disconnect_by_func(self->priv->window, 
 										 ccm_opacity_on_property_changed, 
 										 self);	

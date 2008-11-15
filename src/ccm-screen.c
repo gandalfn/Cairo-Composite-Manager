@@ -653,6 +653,7 @@ ccm_screen_load_config(CCMScreen* self)
 	{
 		self->priv->options[cpt] = ccm_config_new(self->priv->number, NULL, 
 												  CCMScreenOptions[cpt]);
+		if (self->priv->options[cpt])
 		g_signal_connect_swapped(self->priv->options[cpt], "changed",
 								 G_CALLBACK(ccm_screen_on_option_changed), 
 								 self);
@@ -1021,12 +1022,12 @@ ccm_screen_check_stack(CCMScreen* self)
 					 G_CALLBACK(ccm_screen_on_window_property_changed), self);
 				stack = g_list_append(stack, window);
 			}
-			else
+			else if (window)
 				g_object_unref(window);
 		}
 	}
 	
-	for (item = g_list_first(self->priv->windows); item; item = item->next)
+	for (item = g_list_first(self->priv->windows); item && stack; item = item->next)
 	{
 		GList* link = g_list_find(stack, item->data);
 		

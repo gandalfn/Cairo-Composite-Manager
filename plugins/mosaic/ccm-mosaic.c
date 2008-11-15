@@ -125,11 +125,13 @@ ccm_mosaic_finalize (GObject *object)
 	if (self->priv->window)
 	{
 		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
+		if (display)
 		XDestroyWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
 	}
 	if (self->priv->screen)
 	{
 		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
+		if (display)
 		g_signal_handlers_disconnect_by_func(display, ccm_mosaic_on_event, self);
 	}
 	

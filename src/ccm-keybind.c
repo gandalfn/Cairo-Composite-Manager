@@ -62,6 +62,7 @@ struct _CCMKeybindPrivate
 
 static void ccm_keybind_ungrab (CCMKeybind* self);
 static void ccm_keybind_on_event(CCMKeybind* self, XEvent* xevent);
+static void ccm_keybind_on_keymap_changed(CCMKeybind* self, GdkKeymap* keymap);
 
 static void
 ccm_keybind_init (CCMKeybind *self)
@@ -83,10 +84,13 @@ static void
 ccm_keybind_finalize (GObject *object)
 {
 	CCMKeybind* self = CCM_KEYBIND(object);
+	GdkKeymap* keymap = gdk_keymap_get_default();
 	
 	g_signal_handlers_disconnect_by_func (self->priv->display, 
 										  ccm_keybind_on_event, self);
 	
+	g_signal_handlers_disconnect_by_func (keymap, 
+										  ccm_keybind_on_keymap_changed, self);
 	ccm_keybind_ungrab(self);
 	g_free(self->priv->keystring);
 	

@@ -1,4 +1,21 @@
-2008-11-14  Nicolas Bruguier  <gandalfn@rohan>
+2008-11-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* lib/ccm-cairo-utils.c (kernel_1d_new), (kernel_1d_delete),
+	(cairo_image_surface_blur):
+	  - Use g_slice instead calloc improve performance.
+	* src/ccm-keybind.c (ccm_keybind_finalize):
+	  - Disconnect keymap change handler on destruction, fix crash when keymap
+	    change.
+	* lib/ccm-config.c (ccm_config_copy_entry):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_finalize):
+	* plugins/opacity/ccm-opacity.c (ccm_opacity_finalize):
+	* src/ccm-screen.c (ccm_screen_load_config),
+	(ccm_screen_check_stack):
+	  - Add some check, to avoid some warning and crash.
+	* src/cairo-compmgr.c (crash), (session_die), (log_func), (main):
+	  - Add dump stack on warning and on sigsegv.
+
+2008-11-14  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* lib/ccm-config.c (ccm_config_copy_entry),
 	(ccm_config_error_quark), (ccm_config_new),
@@ -52,7 +69,7 @@
 	* src/ccm.h:
 	  - Add input redirection methods.	  
 
-2008-11-09  Nicolas Bruguier  <gandalfn@club-internet.r>
+2008-11-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* configure.ac:
 	  - Don't check for glitz tfp if glitz isn't enabled

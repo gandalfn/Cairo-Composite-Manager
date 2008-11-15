@@ -106,7 +106,7 @@ ccm_config_copy_entry(CCMConfig* self, gchar* src)
 	
 	entry = gconf_client_get_entry(CCM_CONFIG_GET_CLASS(self)->client,
 								   src, NULL, TRUE, NULL);
-	if (entry && 
+	if (entry && entry->value &&
 		gconf_engine_associate_schema (CCM_CONFIG_GET_CLASS(self)->client->engine,
 									   self->priv->key,
 									   gconf_entry_get_schema_name (entry),
