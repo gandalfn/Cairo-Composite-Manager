@@ -1359,14 +1359,12 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	g_return_val_if_fail(screen != NULL, NULL);
 	g_return_val_if_fail(xwindow != None, NULL);
 	
-	CCMDisplay* display = ccm_screen_get_display (screen);
 	CCMWindow* self = g_object_new(CCM_TYPE_WINDOW_BACKEND(screen), 
 								   "screen", screen,
 								   "drawable", xwindow,
 								   NULL);
 
 	create_atoms(self);
-	ccm_display_sync(display);
 	
 	ccm_window_get_plugins (self);
 	if (!ccm_window_get_attribs (self))
@@ -1986,8 +1984,6 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 	
 	gboolean ret = FALSE;
 	
-	cairo_path_t* damaged;
-			
 	if (!self->priv->is_viewable && !self->priv->unmap_pending &&
 		!self->priv->is_shaded)
 	{
@@ -1995,15 +1991,10 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 		return ret;
 	}
 	
-	cairo_save(context);
-	
-	damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(self), context);
-	
-	if (damaged)
+	if (ccm_drawable_is_damaged(CCM_DRAWABLE(self)))
 	{
 		CCMPixmap* pixmap = ccm_window_get_pixmap(self);
-		cairo_clip(context);
-	
+		
 		if (pixmap)
 		{
 			cairo_surface_t* surface;
@@ -2019,9 +2010,17 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			if (surface)
 			{
 				ccm_debug_window(self, "PAINT");
+				cairo_path_t* damaged;
+			
+				cairo_save(context);
+				damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(self), 
+													   context);
+				cairo_clip(context);
+				cairo_path_destroy(damaged);
 				ret = ccm_window_plugin_paint(self->priv->plugin, self, 
 											  context, surface, y_invert);
 				cairo_surface_destroy(surface);
+				cairo_restore(context);
 			}
 			else
 			{
@@ -2031,10 +2030,8 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			}
 			g_object_unref(pixmap);
 		}
-		cairo_reset_clip (context);
-		cairo_path_destroy(damaged);
+		
 	}
-	cairo_restore(context);
 	
 	if (ret) ccm_drawable_repair(CCM_DRAWABLE(self));
 	
@@ -2196,23 +2193,6 @@ ccm_window_get_name(CCMWindow* self)
 }
 
 void
-ccm_window_add_alpha_region(CCMWindow* self, CCMRegion* region)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(region != NULL);
-	
-	if (self->priv->opaque && self->priv->orig_opaque)
-	{
-		ccm_region_subtract(self->priv->orig_opaque, region);
-		if (ccm_region_empty(self->priv->opaque))
-		{
-			ccm_region_destroy(self->priv->opaque);
-			self->priv->opaque = NULL;
-		}
-	}
-}
-
-void
 ccm_window_set_alpha(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
@@ -2320,20 +2300,11 @@ ccm_window_init_transfrom(CCMWindow* self)
 }
 
 void
-ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix, gboolean damage)
+ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(matrix != NULL);
 	
-	CCMRegion* geometry = (CCMRegion*)ccm_drawable_get_geometry (CCM_DRAWABLE(self));
-	CCMRegion* old_geometry = NULL;
-	
-	if (damage && geometry)
-	{
-		old_geometry = ccm_region_copy (geometry);
-		
-		ccm_region_device_transform (old_geometry, &self->priv->transform);
-	}
 	memcpy (&self->priv->transform, matrix, sizeof(cairo_matrix_t));
 	
 	if (self->priv->orig_opaque)
@@ -2342,17 +2313,6 @@ ccm_window_set_transform(CCMWindow* self, cairo_matrix_t* matrix, gboolean damag
 		
 		ccm_window_set_opaque_region(self, region);
 		ccm_region_destroy (region);
-	}
-	
-	if (damage && geometry && old_geometry)
-	{
-		CCMRegion* tmp = ccm_region_copy (geometry);
-		
-		ccm_region_device_transform (tmp, &self->priv->transform);
-		ccm_region_union (tmp, old_geometry);
-		ccm_region_destroy (old_geometry);
-		ccm_drawable_damage_region (CCM_DRAWABLE(self), tmp);
-		ccm_region_destroy (tmp);
 	}
 }
 

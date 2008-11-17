@@ -234,7 +234,8 @@ ccm_menu_animation_on_new_frame (CCMMenuAnimation* self, int num_frame,
 		default:
 			break;
 	}
-	ccm_window_set_transform (self->priv->window, &matrix, TRUE);
+	ccm_window_set_transform (self->priv->window, &matrix);
+	ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
 }
 
 static void
@@ -400,7 +401,7 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		{
 			cairo_matrix_t matrix;
 			cairo_matrix_scale(&matrix, 0.01, 0.01);
-			ccm_window_set_transform (window, &matrix, TRUE);
+			ccm_window_set_transform (window, &matrix);
 		}
 		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, 
 										   (CCMPluginUnlockFunc)ccm_menu_animation_on_map_unmap_unlocked,

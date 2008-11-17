@@ -273,8 +273,6 @@ void             ccm_window_query_wm_hints          (CCMWindow* self);
 void             ccm_window_query_hint_type         (CCMWindow* self);
 CCMWindowType	 ccm_window_get_hint_type			(CCMWindow* self);
 const gchar*	 ccm_window_get_name				(CCMWindow* self);
-void             ccm_window_add_alpha_region        (CCMWindow* self, 
-                                                     CCMRegion* region);
 void             ccm_window_set_alpha               (CCMWindow* self);
 void             ccm_window_set_opaque              (CCMWindow* self);
 const CCMRegion* ccm_window_get_opaque_region       (CCMWindow* self);
@@ -312,8 +310,7 @@ void            ccm_window_init_transfrom           (CCMWindow* self);
 void            ccm_window_get_transform            (CCMWindow* self, 
                                                      cairo_matrix_t* matrix);
 void            ccm_window_set_transform            (CCMWindow* self, 
-                                                     cairo_matrix_t* matrix,
-                                                     gboolean damage);
+                                                     cairo_matrix_t* matrix);
 gboolean        ccm_window_transform                (CCMWindow* self, 
                                                      cairo_t* ctx, 
                                                      gboolean y_invert);

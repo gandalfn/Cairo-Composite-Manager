@@ -76,6 +76,7 @@ static void
 log_func(const gchar *log_domain, GLogLevelFlags log_level,
 		 const gchar *message, gpointer user_data)
 {
+	ccm_log("");
 	ccm_log(message);
 	ccm_log_print_backtrace();
 }

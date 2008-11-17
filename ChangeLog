@@ -1,3 +1,24 @@
+2008-11-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_window_paint):
+	* plugins/menu-animation/ccm-menu-animation.c
+	(ccm_menu_animation_on_new_frame), (ccm_menu_animation_map):
+	* src/ccm-window.c (ccm_window_new), (ccm_window_paint),
+	(ccm_window_set_transform):
+	  - Remove damage option on window set transform.
+	  - Damage window on each frame in menu-animation.
+	  - Remove a display sync on window creation.
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_paint_shadow),
+	(ccm_shadow_paint):
+	* plugins/shadow/ccm-shadow.schemas.in:
+	  - Fix shadow draw when window have transform.
+	* src/cairo-compmgr.c (log_func):
+	* src/ccm-screen.c (ccm_screen_destroy_window),
+	(ccm_screen_find_window), (ccm_screen_find_window_or_child),
+	(impl_ccm_screen_paint), (ccm_screen_damage_region):
+	* src/ccm.h:
+	  - Fix some warnings.
+
 2008-11-15  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* lib/ccm-cairo-utils.c (kernel_1d_new), (kernel_1d_delete),

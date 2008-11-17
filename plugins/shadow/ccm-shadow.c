@@ -257,10 +257,18 @@ ccm_shadow_paint_shadow(CCMShadow* self, CCMWindow* window, cairo_t* context)
 	{
 		gint i, nb_rects;
 		cairo_rectangle_t* rects;
+		cairo_matrix_t matrix;
 		CCMRegion* tmp = ccm_region_rectangle(&area);
 		
+		cairo_get_matrix(context, &matrix);
+		cairo_translate(context, 
+						(((double)self->priv->border / matrix.xx) - 
+						 (double)self->priv->border) / 2.0f,
+						(((double)self->priv->border / matrix.yy) -
+						 (double)self->priv->border) / 2.0f);
+
 		ccm_region_subtract(tmp, self->priv->geometry);
-		cairo_save(context);
+		cairo_translate(context, -area.x, -area.y);
 		ccm_region_get_rectangles(tmp, &rects, &nb_rects);
 		for (i = 0; i < nb_rects; i++)
 			cairo_rectangle(context, rects[i].x, rects[i].y,
@@ -268,92 +276,89 @@ ccm_shadow_paint_shadow(CCMShadow* self, CCMWindow* window, cairo_t* context)
 		cairo_clip(context);
 		g_free(rects);
 		ccm_region_destroy(tmp);
+		cairo_translate(context, area.x, area.y);
 		
 		for (i = 0; i < CCM_SHADOW_SIDE_N; i++)
 		{
-			cairo_save(context);	
-			if (ccm_window_transform (window, context, FALSE))
+			cairo_save(context);
+			switch (i)
 			{
-				switch (i)
-				{
-					case CCM_SHADOW_SIDE_TOP:
-						cairo_rectangle (context, self->priv->border, 0, 
-										 area.width - 2 * self->priv->border, 
-										 self->priv->border);
-						cairo_move_to(context, self->priv->border, 0);
-						cairo_line_to(context, 0, 0);
-						cairo_line_to(context, self->priv->border, 
-									  self->priv->border);
-						cairo_move_to(context, area.width - self->priv->border, 0);
-						cairo_line_to(context, area.width, 0);
-						cairo_line_to(context, area.width - self->priv->border, 
-									  self->priv->border);
-						cairo_clip(context);
-					break;
-					case CCM_SHADOW_SIDE_RIGHT:
-						cairo_rectangle (context, 
-										 area.width - self->priv->border, 
-										 self->priv->border, 
-										 self->priv->border, 
-										 area.height - 2 * self->priv->border);
-						cairo_move_to(context, area.width, self->priv->border);
-						cairo_line_to(context, area.width, 0);
-						cairo_line_to(context, area.width - self->priv->border, 
-									  self->priv->border);
-						cairo_move_to(context, area.width, 
-									  area.height - self->priv->border);
-						cairo_line_to(context, area.width, area.height);
-						cairo_line_to(context, area.width - self->priv->border, 
-									  area.height - self->priv->border);
-						cairo_clip(context);
-						cairo_translate (context, 
-										 area.width - self->priv->border, 
-										 0);
-					break;
-					case CCM_SHADOW_SIDE_BOTTOM:
-						cairo_rectangle (context, 
-										 self->priv->border, 
-										 area.height - self->priv->border, 
-										 area.width - 2 * self->priv->border, 
-										 self->priv->border);
-						cairo_move_to(context, area.width - self->priv->border, 
-									  area.height);
-						cairo_line_to(context, area.width, area.height);
-						cairo_line_to(context, area.width - self->priv->border, 
-									  area.height - self->priv->border);
-						cairo_move_to(context, self->priv->border, area.height);
-						cairo_line_to(context, 0, area.height);
-						cairo_line_to(context, self->priv->border, 
-									  area.height - self->priv->border);
-						cairo_clip(context);
-						cairo_translate (context, 
-										 0, 
-										 area.height - self->priv->border);
-					break;
-					case CCM_SHADOW_SIDE_LEFT:
-						cairo_rectangle (context, 0, 
-										 self->priv->border, 
-										 self->priv->border, 
-										 area.height - 2 * self->priv->border);
-						cairo_move_to(context, 0, 
-									  area.height - self->priv->border);
-						cairo_line_to(context, 0, area.height);
-						cairo_line_to(context, self->priv->border, 
-									  area.height - self->priv->border);
-						cairo_move_to(context, 0, self->priv->border);
-						cairo_line_to(context, 0, 0);
-						cairo_line_to(context, self->priv->border, 
-									  self->priv->border);
-						cairo_clip(context);
-					break;
-				}
-				cairo_set_source_surface(context, self->priv->shadow[i], 
-										0,0);
-				cairo_paint_with_alpha(context, ccm_window_get_opacity(window));
+				case CCM_SHADOW_SIDE_TOP:
+					cairo_rectangle (context, self->priv->border, 0, 
+									 area.width - 2 * self->priv->border, 
+									 self->priv->border);
+					cairo_move_to(context, self->priv->border, 0);
+					cairo_line_to(context, 0, 0);
+					cairo_line_to(context, self->priv->border, 
+								  self->priv->border);
+					cairo_move_to(context, area.width - self->priv->border, 0);
+					cairo_line_to(context, area.width, 0);
+					cairo_line_to(context, area.width - self->priv->border, 
+								  self->priv->border);
+					cairo_clip(context);
+				break;
+				case CCM_SHADOW_SIDE_RIGHT:
+					cairo_rectangle (context, 
+									 area.width - self->priv->border, 
+									 self->priv->border, 
+									 self->priv->border, 
+									 area.height - 2 * self->priv->border);
+					cairo_move_to(context, area.width, self->priv->border);
+					cairo_line_to(context, area.width, 0);
+					cairo_line_to(context, area.width - self->priv->border, 
+								  self->priv->border);
+					cairo_move_to(context, area.width, 
+								  area.height - self->priv->border);
+					cairo_line_to(context, area.width, area.height);
+					cairo_line_to(context, area.width - self->priv->border, 
+								  area.height - self->priv->border);
+					cairo_clip(context);
+					cairo_translate (context, 
+									 area.width - self->priv->border, 
+									 0);
+				break;
+				case CCM_SHADOW_SIDE_BOTTOM:
+					cairo_rectangle (context, 
+									 self->priv->border, 
+									 area.height - self->priv->border, 
+									 area.width - 2 * self->priv->border, 
+									 self->priv->border);
+					cairo_move_to(context, area.width - self->priv->border, 
+								  area.height);
+					cairo_line_to(context, area.width, area.height);
+					cairo_line_to(context, area.width - self->priv->border, 
+								  area.height - self->priv->border);
+					cairo_move_to(context, self->priv->border, area.height);
+					cairo_line_to(context, 0, area.height);
+					cairo_line_to(context, self->priv->border, 
+								  area.height - self->priv->border);
+					cairo_clip(context);
+					cairo_translate (context, 
+									 0, 
+									 area.height - self->priv->border);
+				break;
+				case CCM_SHADOW_SIDE_LEFT:
+					cairo_rectangle (context, 0, 
+									 self->priv->border, 
+									 self->priv->border, 
+									 area.height - 2 * self->priv->border);
+					cairo_move_to(context, 0, 
+								  area.height - self->priv->border);
+					cairo_line_to(context, 0, area.height);
+					cairo_line_to(context, self->priv->border, 
+								  area.height - self->priv->border);
+					cairo_move_to(context, 0, self->priv->border);
+					cairo_line_to(context, 0, 0);
+					cairo_line_to(context, self->priv->border, 
+								  self->priv->border);
+					cairo_clip(context);
+				break;
 			}
+			cairo_set_source_surface(context, self->priv->shadow[i], 
+									 0, 0);
+			cairo_paint_with_alpha(context, ccm_window_get_opacity(window));
 			cairo_restore(context);
 		}
-		cairo_restore(context);
 	}	
 }
 
@@ -509,11 +514,10 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	{
 		cairo_rectangle_t* rects;
 		gint cpt, nb_rects;
-		cairo_matrix_t matrix, initial;
+		cairo_matrix_t matrix, initial, translate;
 			
 		cairo_save(context);
 			
-		ccm_window_get_transform(window, &matrix);
 		ccm_window_get_transform(window, &initial);
 
 		ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
@@ -523,15 +527,18 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		cairo_clip(context);
 		g_free(rects);
 		
-		cairo_matrix_translate(&matrix, self->priv->border / 2, 
-							   self->priv->border / 2);
-		ccm_window_set_transform(window, &matrix, FALSE);
+		cairo_matrix_init_translate(&translate, self->priv->border / 2, 
+									self->priv->border / 2);
+		cairo_matrix_multiply(&matrix, &initial, &translate);
+		ccm_window_set_transform(window, &matrix);
 		ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
 									  window, context, surface, y_invert);
-		ccm_window_set_transform(window, &initial, FALSE);
+		ccm_window_set_transform(window, &initial);
 		cairo_restore(context);
-		
-		ccm_shadow_paint_shadow(self, window, context);
+		cairo_save(context);
+		ccm_window_transform(window, context, y_invert);
+		ccm_shadow_paint_shadow(self, window, context);		
+		cairo_restore(context);
 	} 
 	else
 		ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
