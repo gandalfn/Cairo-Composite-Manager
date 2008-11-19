@@ -1,3 +1,25 @@
+2008-11-19  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_init),
+	(ccm_shadow_class_init), (ccm_shadow_check_needed),
+	(ccm_shadow_need_shadow), (ccm_shadow_query_avoid_shadow),
+	(ccm_shadow_create_atoms), (ccm_shadow_on_event),
+	(ccm_shadow_screen_load_options), (ccm_shadow_window_load_options),
+	(ccm_shadow_window_query_geometry), (ccm_shadow_window_map),
+	(ccm_shadow_window_paint), (ccm_shadow_window_move),
+	(ccm_shadow_window_resize), (ccm_shadow_window_set_opaque_region),
+	(ccm_shadow_window_get_origin), (ccm_shadow_window_iface_init),
+	(ccm_shadow_screen_iface_init):
+	* plugins/shadow/ccm-shadow.h:
+      - Add atom _CCM_SHADOW_DISABLE to disable per window
+	* src/ccm-window.c (ccm_window_get_child_utf8_property),
+	(ccm_window_query_child), (ccm_window_get_attribs),
+	(ccm_window_get_frame_extends), (ccm_window_get_property),
+	(ccm_window_get_child_property):
+	* src/ccm.h:
+      - Fix non frame window search 
+      - Expose ccm_window_get_property functions
+
 2008-11-17  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_window_paint):

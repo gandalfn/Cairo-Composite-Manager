@@ -44,6 +44,8 @@ typedef struct _CCMShadow CCMShadow;
 struct _CCMShadowClass
 {
 	CCMPluginClass parent_class;
+	
+	Atom		   shadow_atom;
 };
 
 typedef struct _CCMShadowPrivate CCMShadowPrivate;

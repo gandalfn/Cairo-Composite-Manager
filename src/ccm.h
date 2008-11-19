@@ -28,6 +28,7 @@
 #include <cairo.h>
 #include <glib.h>
 #include <glib-object.h>
+#include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <X11/Xlib.h>
 
@@ -314,6 +315,14 @@ void            ccm_window_set_transform            (CCMWindow* self,
 gboolean        ccm_window_transform                (CCMWindow* self, 
                                                      cairo_t* ctx, 
                                                      gboolean y_invert);
+guint32 *       ccm_window_get_property             (CCMWindow* self, 
+                                                     Atom property_atom, 
+                                                     Atom req_type, 
+                                                     guint *n_items);
+guint32 *       ccm_window_get_child_property       (CCMWindow* self, 
+                                                     Atom property_atom, 
+                                                     Atom req_type, 
+                                                     guint *n_items);
 /******************************************************************************/
 
 G_END_DECLS

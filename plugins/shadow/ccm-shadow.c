@@ -23,11 +23,13 @@
 #include <math.h>
 
 #include "ccm-drawable.h"
+#include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-window.h"
 #include "ccm-shadow.h"
 #include "ccm-config.h"
 #include "ccm-cairo-utils.h"
+#include "ccm-debug.h"
 #include "ccm.h"
 
 enum
@@ -53,15 +55,22 @@ static gchar* CCMShadowOptions[CCM_SHADOW_OPTION_N] = {
 	"color"
 };
 
-static void ccm_shadow_iface_init(CCMWindowPluginClass* iface);
+static void ccm_shadow_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_shadow_screen_iface_init(CCMScreenPluginClass* iface);
 
 CCM_DEFINE_PLUGIN (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_shadow,
+										   CCM_TYPE_SCREEN_PLUGIN,
+										   ccm_shadow_screen_iface_init);
+				   CCM_IMPLEMENT_INTERFACE(ccm_shadow,
 										   CCM_TYPE_WINDOW_PLUGIN,
-										   ccm_shadow_iface_init))
+										   ccm_shadow_window_iface_init))
 
 struct _CCMShadowPrivate
 {
+	CCMScreen* 			screen;
+	
+	gboolean			enable;
 	int 				border;
 	int 				radius;
 	GdkColor*			color;
@@ -87,11 +96,13 @@ ccm_shadow_init (CCMShadow *self)
 	
 	self->priv = CCM_SHADOW_GET_PRIVATE(self);
 	
+	self->priv->enable = TRUE;
 	self->priv->id_check = 0;
 	self->priv->border = 12;
 	self->priv->radius = 8;
 	self->priv->color = NULL;
 	self->priv->window = NULL;
+	self->priv->screen = NULL;
 	self->priv->geometry = NULL;
 	for (cpt = 0; cpt < CCM_SHADOW_SIDE_N; cpt++)
 		self->priv->shadow[cpt] = NULL;
@@ -141,6 +152,7 @@ ccm_shadow_class_init (CCMShadowClass *klass)
 	
 	g_type_class_add_private (klass, sizeof (CCMShadowPrivate));
 	
+	klass->shadow_atom = None;
 	object_class->finalize = ccm_shadow_finalize;
 }
 
@@ -367,6 +379,7 @@ ccm_shadow_check_needed(CCMShadow* self)
 {
 	g_return_val_if_fail(CCM_IS_SHADOW(self), FALSE);
 	
+	ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self->priv->window));
 	ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 
@@ -376,14 +389,16 @@ ccm_shadow_check_needed(CCMShadow* self)
 }
 
 static gboolean 
-ccm_shadow_need_shadow(CCMWindow* window)
+ccm_shadow_need_shadow(CCMShadow* self)
 {
-	g_return_val_if_fail(window != NULL, FALSE);
+	g_return_val_if_fail(self != NULL, FALSE);
 	
+	CCMWindow* window = self->priv->window;
 	CCMWindowType type = ccm_window_get_hint_type(window);
 	const CCMRegion* opaque = ccm_window_get_opaque_region (window);
 	
-	return !ccm_window_is_input_only (window) &&
+	return self->priv->enable &&
+		   !ccm_window_is_input_only (window) &&
 		   (ccm_window_is_decorated (window) || 
 		    (type != CCM_WINDOW_TYPE_NORMAL && 
 			 type != CCM_WINDOW_TYPE_DIALOG && opaque)) && 
@@ -398,7 +413,111 @@ ccm_shadow_need_shadow(CCMWindow* window)
 }
 
 static void
-ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
+ccm_shadow_query_avoid_shadow(CCMShadow* self)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(self->priv->window != NULL);
+	
+	guint32* data = NULL;
+	guint n_items;
+	Window child = None;
+	
+	g_object_get(G_OBJECT(self->priv->window), "child", &child, NULL);
+	
+	if (!child)
+	{
+		ccm_debug_window(self->priv->window, "QUERY SHADOW");
+		data = ccm_window_get_property (self->priv->window, 
+										CCM_SHADOW_GET_CLASS(self)->shadow_atom,
+										XA_CARDINAL, 
+										&n_items);
+	}
+	else
+	{
+		ccm_debug_window(self->priv->window, "QUERY CHILD SHADOW 0x%x", child);
+		data = ccm_window_get_child_property (self->priv->window, 
+											  CCM_SHADOW_GET_CLASS(self)->shadow_atom,
+											  XA_CARDINAL, 
+											  &n_items);
+	}
+	
+	ccm_debug_window(self->priv->window, "QUERY SHADOW = 0x%x", data);
+	if (data)
+	{
+		ccm_debug_window(self->priv->window, "_CCM_SHADOW_DISABLED %i", 
+						 (gboolean)*data);
+		self->priv->enable = *data == 0 ? TRUE : FALSE;
+		if (!self->priv->id_check) 
+			g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
+		g_free(data);
+	}
+}
+
+static void
+ccm_shadow_create_atoms(CCMShadow* self)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_SHADOW_GET_CLASS(self) != NULL);
+	
+	CCMShadowClass* klass = CCM_SHADOW_GET_CLASS(self);
+	
+	if (!klass->shadow_atom)
+	{
+		CCMDisplay* display = 
+			ccm_drawable_get_display(CCM_DRAWABLE(self->priv->window));
+		
+		klass->shadow_atom = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+										  "_CCM_SHADOW_DISABLED", 
+										  False);
+	}
+}
+
+static void
+ccm_shadow_on_event(CCMShadow* self, XEvent* event)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(event != NULL);
+	
+	switch (event->type)
+	{
+		case PropertyNotify:
+		{
+			XPropertyEvent* property_event = (XPropertyEvent*)event;
+			CCMWindow* window;
+			
+			if (property_event->atom == CCM_SHADOW_GET_CLASS(self)->shadow_atom)
+			{
+				window = ccm_screen_find_window_or_child (self->priv->screen,
+														  property_event->window);
+				if (window) 
+				{
+					CCMShadow* plugin = 
+						CCM_SHADOW(_ccm_window_get_plugin (window, 
+														   CCM_TYPE_SHADOW));
+					ccm_shadow_query_avoid_shadow(plugin);
+				}
+			}
+		}
+		break;
+		default:
+		break;
+	}
+}
+
+static void
+ccm_shadow_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
+{
+	CCMShadow* self = CCM_SHADOW(plugin);
+	CCMDisplay* display = ccm_screen_get_display(screen);
+	
+	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
+	self->priv->screen = screen;
+	g_signal_connect_swapped(display, "event", 
+							 G_CALLBACK(ccm_shadow_on_event), self);
+}
+
+static void
+ccm_shadow_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
@@ -415,6 +534,9 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	self->priv->window = window;
+	ccm_shadow_create_atoms(self);
+	ccm_shadow_query_avoid_shadow(self);
+	
 	self->priv->border = 
 		ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER], &error);
 	if (error)
@@ -442,18 +564,18 @@ ccm_shadow_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 		error = NULL;
 		self->priv->color = g_new0(GdkColor, 1);
 	}
-
 }
 
 static CCMRegion*
-ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
+ccm_shadow_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMRegion* geometry = NULL;
 	cairo_rectangle_t area;
 	CCMShadow* self = CCM_SHADOW(plugin);
 	gint cpt;
 	
-	if (self->priv->geometry) ccm_region_destroy (self->priv->geometry);
+	if (self->priv->geometry) 
+		ccm_region_destroy (self->priv->geometry);
 	self->priv->geometry = NULL;
 	for (cpt = 0; cpt < 4; cpt++)
 	{
@@ -464,7 +586,7 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
 												window);
-	if (geometry && ccm_shadow_need_shadow(window))
+	if (geometry && ccm_shadow_need_shadow(self))
 	{
 		self->priv->geometry = ccm_region_copy (geometry);
 		ccm_region_get_clipbox(geometry, &area);
@@ -479,10 +601,10 @@ ccm_shadow_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
-ccm_shadow_map(CCMWindowPlugin* plugin, CCMWindow* window)
+ccm_shadow_window_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
-	gboolean need = ccm_shadow_need_shadow(window);
+	gboolean need = ccm_shadow_need_shadow(self);
 
 	if ((need && !self->priv->shadow[0]) || 
 		(!need && self->priv->shadow[0]))
@@ -495,12 +617,12 @@ ccm_shadow_map(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static gboolean
-ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-				 cairo_t* context, cairo_surface_t* surface,
-				 gboolean y_invert)
+ccm_shadow_window_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
+						cairo_t* context, cairo_surface_t* surface,
+						gboolean y_invert)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
-	gboolean need = ccm_shadow_need_shadow(window);
+	gboolean need = ccm_shadow_need_shadow(self);
 	gboolean ret = FALSE;
 	
 	if ((need && !self->priv->shadow[0]) || 
@@ -548,8 +670,8 @@ ccm_shadow_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 }
 
 static void 
-ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window, 
-				int x, int y)
+ccm_shadow_window_move(CCMWindowPlugin* plugin, CCMWindow* window, 
+					   int x, int y)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
 	cairo_rectangle_t area;
@@ -565,8 +687,8 @@ ccm_shadow_move(CCMWindowPlugin* plugin, CCMWindow* window,
 }
 
 static void 
-ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window, 
-				  int width, int height)
+ccm_shadow_window_resize(CCMWindowPlugin* plugin, CCMWindow* window, 
+						 int width, int height)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
 	int border = 0;
@@ -579,8 +701,8 @@ ccm_shadow_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 
 
 static void 
-ccm_shadow_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* window,
-							 const CCMRegion* area)
+ccm_shadow_window_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* window,
+									const CCMRegion* area)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
        
@@ -600,8 +722,8 @@ ccm_shadow_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* window,
 }
 
 static void
-ccm_shadow_get_origin(CCMWindowPlugin* plugin, CCMWindow* window, 
-					  int* x, int* y)
+ccm_shadow_window_get_origin(CCMWindowPlugin* plugin, CCMWindow* window, 
+							 int* x, int* y)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
     cairo_rectangle_t geometry;
@@ -620,17 +742,27 @@ ccm_shadow_get_origin(CCMWindowPlugin* plugin, CCMWindow* window,
 }
 
 static void
-ccm_shadow_iface_init(CCMWindowPluginClass* iface)
+ccm_shadow_window_iface_init(CCMWindowPluginClass* iface)
 {
-	iface->load_options 	 = ccm_shadow_load_options;
-	iface->query_geometry 	 = ccm_shadow_query_geometry;
-	iface->paint 			 = ccm_shadow_paint;
-	iface->map				 = ccm_shadow_map;
+	iface->load_options 	 = ccm_shadow_window_load_options;
+	iface->query_geometry 	 = ccm_shadow_window_query_geometry;
+	iface->paint 			 = ccm_shadow_window_paint;
+	iface->map				 = ccm_shadow_window_map;
 	iface->unmap			 = NULL;
 	iface->query_opacity  	 = NULL;
-	iface->move				 = ccm_shadow_move;
-	iface->resize			 = ccm_shadow_resize;
-	iface->set_opaque_region = ccm_shadow_set_opaque_region;
-	iface->get_origin		 = ccm_shadow_get_origin;
+	iface->move				 = ccm_shadow_window_move;
+	iface->resize			 = ccm_shadow_window_resize;
+	iface->set_opaque_region = ccm_shadow_window_set_opaque_region;
+	iface->get_origin		 = ccm_shadow_window_get_origin;
+}
+
+static void
+ccm_shadow_screen_iface_init(CCMScreenPluginClass* iface)
+{
+	iface->load_options 	= ccm_shadow_screen_load_options;
+	iface->paint			= NULL;
+	iface->add_window		= NULL;
+	iface->remove_window	= NULL;
+	iface->damage			= NULL;
 }
 

@@ -484,43 +484,6 @@ create_atoms(CCMWindow* self)
 	}
 }
 
-static guint32 *
-ccm_window_get_property(CCMWindow* self, Atom property_atom, 
-						Atom req_type, guint *n_items)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	g_return_val_if_fail(property_atom != None, NULL);
-	
-    CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-    int ret;
-    Atom type;
-    int format;
-    gulong n_items_internal;
-    guchar *property = NULL;
-    gulong bytes_after;
-    guint32 *result;
-    
-    ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
-							  CCM_WINDOW_XWINDOW(self), property_atom, 
-							  0, G_MAXLONG, False,
-							  req_type, &type, &format,
-							  &n_items_internal, &bytes_after,
-							  &property);
-    
-    if (ret != Success)
-    {
-		if (property) XFree(property);
-		g_signal_emit(self, signals[ERROR], 0);
-		return NULL;
-    }
-	result = g_memdup (property, n_items_internal * (format / 8));
-    XFree(property);
-	
-    if (n_items) *n_items = n_items_internal;
-    
-    return result;
-}
-
 static void
 ccm_window_get_property_async(CCMWindow* self, Atom property_atom, 
 							  Atom req_type, long length)
@@ -555,46 +518,6 @@ ccm_window_get_property_async(CCMWindow* self, Atom property_atom,
 		self->priv->properties_pending = 
 			g_slist_append (self->priv->properties_pending, property);
 	}
-}
-
-static guint32 *
-ccm_window_get_child_property(CCMWindow* self, Atom property_atom, int req_format, 
-						       Atom req_type, guint *n_items)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	g_return_val_if_fail(property_atom != None, NULL);
-
-    CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-    int ret;
-    Atom type;
-    int format;
-    gulong n_items_internal;
-    guchar *property = NULL;
-    gulong bytes_after;
-    guint32 *result;
-    
-	if (!self->priv->child) return NULL;
-	
-    ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
-							  self->priv->child, property_atom, 
-							  0, G_MAXLONG, False,
-							  req_type, &type, &format,
-							  &n_items_internal, &bytes_after,
-							  &property);
-    
-    if (ret != Success)
-    {
-		g_signal_emit(self, signals[ERROR], 0);
-		if (property) XFree(property);
-		return NULL;
-    }
-        
-    result = g_memdup (property, n_items_internal * (format / 8));
-    XFree(property);
-	
-    if (n_items) *n_items = n_items_internal;
-    
-    return result;
 }
 
 static gchar*
@@ -636,7 +559,7 @@ ccm_window_get_child_utf8_property (CCMWindow* self, Atom atom)
 	guint32* data = NULL;
 	guint n_items;
 		
-	data = ccm_window_get_child_property(self, atom, 8, 
+	data = ccm_window_get_child_property(self, atom,
 								   CCM_WINDOW_GET_CLASS(self)->utf8_string_atom, 
 								   &n_items);
   
@@ -781,23 +704,36 @@ ccm_window_query_child(CCMWindow* self)
 		
 		if (managed && n_managed)
 		{
-			guint cpt;
+			guint i, j;
+			gboolean found = FALSE;
 			
-			for (cpt = 0; cpt < n_managed; cpt++)
+			for (i = 0; !found && i < n_managed; i++)
 			{
-				if (managed[cpt] == windows[n_windows - 1])
+				for (j = 0; !found && j < n_windows; j++)
 				{
-					self->priv->child = windows[n_windows - 1];
-					ccm_debug_window(self, "FOUND CHILD 0x%lx", self->priv->child);
-					XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
-								  self->priv->child, 
-								  PropertyChangeMask | 
-								  StructureNotifyMask);
-					break;
+					if (windows[j] && managed[i] == windows[j])
+					{
+						self->priv->child = windows[j];
+						ccm_debug_window(self, "FOUND CHILD 0x%lx", self->priv->child);
+						XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
+									  self->priv->child, 
+									  PropertyChangeMask | 
+									  StructureNotifyMask);
+						found = TRUE;
+					}
 				}
 			}
 		}
 		if (managed) g_free(managed);
+		if (!self->priv->child) 
+		{
+			self->priv->child = windows[n_windows - 1];
+			XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
+									  self->priv->child, 
+									  PropertyChangeMask | 
+									  StructureNotifyMask);
+			ccm_debug_window(self, "FOUND DEFAULT CHILD 0x%lx", self->priv->child);
+		}
 	}
 	if (windows) XFree(windows);
 }
@@ -827,6 +763,8 @@ ccm_window_get_attribs (CCMWindow* self)
 	self->priv->is_viewable = attribs.map_state == IsViewable;
 	self->priv->is_input_only = attribs.class == InputOnly;
 	self->priv->override_redirect = attribs.override_redirect;
+	if (self->priv->override_redirect && self->priv->child)
+		self->priv->child = None;
 	
 	return TRUE;
 }
@@ -2260,7 +2198,7 @@ ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame,
 	if (self->priv->child)
 		data = ccm_window_get_child_property(self, 
 								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
-								32, XA_CARDINAL, &n_items);
+								XA_CARDINAL, &n_items);
 	else
 		data = ccm_window_get_property(self, 
 								CCM_WINDOW_GET_CLASS(self)->frame_extends_atom,
@@ -2362,3 +2300,86 @@ ccm_window_transform(CCMWindow* self, cairo_t* ctx, gboolean y_invert)
 	
 	return TRUE;
 }
+
+guint32*
+ccm_window_get_property(CCMWindow* self, Atom property_atom, 
+						Atom req_type, guint *n_items)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(property_atom != None, NULL);
+	
+    CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+    int ret;
+    Atom type;
+    int format;
+    gulong n_items_internal;
+    guchar *property = NULL;
+    gulong bytes_after;
+    guint32 *result;
+    
+    ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
+							  CCM_WINDOW_XWINDOW(self), property_atom, 
+							  0, G_MAXLONG, False,
+							  req_type, &type, &format,
+							  &n_items_internal, &bytes_after,
+							  &property);
+    
+    if (ret != Success)
+    {
+		ccm_debug("ERROR GET  PROPERTY = %i", ret);
+		if (property) XFree(property);
+		g_signal_emit(self, signals[ERROR], 0);
+		return NULL;
+    }
+	ccm_debug("PROPERTY = 0x%x, %i", property, n_items_internal);
+		
+	result = g_memdup (property, n_items_internal * (format / 8));
+    XFree(property);
+	
+    if (n_items) *n_items = n_items_internal;
+    
+    return result;
+}
+
+guint32 *
+ccm_window_get_child_property(CCMWindow* self, Atom property_atom,
+						       Atom req_type, guint *n_items)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(property_atom != None, NULL);
+
+    CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+    int ret;
+    Atom type;
+    int format;
+    gulong n_items_internal;
+    guchar *property = NULL;
+    gulong bytes_after;
+    guint32 *result;
+    
+	if (!self->priv->child) return NULL;
+	
+    ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
+							  self->priv->child, property_atom, 
+							  0, G_MAXLONG, False,
+							  req_type, &type, &format,
+							  &n_items_internal, &bytes_after,
+							  &property);
+    
+    if (ret != Success)
+    {
+		ccm_debug("ERROR GET  PROPERTY = %i", ret);
+		g_signal_emit(self, signals[ERROR], 0);
+		if (property) XFree(property);
+		return NULL;
+    }
+        
+    ccm_debug("PROPERTY = 0x%x, %i", property, n_items_internal);
+	result = g_memdup (property, n_items_internal * (format / 8));
+    XFree(property);
+	
+    if (n_items) *n_items = n_items_internal;
+    
+    return result;
+}
+
