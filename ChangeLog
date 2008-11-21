@@ -1,5 +1,11 @@
 2008-11-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* src/ccm-screen.c (ccm_screen_update_refresh_rate):
+	  - Don't try to set refresh rate if we have an error on get conf key, 
+	    avoid a crash on first startup.       
+
+2008-11-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/shadow/ccm-shadow.c (ccm_shadow_window_load_options),
 	(ccm_shadow_window_map):
       - Check for _CCM_SHADOW_DISABLED property on window map.

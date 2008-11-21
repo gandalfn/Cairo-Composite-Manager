@@ -619,8 +619,9 @@ ccm_screen_update_refresh_rate(CCMScreen* self)
 	if (self->priv->refresh_rate != refresh_rate)
 	{
 		self->priv->refresh_rate = refresh_rate;
-		ccm_config_set_integer (self->priv->options[CCM_SCREEN_REFRESH_RATE], 
-								refresh_rate, NULL);
+		if (!error)
+			ccm_config_set_integer (self->priv->options[CCM_SCREEN_REFRESH_RATE], 
+									refresh_rate, NULL);
 		if (self->priv->paint) 
 		{
 			ccm_timeline_stop(self->priv->paint);
