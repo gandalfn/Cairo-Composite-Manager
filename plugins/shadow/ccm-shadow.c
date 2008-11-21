@@ -535,7 +535,6 @@ ccm_shadow_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	self->priv->window = window;
 	ccm_shadow_create_atoms(self);
-	ccm_shadow_query_avoid_shadow(self);
 	
 	self->priv->border = 
 		ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER], &error);
@@ -606,6 +605,8 @@ ccm_shadow_window_map(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMShadow* self = CCM_SHADOW(plugin);
 	gboolean need = ccm_shadow_need_shadow(self);
 
+	ccm_shadow_query_avoid_shadow(self);
+	
 	if ((need && !self->priv->shadow[0]) || 
 		(!need && self->priv->shadow[0]))
 	{
