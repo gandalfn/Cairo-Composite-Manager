@@ -35,11 +35,13 @@
 enum
 {
 	CCM_DECORATION_OPACITY,
+	CCM_DECORATION_BLUR,
 	CCM_DECORATION_OPTION_N
 };
 
 static gchar* CCMDecorationOptions[CCM_DECORATION_OPTION_N] = {
 	"opacity",
+	"blur"
 };
 
 static void ccm_decoration_window_iface_init  (CCMWindowPluginClass* iface);
@@ -60,6 +62,7 @@ struct _CCMDecorationPrivate
 	int				right;
 	
 	float			opacity;
+	int				blur;
 	
 	CCMRegion*		geometry;
 	CCMRegion*		opaque;
@@ -84,6 +87,7 @@ ccm_decoration_init (CCMDecoration *self)
 	self->priv->left = 0;
 	self->priv->right = 0;
 	self->priv->opacity = 1.0;
+	self->priv->blur = 0;
 	self->priv->geometry = NULL;
 	self->priv->opaque = NULL;
 	self->priv->id_check = 0;
@@ -150,11 +154,47 @@ ccm_decoration_get_opacity(CCMDecoration* self)
 	return FALSE;
 }
 
+static gboolean
+ccm_decoration_get_blur(CCMDecoration* self)
+{
+	GError* error = NULL;
+	int real_blur;
+	int blur;
+	
+	real_blur = 
+		ccm_config_get_integer (self->priv->options[CCM_DECORATION_BLUR], 
+								&error);
+	if (error)
+	{
+		g_warning("Error on get opacity configuration value");
+		g_error_free(error);
+		real_blur = 0;
+	}
+	blur = MAX(0, real_blur);
+	blur = MIN(20, blur);
+	if (self->priv->blur != blur)
+	{
+		self->priv->blur = blur;
+		if (blur != real_blur)
+			ccm_config_set_integer (self->priv->options[CCM_DECORATION_BLUR], 
+									blur, NULL);
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
 static void
 ccm_decoration_on_option_changed(CCMDecoration* self, CCMConfig* config)
 {
 	if (config == self->priv->options[CCM_DECORATION_OPACITY] &&
 		 ccm_decoration_get_opacity (self) && self->priv->window)
+	{
+		ccm_decoration_create_mask(self);
+		ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
+	}
+	else if (config == self->priv->options[CCM_DECORATION_BLUR] &&
+		     ccm_decoration_get_blur (self) && self->priv->window)
 	{
 		ccm_decoration_create_mask(self);
 		ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
@@ -201,6 +241,7 @@ ccm_decoration_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	self->priv->window = window;
 	
 	ccm_decoration_get_opacity (self);
+	ccm_decoration_get_blur (self);
 	
 	g_signal_connect_swapped(window, "property-changed",
 							 G_CALLBACK(ccm_decoration_on_property_changed), 
@@ -275,6 +316,19 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		cairo_rectangle(ctx, clipbox.x, clipbox.y, 
 						clipbox.width, clipbox.height);
 		cairo_fill(ctx);
+		
+		if (self->priv->blur)
+		{
+			cairo_image_surface_blur(mask, self->priv->blur, self->priv->blur, 
+									 0, 0, clipbox.width + 
+									 self->priv->left + self->priv->right, 
+									 self->priv->top);
+		
+			cairo_set_source_rgba(ctx, 1, 1, 1, opacity);
+			cairo_rectangle(ctx, clipbox.x, clipbox.y, 
+							clipbox.width, clipbox.height);
+			cairo_fill(ctx);
+		}
 		
 		cairo_destroy(ctx);
 	}

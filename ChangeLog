@@ -1,6 +1,14 @@
 2008-11-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/decoration/ccm-decoration.c (ccm_decoration_init),
+	(ccm_decoration_get_blur), (ccm_decoration_on_option_changed),
+	(ccm_decoration_window_load_options), (ccm_decoration_create_mask):
+	* plugins/decoration/ccm-decoration.schemas.in:
+	  - Add decoration opacity blur option.
+
+2008-11-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/decoration/ccm-decoration.c (ccm_decoration_init),
 	(ccm_decoration_finalize), (ccm_decoration_class_init),
 	(ccm_decoration_get_opacity), (ccm_decoration_on_option_changed),
 	(ccm_decoration_on_property_changed),
