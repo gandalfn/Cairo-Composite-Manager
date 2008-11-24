@@ -41,6 +41,10 @@ cairo_rectangle_round (cairo_t *cr, double x, double y, double w, double h,
 void
 cairo_image_surface_blur (cairo_surface_t* surface,
 						  int              horzRadius,
-						  int              vertRadius);
+						  int              vertRadius,
+						  int			   xpos,
+						  int			   ypos,
+						  int			   width,
+						  int			   height);
 
 #endif /* _CCM_CAIRO_UTILS_H_ */

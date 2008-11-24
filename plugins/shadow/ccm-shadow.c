@@ -238,7 +238,7 @@ ccm_shadow_create_shadow(CCMShadow* self, CCMWindow* window)
 		if (cpt == CCM_SHADOW_SIDE_RIGHT || cpt == CCM_SHADOW_SIDE_LEFT)
 		{
 			cairo_image_surface_blur(tmp, self->priv->radius, 
-									 self->priv->radius);
+									 self->priv->radius, 0, 0, -1, -1);
 			self->priv->shadow[cpt] = 
 				cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
 			ctx = cairo_create(self->priv->shadow[cpt]);
@@ -254,7 +254,8 @@ ccm_shadow_create_shadow(CCMShadow* self, CCMWindow* window)
 		else
 		{
 			cairo_image_surface_blur(self->priv->shadow[cpt], 
-									 self->priv->radius, self->priv->radius);
+									 self->priv->radius, self->priv->radius,
+									 0, 0, -1, -1);
 		}
 	}
 }

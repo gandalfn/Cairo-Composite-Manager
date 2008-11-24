@@ -116,7 +116,11 @@ kernel_1d_delete (int    radius,
 void
 cairo_image_surface_blur (cairo_surface_t* surface,
 						  int              horzRadius,
-						  int              vertRadius)
+						  int              vertRadius,
+						  int			   xpos,
+						  int			   ypos,
+						  int			   width,
+						  int			   height)
 {
 	int            iX;
 	int            iY;
@@ -131,8 +135,6 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 	double*        horzKernel;
 	double*        vertKernel;
 	unsigned char* src;
-	int            width;
-	int            height;
 	int            channels;
 
 	/* sanity checks */
@@ -146,8 +148,10 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 	cairo_surface_flush (surface);
 
 	src  = cairo_image_surface_get_data (surface);
-	width  = cairo_image_surface_get_width (surface);
-	height = cairo_image_surface_get_height (surface);
+	if (width < 0 || width > cairo_image_surface_get_width (surface))
+		width  = cairo_image_surface_get_width (surface);
+	if (height < 0 || height > cairo_image_surface_get_height (surface))
+		height = cairo_image_surface_get_height (surface);
 
 	/* only handle RGB- or RGBA-surfaces */
 	if (cairo_image_surface_get_format (surface) == CAIRO_FORMAT_ARGB32)
@@ -193,9 +197,9 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 	}
 
 	/* horizontal pass */
-	for (iY = 0; iY < height; iY++)
+	for (iY = ypos; iY < height; iY++)
 	{
-		for (iX = 0; iX < width; iX++)
+		for (iX = xpos; iX < width; iX++)
 		{
 			double red   = 0.0f;
 			double green = 0.0f;
@@ -233,9 +237,9 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 	}
 
 	/* vertical pass */
-	for (iY = 0; iY < height; iY++)
+	for (iY = ypos; iY < height; iY++)
 	{
-		for (iX = 0; iX < width; iX++)
+		for (iX = xpos; iX < width; iX++)
 		{
 			double red   = 0.0f;
 			double green = 0.0f;
@@ -275,9 +279,9 @@ cairo_image_surface_blur (cairo_surface_t* surface,
 	kernel_1d_delete (horzRadius, horzKernel);
 	kernel_1d_delete (vertRadius, vertKernel);
 
-	for (iY = 0; iY < height; iY++)
+	for (iY = ypos; iY < height; iY++)
 	{
-		for (iX = 0; iX < width; iX++)
+		for (iX = xpos; iX < width; iX++)
 		{
 			offset = iY * stride + iX * channels;
 

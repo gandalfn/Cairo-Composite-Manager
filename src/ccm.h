@@ -76,7 +76,8 @@ typedef enum
 	CCM_PROPERTY_MWM_HINTS,
     CCM_PROPERTY_WM_HINTS,
     CCM_PROPERTY_OPACITY,
-	CCM_PROPERTY_STATE
+	CCM_PROPERTY_STATE,
+	CCM_PROPERTY_FRAME_EXTENDS
 } CCMPropertyType;
 
 typedef struct _CCMWindowClass 	 CCMWindowClass;
@@ -302,7 +303,8 @@ gboolean        ccm_window_keep_below               (CCMWindow* self);
 CCMWindow*      ccm_window_transient_for            (CCMWindow* self);
 CCMWindow*      ccm_window_get_group_leader         (CCMWindow* self);
 const cairo_rectangle_t* ccm_window_get_area        (CCMWindow* self);
-gboolean        ccm_window_get_frame_extends        (CCMWindow* self, 
+void			ccm_window_query_frame_extends		(CCMWindow* self);
+void	        ccm_window_get_frame_extends        (CCMWindow* self, 
                                                      int* left_frame, 
                                                      int* right_frame, 
                                                      int* top_frame, 

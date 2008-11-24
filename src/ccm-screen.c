@@ -1961,6 +1961,12 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 													   property_event->window);
 				if (window) ccm_window_query_state(window);
 			}
+			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->frame_extends_atom)
+			{
+				window = ccm_screen_find_window_or_child (self,
+														  property_event->window);
+				if (window) ccm_window_query_frame_extends(window);
+			}
 		}
 		break;
 		case Expose:

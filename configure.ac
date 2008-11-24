@@ -145,6 +145,7 @@ plugins/menu-animation/Makefile
 plugins/magnifier/Makefile
 plugins/mosaic/Makefile
 plugins/perf/Makefile
+plugins/decoration/Makefile
 data/Makefile
 data/cairo-compmgr.desktop.in
 ])

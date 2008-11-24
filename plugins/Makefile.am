@@ -7,7 +7,6 @@ SUBDIRS = \
     menu-animation \
 	magnifier \
 	mosaic \
-    perf
-
-## File created by the gnome-build tools
-
+    perf \
+    decoration
+    

@@ -98,12 +98,14 @@ enum
 {
     PROP_0,
 	PROP_CHILD,
-	PROP_IMAGE
+	PROP_IMAGE,
+	PROP_MASK
 };
 
 enum
 {
 	PROPERTY_CHANGED,
+	OPACITY_CHANGED,
 	ERROR,
     N_SIGNALS
 };
@@ -140,6 +142,10 @@ struct _CCMWindowPrivate
 	gboolean			keep_above;
 	gboolean			keep_below;
 	gboolean			override_redirect;
+	int					frame_left;
+	int					frame_right;
+	int					frame_top;
+	int					frame_bottom;
 	
 	GSList*				properties_pending;
 	CCMPixmap*			pixmap;
@@ -151,6 +157,7 @@ struct _CCMWindowPrivate
 	CCMRegion*			orig_opaque;
 	double				opacity;
 	cairo_matrix_t		transform;
+	cairo_surface_t		*mask;
 };
 
 #define CCM_WINDOW_GET_PRIVATE(o)  \
@@ -183,7 +190,12 @@ ccm_window_set_gobject_property(GObject *object,
 			}
 			break;
 		}
-    	default:
+    	case PROP_MASK:
+			if (priv->mask)
+				cairo_surface_destroy(priv->mask);
+			priv->mask = (cairo_surface_t*)g_value_get_pointer (value);
+			break;
+		default:
 			break;
     }
 }
@@ -200,6 +212,9 @@ ccm_window_get_gobject_property (GObject* object,
     {
     	case PROP_CHILD:
 			g_value_set_pointer (value, (gpointer)priv->child);
+			break;
+		case PROP_MASK:
+			g_value_set_pointer (value, (gpointer)priv->mask);
 			break;
 		default:
 			break;
@@ -237,10 +252,15 @@ ccm_window_init (CCMWindow *self)
 	self->priv->opaque = NULL;
 	self->priv->orig_opaque = NULL;
 	self->priv->opacity = 1.0f;
-	self->priv->properties_pending = NULL;
+	self->priv->frame_left = 0;
+	self->priv->frame_right = 0;
+	self->priv->frame_top = 0;
+	self->priv->frame_bottom = 0;
+ 	self->priv->properties_pending = NULL;
 	self->priv->pixmap = NULL;
 	self->priv->use_pixmap_image = FALSE;
 	self->priv->plugin = NULL;
+	self->priv->mask = NULL;
 	cairo_matrix_init_identity (&self->priv->transform);
 }
 
@@ -254,7 +274,11 @@ ccm_window_finalize (GObject *object)
 	g_signal_handlers_disconnect_by_func (screen, 
 										  ccm_window_on_plugins_changed, 
 										  self);
-	
+	if (self->priv->mask)
+	{
+		cairo_surface_destroy(self->priv->mask);
+		self->priv->mask = NULL;
+	}
 	if (self->priv->opaque) 
 	{
 		ccm_region_destroy(self->priv->opaque);
@@ -317,11 +341,23 @@ ccm_window_class_init (CCMWindowClass *klass)
 							  FALSE,
 		     				  G_PARAM_WRITABLE));
 	
+	g_object_class_install_property(object_class, PROP_MASK,
+		g_param_spec_pointer ("mask",
+		 					  "Mask",
+			     			  "Window paint mask",
+			     			  G_PARAM_READWRITE));
+	
 	signals[PROPERTY_CHANGED] = g_signal_new ("property-changed",
 									 G_OBJECT_CLASS_TYPE (object_class),
 									 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 									 g_cclosure_marshal_VOID__INT,
 									 G_TYPE_NONE, 1, G_TYPE_INT);
+	
+	signals[OPACITY_CHANGED] = g_signal_new ("opacity-changed",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__VOID,
+								   G_TYPE_NONE, 0);
 	
 	signals[ERROR] = g_signal_new ("error",
 								   G_OBJECT_CLASS_TYPE (object_class),
@@ -980,7 +1016,11 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	if (ccm_window_transform (self, context, y_invert))
 	{
 		cairo_set_source_surface(context, surface, 0.0f, 0.0f);
-		cairo_paint_with_alpha(context, self->priv->opacity);
+		if (self->priv->mask)
+			cairo_mask_surface(context, self->priv->mask, 0, 0);
+		else
+			cairo_paint_with_alpha(context, self->priv->opacity);
+		
 		if (cairo_status (context) != CAIRO_STATUS_SUCCESS)
 		{
 			ccm_debug_window(self, "PAINT ERROR %i", cairo_status (context));
@@ -1339,6 +1379,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 		ccm_window_query_wm_hints(self);
 		ccm_window_query_mwm_hints(self);
 		ccm_window_query_state (self);
+		ccm_window_query_frame_extends (self);
 		
 		XSelectInput (CCM_DISPLAY_XDISPLAY(display), 
 					  CCM_WINDOW_XWINDOW(self),
@@ -1912,6 +1953,7 @@ ccm_window_set_opacity (CCMWindow* self, gfloat opacity)
 		ccm_window_set_alpha(self);
 	else if (ccm_drawable_get_format (CCM_DRAWABLE(self)) != CAIRO_FORMAT_ARGB32)
 		ccm_window_set_opaque(self);
+	g_signal_emit(self, signals[OPACITY_CHANGED], 0);
 }
 
 gboolean
@@ -2184,16 +2226,16 @@ ccm_window_get_area(CCMWindow* self)
 		   NULL : &self->priv->area;
 }
 
-gboolean
-ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame, 
-							 int* top_frame, int* bottom_frame)
+void
+ccm_window_query_frame_extends(CCMWindow* self)
 {
-	g_return_val_if_fail(self != NULL, FALSE);
-	g_return_val_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL, FALSE);
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
 	guint32* data = NULL;
 	guint n_items;
-	gboolean ret = FALSE;
+	gboolean updated = FALSE;
+	int left_frame, right_frame, top_frame, bottom_frame;
 	
 	if (self->priv->child)
 		data = ccm_window_get_child_property(self, 
@@ -2209,16 +2251,39 @@ ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame,
 		
 		if (n_items == 4)
 		{
-			*left_frame   = (int)extends[0];
-      		*right_frame  = (int)extends[1];
-      		*top_frame    = (int)extends[2];
-      		*bottom_frame = (int)extends[3];
-			ret = TRUE;
+			left_frame = (int)extends[0];
+			updated |= left_frame != self->priv->frame_left;
+      		right_frame  = (int)extends[1];
+			updated |= right_frame != self->priv->frame_right;
+      		top_frame    = (int)extends[2];
+			updated |= left_frame != self->priv->frame_top;
+      		bottom_frame = (int)extends[3];
+			updated |= bottom_frame != self->priv->frame_bottom;
 		}
 		g_free(data);
 	}
 	
-	return ret;
+	if (updated)
+	{
+		self->priv->frame_left = left_frame;
+		self->priv->frame_right = right_frame;
+		self->priv->frame_top = top_frame;
+		self->priv->frame_bottom = bottom_frame;
+		g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
+					  CCM_PROPERTY_FRAME_EXTENDS);
+	}
+}
+
+void
+ccm_window_get_frame_extends(CCMWindow* self, int* left_frame, int* right_frame, 
+							 int* top_frame, int* bottom_frame)
+{
+	g_return_if_fail(self != NULL);
+	
+	*left_frame   = self->priv->frame_left;
+    *right_frame  = self->priv->frame_right;
+    *top_frame    = self->priv->frame_top;
+    *bottom_frame = self->priv->frame_bottom;
 }
 
 void 
