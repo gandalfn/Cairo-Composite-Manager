@@ -97,7 +97,7 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 	
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-	glitz_drawable_format_t* format = NULL;
+	glitz_drawable_format_t* format = NULL, tmp;
 	
 	if (!self->priv->gl_drawable)
 	{
@@ -105,16 +105,26 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 		Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
 		cairo_rectangle_t geometry;
 		gboolean indirect;
+		unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
+								 GLITZ_FORMAT_RED_SIZE_MASK |
+								 GLITZ_FORMAT_GREEN_SIZE_MASK |
+								 GLITZ_FORMAT_BLUE_SIZE_MASK |
+								 GLITZ_FORMAT_ALPHA_SIZE_MASK;
+			
+		tmp.doublebuffer = 1;
+		tmp.color.red_size = 8;
+		tmp.color.green_size = 8;
+		tmp.color.blue_size = 8;
+		tmp.color.alpha_size = 8;
 		
 		if (!visual ||
 			!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
 			return FALSE;
 		
-		format = glitz_glx_find_drawable_format_for_visual(
-				CCM_DISPLAY_XDISPLAY(display),
-				CCM_SCREEN_NUMBER(screen),
-				XVisualIDFromVisual (visual));
-		
+		format = glitz_glx_find_window_format (
+						CCM_DISPLAY_XDISPLAY(display),
+						CCM_SCREEN_NUMBER(screen),
+						mask, &tmp, 1);
 		if (!format)
 		{
 			g_warning("Error on get glitz format drawable");
@@ -267,12 +277,14 @@ ccm_window_glitz_create_pixmap(CCMWindow* self, int width, int height, int depth
 	unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
 						 GLITZ_FORMAT_RED_SIZE_MASK |
 						 GLITZ_FORMAT_GREEN_SIZE_MASK |
-						 GLITZ_FORMAT_BLUE_SIZE_MASK;
+						 GLITZ_FORMAT_BLUE_SIZE_MASK |
+						 GLITZ_FORMAT_DEPTH_MASK;
 	
-	templ.doublebuffer = 1;
+	templ.doublebuffer = 0;
 	templ.color.red_size = 8;
 	templ.color.green_size = 8;
 	templ.color.blue_size = 8;
+	templ.depth = depth;
 	
 	g_object_get(G_OBJECT(screen), "indirect_rendering", &indirect, NULL);
 #ifdef ENABLE_GLITZ_TFP_BACKEND

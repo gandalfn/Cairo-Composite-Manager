@@ -100,7 +100,10 @@ ccm_plugin_finalize (GObject *object)
 	CCMPlugin* self = CCM_PLUGIN(object);
 	
 	if (self->priv->parent && CCM_IS_PLUGIN(self->priv->parent)) 
+	{
 		g_object_unref(self->priv->parent);
+		self->priv->parent = NULL;
+	}
 	
 	G_OBJECT_CLASS (ccm_plugin_parent_class)->finalize (object);
 }

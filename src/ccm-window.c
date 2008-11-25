@@ -2247,7 +2247,7 @@ ccm_window_query_frame_extends(CCMWindow* self)
 								XA_CARDINAL, &n_items);
 	if (data)
 	{
-		guint32* extends = (guint32*)data;
+		gulong* extends = (gulong*)data;
 		
 		if (n_items == 4)
 		{
@@ -2398,7 +2398,7 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom,
     }
 	ccm_debug("PROPERTY = 0x%x, %i", property, n_items_internal);
 		
-	result = g_memdup (property, n_items_internal * (format / 8));
+	result = g_memdup (property, n_items_internal * sizeof(gulong));
     XFree(property);
 	
     if (n_items) *n_items = n_items_internal;
@@ -2440,7 +2440,7 @@ ccm_window_get_child_property(CCMWindow* self, Atom property_atom,
     }
         
     ccm_debug("PROPERTY = 0x%x, %i", property, n_items_internal);
-	result = g_memdup (property, n_items_internal * (format / 8));
+	result = g_memdup (property, n_items_internal * sizeof(gulong));
     XFree(property);
 	
     if (n_items) *n_items = n_items_internal;

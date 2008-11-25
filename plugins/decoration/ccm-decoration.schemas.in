@@ -12,16 +12,5 @@
             <long>Opacity of decoration</long>
          </locale>
       </schema>
-      <schema>
-         <key>/schemas/apps/cairo-compmgr/default/decoration/blur</key>
-         <applyto>/apps/cairo-compmgr/default/decoration/blur</applyto>
-         <owner>gnome</owner>
-         <type>int</type>
-		 <default>6</default>
-         <locale name="C">
-            <short>Blur opacity of decoration</short>
-            <long>Blur opacity of decoration</long>
-         </locale>
-      </schema>
    </schemalist>
 </gconfschemafile>

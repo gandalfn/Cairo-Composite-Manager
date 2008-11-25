@@ -104,74 +104,40 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 	
 	if (!self->priv->gl_pixmap)
 	{
-		glitz_drawable_format_t* format = NULL;
+		glitz_drawable_format_t* format = NULL, tmp;
 		glitz_format_t templ;
 		Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
 		cairo_rectangle_t geometry;
 		gboolean indirect;
+		unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
+							 GLITZ_FORMAT_RED_SIZE_MASK |
+							 GLITZ_FORMAT_GREEN_SIZE_MASK |
+							 GLITZ_FORMAT_BLUE_SIZE_MASK |
+							 GLITZ_FORMAT_ALPHA_SIZE_MASK |
+							 GLITZ_FORMAT_DEPTH_MASK;
 		
 		if (!visual ||
 			!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
 			return FALSE;
 		
-		if (ccm_drawable_get_format(CCM_DRAWABLE(self)) != CAIRO_FORMAT_ARGB32)
-		{
-			format = glitz_glx_find_drawable_format_for_visual(
-												CCM_DISPLAY_XDISPLAY(display),
-												CCM_SCREEN_NUMBER(screen),
-												XVisualIDFromVisual (visual));
-		}
-		else
-		{
-			glitz_drawable_format_t tmp, *f;
-			unsigned long mask = GLITZ_FORMAT_DOUBLEBUFFER_MASK |
-								 GLITZ_FORMAT_RED_SIZE_MASK |
-								 GLITZ_FORMAT_GREEN_SIZE_MASK |
-								 GLITZ_FORMAT_BLUE_SIZE_MASK |
-								 GLITZ_FORMAT_ALPHA_SIZE_MASK;
 			gint cpt = 0;
 			
-			tmp.doublebuffer = 0;
-			tmp.color.red_size = 8;
-			tmp.color.green_size = 8;
-			tmp.color.blue_size = 8;
-			tmp.color.alpha_size = 8;
-			do 
-			{
-				f = glitz_glx_find_window_format (
+		tmp.doublebuffer = 0;
+		tmp.color.red_size = 8;
+		tmp.color.green_size = 8;
+		tmp.color.blue_size = 8;
+		tmp.color.alpha_size = 8;
+		tmp.depth = 32;
+		format = glitz_glx_find_window_format (
 						CCM_DISPLAY_XDISPLAY(display),
 						CCM_SCREEN_NUMBER(screen),
-						mask, &tmp, cpt);
-				cpt++;
-				if (f)
-				{
-					XVisualInfo* vinfo = 
-						glitz_glx_get_visual_info_from_format (
-												CCM_DISPLAY_XDISPLAY(display),
-												CCM_SCREEN_NUMBER(screen), f);
-					gint depth = vinfo->depth;
-					XFree(vinfo);
-						
-					if (depth == 32)
-					{
-						format = f;
-						break;
-					}
-				}
-			} while (f);
-			
-			if (!format)
-			{
-				format = glitz_glx_find_drawable_format_for_visual(
-												CCM_DISPLAY_XDISPLAY(display),
-												CCM_SCREEN_NUMBER(screen),
-												XVisualIDFromVisual (visual));
-			}
-			if (!format)
-			{
-				g_warning("Error on get glitz format drawable");
-				return FALSE;
-			}
+						mask, &tmp, 0);
+		if (!format)
+		{
+			format = glitz_glx_find_drawable_format_for_visual(
+											CCM_DISPLAY_XDISPLAY(display),
+											CCM_SCREEN_NUMBER(screen),
+											XVisualIDFromVisual (visual));
 		}
 
 		if (!format)

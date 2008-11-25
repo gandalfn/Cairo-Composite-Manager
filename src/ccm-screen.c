@@ -762,14 +762,14 @@ ccm_screen_print_stack(CCMScreen* self)
 	
 	GList* item;
 	
-	ccm_log("XID\t\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\tName");
+	ccm_log("XID\t\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\t\tName");
 	for (item = self->priv->windows; item; item = item->next)
 	{
 		CCMWindow* transient = ccm_window_transient_for (item->data);
 		CCMWindow* leader = ccm_window_get_group_leader (item->data);
 
 		if (ccm_window_is_viewable (item->data))
-		ccm_log("0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t0x%lx\t0x%lx\t%s", 
+		ccm_log("0x%lx\t%i\t%i\t%i\t%i\t%i\t\t%i\t%i\t0x%08lx\t0x%08lx\t%s", 
 				CCM_WINDOW_XWINDOW(item->data), 
 				ccm_window_is_viewable (item->data),
 				ccm_window_get_hint_type (item->data),

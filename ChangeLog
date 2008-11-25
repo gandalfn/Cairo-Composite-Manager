@@ -1,3 +1,28 @@
+2008-11-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/decoration/ccm-decoration.c (ccm_decoration_init),
+	(ccm_decoration_finalize), (ccm_decoration_on_option_changed),
+	(ccm_decoration_on_property_changed),
+	(ccm_decoration_on_opacity_changed),
+	(ccm_decoration_window_load_options), (ccm_decoration_create_mask),
+	(ccm_decoration_window_query_geometry):
+	* plugins/decoration/ccm-decoration.schemas.in:
+	  - Use similar surface instead image surface.
+	  - Fix crash on load/unload.
+	  - Remove blur option.
+	* src/ccm-plugin.c (ccm_plugin_finalize):
+	  - Set parent to null on unref.
+	* src/ccm-screen.c (ccm_screen_print_stack):
+	  - Fix typo
+	* src/ccm-window.c (ccm_window_query_frame_extends),
+	(ccm_window_get_property), (ccm_window_get_child_property):
+	  - Use gulong instead guint32 on get property to have the correct size on
+	    64 bits platform.
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
+	* src/ccm-window-glitz.c (ccm_window_glitz_create_gl_drawable),
+	(ccm_window_glitz_create_pixmap):
+	  - Fix glitz format selection need uncommited release of glitz.
+
 2008-11-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/decoration/ccm-decoration.c (ccm_decoration_init),
