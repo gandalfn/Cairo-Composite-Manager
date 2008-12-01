@@ -1,5 +1,10 @@
 2008-12-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_finalize):
+	  - Fix crash on freeze plugin unload.
+
+2008-12-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/freeze/ccm-freeze.c (ccm_freeze_init),
 	(ccm_freeze_finalize), (ccm_freeze_on_event), (ccm_freeze_get_pid),
 	(ccm_freeze_ping), (ccm_freeze_load_options), (ccm_freeze_paint),

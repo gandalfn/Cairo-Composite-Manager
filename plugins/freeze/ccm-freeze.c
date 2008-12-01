@@ -107,13 +107,14 @@ ccm_freeze_finalize (GObject *object)
 	CCMFreeze* self = CCM_FREEZE(object);
 	gint cpt;
 	
-	if (self->priv->window)
+	if (CCM_IS_WINDOW(self->priv->window))
 	{
 		CCMDisplay* display = 
 				ccm_drawable_get_display(CCM_DRAWABLE(self->priv->window));
-		g_signal_handlers_disconnect_by_func(display, 
-											 ccm_freeze_on_event, 
-											 self);	
+		if (CCM_IS_DISPLAY(display))
+			g_signal_handlers_disconnect_by_func(display, 
+												 ccm_freeze_on_event, 
+												 self);	
 	}
 	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; cpt++)
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
