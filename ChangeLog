@@ -1,3 +1,23 @@
+2008-12-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_init),
+	(ccm_freeze_finalize), (ccm_freeze_on_event), (ccm_freeze_get_pid),
+	(ccm_freeze_ping), (ccm_freeze_load_options), (ccm_freeze_paint),
+	(ccm_freeze_map), (ccm_freeze_unmap), (ccm_freeze_add_window):
+	* plugins/freeze/ccm-freeze.h:
+	* plugins/freeze/ccm-freeze.schemas.in:
+	  - Only ping application which have _NET_WM_PID atom
+	  - Add color freeze option
+	  - Some fix
+	* data/cairo-compmgr.schemas.in:
+	  - Enable by default decoration and freeze plugins
+	* plugins/magnifier/ccm-magnifier.c
+	(ccm_magnifier_cursor_get_surface):
+	  - Don't draw animated cursor
+	* src/ccm-pixmap-glitz.c (ccm_pixmap_glitz_create_gl_drawable):
+	* src/ccm-screen.c (ccm_screen_paint):
+	  - Fix to work with latest glitz snapshot.
+
 2008-11-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/decoration/ccm-decoration.c (ccm_decoration_init),

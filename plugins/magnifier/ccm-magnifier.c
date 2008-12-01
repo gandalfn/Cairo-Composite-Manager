@@ -788,34 +788,40 @@ ccm_magnifier_cursor_get_surface(CCMMagnifier* self)
 	XFixesCursorImage *cursor_image;
 	gint cpt;
 	
-	if (self->priv->image_mouse)
-		g_free (self->priv->image_mouse);
-	if (self->priv->surface_mouse)
-		cairo_surface_destroy (self->priv->surface_mouse);
 	
 	cursor_image = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(display));
-	ccm_magnifier_cursor_convert_to_rgba (self, cursor_image);
 	
-	self->priv->image_mouse = g_new0(guchar, cursor_image->width * cursor_image->height * 4);
-	for (cpt = 0; cpt < cursor_image->width * cursor_image->height; cpt++)
+	if (cursor_image->width > 1 && cursor_image->height > 1)
 	{
-		self->priv->image_mouse[(cpt * 4) + 3] = (guchar)(cursor_image->pixels[cpt] >> 24);
-		self->priv->image_mouse[(cpt * 4) + 2] = (guchar)((cursor_image->pixels[cpt] >> 16) & 0xff);
-		self->priv->image_mouse[(cpt * 4) + 1] = (guchar)((cursor_image->pixels[cpt] >> 8) & 0xff);
-		self->priv->image_mouse[(cpt * 4) + 0] = (guchar)(cursor_image->pixels[cpt] & 0xff);
+		if (self->priv->image_mouse)
+			g_free (self->priv->image_mouse);
+		if (self->priv->surface_mouse)
+			cairo_surface_destroy (self->priv->surface_mouse);
+	
+		ccm_magnifier_cursor_convert_to_rgba (self, cursor_image);
+	
+		self->priv->image_mouse = g_new0(guchar, cursor_image->width * cursor_image->height * 4);
+		for (cpt = 0; cpt < cursor_image->width * cursor_image->height; cpt++)
+		{
+			self->priv->image_mouse[(cpt * 4) + 3] = (guchar)(cursor_image->pixels[cpt] >> 24);
+			self->priv->image_mouse[(cpt * 4) + 2] = (guchar)((cursor_image->pixels[cpt] >> 16) & 0xff);
+			self->priv->image_mouse[(cpt * 4) + 1] = (guchar)((cursor_image->pixels[cpt] >> 8) & 0xff);
+			self->priv->image_mouse[(cpt * 4) + 0] = (guchar)(cursor_image->pixels[cpt] & 0xff);
+		}
+		self->priv->surface_mouse = cairo_image_surface_create_for_data (
+													self->priv->image_mouse, 
+													CAIRO_FORMAT_ARGB32,
+													cursor_image->width, 
+													cursor_image->height,
+													cursor_image->width * 4);
+		self->priv->mouse_width = cursor_image->width;
+		self->priv->mouse_height = cursor_image->height;
 	}
-	self->priv->surface_mouse = cairo_image_surface_create_for_data (
-												self->priv->image_mouse, 
-												CAIRO_FORMAT_ARGB32,
-												cursor_image->width, 
-												cursor_image->height,
-												cursor_image->width * 4);
+	
 	self->priv->x_mouse = cursor_image->x;
 	self->priv->y_mouse = cursor_image->y;
 	self->priv->x_hot = cursor_image->xhot;
 	self->priv->y_hot = cursor_image->yhot;
-	self->priv->mouse_width = cursor_image->width;
-	self->priv->mouse_height = cursor_image->height;
 	
 	XFree(cursor_image);
 }

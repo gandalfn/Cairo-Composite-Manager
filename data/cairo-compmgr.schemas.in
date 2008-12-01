@@ -28,7 +28,7 @@
          <applyto>/apps/cairo-compmgr/general/unmanaged_screen</applyto>
          <owner>gnome</owner>
          <type>list</type>
-		 <list_type>int</list_type>
+	 <list_type>int</list_type>
          <default>[]</default>
          <locale name="C">
             <short>List of unmanaged screen</short>
@@ -73,8 +73,8 @@
          <applyto>/apps/cairo-compmgr/default/screen/plugins</applyto>
          <owner>gnome</owner>
          <type>list</type>
-		 <list_type>string</list_type>
-         <default>[opacity,fade,shadow,menu-animation,magnifier]</default>
+	 <list_type>string</list_type>
+         <default>[opacity,fade,shadow,menu-animation,magnifier,decoration,freeze]</default>
          <locale name="C">
             <short>List of active plugins</short>
             <long>List of active plugins</long>
@@ -85,7 +85,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/refresh_rate</applyto>
          <owner>gnome</owner>
          <type>int</type>
-		 <default>60</default>
+	 <default>60</default>
          <locale name="C">
             <short>Refresh rate in Hz</short>
             <long>Refresh rate in Hz</long>
@@ -96,7 +96,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/indirect</applyto>
          <owner>gnome</owner>
          <type>bool</type>
-		 <default>false</default>
+	 <default>true</default>
          <locale name="C">
             <short>Use indirect rendering</short>
             <long>Use indirect rendering</long>
@@ -107,7 +107,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/background</applyto>
          <owner>gnome</owner>
          <type>string</type>
-		 <default></default>
+	 <default></default>
          <locale name="C">
             <short>Default background pixmap</short>
             <long>Default background pixmap</long>
@@ -118,7 +118,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/color_background</applyto>
          <owner>gnome</owner>
          <type>string</type>
-		 <default>#000000</default>
+         <default>#000000</default>
          <locale name="C">
             <short>Default background color</short>
             <long>Default background color</long>
@@ -129,7 +129,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/background_x</applyto>
          <owner>gnome</owner>
          <type>int</type>
-		 <default>0</default>
+	 <default>0</default>
          <locale name="C">
             <short>Default background pixmap x position</short>
             <long>Default background pixmap x position (= 0 image is centered)</long>
@@ -140,7 +140,7 @@
          <applyto>/apps/cairo-compmgr/default/screen/background_y</applyto>
          <owner>gnome</owner>
          <type>int</type>
-		 <default>0</default>
+	 <default>0</default>
          <locale name="C">
             <short>Default background pixmap y position</short>
             <long>Default background pixmap y position (= 0 image is centered)</long>

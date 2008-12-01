@@ -1470,7 +1470,13 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 			}
 		}
 		else
+		{
 			cairo_identity_matrix (self->priv->ctx);
+			cairo_rectangle(self->priv->ctx, 0, 0, 
+								self->priv->xscreen->width, 
+								self->priv->xscreen->height);
+			cairo_clip(self->priv->ctx);
+		}
 			
 		if (self->priv->root_damage)
 		{	

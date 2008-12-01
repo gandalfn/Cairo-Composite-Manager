@@ -47,6 +47,7 @@ struct _CCMFreezeClass
 	
 	Atom protocol_atom;
 	Atom ping_atom;
+	Atom pid_atom;
 };
 
 typedef struct _CCMFreezePrivate CCMFreezePrivate;

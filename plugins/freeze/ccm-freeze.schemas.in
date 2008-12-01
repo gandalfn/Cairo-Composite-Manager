@@ -6,7 +6,7 @@
          <applyto>/apps/cairo-compmgr/default/freeze/delay</applyto>
          <owner>gnome</owner>
          <type>int</type>
-		 <default>5</default>
+	 <default>5</default>
          <locale name="C">
             <short>Freeze ping delay</short>
             <long>Freeze ping delay in seconds</long>
@@ -17,10 +17,21 @@
          <applyto>/apps/cairo-compmgr/default/freeze/duration</applyto>
          <owner>gnome</owner>
          <type>float</type>
-		 <default>0.3</default>
+	 <default>0.3</default>
          <locale name="C">
             <short>Freeze animation duration</short>
             <long>Freeze animation duration</long>
+         </locale>
+      </schema>
+      <schema>
+         <key>/schemas/apps/cairo-compmgr/default/freeze/color</key>
+         <applyto>/apps/cairo-compmgr/default/freeze/color</applyto>
+         <owner>gnome</owner>
+         <type>string</type>
+	 <default>#000000</default>
+         <locale name="C">
+            <short>Freeze color</short>
+            <long>Freeze color</long>
          </locale>
       </schema>
    </schemalist>
