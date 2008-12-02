@@ -343,6 +343,49 @@ ccm_decoration_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	return geometry;
 }
 
+static gboolean
+ccm_decoration_window_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
+							cairo_t* context, cairo_surface_t* surface,
+							gboolean y_invert)
+{
+	CCMDecoration* self = CCM_DECORATION(plugin);
+	gboolean ret = FALSE;
+	cairo_surface_t* mask = NULL;
+	
+	if (self->priv->geometry && self->priv->opaque)
+	{
+		CCMRegion* decoration = ccm_region_copy(self->priv->geometry);
+		CCMRegion* damaged = NULL;
+		
+		ccm_region_subtract(decoration, self->priv->opaque);
+		g_object_get(G_OBJECT(window), "damaged", &damaged, NULL);
+		if (damaged)
+		{
+			ccm_region_intersect(decoration, damaged);
+			if (ccm_region_empty(decoration))
+			{
+				g_object_get(G_OBJECT(window), "mask", &mask, NULL);
+				if (mask)
+				{
+					cairo_surface_reference(mask);
+					g_object_set(G_OBJECT(window), "mask", NULL, NULL);
+				}
+			}
+		}
+		ccm_region_destroy(decoration);
+	}
+	
+	ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
+								  window, context, surface, y_invert);
+	
+	if (mask)
+	{
+		g_object_set(G_OBJECT(window), "mask", mask, NULL);
+	}
+	
+	return ret;
+}
+
 static void 
 ccm_decoration_window_set_opaque_region(CCMWindowPlugin* plugin, 
 										CCMWindow* window,
@@ -412,7 +455,7 @@ ccm_decoration_window_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	 = ccm_decoration_window_load_options;
 	iface->query_geometry 	 = ccm_decoration_window_query_geometry;
-	iface->paint 			 = NULL;
+	iface->paint 			 = ccm_decoration_window_paint;
 	iface->map				 = NULL;
 	iface->unmap			 = NULL;
 	iface->query_opacity	 = NULL;

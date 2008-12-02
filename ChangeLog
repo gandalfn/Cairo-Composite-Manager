@@ -1,3 +1,9 @@
+2008-12-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/decoration/ccm-decoration.c
+	(ccm_decoration_window_paint), (ccm_decoration_window_iface_init):
+	  - Disable mask if damage region doesn't concern decoration.
+
 2008-12-01  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/freeze/ccm-freeze.c (ccm_freeze_finalize):
