@@ -47,16 +47,12 @@ static gchar* CCMFreezeOptions[CCM_FREEZE_OPTION_N] = {
 };
 
 static void ccm_freeze_window_iface_init(CCMWindowPluginClass* iface);
-static void ccm_freeze_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_freeze_on_event(CCMFreeze* self, XEvent* event);
 
 CCM_DEFINE_PLUGIN (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_freeze,
 										   CCM_TYPE_WINDOW_PLUGIN,
-										   ccm_freeze_window_iface_init);
-				   CCM_IMPLEMENT_INTERFACE(ccm_freeze,
-										   CCM_TYPE_SCREEN_PLUGIN,
-										   ccm_freeze_screen_iface_init))
+										   ccm_freeze_window_iface_init))
 
 struct _CCMFreezePrivate
 {	
@@ -255,8 +251,10 @@ ccm_freeze_ping(CCMFreeze* self)
 		if (!self->priv->pid)
 			ccm_freeze_get_pid(self);
 		
-		if (!self->priv->pid || (type != CCM_WINDOW_TYPE_NORMAL && 
-								 type != CCM_WINDOW_TYPE_DIALOG))
+		if (!self->priv->pid || ccm_window_is_input_only (self->priv->window) ||
+			!ccm_window_is_viewable (self->priv->window) ||
+			!ccm_window_is_decorated (self->priv->window) ||
+			(type != CCM_WINDOW_TYPE_NORMAL && type != CCM_WINDOW_TYPE_DIALOG))
 		{
 			if (!self->priv->alive)
 				ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
@@ -392,14 +390,7 @@ ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFreeze* self = CCM_FREEZE(plugin);
 	
-	CCMWindowType type = ccm_window_get_hint_type (window);
-	
-	self->priv->window = window;
-		
-	if (!self->priv->id_ping && !ccm_window_is_input_only (window) && 
-		ccm_window_is_viewable (window) &&
-		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG) &&
-		ccm_window_is_managed (self->priv->window))	
+	if (!self->priv->id_ping)
 		self->priv->id_ping = g_timeout_add_full (G_PRIORITY_LOW, 
 												  self->priv->delay * 1000, 
 												  (GSourceFunc)ccm_freeze_ping, 
@@ -417,52 +408,9 @@ ccm_freeze_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	{
 		g_source_remove (self->priv->id_ping);
 		ccm_timeline_stop(self->priv->timeline);
+		self->priv->id_ping = 0;
 	}
 	ccm_window_plugin_unmap(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-}
-
-static gboolean
-ccm_freeze_add_window(CCMScreenPlugin* plugin, CCMScreen* screen, 
-					  CCMWindow* window)
-{
-	CCMFreeze* self = CCM_FREEZE(_ccm_window_get_plugin (window, 
-														 CCM_TYPE_FREEZE));
-	CCMWindowType type = ccm_window_get_hint_type (window);
-	
-	self->priv->window = window;
-		
-	if (!self->priv->id_ping && !ccm_window_is_input_only (window) && 
-		ccm_window_is_viewable (window) &&
-		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG) &&
-		ccm_window_is_managed (self->priv->window))	
-	{
-		self->priv->alive = TRUE;
-		self->priv->id_ping = g_timeout_add_full (G_PRIORITY_LOW, 
-												  self->priv->delay * 1000, 
-												  (GSourceFunc)ccm_freeze_ping, 
-												  self, NULL);
-	}
-	return ccm_screen_plugin_add_window(CCM_SCREEN_PLUGIN_PARENT(plugin), 
-										screen, window);
-}
-
-static void
-ccm_freeze_remove_window(CCMScreenPlugin* plugin, CCMScreen* screen,
-						 CCMWindow* window)
-{
-	CCMFreeze* self = CCM_FREEZE(_ccm_window_get_plugin (window, 
-														 CCM_TYPE_FREEZE));
-	
-	self->priv->window = window;
-	if (self->priv->id_ping)	
-	{
-		g_source_remove (self->priv->id_ping);
-		self->priv->id_ping = 0;
-		self->priv->alive = TRUE;
-		ccm_timeline_stop(self->priv->timeline);
-	}
-	ccm_screen_plugin_remove_window(CCM_SCREEN_PLUGIN_PARENT(plugin), screen,
-									window);
 }
 
 static void
@@ -478,14 +426,4 @@ ccm_freeze_window_iface_init(CCMWindowPluginClass* iface)
 	iface->resize			 = NULL;
 	iface->set_opaque_region = NULL;
 	iface->get_origin		 = NULL;
-}
-
-static void
-ccm_freeze_screen_iface_init(CCMScreenPluginClass* iface)
-{
-	iface->load_options 	= NULL;
-	iface->paint			= NULL;
-	iface->add_window		= ccm_freeze_add_window;
-	iface->remove_window	= ccm_freeze_remove_window;
-	iface->damage			= NULL;
 }

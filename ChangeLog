@@ -1,3 +1,17 @@
+2008-12-08  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/decoration/ccm-decoration.c (ccm_decoration_init),
+	(ccm_decoration_get_opacity), (ccm_decoration_create_mask):
+	* plugins/decoration/ccm-decoration.schemas.in:
+	  - Add gradiant decoration options.
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_ping), (ccm_freeze_map),
+	(ccm_freeze_unmap), (ccm_freeze_window_iface_init):
+	  - Remove screen plugin interface.
+	* src/ccm-pixmap.h:
+	  - Fix typo.
+	* src/ccm-window.c (ccm_window_unmap):
+	  - Damage window on unmap.
+
 2008-12-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/decoration/ccm-decoration.c

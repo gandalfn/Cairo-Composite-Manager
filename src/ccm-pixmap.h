@@ -42,7 +42,7 @@ struct _CCMPixmapClass
 {
 	CCMDrawableClass parent_class;
 	
-	void	   (*bind) 	  (CCMPixmap* self);
+	void	   (*bind)    (CCMPixmap* self);
 	void	   (*release) (CCMPixmap* self);
 };
 
@@ -55,11 +55,14 @@ struct _CCMPixmap
 	CCMPixmapPrivate* 	priv;
 };
 
-GType 		ccm_pixmap_get_type 	    (void) G_GNUC_CONST;
-CCMPixmap*  ccm_pixmap_new      	    (CCMDrawable* drawable, Pixmap xpixmap);
-CCMPixmap*  ccm_pixmap_image_new   	    (CCMDrawable* drawable, Pixmap xpixmap);
-CCMPixmap*  ccm_pixmap_new_from_visual  (CCMScreen* screen, Visual* visual, 
-                                         Pixmap xpixmap);
+GType 	    ccm_pixmap_get_type 	    (void) G_GNUC_CONST;
+CCMPixmap*  ccm_pixmap_new      	    (CCMDrawable* drawable, 
+					     Pixmap xpixmap);
+CCMPixmap*  ccm_pixmap_image_new   	    (CCMDrawable* drawable, 
+				             Pixmap xpixmap);
+CCMPixmap*  ccm_pixmap_new_from_visual      (CCMScreen* screen, 
+                                             Visual* visual, 
+					     Pixmap xpixmap);
                                          
 G_END_DECLS
 

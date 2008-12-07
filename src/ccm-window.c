@@ -2042,6 +2042,8 @@ ccm_window_unmap(CCMWindow* self)
 	
 	if (self->priv->visible)
 	{
+		ccm_drawable_damage(CCM_DRAWABLE(self));
+		
 		self->priv->visible = FALSE;
 		self->priv->is_viewable = FALSE;
 		self->priv->unmap_pending = TRUE;

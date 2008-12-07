@@ -35,11 +35,13 @@
 enum
 {
 	CCM_DECORATION_OPACITY,
+	CCM_DECORATION_GRADIANT,
 	CCM_DECORATION_OPTION_N
 };
 
 static gchar* CCMDecorationOptions[CCM_DECORATION_OPTION_N] = {
-	"opacity"
+	"opacity",
+	"gradiant"
 };
 
 static void ccm_decoration_window_iface_init  (CCMWindowPluginClass* iface);
@@ -65,6 +67,7 @@ struct _CCMDecorationPrivate
 	int				right;
 	
 	float			opacity;
+	gboolean		gradiant;
 	
 	CCMRegion*		geometry;
 	CCMRegion*		opaque;
@@ -88,6 +91,7 @@ ccm_decoration_init (CCMDecoration *self)
 	self->priv->bottom = 0;
 	self->priv->left = 0;
 	self->priv->right = 0;
+	self->priv->gradiant = TRUE;
 	self->priv->opacity = 1.0;
 	self->priv->geometry = NULL;
 	self->priv->opaque = NULL;
@@ -162,8 +166,12 @@ ccm_decoration_get_opacity(CCMDecoration* self)
 	gfloat real_opacity;
 	gfloat opacity;
 	
+	self->priv->gradiant = 
+		ccm_config_get_boolean (self->priv->options[CCM_DECORATION_GRADIANT], 
+								&error);
 	real_opacity = 
-		ccm_config_get_float (self->priv->options[CCM_DECORATION_OPACITY], &error);
+		ccm_config_get_float (self->priv->options[CCM_DECORATION_OPACITY], 
+							  &error);
 	if (error)
 	{
 		g_warning("Error on get opacity configuration value");
@@ -270,6 +278,7 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		self->priv->top || self->priv->bottom)
 	{
 		cairo_t* ctx;
+		cairo_pattern_t* pattern = NULL;
 		cairo_rectangle_t clipbox, *rects;
 		gint cpt, nb_rects;
 		gfloat opacity = ccm_window_get_opacity(self->priv->window);
@@ -291,6 +300,22 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		cairo_set_source_rgba(ctx, 0, 0, 0, 0);
 		cairo_paint(ctx);
 		
+		if (self->priv->gradiant)
+		{
+			pattern = cairo_pattern_create_linear(clipbox.x + clipbox.width / 2, 
+												  clipbox.y, 
+												  clipbox.x + clipbox.width / 2,
+												  clipbox.height);
+			cairo_pattern_add_color_stop_rgba(pattern, 0, 1, 1, 1, 
+											  self->priv->opacity * opacity);
+			cairo_pattern_add_color_stop_rgba(pattern, 
+											  (double)self->priv->top /
+											  (double)clipbox.height, 
+											  1, 1, 1, 
+											  opacity);
+			cairo_pattern_add_color_stop_rgba(pattern, 1, 1, 1, 1, 
+											  opacity);
+		}
 		cairo_translate(ctx, -clipbox.x, -clipbox.y);
 		
 		clipbox.x += self->priv->left;
@@ -305,12 +330,17 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		ccm_region_destroy(tmp);
 		
 		ccm_region_get_rectangles(decoration, &rects, &nb_rects);
-		cairo_set_source_rgba(ctx, 1, 1, 1, self->priv->opacity * opacity);
+		if (pattern)
+			cairo_set_source(ctx, pattern);
+		else
+			cairo_set_source_rgba(ctx, 1, 1, 1, self->priv->opacity * opacity);
+		
 		for (cpt = 0; cpt < nb_rects; cpt++)
 			cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y, 
 							rects[cpt].width, rects[cpt].height);
 		g_free(rects);
 		cairo_fill(ctx);
+		if (pattern) cairo_pattern_destroy(pattern);
 		ccm_region_destroy(decoration);
 		
 		cairo_set_source_rgba(ctx, 1, 1, 1, opacity);
