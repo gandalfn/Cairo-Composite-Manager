@@ -1,3 +1,8 @@
+2008-12-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_on_event):
+	  - Don't compress ping event.
+
 2008-12-08  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/decoration/ccm-decoration.c (ccm_decoration_init),

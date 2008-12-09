@@ -163,29 +163,12 @@ ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
 	if (self->priv->window && event->type == ClientMessage)
 	{
 		Window window = None;
-		XEvent ce;
 		XClientMessageEvent* client_message_event = (XClientMessageEvent*)event;
-		CCMDisplay* display = 
-				ccm_drawable_get_display(CCM_DRAWABLE(self->priv->window));
 		
 		g_object_get (G_OBJECT(self->priv->window), "child", &window, NULL);
     	
 		if (!window) window = CCM_WINDOW_XWINDOW(self->priv->window);
 			
-		while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(display), 
-									  event->xclient.window,
-                                      event->type, &ce)) 
-		{
-    		if (ce.xclient.message_type != 
-							CCM_FREEZE_GET_CLASS(self)->protocol_atom ||
-				ce.xclient.data.l[2] != window) 
-			{
-                    XPutBackEvent(CCM_DISPLAY_XDISPLAY(display), &ce);
-                    break;
-            }
-            client_message_event = (XClientMessageEvent*)&ce;
-		}
-		
 		if (self->priv->last_ping &&
 			client_message_event->message_type == 
 						CCM_FREEZE_GET_CLASS(self)->protocol_atom &&
