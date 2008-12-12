@@ -1911,24 +1911,11 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		case PropertyNotify:
 		{
 			XPropertyEvent* property_event = (XPropertyEvent*)event;
-			XEvent ce;
 			CCMWindow* window;
 			
 			ccm_debug_atom(self->priv->display, property_event->atom, 
 						   "PROPERTY_NOTIFY");
 
-			while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
-										  property_event->window,
-                                          event->type, &ce)) 
-			{
-                if (ce.xproperty.atom != property_event->atom) 
-				{
-                    XPutBackEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), &ce);
-                    break;
-                }
-                property_event = &ce.xproperty;
-            }
-			
 			if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom ||
 				property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_list_atom ||
 				property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->active_atom)
@@ -1993,24 +1980,11 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		break;
 		case ClientMessage:
 		{
-			XEvent ce;
 			XClientMessageEvent* client_event = (XClientMessageEvent*)event;
 			
 			ccm_debug_atom(self->priv->display, client_event->message_type, 
 						   "CLIENT MESSAGE");
-			while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
-										  client_event->window,
-                                          event->type, &ce)) 
-			{
-                if (ce.xclient.message_type != client_event->message_type) 
-				{
-                    XPutBackEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), &ce);
-                    break;
-                }
-                client_event = &ce.xclient;
-				ccm_debug_atom(self->priv->display, client_event->message_type, 
-						   "COMPRESS CLIENT MESSAGE");
-            }
+			
 			if (client_event->message_type == 
 							CCM_WINDOW_GET_CLASS(self->priv->root)->state_atom)
 			{

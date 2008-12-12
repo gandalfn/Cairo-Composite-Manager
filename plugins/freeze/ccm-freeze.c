@@ -287,7 +287,7 @@ ccm_freeze_ping(CCMFreeze* self)
 		event.xclient.data.l[2] = window;
 		event.xclient.data.l[3] = 0;
 		event.xclient.data.l[4] = 0;
-		XSendEvent (CCM_DISPLAY_XDISPLAY(display), window, TRUE, 
+		XSendEvent (CCM_DISPLAY_XDISPLAY(display), window, FALSE, 
 					NoEventMask, &event);
 	}
 	
@@ -374,8 +374,8 @@ ccm_freeze_map(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMFreeze* self = CCM_FREEZE(plugin);
 	
 	if (!self->priv->id_ping)
-		self->priv->id_ping = g_timeout_add_full (G_PRIORITY_LOW, 
-												  self->priv->delay * 1000, 
+		self->priv->id_ping = g_timeout_add_seconds_full (G_PRIORITY_LOW, 
+												  self->priv->delay, 
 												  (GSourceFunc)ccm_freeze_ping, 
 												  self, NULL);
 	ccm_window_plugin_map(CCM_WINDOW_PLUGIN_PARENT(plugin), window);

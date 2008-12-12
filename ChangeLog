@@ -1,3 +1,16 @@
+2008-12-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_ping), (ccm_freeze_map):
+	  - Use g_timeout_add_seconds instead g_timeout_add.
+	  - Set send event has no user event
+	* src/ccm-drawable.c (__ccm_drawable_resize):
+	  - Resize geometry region instead query_geometry.
+	* src/ccm-screen.c (ccm_screen_on_event):
+	  - Don't compress property and client message event.
+	* src/ccm-window.c (impl_ccm_window_move), (ccm_window_unmap):
+	  - Offset also origin opaque region on move.
+	  - Don't damage window on unmap not necessary.
+
 2008-12-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/freeze/ccm-freeze.c (ccm_freeze_on_event):

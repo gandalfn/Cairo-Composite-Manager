@@ -943,7 +943,12 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
 		if (self->priv->opaque)
-			ccm_region_offset(self->priv->opaque, x - geometry.x, y - geometry.y);
+		{
+			ccm_region_offset(self->priv->opaque, 
+							  x - geometry.x, y - geometry.y);
+			ccm_region_offset(self->priv->orig_opaque, 
+							  x - geometry.x, y - geometry.y);
+		}
 		if ((self->priv->is_viewable || self->priv->unmap_pending) &&
 			ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
 		{
@@ -2042,8 +2047,6 @@ ccm_window_unmap(CCMWindow* self)
 	
 	if (self->priv->visible)
 	{
-		ccm_drawable_damage(CCM_DRAWABLE(self));
-		
 		self->priv->visible = FALSE;
 		self->priv->is_viewable = FALSE;
 		self->priv->unmap_pending = TRUE;

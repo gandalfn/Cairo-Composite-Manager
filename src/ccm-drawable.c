@@ -289,7 +289,7 @@ __ccm_drawable_resize(CCMDrawable* self, int width, int height)
 	if (!ccm_drawable_get_geometry_clipbox(self, &geometry) ||
 		width != (int)geometry.width || height != (int)geometry.height)
 	{
-		ccm_drawable_query_geometry(self);
+		ccm_region_resize(self->priv->geometry, width, height);
 	}
 }
 
