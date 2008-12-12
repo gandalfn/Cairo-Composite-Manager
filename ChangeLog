@@ -1,5 +1,11 @@
 2008-12-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* src/ccm-window.c (impl_ccm_window_move),
+	(impl_ccm_window_resize):
+	  - Resize and offset opaque regions on window move and resize.
+
+2008-12-12  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/freeze/ccm-freeze.c (ccm_freeze_ping), (ccm_freeze_map):
 	  - Use g_timeout_add_seconds instead g_timeout_add.
 	  - Set send event has no user event
