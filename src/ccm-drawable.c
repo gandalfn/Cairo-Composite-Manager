@@ -55,6 +55,7 @@ struct _CCMDrawablePrivate
 	Visual*				visual;
 	
 	cairo_surface_t*	surface;
+	cairo_rectangle_t   last_pos_size;
 	
 	CCMRegion*			damaged;
 };
@@ -144,6 +145,10 @@ ccm_drawable_init (CCMDrawable *self)
 	self->priv->visual = NULL;
 	self->priv->surface = NULL;
 	self->priv->damaged = NULL;
+	self->priv->last_pos_size.x = 0;
+	self->priv->last_pos_size.y = 0;
+	self->priv->last_pos_size.width = 0;
+	self->priv->last_pos_size.height = 0;
 }
 
 static void
@@ -284,10 +289,7 @@ __ccm_drawable_resize(CCMDrawable* self, int width, int height)
 {
 	g_return_if_fail(self != NULL);
 	
-	cairo_rectangle_t geometry;
-	
-	if (!ccm_drawable_get_geometry_clipbox(self, &geometry) ||
-		width != (int)geometry.width || height != (int)geometry.height)
+	if (self->priv->geometry)
 	{
 		ccm_region_resize(self->priv->geometry, width, height);
 	}
@@ -493,9 +495,12 @@ ccm_drawable_move(CCMDrawable* self, int x, int y)
 {
 	g_return_if_fail(self != NULL);
 
-	if (CCM_DRAWABLE_GET_CLASS(self)->move)
+	if (CCM_DRAWABLE_GET_CLASS(self)->move &&
+		(self->priv->last_pos_size.x != x || self->priv->last_pos_size.y != y))
 	{
 		CCM_DRAWABLE_GET_CLASS(self)->move(self, x, y);
+		self->priv->last_pos_size.x = x;
+		self->priv->last_pos_size.y = y;
 	}
 }
 
@@ -512,9 +517,13 @@ ccm_drawable_resize(CCMDrawable* self, int width, int height)
 {
 	g_return_if_fail(self != NULL);
 
-	if (CCM_DRAWABLE_GET_CLASS(self)->resize)
+	if (CCM_DRAWABLE_GET_CLASS(self)->resize &&
+		(self->priv->last_pos_size.width != width || 
+		 self->priv->last_pos_size.height != height))
 	{
 		CCM_DRAWABLE_GET_CLASS(self)->resize(self, width, height);
+		self->priv->last_pos_size.width = width;
+		self->priv->last_pos_size.height = height;
 	}
 }
 
