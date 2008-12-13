@@ -1,5 +1,10 @@
 2008-12-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* src/ccm-window.c (impl_ccm_window_resize):
+	  - Fix a stupid copy and paste bug in resize window.
+
+2008-12-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* src/ccm-drawable.c (ccm_drawable_init), (__ccm_drawable_resize),
 	(ccm_drawable_move), (ccm_drawable_resize):
 	  - Remenber the last position and size of drawable to avoid 

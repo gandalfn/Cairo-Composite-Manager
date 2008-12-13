@@ -978,9 +978,13 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 															width, height);
 		
 		if (self->priv->opaque)
-			ccm_region_offset(self->priv->opaque, width, height);
+			ccm_region_scale(self->priv->opaque, 
+							 width / geometry.width, 
+							 height / geometry.height);
 		if (self->priv->orig_opaque)
-			ccm_region_offset(self->priv->orig_opaque, width, height);
+			ccm_region_scale(self->priv->orig_opaque, 
+							 width / geometry.width, 
+							 height / geometry.height);
 		
 		if (self->priv->hint_type != CCM_WINDOW_TYPE_DESKTOP &&
 			(ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) &&
