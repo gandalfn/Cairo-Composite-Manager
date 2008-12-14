@@ -969,7 +969,6 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 	if (!ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) ||
 		width != (int)geometry.width || height != (int)geometry.height)
 	{
-		CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 		CCMRegion* old_geometry = ccm_region_rectangle (&geometry);
 		
 		ccm_debug_window(self, "RESIZE %i,%i", width, height);
@@ -985,25 +984,18 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 			ccm_region_scale(self->priv->orig_opaque, 
 							 width / geometry.width, 
 							 height / geometry.height);
+
+		ccm_drawable_damage (CCM_DRAWABLE(self));
 		
-		if (self->priv->hint_type != CCM_WINDOW_TYPE_DESKTOP &&
-			(ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry) &&
-			 ((geometry.x <= 0 && geometry.y <= 0 && 
-			 geometry.width >= CCM_SCREEN_XSCREEN(screen)->width &&
-			 geometry.height >= CCM_SCREEN_XSCREEN(screen)->height) || 
-			 !self->priv->is_fullscreen)))
+		if (old_geometry)
 		{
-			ccm_window_switch_state (self, CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom);
-			ccm_screen_damage (screen);
-			g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
-						  CCM_PROPERTY_STATE);
+			CCMRegion* geometry = 
+				(CCMRegion*)ccm_drawable_get_geometry(CCM_DRAWABLE(self));
+			ccm_region_subtract(old_geometry, geometry);
+			if (!ccm_region_empty(old_geometry))
+				ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
+			ccm_region_destroy (old_geometry);
 		}
-		else
-		{
-			ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
-			ccm_drawable_damage (CCM_DRAWABLE(self));
-		}
-		if (old_geometry) ccm_region_destroy (old_geometry);
 		
 		if (self->priv->pixmap)
 		{

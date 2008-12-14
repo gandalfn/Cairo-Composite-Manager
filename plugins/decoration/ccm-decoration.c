@@ -448,15 +448,20 @@ ccm_decoration_window_move(CCMWindowPlugin* plugin, CCMWindow* window,
 	if (self->priv->geometry)
 	{
 		ccm_region_get_clipbox(self->priv->geometry, &clipbox);
-		ccm_region_offset(self->priv->geometry, x - clipbox.x, 
-						  y - clipbox.y);
-	}
-	if (self->priv->opaque)
-	{
-		ccm_region_get_clipbox(self->priv->opaque, &clipbox);
-		ccm_region_offset(self->priv->opaque, 
-						  (x - clipbox.x) + self->priv->left, 
-						  (y - clipbox.y) + self->priv->top);
+		if (x != clipbox.x || y != clipbox.y)
+		{
+			ccm_region_offset(self->priv->geometry, x - clipbox.x, 
+							  y - clipbox.y);
+			if (self->priv->opaque)
+			{
+				ccm_region_get_clipbox(self->priv->opaque, &clipbox);
+				ccm_region_offset(self->priv->opaque, 
+								  (x - clipbox.x) + self->priv->left, 
+								  (y - clipbox.y) + self->priv->top);
+			}
+		}
+		else
+			return;
 	}
 	
 	ccm_window_plugin_move (CCM_WINDOW_PLUGIN_PARENT(plugin), window, x, y);
@@ -469,11 +474,24 @@ ccm_decoration_window_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMDecoration* self = CCM_DECORATION(plugin);
 	
 	if (self->priv->geometry) 
-		ccm_region_resize(self->priv->geometry, width, height);
-	if (self->priv->opaque) 
-		ccm_region_resize(self->priv->opaque, 
-						  width - (self->priv->left + self->priv->right), 
-						  height - (self->priv->top + self->priv->bottom));
+	{
+		cairo_rectangle_t clipbox;
+		
+		ccm_region_get_clipbox(self->priv->geometry, &clipbox);
+		if (width != clipbox.width || height != clipbox.height)
+		{
+			ccm_region_resize(self->priv->geometry, width, height);
+		
+			if (self->priv->opaque) 
+				ccm_region_scale(self->priv->opaque, 
+								 (gdouble)width / clipbox.width, 
+								 (gdouble)height /clipbox.height);
+		
+			ccm_decoration_create_mask(self);
+		}
+		else
+			return;
+	}
 	
 	ccm_window_plugin_resize (CCM_WINDOW_PLUGIN_PARENT(plugin), window,
 							  width, height);

@@ -1,3 +1,33 @@
+2008-12-14  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac:
+	  - Add enable-glitz option and disable by default glitz backend.
+	* plugins/decoration/ccm-decoration.plugin.desktop.in:
+	* plugins/shadow/ccm-shadow.plugin.desktop.in:
+	  - Invert dependencies to have always in first place shadow plugin.
+	* src/ccm-extension.c (_ccm_extension_insert_sorted):
+	  - Fix typo
+	* plugins/decoration/ccm-decoration.c (ccm_decoration_window_move),
+	(ccm_decoration_window_resize):
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_window_move),
+	(ccm_shadow_window_resize):
+	* src/ccm-region.c (_ccm_region_print), (ccm_region_new),
+	(ccm_region_destroy), (ccm_region_copy), (ccm_region_rectangle),
+	(ccm_region_xrectangle), (ccm_region_get_clipbox),
+	(ccm_region_get_rectangles), (ccm_region_get_xrectangles),
+	(ccm_region_get_boxes), (ccm_region_empty), (ccm_region_subtract),
+	(ccm_region_union), (ccm_region_union_with_rect),
+	(ccm_region_union_with_xrect), (ccm_region_intersect),
+	(ccm_region_transform), (ccm_region_offset),
+	(ccm_region_device_transform), (ccm_region_resize),
+	(ccm_region_scale):
+	* src/ccm-region.h:
+	* src/ccm-window-glitz.c (ccm_window_glitz_flush_region):
+	* src/ccm-window.c (impl_ccm_window_resize):
+	* src/ccm.h:
+	  - Region rework use pixman_region32 methods to manage them, and use
+	    16/16 fixed points to store data.
+
 2008-12-13  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-window.c (impl_ccm_window_resize):

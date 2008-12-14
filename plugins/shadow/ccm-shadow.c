@@ -676,14 +676,20 @@ ccm_shadow_window_move(CCMWindowPlugin* plugin, CCMWindow* window,
 					   int x, int y)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
-	cairo_rectangle_t area;
 	
 	if (self->priv->geometry)
 	{
+		cairo_rectangle_t area;
+		
 		ccm_region_get_clipbox(self->priv->geometry, &area);
-		ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
-		x -= self->priv->border / 2;
-		y -= self->priv->border / 2;
+		if (x != area.x || y != area.y)
+		{
+			ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
+			x -= self->priv->border / 2;
+			y -= self->priv->border / 2;
+		}
+		else
+			return;
 	}	
 	ccm_window_plugin_move (CCM_WINDOW_PLUGIN_PARENT(plugin), window, x, y);
 }
@@ -695,7 +701,20 @@ ccm_shadow_window_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMShadow* self = CCM_SHADOW(plugin);
 	int border = 0;
 	
-	if (self->priv->geometry) border = self->priv->border;
+	if (self->priv->geometry) 
+	{
+		cairo_rectangle_t area;
+		
+		ccm_region_get_clipbox(self->priv->geometry, &area);
+		if (width != area.width || height != area.height)
+		{
+			ccm_region_resize(self->priv->geometry, width, height);
+			border = self->priv->border;
+			ccm_shadow_create_shadow(self, window);
+		}
+		else
+			return;
+	}
 	
 	ccm_window_plugin_resize (CCM_WINDOW_PLUGIN_PARENT(plugin), window,
 							  width + border, height + border);

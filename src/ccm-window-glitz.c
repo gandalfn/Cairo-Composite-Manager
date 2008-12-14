@@ -244,19 +244,19 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 			gint cpt, nbox = 0;
 			glitz_box_t* box = NULL;
 			
-			nbox = region->numRects;	
-			box = g_new(glitz_box_t, nbox);
-			for (cpt = 0; cpt < nbox; cpt++)
+			box = (glitz_box_t*)ccm_region_get_boxes(region, &nbox);
+			if (box)
 			{
-				box[cpt].x1 = region->rects[cpt].x1 > 0 ? region->rects[cpt].x1 : 0;
-				box[cpt].y1 = region->rects[cpt].y1 > 0 ? region->rects[cpt].y1 : 0;
-				box[cpt].x2 = region->rects[cpt].x2;
-				box[cpt].y2 = region->rects[cpt].y2;
-			}		
-			glitz_drawable_swap_buffer_region (self->priv->gl_drawable,
-											   geometry.x, geometry.y, 
-											   box, nbox);
-			g_free(box);
+				for (cpt = 0; cpt < nbox; cpt++)
+				{
+					box[cpt].x1 = box[cpt].x1 > 0 ? box[cpt].x1 : 0;
+					box[cpt].y1 = box[cpt].y1 > 0 ? box[cpt].y1 : 0;
+				}		
+				glitz_drawable_swap_buffer_region (self->priv->gl_drawable,
+												   geometry.x, geometry.y, 
+												   box, nbox);
+				g_free(box);
+			}
 		}
 		else
 			glitz_drawable_swap_buffers(self->priv->gl_drawable);

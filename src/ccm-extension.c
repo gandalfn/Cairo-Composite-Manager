@@ -248,11 +248,14 @@ _ccm_extension_insert_sorted (GSList** self, CCMExtension* in)
 
 	tmp = *self;
 
-	while (tmp) {
+	while (tmp) 
+	{
 		CCMExtension *on = CCM_EXTENSION (tmp->data);
-		for (cpt = 0; in->priv->depends[cpt]; cpt++) {
+		for (cpt = 0; in->priv->depends[cpt]; cpt++) 
+		{
 			if (!g_ascii_strcasecmp (in->priv->depends[cpt],
-									 on->priv->label)) {
+									 on->priv->label)) 
+			{
 				most_far = g_slist_index (*self, on);
 			}
 		}

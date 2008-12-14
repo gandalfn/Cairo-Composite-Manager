@@ -1,71 +1,23 @@
-/* $TOG: Region.c /main/31 1998/02/06 17:50:22 kaleb $ */
-/************************************************************************
-
-Copyright 1987, 1988, 1998  The Open Group
-
-All Rights Reserved.
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
-AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-Except as contained in this notice, the name of The Open Group shall not be
-used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from The Open Group.
-
-
-Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
-
-                        All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
-supporting documentation, and that the name of Digital not be
-used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
-
-DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
-ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
-DIGITAL BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
-WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
-SOFTWARE.
-
-************************************************************************/
-/* $XFree86: xc/lib/X11/Region.c,v 1.5 1999/05/09 10:50:01 dawes Exp $ */
+/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
 /*
- * The functions in this file implement the Region abstraction, similar to one
- * used in the X11 sample server. A Region is simply an area, as the name
- * implies, and is implemented as a "y-x-banded" array of rectangles. To
- * explain: Each Region is made up of a certain number of rectangles sorted
- * by y coordinate first, and then by x coordinate.
- *
- * Furthermore, the rectangles are banded such that every rectangle with a
- * given upper-left y coordinate (y1) will have the same lower-right y
- * coordinate (y2) and vice versa. If a rectangle has scanlines in a band, it
- * will span the entire vertical distance of the band. This means that some
- * areas that could be merged into a taller rectangle will be represented as
- * several shorter rectangles to account for shorter rectangles to its left
- * or right but within its "vertical scope".
- *
- * An added constraint on the rectangles is that they must cover as much
- * horizontal area as possible. E.g. no two rectangles in a band are allowed
- * to touch.
- *
- * Whenever possible, bands will be merged together to cover a greater vertical
- * distance (and thus reduce the number of rectangles). Two bands can be merged
- * only if the bottom of one touches the top of the other and they have
- * rectangles in the same places (of the same width, of course). This maintains
- * the y-x-banding that's so nice to have...
+ * cairo-compmgr
+ * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * 
+ * cairo-compmgr is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ * 
+ * cairo-compmgr is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with cairo-compmgr.  If not, write to:
+ * 	The Free Software Foundation, Inc.,
+ * 	51 Franklin Street, Fifth Floor
+ * 	Boston, MA  02110-1301, USA.
  */
  
 #ifndef _CCM_REGION_H
@@ -74,35 +26,6 @@ SOFTWARE.
 #include <cairo.h>
 
 #include "ccm.h"
-
-typedef struct RegionBox RegionBox;
-typedef struct Point Point;
-
-struct RegionBox
-{
-    int x1;
-    int y1;
-    int x2;
-    int y2;
-};
-
-struct Point
-{
-    int x;
-    int y;
-};
-
-/* 
- *   clip region
- */
-
-struct _CCMRegion
-{
-    long size;
-    long numRects;
-    RegionBox *rects;
-    RegionBox extents;
-};
 
 void _ccm_region_print(CCMRegion *self);
 

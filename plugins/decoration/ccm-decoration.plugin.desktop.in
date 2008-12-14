@@ -3,4 +3,4 @@ Plugin=ccm-decoration
 _Name=Decoration
 _Description=Window Decoration Effects
 Backends=xrender;glitz
-Depends=shadow
+Depends=

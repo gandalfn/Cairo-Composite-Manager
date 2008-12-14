@@ -91,69 +91,51 @@ typedef struct _CCMPixmap        CCMPixmap;
 
 /******************************** Region **************************************/
 typedef struct _CCMRegion 		 CCMRegion;
+typedef struct _CCMRegionBox		 CCMRegionBox;
 
-/* Types of overlapping between a rectangle and a region
- * CCM_OVERLAP_RECTANGLE_IN: rectangle is in region
- * CCM_OVERLAP_RECTANGLE_OUT: rectangle in not in region
- * CCM_OVERLAP_RECTANGLE_PART: rectangle in partially in region
- */
-typedef enum
-{
-    CCM_OVERLAP_RECTANGLE_IN,
-    CCM_OVERLAP_RECTANGLE_OUT,
-    CCM_OVERLAP_RECTANGLE_PART
-} CCMOverlapType;
+struct _CCMRegionBox {
+    short x1, y1, x2, y2;
+};
 
-CCMRegion*	 	ccm_region_new             (void);
-CCMRegion*   	ccm_region_copy            (CCMRegion     *region);
+CCMRegion*		ccm_region_new             (void);
+CCMRegion*   	ccm_region_copy            (CCMRegion          *self);
 CCMRegion*   	ccm_region_rectangle       (cairo_rectangle_t  *rectangle);
-CCMRegion*		ccm_region_xrectangle 	   (XRectangle *rectangle);
-void          	ccm_region_destroy         (CCMRegion     *region);
-void          	ccm_region_get_clipbox     (CCMRegion     *region,
-											cairo_rectangle_t  *rectangle);
-void         	ccm_region_get_rectangles  (CCMRegion     *region,
-											cairo_rectangle_t **rectangles,
-											gint         *n_rectangles);
-void            ccm_region_get_xrectangles (CCMRegion     *region,
-                                            XRectangle **rectangles,
-                                            gint          *n_rectangles);
-gboolean      	ccm_region_empty           (CCMRegion     *region);
-gboolean        ccm_region_shaped          (CCMRegion     *region);
-gboolean      	ccm_region_equal           (CCMRegion     *region1,
-											CCMRegion     *region2);
-gboolean      	ccm_region_point_in        (CCMRegion     *region,
-											int           x,
-											int           y);
-CCMOverlapType 	ccm_region_rect_in         (CCMRegion     *region,
-											cairo_rectangle_t  *rect);
-void          	ccm_region_offset          (CCMRegion     *region,
-											gint          dx,
-											gint          dy);
-void			ccm_region_resize 			(CCMRegion*   region,
-											 gint         width,
-											 gint         height);
-void            ccm_region_scale            (CCMRegion*   region,
-                                             gdouble      scale_width,
-                                             gdouble      scale_height);
-void          	ccm_region_shrink           (CCMRegion     *region,
-											 gint          dx,
-											 gint          dy);
-void          	ccm_region_union_with_rect  (CCMRegion     *region,
-											 cairo_rectangle_t  *rect);
-void			ccm_region_union_with_xrect (CCMRegion    *region,
-											 XRectangle   *rect);
-void          	ccm_region_intersect        (CCMRegion     *source1,
-											 CCMRegion     *source2);
-void          	ccm_region_union            (CCMRegion     *source1,
-											 CCMRegion     *source2);	
-void          	ccm_region_subtract         (CCMRegion     *source1,
-											 CCMRegion     *source2);
-void          	ccm_region_xor              (CCMRegion     *source1,
-											 CCMRegion     *source2);
-void            ccm_region_transform        (CCMRegion *region, 
-                                             cairo_matrix_t* matrix);
-void            ccm_region_device_transform (CCMRegion *region, 
-                                             cairo_matrix_t* matrix);
+CCMRegion*      ccm_region_xrectangle 	   (XRectangle         *rectangle);
+void          	ccm_region_destroy         (CCMRegion          *self);
+void          	ccm_region_get_clipbox     (CCMRegion          *self,
+										    cairo_rectangle_t  *clipbox);
+void         	ccm_region_get_rectangles  (CCMRegion          *self,
+					    					cairo_rectangle_t **rectangles,
+					    					gint 	       *n_rectangles);
+CCMRegionBox* 	ccm_region_get_boxes       (CCMRegion          *self,
+					    					gint 	       *n_box);
+void            ccm_region_get_xrectangles (CCMRegion          *self,
+                                            XRectangle        **rectangles,
+                                            gint               *n_rectangles);
+gboolean      	ccm_region_empty           (CCMRegion          *self);
+void          	ccm_region_offset          (CCMRegion          *self,
+					    					int                 dx,
+					    					int                 dy);
+void			ccm_region_resize		   (CCMRegion          *self,
+										    int                 width,
+					    					int                 height);
+void            ccm_region_scale            (CCMRegion         *self,
+                                             gdouble            scale_width,
+                                             gdouble            scale_height);
+void          	ccm_region_union_with_rect  (CCMRegion         *self,
+										     cairo_rectangle_t *rect);
+void			ccm_region_union_with_xrect (CCMRegion         *self,
+										     XRectangle        *rect);
+void          	ccm_region_intersect        (CCMRegion         *self,
+										     CCMRegion         *other);
+void          	ccm_region_union            (CCMRegion         *self,
+										     CCMRegion         *other);
+void          	ccm_region_subtract         (CCMRegion         *self,
+										     CCMRegion         *other);
+void            ccm_region_transform        (CCMRegion         *self, 
+                                             cairo_matrix_t    *matrix);
+void            ccm_region_device_transform (CCMRegion         *self, 
+                                             cairo_matrix_t    *matrix);
 /******************************************************************************/
 
 /********************************** Display ***********************************/

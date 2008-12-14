@@ -86,7 +86,7 @@ AM_CONDITIONAL(HAVE_XRENDER_BACKEND, [test x$xrenderbackend = xyes])
 PKG_CHECK_MODULES(CCM_OPENVG_BACKEND,
  		[xrender,
 		 cairo-openvg >= $CAIRO_OPENVG_REQUIRED,
-         glproto >= $GL_PROTO_REQUIRED],
+ 		 glproto >= $GL_PROTO_REQUIRED],
 		 [openvgbackend="yes"],
 		 [openvgbackend="no"])
 AC_SUBST(CCM_OPENVG_BACKEND_CFLAGS)
@@ -94,14 +94,20 @@ AC_SUBST(CCM_OPENVG_BACKEND_LIBS)
 
 AM_CONDITIONAL(HAVE_OPENVG_BACKEND, [test x$openvgbackend = xyes])
 
-PKG_CHECK_MODULES(CCM_GLITZ_BACKEND,
- 		[glitz >= $GLITZ_REQUIRED,
-		 glitz-glx >= $GLITZ_GLX_REQUIRED,
-		 cairo-glitz >= $CAIRO_GLITZ_REQUIRED],
-		 [glitzbackend="yes"],
-		 [glitzbackend="no"])
-AC_SUBST(CCM_GLITZ_BACKEND_CFLAGS)
-AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
+AC_ARG_ENABLE(glitz,
+  [  --enable-glitz        Enable glitz],
+  [glitzbackend=$enableval], [glitzbackend=no])
+
+if [ test x$glitzbackend = xyes ]; then
+    PKG_CHECK_MODULES(CCM_GLITZ_BACKEND,
+     		[glitz >= $GLITZ_REQUIRED,
+		     glitz-glx >= $GLITZ_GLX_REQUIRED,
+		     cairo-glitz >= $CAIRO_GLITZ_REQUIRED],
+		     [glitzbackend="yes"],
+		     [glitzbackend="no"])
+    AC_SUBST(CCM_GLITZ_BACKEND_CFLAGS)
+    AC_SUBST(CCM_GLITZ_BACKEND_LIBS)
+fi
 
 AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 
