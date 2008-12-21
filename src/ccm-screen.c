@@ -1235,9 +1235,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 				ccm_debug_window(window, "PAINT SCREEN");
 				ret |= ccm_window_paint(window, self->priv->ctx, self->priv->buffered);
 			}
-			if ((!ccm_window_is_viewable(window) || 
-				 ccm_window_is_input_only (window)) &&
-				g_list_find(self->priv->removed, window))
+			if (g_list_find(self->priv->removed, window))
 			{
 				self->priv->removed = g_list_remove (self->priv->removed, window);
 				destroy = g_list_append(destroy, window);
