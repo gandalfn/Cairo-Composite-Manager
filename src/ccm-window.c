@@ -1254,7 +1254,8 @@ impl_ccm_window_get_pixmap(CCMWindowPlugin* plugin, CCMWindow* self)
 }
 
 static void
-ccm_window_on_pixmap_damaged(CCMWindow* self, CCMRegion* area)
+ccm_window_on_pixmap_damaged(CCMPixmap* pixmap, CCMRegion* area, 
+							 CCMWindow* self)
 {
 	g_return_if_fail (self != NULL);
     g_return_if_fail (area != NULL);
@@ -2021,9 +2022,11 @@ ccm_window_get_pixmap(CCMWindow* self)
 		self->priv->pixmap = ccm_window_plugin_get_pixmap(self->priv->plugin,
 														  self);
 		if (self->priv->pixmap)
-			g_signal_connect_swapped(self->priv->pixmap, "damaged", 
-									 G_CALLBACK(ccm_window_on_pixmap_damaged), 
-									 self);
+			// we connect after to be sure an eventually plugin draw before we
+			// call main window callback
+			g_signal_connect_after(self->priv->pixmap, "damaged", 
+								   G_CALLBACK(ccm_window_on_pixmap_damaged), 
+								   self);
 	}
 	
 	return self->priv->pixmap ? g_object_ref(self->priv->pixmap) : NULL;
