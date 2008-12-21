@@ -1,5 +1,10 @@
 2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_window_resize):
+	  - fix shadow resize.
+
+2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/shadow/ccm-shadow.c (ccm_shadow_on_pixmap_damage):
 	  - force damage on shadow pixmap paint, some damage can be eaten 
 	    between send and process.

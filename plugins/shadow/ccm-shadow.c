@@ -785,7 +785,7 @@ ccm_shadow_window_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 		if (width != area.width || height != area.height)
 		{
 			ccm_region_resize(self->priv->geometry, width, height);
-			border = self->priv->radius;
+			border = self->priv->radius * 2;
 			
 			if (self->priv->shadow_image)
 				cairo_surface_destroy(self->priv->shadow_image);
@@ -794,14 +794,6 @@ ccm_shadow_window_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 			if (self->priv->shadow) 
 				g_object_unref(self->priv->shadow);
 			self->priv->shadow = NULL;
-			
-			if (self->priv->geometry) 
-				ccm_region_destroy(self->priv->geometry);
-			self->priv->geometry = NULL;
-			
-			if (!self->priv->id_check) 
-				self->priv->id_check = 
-					g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
 		}
 		else
 			return;
