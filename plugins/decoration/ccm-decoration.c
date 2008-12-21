@@ -291,7 +291,7 @@ ccm_decoration_create_mask(CCMDecoration* self)
 									 &self->priv->bottom);
 		
 		ccm_region_get_clipbox(self->priv->geometry, &clipbox);
-		mask = cairo_surface_create_similar(surface, CAIRO_CONTENT_COLOR_ALPHA,
+		mask = cairo_surface_create_similar(surface, CAIRO_CONTENT_ALPHA,
 										    clipbox.width, clipbox.height);
 		cairo_surface_destroy(surface);
 		g_object_set(self->priv->window, "mask", mask, NULL);

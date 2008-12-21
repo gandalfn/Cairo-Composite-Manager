@@ -24,3 +24,10 @@ libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@
 
 libcairo_compmgr_la_LIBADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS)
 
+noinst_PROGRAMS = test-boxed-blur
+
+test_boxed_blur_SOURCES = test-boxed-blur.c
+
+test_boxed_blur_LDADD = $(CAIRO_COMPMGR_LIBS) ../lib/libcairo_compmgr.la
+
+

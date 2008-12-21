@@ -22,6 +22,7 @@
 #include <math.h>
 #include <string.h>
 #include <cairo.h>
+#include <cairo-xlib.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -83,6 +84,8 @@ static void			impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin,
 static void			impl_ccm_window_get_origin	  (CCMWindowPlugin* plugin, 
 												   CCMWindow* self,
 												   int* x, int* y);
+static CCMPixmap*	impl_ccm_window_get_pixmap	  (CCMWindowPlugin* plugin, 
+												   CCMWindow* self);
 static void			ccm_window_on_property_async_error(CCMWindow* self, 
 													   CCMPropertyASync* prop);
 static void			ccm_window_get_property_async (CCMWindow* self, 
@@ -379,6 +382,7 @@ ccm_window_iface_init(CCMWindowPluginClass* iface)
 	iface->resize			 = impl_ccm_window_resize;
 	iface->set_opaque_region = impl_ccm_window_set_opaque_region;
 	iface->get_origin	     = impl_ccm_window_get_origin;
+	iface->get_pixmap		 = impl_ccm_window_get_pixmap;
 }
 
 static void
@@ -915,7 +919,7 @@ impl_ccm_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* self)
 		}
 	}
 
-	if (self->priv->pixmap)
+	if (CCM_IS_PIXMAP(self->priv->pixmap))
 	{
 		g_object_unref(self->priv->pixmap);
 		self->priv->pixmap = NULL;
@@ -997,10 +1001,94 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 			ccm_region_destroy (old_geometry);
 		}
 		
-		if (self->priv->pixmap)
+		if (CCM_IS_PIXMAP(self->priv->pixmap))
 		{
 			g_object_unref(self->priv->pixmap);
 			self->priv->pixmap = NULL;
+		}
+	}
+}
+
+static void
+ccm_window_check_mask(CCMWindow* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	if (self->priv->mask)
+	{
+		cairo_rectangle_t clipbox;
+		int width, height;
+		
+		// Mask must be image surface
+		g_return_if_fail(cairo_surface_get_type(self->priv->mask) == 
+						 CAIRO_SURFACE_TYPE_IMAGE || 
+						 cairo_surface_get_type(self->priv->mask) == 
+						 CAIRO_SURFACE_TYPE_XLIB);
+		
+		// Check size of mask must be match geometry
+		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &clipbox);
+		if (cairo_surface_get_type(self->priv->mask) == CAIRO_SURFACE_TYPE_IMAGE)
+		{
+			width = cairo_image_surface_get_width(self->priv->mask);
+			height = cairo_image_surface_get_height(self->priv->mask);
+		}
+		else
+		{
+			width = cairo_xlib_surface_get_width(self->priv->mask);
+			height = cairo_xlib_surface_get_height(self->priv->mask);
+		}
+
+		// Size doesn't match a plugin add an offset to pixmap
+		if (clipbox.width != width || clipbox.height != height)
+		{
+			CCMRegion* geometry = 
+				(CCMRegion*)ccm_drawable_get_geometry(CCM_DRAWABLE(self));
+			CCMRegion* tmp1 = ccm_region_copy(geometry);
+			CCMRegion* tmp2 = ccm_region_copy(geometry);
+			int x, y, cpt, nb_rects;
+			cairo_surface_t *old = self->priv->mask;
+			cairo_rectangle_t* rects;
+			cairo_t* ctx;
+			cairo_surface_t* surface = 
+				ccm_drawable_get_surface(CCM_DRAWABLE(self));
+			
+			// Resize mask
+			self->priv->mask = cairo_surface_create_similar(surface,
+															CAIRO_CONTENT_ALPHA,
+															clipbox.width, 
+															clipbox.height);
+			cairo_surface_destroy(surface);
+			
+			// Get window origin
+			ccm_window_plugin_get_origin(self->priv->plugin, self, &x, &y);
+
+			// Add opaque mask around the old mask
+			ctx = cairo_create(self->priv->mask);
+			cairo_translate(ctx, -clipbox.x, -clipbox.y);
+			cairo_set_source_surface(ctx, old, x, y);
+			cairo_paint(ctx);
+			
+			// get out size region
+			ccm_region_resize(tmp2, width, height);
+			ccm_region_resize(tmp1, clipbox.width, clipbox.height);
+			ccm_region_offset(tmp1, - (x - clipbox.x), -(y - clipbox.y));
+			ccm_region_subtract(tmp1, tmp2);
+			ccm_region_offset(tmp1, (x - clipbox.x), (y - clipbox.y));
+			
+			// Paint out size region
+			cairo_set_source_rgba(ctx, 1, 1, 1, 1);
+			ccm_region_get_rectangles(tmp1, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+				cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
+								rects[cpt].width, rects[cpt].height);
+			g_free(rects);
+			cairo_fill(ctx);
+			ccm_region_destroy(tmp1);
+			ccm_region_destroy(tmp2);
+			
+			// Paint old mask
+			cairo_destroy(ctx);
+			cairo_surface_destroy(old);
 		}
 	}
 }
@@ -1022,7 +1110,10 @@ impl_ccm_window_paint(CCMWindowPlugin* plugin, CCMWindow* self,
 	{
 		cairo_set_source_surface(context, surface, 0.0f, 0.0f);
 		if (self->priv->mask)
+		{
+			ccm_window_check_mask(self);
 			cairo_mask_surface(context, self->priv->mask, 0, 0);
+		}
 		else
 			cairo_paint_with_alpha(context, self->priv->opacity);
 		
@@ -1068,7 +1159,7 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	self->priv->visible = FALSE;
 	self->priv->unmap_pending = FALSE;
 	ccm_debug_window(self, "IMPL WINDOW UNMAP");
-	if (self->priv->pixmap)
+	if (CCM_IS_PIXMAP(self->priv->pixmap))
 	{
 		g_object_unref(self->priv->pixmap);
 		self->priv->pixmap = NULL;
@@ -1130,6 +1221,38 @@ impl_ccm_window_get_origin(CCMWindowPlugin* plugin, CCMWindow* self,
 	}
 }
 				
+static CCMPixmap*
+impl_ccm_window_get_pixmap(CCMWindowPlugin* plugin, CCMWindow* self)
+{
+	g_return_val_if_fail(plugin != NULL, NULL);
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	CCMPixmap* pixmap = NULL;
+	CCMDisplay *display = ccm_drawable_get_display(CCM_DRAWABLE(self));
+	Pixmap xpixmap;
+	
+	ccm_display_sync(display);
+	ccm_display_trap_error (display);
+	ccm_display_grab(display);
+	xpixmap = XCompositeNameWindowPixmap(CCM_DISPLAY_XDISPLAY(display),
+										 CCM_WINDOW_XWINDOW(self));
+	ccm_display_ungrab(display);
+	ccm_display_sync(display);
+	if (xpixmap && !ccm_display_pop_error (display))
+	{
+		if (self->priv->use_pixmap_image)
+		{
+			pixmap = ccm_pixmap_image_new(CCM_DRAWABLE(self), xpixmap);
+		}
+		else 
+		{
+			pixmap = ccm_pixmap_new(CCM_DRAWABLE(self), xpixmap);
+		}
+	}
+	
+	return pixmap;
+}
+
 static void
 ccm_window_on_pixmap_damaged(CCMWindow* self, CCMRegion* area)
 {
@@ -1892,35 +2015,14 @@ ccm_window_get_pixmap(CCMWindow* self)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
-	if (!self->priv->pixmap)
+	if (!CCM_IS_PIXMAP(self->priv->pixmap))
 	{
-		CCMDisplay *display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-		Pixmap xpixmap;
-		
-		ccm_display_sync(display);
-		ccm_display_trap_error (display);
-		ccm_display_grab(display);
-		xpixmap = XCompositeNameWindowPixmap(CCM_DISPLAY_XDISPLAY(display),
-											 CCM_WINDOW_XWINDOW(self));
-		ccm_display_ungrab(display);
-		ccm_display_sync(display);
-		if (xpixmap && !ccm_display_pop_error (display))
-		{
-			if (self->priv->use_pixmap_image)
-			{
-				self->priv->pixmap = ccm_pixmap_image_new(CCM_DRAWABLE(self), 
-														  xpixmap);
-			}
-			else 
-			{
-				self->priv->pixmap = ccm_pixmap_new(CCM_DRAWABLE(self), 
-													xpixmap);
-			}
-			if (self->priv->pixmap)
-				g_signal_connect_swapped(self->priv->pixmap, "damaged", 
-										 G_CALLBACK(ccm_window_on_pixmap_damaged), 
-										 self);
-		}
+		self->priv->pixmap = ccm_window_plugin_get_pixmap(self->priv->plugin,
+														  self);
+		if (self->priv->pixmap)
+			g_signal_connect_swapped(self->priv->pixmap, "damaged", 
+									 G_CALLBACK(ccm_window_on_pixmap_damaged), 
+									 self);
 	}
 	
 	return self->priv->pixmap ? g_object_ref(self->priv->pixmap) : NULL;
@@ -2053,7 +2155,7 @@ ccm_window_unmap(CCMWindow* self)
 		
 		if (self->priv->is_fullscreen)
 			ccm_window_switch_state (self, CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom);
-		if (self->priv->pixmap)
+		if (CCM_IS_PIXMAP(self->priv->pixmap))
 			g_object_set(self->priv->pixmap, "freeze", TRUE, NULL);
 		ccm_debug_window(self, "WINDOW UNMAP");
 		ccm_window_plugin_unmap(self->priv->plugin, self);

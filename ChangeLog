@@ -1,3 +1,37 @@
+2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-window-plugin.c:
+	* src/ccm-window-plugin.h:
+	* src/ccm-window.c:
+	  - Add get pixmap interface.
+	  - Check mask surface if pixmap size has increase by a plugin.
+	* lib/test-boxed-blur.c (main):
+	* lib/Makefile.am
+	* lib/ccm-cairo-utils.c:
+	* lib/ccm-cairo-utils.h:
+	  - Use Mathias Hasselmann pixman blur from
+	    http://taschenorakel.de/mathias/2008/11/24/blur-effect-cairo/
+	* plugins/shadow/ccm-shadow.c:
+	* plugins/shadow/ccm-shadow.plugin.desktop.in:
+	* plugins/shadow/ccm-shadow.schemas.in:
+	  - Rewrite shadow plugin to be more efficient. Draw shadow directly
+	    on pixmap instead on draw.
+	* plugins/decoration/ccm-decoration.c:
+	* plugins/decoration/ccm-decoration.plugin.desktop.in:
+	  - Create an A8 similar surface for mask.
+	* plugins/mosaic/ccm-mosaic.c:
+	  - Begin to rewrite mosaic plugin to add more efficient window matrix
+	    transform management.
+	* src/ccm-extension-loader.c:
+	* src/ccm-extension.c:
+	* src/ccm-extension.h:
+	  - Fix plugin sort order.
+	* src/ccm-region.c:
+	  - Force align to integer on rectangle conversion to improve clipping
+	    performance.
+	* src/ccm.h:
+	  - Fix typo.
+
 2008-12-14  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* configure.ac:

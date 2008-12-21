@@ -94,8 +94,10 @@ ccm_extension_loader_new ()
 					
 					if ((plugin = ccm_extension_new(file)) != NULL)
 					{
-						_ccm_extension_insert_sorted (&self->priv->plugins,
-													  plugin);
+						self->priv->plugins = 
+							g_slist_insert_sorted(self->priv->plugins, 
+												  plugin,
+										(GCompareFunc)_ccm_extension_compare);
 					}
 					g_free(file);
 				}

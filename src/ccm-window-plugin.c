@@ -338,3 +338,30 @@ ccm_window_plugin_get_origin(CCMWindowPlugin* self, CCMWindow* window,
 																 x, y);
 	}
 }
+
+CCMPixmap*
+ccm_window_plugin_get_pixmap (CCMWindowPlugin* self, CCMWindow* window)
+{
+	g_return_val_if_fail (CCM_IS_WINDOW_PLUGIN (self), NULL);
+	g_return_val_if_fail (window != NULL, NULL);
+
+  	CCMWindowPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_WINDOW_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_pixmap)
+			break;
+	}
+    
+	if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_pixmap)
+	{
+		if (!_ccm_plugin_method_locked((GObject*)plugin, 
+							 CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_pixmap))
+			return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_pixmap (plugin, 
+																		 window);
+	}
+	
+	return NULL;
+}

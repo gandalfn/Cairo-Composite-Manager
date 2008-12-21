@@ -19,16 +19,21 @@
  * 	51 Franklin Street, Fifth Floor
  * 	Boston, MA  02110-1301, USA.
  *
- * Blur based on similar code from gl-cairo-simple
+ * Cairo Immage Surface Blur based on similar code from 
+ * http://taschenorakel.de/mathias/2008/11/24/blur-effect-cairo/
+ *
  * Authors:
- *      Mirco "MacSlow" Mueller <macslow@bangang.de>
+ *     Copyright (C) 2008  Mathias Hasselmann <mathias.hasselmann@gmx.de>
  *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <glib.h>
+
+#include <pixman.h>
 
 #include "ccm-cairo-utils.h"
 
@@ -62,240 +67,171 @@ cairo_rectangle_round (cairo_t *cr, double x, double y, double w, double h,
 		cairo_line_to (cr, x, y);
 }
 
-double*
-kernel_1d_new (int    radius,
-			   double deviation /* deviation, pass 0.0 for auto-generation */)
+/* G(x,y) = 1/(2 * PI * sigma^2) * exp(-(x^2 + y^2)/(2 * sigma^2))
+ */
+static pixman_fixed_t*
+create_gaussian_blur_kernel (int     radius,
+                             double  sigma,
+                             int    *length)
 {
-	double* kernel = NULL;
-	double  sum    = 0.0f;
-	double  value  = 0.0f;
-	int     i;
-	int     size = 2 * radius + 1;
-	double  radiusf;
+        const double scale2 = 2.0 * sigma * sigma;
+        const double scale1 = 1.0 / (M_PI * scale2);
 
-	if (radius <= 0)
-		return NULL;
+        const int size = 2 * radius + 1;
+        const int n_params = size * size;
 
-	kernel = (double*) g_slice_alloc ((size + 1) * sizeof (double));
-	if (!kernel)
-		return NULL;
+        pixman_fixed_t *params;
+        double *tmp, sum;
+        int x, y, i;
 
-	radiusf = fabs (radius) + 1.0f;
-	if (deviation == 0.0f)
-		deviation = sqrt (-(radiusf * radiusf) / (2.0f * log (1.0f / 255.0f)));
+        tmp = g_newa (double, n_params);
 
-	kernel[0] = size;
-	value = (double) -radius;
-	for (i = 0; i < size; i++)
+        /* caluclate gaussian kernel in floating point format */
+        for (i = 0, sum = 0, x = -radius; x <= radius; ++x) {
+                for (y = -radius; y <= radius; ++y, ++i) {
+                        const double u = x * x;
+                        const double v = y * y;
+
+                        tmp[i] = scale1 * exp (-(u+v)/scale2);
+
+                        sum += tmp[i];
+                }
+        }
+
+        /* normalize gaussian kernel and convert to fixed point format */
+        params = g_new (pixman_fixed_t, n_params + 2);
+
+        params[0] = pixman_int_to_fixed (size);
+        params[1] = pixman_int_to_fixed (size);
+
+        for (i = 0; i < n_params; ++i)
+                params[2 + i] = pixman_double_to_fixed (tmp[i] / sum);
+
+        if (length)
+                *length = n_params + 2;
+
+        return params;
+}
+
+static pixman_format_code_t
+pixman_format_from_cairo_format (cairo_format_t cairo_format)
+{
+    switch (cairo_format) 
 	{
-		kernel[1 + i] = 1.0f / (2.506628275f * deviation) *
-		expf (-((value * value) /
-		(2.0f * deviation * deviation)));
-		sum += kernel[1 + i];
-		value += 1.0f;
-	}
+		case CAIRO_FORMAT_ARGB32:
+			return PIXMAN_a8r8g8b8;
+		case CAIRO_FORMAT_RGB24:
+			return PIXMAN_x8r8g8b8;
+		case CAIRO_FORMAT_A8:
+			return PIXMAN_a8;
+		case CAIRO_FORMAT_A1:
+			return PIXMAN_a1;
+		default:
+			break;
+    }
 
-	for (i = 0; i < size; i++)
-		kernel[1 + i] /= sum;
-
-	return kernel;
+    return PIXMAN_a8r8g8b8;
 }
 
-void
-kernel_1d_delete (int    radius,
-				  double* kernel)
-{
-	if (!kernel)
-		return;
-
-	int     size = 2 * radius + 1;
-	
-	g_slice_free1 ((size + 1) * sizeof (double), (void*) kernel);
-}
-
-void
-cairo_image_surface_blur (cairo_surface_t* surface,
-						  int              horzRadius,
-						  int              vertRadius,
-						  int			   xpos,
-						  int			   ypos,
+cairo_surface_t *
+cairo_image_surface_blur (cairo_surface_t *surface,
+						  int              radius,
+						  double           sigma,
+						  int			   x,
+						  int			   y,
 						  int			   width,
 						  int			   height)
 {
-	int            iX;
-	int            iY;
-	int            i;
-	int            x;
-	int            y;
-	int            stride;
-	int            offset;
-	int            baseOffset;
-	double*        horzBlur;
-	double*        vertBlur;
-	double*        horzKernel;
-	double*        vertKernel;
-	unsigned char* src;
-	int            channels;
+	static cairo_user_data_key_t data_key;
+	pixman_fixed_t *params = NULL;
+	int n_params;
 
-	/* sanity checks */
-	if (!surface || horzRadius == 0 || vertRadius == 0)
-		return;
+	pixman_image_t *src, *dst;
+	int w, h, s;
+	gpointer p;
+	cairo_format_t cairo_format;
+	pixman_format_code_t pixman_format;
 
-	if (cairo_surface_get_type (surface) != CAIRO_SURFACE_TYPE_IMAGE)
-		return;
+	g_return_val_if_fail (cairo_surface_get_type (surface) == 
+						  CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
-	/* flush any pending cairo-drawing operations */
-	cairo_surface_flush (surface);
+	w = width <= 0 ? cairo_image_surface_get_width (surface) : width;
+	h = height <= 0 ? cairo_image_surface_get_height (surface) : height;
+	s = cairo_image_surface_get_stride (surface);
+	cairo_format = cairo_image_surface_get_format (surface);
+	pixman_format = pixman_format_from_cairo_format (cairo_format);
 
-	src  = cairo_image_surface_get_data (surface);
-	if (width < 0 || width > cairo_image_surface_get_width (surface))
-		width  = cairo_image_surface_get_width (surface);
-	if (height < 0 || height > cairo_image_surface_get_height (surface))
-		height = cairo_image_surface_get_height (surface);
+	/* create pixman image for cairo image surface */
+	p = cairo_image_surface_get_data (surface);
+	p += y * s + x;
+	src = pixman_image_create_bits (pixman_format, w, h, p, s);
 
-	/* only handle RGB- or RGBA-surfaces */
-	if (cairo_image_surface_get_format (surface) == CAIRO_FORMAT_ARGB32)
-		channels = 4;
-	else if (cairo_image_surface_get_format (surface) == CAIRO_FORMAT_RGB24)
-		channels = 3;
-	else
-		return;
+	/* attach gaussian kernel to pixman image */
+	params = create_gaussian_blur_kernel (radius, sigma, &n_params);
+	pixman_image_set_filter (src, PIXMAN_FILTER_CONVOLUTION, params, n_params);
+	g_free (params);
 
-	stride = width * channels;
+	/* render blured image to new pixman image */
+	p = g_malloc0 (s * h);
+	dst = pixman_image_create_bits (pixman_format, w, h, p, s);
+	pixman_image_composite (PIXMAN_OP_SRC, src, NULL, dst, 0, 0, 0, 0, 0, 0, w, h);
+	pixman_image_unref (src);
 
-	/* create buffers to hold the blur-passes */
-	horzBlur = (double*) g_slice_alloc ((height * stride + vertRadius * stride) * sizeof (double));
-	vertBlur = (double*) g_slice_alloc ((height * stride + vertRadius * stride) * sizeof (double));
-	if (!horzBlur || !vertBlur)
+	/* create new cairo image for blured pixman image */
+	surface = cairo_image_surface_create_for_data (p, cairo_format, w, h, s);
+	cairo_surface_set_user_data (surface, &data_key, p, g_free);
+	pixman_image_unref (dst);
+
+	return surface;
+}
+
+cairo_surface_t*
+cairo_blur_path(cairo_path_t* path, int border, double step, 
+				double width, double height)
+{
+	g_return_val_if_fail(path != NULL, NULL);
+	g_return_val_if_fail(border > 0, NULL);
+	g_return_val_if_fail(step > 0, NULL);
+	g_return_val_if_fail(width > 0 && height > 0, NULL);
+
+	double cpt;
+	double x1, y1, x2, y2;
+	cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_A8, 
+														  width, height);
+	cairo_t* cr = cairo_create(surface);
+	
+	// Get path extents
+	cairo_append_path(cr, path);
+	cairo_path_extents(cr, &x1, &y1, &x2, &y2);
+	cairo_new_path(cr);
+	
+	// Draw shadow
+	cairo_set_line_width(cr, step);
+	for (cpt = border; cpt > 0; cpt -= step)
 	{
-		if (horzBlur)
-			g_slice_free1 ((height * stride + vertRadius * stride) * sizeof (double), (void*) horzBlur);
-
-		if (vertBlur)
-			g_slice_free1 ((height * stride + vertRadius * stride) * sizeof (double), (void*) vertBlur);
-
-		return;
+		double alpha;
+		double p = 1 - (cpt / (double)border);
+		double x_scale = (double)((x2 - x1) + cpt) / (double)(x2 - x1);
+		double y_scale = (double)((y2 - y1) + cpt) / (double)(y2 - y1);
+		
+		if (p < 0.5)
+			alpha =p * 0.10;
+		else if (p >= 0.5 && p < 0.75)
+			alpha = 0.10 + ((p - 0.5) * (0.24 - 0.05));
+		else if (p >= 0.75 && p < 1)
+			alpha = 0.24 + ((p - 0.75) * (1 - 0.24));
+		else 
+			alpha = 1;
+		
+		cairo_save(cr);
+		cairo_scale(cr, x_scale, y_scale);
+		cairo_translate(cr, - cpt / (2 * x_scale), - cpt / (2 * y_scale));
+		cairo_set_source_rgba(cr, 0, 0, 0, alpha);
+		cairo_append_path(cr, path);
+		cairo_fill(cr);
+		cairo_restore(cr);
 	}
-
-	/* create blur-kernels for horz. and vert. */
-	horzKernel = kernel_1d_new (horzRadius, 0.0f);
-	vertKernel = kernel_1d_new (vertRadius, 0.0f);
-
-	/* check creation success */
-	if (!horzKernel || !vertKernel)
-	{
-		free ((void*) horzBlur);
-		free ((void*) vertBlur);
-
-		if (horzKernel)
-			kernel_1d_delete (horzRadius, horzKernel);
-
-		if (vertKernel)
-			kernel_1d_delete (vertRadius, vertKernel);
-
-		return;
-	}
-
-	/* horizontal pass */
-	for (iY = ypos; iY < height; iY++)
-	{
-		for (iX = xpos; iX < width; iX++)
-		{
-			double red   = 0.0f;
-			double green = 0.0f;
-			double blue  = 0.0f;
-			double alpha = 0.0f;
-
-			offset = ((int) horzKernel[0]) / -2;
-			for (i = 0; i < (int) horzKernel[0]; i++)
-			{
-				x = iX + offset;
-				if (x >= 0 && x < width)
-				{
-					baseOffset = iY * stride + x * channels;
-
-					if (channels == 4)
-						alpha += (horzKernel[1+i] * (double) src[baseOffset + 3]);
-
-					red   += (horzKernel[1+i] * (double) src[baseOffset + 2]);
-					green += (horzKernel[1+i] * (double) src[baseOffset + 1]);
-					blue  += (horzKernel[1+i] * (double) src[baseOffset + 0]);
-				}
-
-				offset++;
-			}
-
-			baseOffset = iY * stride + iX * channels;
-
-			if (channels == 4)
-			horzBlur[baseOffset + 3] = alpha;
-
-			horzBlur[baseOffset + 2] = red;
-			horzBlur[baseOffset + 1] = green;
-			horzBlur[baseOffset + 0] = blue;
-		}
-	}
-
-	/* vertical pass */
-	for (iY = ypos; iY < height; iY++)
-	{
-		for (iX = xpos; iX < width; iX++)
-		{
-			double red   = 0.0f;
-			double green = 0.0f;
-			double blue  = 0.0f;
-			double alpha = 0.0f;
-
-			offset = ((int) vertKernel[0]) / -2;
-			for (i = 0; i < (int) vertKernel[0]; i++)
-			{
-				y = iY + offset;
-				if (y >= 0 && y < height)
-				{
-					baseOffset = y * stride + iX * channels;
-
-					if (channels == 4)
-						alpha += (vertKernel[1+i] * horzBlur[baseOffset + 3]);
-
-					red   += (vertKernel[1+i] * horzBlur[baseOffset + 2]);
-					green += (vertKernel[1+i] * horzBlur[baseOffset + 1]);
-					blue  += (vertKernel[1+i] * horzBlur[baseOffset + 0]);
-				}
-
-				offset++;
-			}
-
-			baseOffset = iY * stride + iX * channels;
-
-			if (channels == 4)
-				vertBlur[baseOffset + 3] = alpha;
-
-			vertBlur[baseOffset + 2] = red;
-			vertBlur[baseOffset + 1] = green;
-			vertBlur[baseOffset + 0] = blue;
-		}
-	}
-
-	kernel_1d_delete (horzRadius, horzKernel);
-	kernel_1d_delete (vertRadius, vertKernel);
-
-	for (iY = ypos; iY < height; iY++)
-	{
-		for (iX = xpos; iX < width; iX++)
-		{
-			offset = iY * stride + iX * channels;
-
-			if (channels == 4)
-				src[offset + 3] = (unsigned char) vertBlur[offset + 3];
-
-			src[offset + 2] = (unsigned char) vertBlur[offset + 2];
-			src[offset + 1] = (unsigned char) vertBlur[offset + 1];
-			src[offset + 0] = (unsigned char) vertBlur[offset + 0];
-		}
-	}
-	g_slice_free1 ((height * stride + vertRadius * stride) * sizeof (double), (void*) vertBlur);
-	g_slice_free1 ((height * stride + vertRadius * stride) * sizeof (double), (void*) horzBlur);
-
-	/* tell cairo we did some drawing to the surface */
-	cairo_surface_mark_dirty (surface);
+	cairo_destroy(cr);
+	
+	return surface;
 }

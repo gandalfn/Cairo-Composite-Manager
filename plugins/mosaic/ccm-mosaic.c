@@ -48,21 +48,16 @@ static gchar* CCMMosaicOptions[CCM_MOSAIC_OPTION_N] = {
 };
 
 static void ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface);
-static void ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface);
-static void ccm_mosaic_check_area(CCMMosaic* self);
-static void ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display);
-static void ccm_mosaic_on_key_press(CCMMosaic* self);
+
 
 CCM_DEFINE_PLUGIN (CCMMosaic, ccm_mosaic, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_mosaic,
 										   CCM_TYPE_SCREEN_PLUGIN,
-										   ccm_mosaic_screen_iface_init);
-				   CCM_IMPLEMENT_INTERFACE(ccm_mosaic,
-										   CCM_TYPE_WINDOW_PLUGIN,
-										   ccm_mosaic_window_iface_init))
+										   ccm_mosaic_screen_iface_init))
 
 typedef struct {
 	cairo_rectangle_t   geometry;
+	cairo_matrix_t      initial;
 	CCMWindow*			window;
 } CCMMosaicArea;
 
@@ -70,16 +65,10 @@ struct _CCMMosaicPrivate
 {	
 	CCMScreen*			 screen;
 	gboolean 			 enabled;
-	gboolean			 clean_screen;
-	Window				 window;
-	CCMRegion*			 damage;
 	
-	int					 x_mouse;
-	int 				 y_mouse;
-	int					 mouse_over;
 	CCMMosaicArea*     	 areas;
 	gint				 nb_areas;
-	cairo_surface_t* 	 surface;
+	
 	CCMKeybind*			 keybind;
 	
 	CCMConfig*           options[CCM_MOSAIC_OPTION_N];
@@ -95,16 +84,9 @@ ccm_mosaic_init (CCMMosaic *self)
 	
 	self->priv = CCM_MOSAIC_GET_PRIVATE(self);
 	self->priv->screen = NULL;
-	self->priv->clean_screen = FALSE;
-	self->priv->window = 0;
-	self->priv->damage = NULL;
 	self->priv->enabled = FALSE;
-	self->priv->x_mouse = 0;
-	self->priv->y_mouse = 0;
-	self->priv->mouse_over = -1;
 	self->priv->areas = NULL;
 	self->priv->nb_areas = 0;
-	self->priv->surface = NULL;
 	self->priv->keybind = NULL;
 	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++) 
 		self->priv->options[cpt] = NULL;
@@ -116,24 +98,10 @@ ccm_mosaic_finalize (GObject *object)
 	CCMMosaic* self = CCM_MOSAIC(object);
 	gint cpt;
 	
-	if (self->priv->damage) ccm_region_destroy (self->priv->damage);
 	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	if (self->priv->keybind) g_object_unref(self->priv->keybind);
-	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
 	if (self->priv->areas) g_free(self->priv->areas);
-	if (self->priv->window)
-	{
-		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-		if (display)
-		XDestroyWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
-	}
-	if (self->priv->screen)
-	{
-		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-		if (display)
-		g_signal_handlers_disconnect_by_func(display, ccm_mosaic_on_event, self);
-	}
 	
 	G_OBJECT_CLASS (ccm_mosaic_parent_class)->finalize (object);
 }
@@ -149,430 +117,91 @@ ccm_mosaic_class_init (CCMMosaicClass *klass)
 }
 
 static void
-ccm_mosaic_create_window(CCMMosaic* self)
-{
-	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
-	XSetWindowAttributes attr;
-	
-	attr.override_redirect = True;
-	self->priv->window = XCreateWindow (CCM_DISPLAY_XDISPLAY(display), 
-										CCM_WINDOW_XWINDOW(root), 0, 0,
-										CCM_SCREEN_XSCREEN(self->priv->screen)->width,
-										CCM_SCREEN_XSCREEN(self->priv->screen)->height,
-										0, CopyFromParent, InputOnly, 
-										CopyFromParent, CWOverrideRedirect, 
-										&attr);
-	XMapWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
-	XRaiseWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
-	XSelectInput (CCM_DISPLAY_XDISPLAY(display), self->priv->window,
-				  ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
-}
-
-static gboolean
-ccm_mosaic_recalc_coords(CCMMosaic* self, int num, int* x, int* y,
-						 int* x_root, int* y_root)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	g_return_val_if_fail(self->priv->areas[num].window != NULL, FALSE);
-	g_return_val_if_fail(x != NULL && y != NULL, FALSE);
-	g_return_val_if_fail(x_root != NULL && y_root != NULL, FALSE);
-	
-	const cairo_rectangle_t* area = ccm_window_get_area(self->priv->areas[num].window);
-	gfloat scale;
-	
-	if (!area) return FALSE;
-	
-	scale = MIN((gfloat)self->priv->areas[num].geometry.height / (gfloat)area->height,
-				(gfloat)self->priv->areas[num].geometry.width / (gfloat)area->width);
-				
-	*x -= (gint)((gfloat)self->priv->areas[num].geometry.x + 
-		  ((gfloat)self->priv->areas[num].geometry.width / (gfloat)2) - 
-		  (((gfloat)area->width / 2) * scale));
-	*x = (gint)((gfloat)*x / scale);
-					
-	*y -= self->priv->areas[num].geometry.y + 
-		  (self->priv->areas[num].geometry.height / 2) - 
-		  (area->height / 2) * scale;
-	*y /= scale;
-	
-	*x_root = *x + area->x;
-	*y_root = *y + area->y;
-	
-	return TRUE;
-}
-
-static void
-ccm_mosaic_send_leave_event(CCMWindow* window, int x, int y)
-{
-	g_return_if_fail(window != NULL);
-	
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
-	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(window));
-	CCMWindow* root = ccm_screen_get_root_window (screen);
-	XCrossingEvent evt;
-	const cairo_rectangle_t* area = ccm_window_get_area(window);
-	
-	if (!area) return;
-	
-	ccm_debug_window(window, "LEAVE: %i,%i %i,%i", x, y, area->x, area->y);
-	evt.type = LeaveNotify;
-	evt.serial = 0;
-	evt.send_event = True;
-	evt.display = CCM_DISPLAY_XDISPLAY(display);
-	evt.root = CCM_WINDOW_XWINDOW(root);
-	evt.window = CCM_WINDOW_XWINDOW(window);
-	evt.subwindow = 0;
-	evt.time = CurrentTime;
-	evt.x = x - area->x;
-	evt.y = y - area->y;
-	evt.x_root = x;
-	evt.y_root = y;
-	evt.mode = NotifyNormal;
-	evt.detail = NotifyAncestor | NotifyInferior;
-	evt.same_screen = True;
-	evt.focus = True;
-	evt.state = 0;
-	
-	XSendEvent(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(window), True, 
-			   NoEventMask, (XEvent*)&evt);
-}
-
-static void
-ccm_mosaic_send_enter_event(CCMWindow* window, int x, int y)
-{
-	g_return_if_fail(window != NULL);
-	
-	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
-	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(window));
-	CCMWindow* root = ccm_screen_get_root_window (screen);
-	XCrossingEvent evt;
-	const cairo_rectangle_t* area = ccm_window_get_area(window);
-	
-	if (!area) return;
-	
-	ccm_debug_window(window, "ENTER: %i,%i %i,%i", x, y, area->x, area->y);
-	
-	evt.type = EnterNotify;
-	evt.serial = 0;
-	evt.send_event = True;
-	evt.display = CCM_DISPLAY_XDISPLAY(display);
-	evt.root = CCM_WINDOW_XWINDOW(root);
-	evt.window = CCM_WINDOW_XWINDOW(window);
-	evt.subwindow = 0;
-	evt.time = CurrentTime;
-	evt.x = x - area->x;
-	evt.y = y - area->y;
-	evt.x_root = x;
-	evt.y_root = y;
-	evt.mode = NotifyNormal;
-	evt.detail = NotifyAncestor | NotifyInferior;
-	evt.same_screen = True;
-	evt.focus = True;
-	evt.state = 0;
-	
-	XSendEvent(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(window), True, 
-			   NoEventMask, (XEvent*)&evt);
-}
-
-static void
-ccm_mosaic_simulate_enter_leave_event(CCMMosaic* self, int area, 
-									  int x, int y, int x_root, int y_root)
+ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window)
 {
 	g_return_if_fail(self != NULL);
-	g_return_if_fail(area < self->priv->nb_areas);
+	g_return_if_fail(window != NULL);
 	
-	if (area != self->priv->mouse_over)
+	gint id_area = -1, cpt;
+	gfloat search = G_MAXFLOAT;
+	
+	for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
 	{
-		int x_win = x,
-			y_win = y,
-			x_win_root = x_root,
-			y_win_root = y_root;
-		if (self->priv->mouse_over != -1 && 
-			ccm_mosaic_recalc_coords (self, self->priv->mouse_over, 
-									  &x_win, &y_win, &x_win_root, &y_win_root))
-		{
-			CCMWindow* window = self->priv->areas[self->priv->mouse_over].window;
-			ccm_mosaic_send_leave_event(window, x_win_root, y_win_root);
-		}
-		x_win = x;
-		y_win = y;
-		x_win_root = x_root;
-		y_win_root = y_root;
-		if (area != -1 && 
-			ccm_mosaic_recalc_coords (self, area, &x_win, &y_win, 
-									  &x_win_root, &y_win_root))
-		{
-			CCMWindow* window = self->priv->areas[area].window;
-			ccm_mosaic_send_enter_event(window, x_win_root, y_win_root);
-		}
+		gfloat scale;
+		const cairo_rectangle_t* win_area = ccm_window_get_area(window);
 		
-		self->priv->mouse_over = area;
-	}
-}
-
-static gboolean
-ccm_mosaic_send_event (Window window, int x, int y, 
-					   int x_win, int y_win, int width, int height, 
-					   XEvent* evt)
-{
-	g_return_val_if_fail(window != None, FALSE);
-	g_return_val_if_fail(evt != NULL, FALSE);
-
-	gboolean send = FALSE;
-            
-	send = (x >= x_win && x <= x_win + width && 
-			y >= y_win && y <= y_win + height);
-
-	if (send)
-	{
-    	evt->xany.window = window;
-		if (evt->type == ButtonPress || evt->type == ButtonRelease)
-        {
-            XButtonEvent* button_evt = (XButtonEvent*)evt;
-            
-			button_evt->window = window;
-			button_evt->subwindow = 0;
-			button_evt->x = x - x_win;
-            button_evt->y = y - y_win;
-            button_evt->x_root = x;
-            button_evt->y_root = y;
-			ccm_debug("BROADCAST BUTTON PRESS/RELEASE: 0x%lx %i,%i %i,%i", 
-					  window, x, y, button_evt->x, button_evt->y);
-        }
-		if (evt->type == EnterNotify || evt->type == LeaveNotify)
-        {
-            XCrossingEvent* crossing_evt = (XCrossingEvent*)evt;
-            
-			crossing_evt->x = x - x_win;
-            crossing_evt->y = y - y_win;
-            crossing_evt->x_root = x;
-            crossing_evt->y_root = y;
-			ccm_debug("BROADCAST ENTER/LEAVE: 0x%lx %i,%i %i,%i", 
-					  window, x, y, crossing_evt->x, crossing_evt->y);
-        }
-		if (evt->type == MotionNotify)
-        {
-            XMotionEvent* motion_evt = (XMotionEvent*)evt;
-            
-			motion_evt->x = x - x_win;
-            motion_evt->y = y - y_win;
-            motion_evt->x_root = x;
-            motion_evt->y_root = y;
-			ccm_debug("BROADCAST MOTION: 0x%lx %i,%i %i,%i", 
-					  window, x, y, x - x_win, y - y_win);
-        }
-		XSendEvent(evt->xany.display, window, False, 
-				   NoEventMask, evt);
-	}
-	
-	return send;
-}
-
-static gboolean
-ccm_mosaic_broadcast_event(Window window, int x, int y, 
-						   int x_win, int y_win, XEvent* evt)
-{
-	g_return_val_if_fail(window != None, FALSE);
-	g_return_val_if_fail(evt != NULL, FALSE);
-	
-	Window* windows = NULL;
-	Window w, p;
-	guint n_windows = 0;
-	XWindowAttributes attribs;
-	gboolean send = FALSE;
+		scale = MIN(self->priv->areas[cpt].geometry.height / win_area->height,
+					self->priv->areas[cpt].geometry.width / win_area->width);
 		
-	
-	if (XQueryTree(evt->xany.display, window, &w, &p, 
-				   &windows, &n_windows) && windows && n_windows)
-	{
-		while (n_windows-- && !send)
-        {
-			XGetWindowAttributes(evt->xany.display, windows[n_windows], 
-								 &attribs);	
-			
-			send = ccm_mosaic_broadcast_event (windows[n_windows], x, y, 
-											   x_win + attribs.x,
-											   y_win + attribs.y, evt);
-        }
-        XFree(windows);
-	}
-
-	XGetWindowAttributes(evt->xany.display, window, &attribs);
-	if (!send)
-		send = ccm_mosaic_send_event(window, x, y, x_win, y_win,
-									 attribs.width, attribs.height, evt);
-	
-	return send;
-}
-
-static gboolean
-ccm_mosaic_mouse_over_area(CCMMosaic* self, gint area, gint x, gint y)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	g_return_val_if_fail(area < self->priv->nb_areas, FALSE);
-	
-	return self->priv->areas[area].geometry.x <= x &&
-		   self->priv->areas[area].geometry.y <= y &&
-		   self->priv->areas[area].geometry.x +
-		   self->priv->areas[area].geometry.width >= x &&
-		   self->priv->areas[area].geometry.y +
-		   self->priv->areas[area].geometry.height >= y;
-}
-
-static void
-ccm_mosaic_on_event(CCMMosaic* self, XEvent* event, CCMDisplay* display)
-{
-	g_return_if_fail(CCM_IS_MOSAIC(self));
-	
-	if (self->priv->enabled)
-	{
-		switch (event->type)
+		if (sqrt(pow(1.0f - scale, 2)) < search && !self->priv->areas[cpt].window)
 		{
-			case ButtonPress:
-			case ButtonRelease:
-			/*case MotionNotify:
-			case EnterNotify:
-			case LeaveNotify:*/
+			search = sqrt(pow(1.0f - scale, 2));
+			id_area = cpt;
+		}
+	}
+	
+	if (id_area < 0)
+	{
+		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
+		{   
+			if (!self->priv->areas[cpt].window)
 			{
-				XButtonEvent* button_event = (XButtonEvent*)event;
-				gint cpt;
-				
-				for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
-				{
-					gint x = button_event->x,
-						 y = button_event->y,
-						 x_root = button_event->x_root,
-						 y_root = button_event->y_root;
-					
-					if (ccm_mosaic_mouse_over_area(self, cpt, x_root, y_root) &&
-						ccm_mosaic_recalc_coords(self, cpt, &x, &y, 
-												 &x_root, &y_root))
-					{
-						CCMWindow* window = self->priv->areas[cpt].window;
-						const cairo_rectangle_t* area = ccm_window_get_area(window);
-	
-						if (!area) break;
-												
-						ccm_mosaic_simulate_enter_leave_event(self, cpt,
-															  button_event->x, 
-															  button_event->y,
-															  button_event->x_root, 
-															  button_event->y_root);
-						if (ccm_mosaic_broadcast_event(CCM_WINDOW_XWINDOW(window), 
-												       x_root, y_root,
-												       area->x, area->y,
-												       event) &&
-							event->type == ButtonRelease)			
-						{
-							ccm_screen_activate_window(self->priv->screen,
-														window, button_event->time);
-							if (button_event->button == 2)
-								ccm_mosaic_on_key_press(self);
-						}
-						break;
-					}
-				}
+				ccm_window_get_transform(window,
+										 &self->priv->areas[cpt].initial);
+				self->priv->areas[cpt].window = window;
 			}
-			break;
-			default:
-			break;
 		}
-	}
-}
-
-static void
-ccm_mosaic_on_key_press(CCMMosaic* self)
-{
-	g_return_if_fail(self != NULL);
-	
-	GList* item = ccm_screen_get_windows(self->priv->screen);
-	
-	self->priv->enabled = ~self->priv->enabled;
-	g_object_set(G_OBJECT(self->priv->screen), "buffered_pixmap", 
-				 !self->priv->enabled, NULL);
-	ccm_screen_damage(self->priv->screen);
-	
-	for (;item; item = item->next)
-	{
-		if (ccm_window_is_viewable(item->data))
-		{
-			CCMRegion* geometry;
-			
-			g_object_set(G_OBJECT(item->data), "use_image", 
-						 self->priv->enabled ? TRUE : FALSE, NULL);
-			g_object_get(G_OBJECT(item->data), "geometry", &geometry, NULL);
-			
-			ccm_drawable_damage_region_silently(item->data, geometry);
-		}
-	}
-	
-	if (self->priv->enabled)
-	{
-		self->priv->surface = cairo_image_surface_create (
-										CAIRO_FORMAT_ARGB32, 
-										CCM_SCREEN_XSCREEN(self->priv->screen)->width, 
-										CCM_SCREEN_XSCREEN(self->priv->screen)->height);
-		ccm_mosaic_create_window(self);
-		self->priv->clean_screen = TRUE;
-		self->priv->nb_areas = 0;
-		ccm_mosaic_check_area(self);
 	}
 	else
 	{
-		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	
-		cairo_surface_destroy (self->priv->surface);
-		self->priv->surface = NULL;
-		XDestroyWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
-		self->priv->window = None;
-		if (self->priv->areas)
-		{
-			g_free(self->priv->areas);
-			self->priv->areas = NULL;
-		}
-		self->priv->nb_areas = 0;
+		ccm_window_get_transform(window,
+								 &self->priv->areas[id_area].initial);		
+		self->priv->areas[id_area].window = window;
 	}
-	ccm_screen_damage (self->priv->screen);
 }
 
 static void
-ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
+ccm_mosaic_set_window_transform(CCMMosaic* self)
 {
-	CCMMosaic* self = CCM_MOSAIC(plugin);
-	CCMDisplay* display = ccm_screen_get_display (screen);
+	g_return_if_fail(self != NULL);
+
 	gint cpt;
-	GError* error = NULL;
-	gchar* shortcut;
-	
-	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
+	GList* item = ccm_screen_get_windows(self->priv->screen);
+
+	for (;item; item = item->next)
 	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
-												  "mosaic", 
-												  CCMMosaicOptions[cpt]);
+		CCMWindowType type = ccm_window_get_hint_type(item->data);
+		
+		if (ccm_window_is_viewable(item->data) &&
+			ccm_window_is_decorated(item->data)  &&
+			type == CCM_WINDOW_TYPE_NORMAL) 
+		{
+			ccm_mosaic_find_area(self, item->data);
+		}
 	}
-	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	
-	self->priv->screen = screen;
-	shortcut = 
-	   ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT], &error);
-	if (error)
+	for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
 	{
-		g_error_free(error);
-		error = NULL;
-		g_warning("Error on get mosaic shortcut configuration value");
-		shortcut = g_strdup("<Super>Tab");
+		cairo_matrix_t transform;
+		gfloat scale;
+		const cairo_rectangle_t* win_area = ccm_window_get_area(self->priv->areas[cpt].window);
+		
+		cairo_matrix_init_identity(&transform);
+		
+		scale = MIN(self->priv->areas[cpt].geometry.height / win_area->height,
+					self->priv->areas[cpt].geometry.width / win_area->width);
+		
+		cairo_matrix_translate (&transform, 
+								self->priv->areas[cpt].geometry.x + 
+								self->priv->areas[cpt].geometry.width / 2, 
+								self->priv->areas[cpt].geometry.y + 
+								self->priv->areas[cpt].geometry.height / 2);
+		cairo_matrix_scale(&transform, scale, scale);
+		cairo_matrix_translate (&transform, 
+								-(win_area->width / 2) - win_area->x,
+								-(win_area->height / 2) - win_area->y);
+		ccm_window_set_transform(self->priv->areas[cpt].window, &transform);
 	}
-	self->priv->keybind = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
-	g_free(shortcut);
-	
-	g_signal_connect_swapped(self->priv->screen, "window-destroyed", 
-							 G_CALLBACK(ccm_mosaic_check_area), self);
-	g_signal_connect_swapped(self->priv->keybind, "key_press", 
-							 G_CALLBACK(ccm_mosaic_on_key_press), self);
-	g_signal_connect_swapped(display, "event", 
-							 G_CALLBACK(ccm_mosaic_on_event), self);
 }
 
 static void
@@ -623,84 +252,6 @@ ccm_mosaic_create_areas(CCMMosaic* self, gint nb_windows)
     }
 }
 
-static CCMMosaicArea*
-ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window, int width, int height)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	g_return_val_if_fail(window != NULL, NULL);
-	
-	CCMMosaicArea* area = NULL;
-	gfloat scale;
-	gint width_scale = G_MAXINT;
-	gint cpt;
-	
-	for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
-	{
-		if (self->priv->areas[cpt].window == window)
-		{
-			area = &self->priv->areas[cpt];
-			break;
-		}
-	}
-	
-	if (!area)
-	{
-		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
-		{
-			if (!self->priv->areas[cpt].window)
-			{
-				scale = MIN(self->priv->areas[cpt].geometry.height / height,
-							self->priv->areas[cpt].geometry.width / width);
-				if (width * scale < width_scale)
-				{
-					area = &self->priv->areas[cpt];
-					self->priv->areas[cpt].window = window;
-					width_scale = width * scale;
-				}
-			}
-		}
-	}
-	
-	return area;
-}
-
-static CCMRegion*
-ccm_mosaic_get_damaged_area(CCMMosaic* self, CCMMosaicArea* area)
-{
-	g_return_val_if_fail(self != NULL, NULL);
-	g_return_val_if_fail(area != NULL, NULL);
-	
-	CCMRegion* damaged = NULL;
-				
-	if (ccm_drawable_is_damaged (CCM_DRAWABLE(area->window)))
-	{
-		const cairo_rectangle_t* win_area = ccm_window_get_area(area->window);
-		CCMRegion* tmp;
-		gfloat scale;
-		cairo_matrix_t matrix;
-		
-		if (!win_area) return NULL;
-		
-		g_object_get(G_OBJECT(area->window), "damaged", &tmp, NULL);
-		
-		damaged = ccm_region_copy (tmp);
-		
-		scale = MIN(area->geometry.height / win_area->height,
-					area->geometry.width / win_area->width);
-		
-		cairo_matrix_init_translate (&matrix, 
-									 area->geometry.x + area->geometry.width / 2, 
-									 area->geometry.y + area->geometry.height / 2);
-		cairo_matrix_scale(&matrix, scale, scale);
-		cairo_matrix_translate (&matrix, -(win_area->width / 2) - win_area->x,
-								-(win_area->height / 2) - win_area->y);
-		
-		ccm_region_transform(damaged, &matrix);
-	}
-	
-	return damaged;
-}
-
 static void
 ccm_mosaic_check_area(CCMMosaic* self)
 {
@@ -714,358 +265,97 @@ ccm_mosaic_check_area(CCMMosaic* self)
 
 		for (;item; item = item->next)
 		{
-			CCMWindowType type = ccm_window_get_hint_type (item->data);
-			if (CCM_WINDOW_XWINDOW(item->data) != self->priv->window &&
-				ccm_window_is_viewable(item->data) &&
-				ccm_window_is_decorated(item->data) && 
-				(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG)) 
+			CCMWindowType type = ccm_window_get_hint_type(item->data);
+			
+			if (ccm_window_is_viewable(item->data) &&
+				ccm_window_is_decorated(item->data) &&
+				type == CCM_WINDOW_TYPE_NORMAL) 
 			{
 				gint cpt;
 				gboolean found = FALSE;
 				
 				for (cpt = 0; cpt < self->priv->nb_areas && !found; cpt++)
-					found = self->priv->areas[cpt].window == item->data;
+					 found = self->priv->areas[cpt].window == item->data;
 				
 				changed |= !found;
 				nb_windows++;
 			}
 		}
-		if (!nb_windows)
+		if (nb_windows != self->priv->nb_areas || changed) 
 		{
-			CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	
-			self->priv->enabled = FALSE;
-			cairo_surface_destroy (self->priv->surface);
-			self->priv->surface = NULL;
-			XDestroyWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->window);
-			self->priv->window = None;
-			if (self->priv->areas)
-			{
-				g_free(self->priv->areas);
-				self->priv->areas = NULL;
-			}
-			self->priv->nb_areas = 0;
-			ccm_screen_damage (self->priv->screen);
-		}
-		else if (nb_windows != self->priv->nb_areas || changed) 
-		{
-			cairo_t* ctx = cairo_create (self->priv->surface);
-			
 			ccm_mosaic_create_areas(self, nb_windows);
-							
-			cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
-			cairo_paint(ctx);
-			cairo_destroy (ctx);
-			ccm_screen_damage (self->priv->screen);
+			ccm_mosaic_set_window_transform(self);
 		}
 	}
-}
-
-static gboolean
-ccm_mosaic_paint_area(CCMMosaic* self, CCMWindow* window, cairo_surface_t* target,
-					  cairo_surface_t* surface, gboolean y_invert)
-{
-	g_return_val_if_fail(self != NULL, FALSE);
-	g_return_val_if_fail(surface != NULL, FALSE);
-	g_return_val_if_fail(window != NULL, FALSE);
-	
-	gfloat scale;
-	cairo_path_t* path;
-	cairo_t* ctx;
-	cairo_pattern_t* pattern;
-	CCMRegion* damaged;
-	CCMMosaicArea* area;
-	const cairo_rectangle_t* win_area = ccm_window_get_area(window);
-		
-	if (!win_area) return FALSE;
-				
-	area = ccm_mosaic_find_area(self, window, win_area->width, win_area->height);
-	if (!area) return FALSE;
-	
-	damaged = ccm_mosaic_get_damaged_area (self, area);
-	if (!damaged) return FALSE;
-	if (self->priv->damage) 
-		ccm_region_union(self->priv->damage, damaged);
-	else
-		self->priv->damage = ccm_region_copy(damaged);
-	ccm_region_destroy (damaged);
-
-	scale = MIN(area->geometry.height / win_area->height,
-				area->geometry.width / win_area->width);
-	
-	ctx = cairo_create (self->priv->surface);
-	
-	cairo_translate (ctx, area->geometry.x + area->geometry.width / 2, 
-					 area->geometry.y + area->geometry.height / 2);
-	cairo_scale(ctx, scale, scale);
-	
-	cairo_translate (ctx, -(win_area->width / 2) - win_area->x,
-					 -(win_area->height / 2) - win_area->y);
-	path = ccm_drawable_get_damage_path (CCM_DRAWABLE(window), ctx);
-	cairo_clip (ctx);
-	cairo_path_destroy (path);
-	
-	if (y_invert)
-	{
-		cairo_scale (ctx, 1.0, -1.0);
-		cairo_translate (ctx, win_area->x, - win_area->y - win_area->height);
-	}
-	else
-		cairo_translate (ctx, win_area->x, win_area->y);
-	cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_surface (ctx, surface, 0, 0);
-	pattern = cairo_get_source (ctx);
-	cairo_pattern_set_filter (pattern, CAIRO_FILTER_GOOD);
-	cairo_paint (ctx);
-#if 0
-	cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
-	static gint i = 0;
-
-	switch (i)
-	{
-		case 0:
-			cairo_set_source_rgba (ctx, 1, 0, 0, 0.5);
-			i++;
-			break;
-		case 1:
-			cairo_set_source_rgba (ctx, 0, 1, 0, 0.5);
-			i++;
-			break;
-		case 2:
-			cairo_set_source_rgba (ctx, 0, 0, 1, 0.5);
-			i = 0;
-			break;
-		default:
-			break;
-	}
-	cairo_paint(ctx);
-#endif
-	cairo_destroy (ctx);
-	
-	return TRUE;
-}
-
-static gboolean
-ccm_mosaic_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* screen,
-							 CCMWindow* window)
-{
-	CCMMosaic* self = CCM_MOSAIC (plugin);
-	gboolean ret;
-	CCMWindowType type = ccm_window_get_hint_type(window);
-	
-	ret = ccm_screen_plugin_add_window(CCM_SCREEN_PLUGIN_PARENT (plugin), 
-									   screen, window);
-
-	if (CCM_WINDOW_XWINDOW(window) != self->priv->window &&
-		ccm_window_is_viewable(window) &&
-		ccm_window_is_decorated(window) && 
-		(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG)) 
-			ccm_mosaic_check_area(self);
-	
-	return ret;
-}
-
-static gboolean
-ccm_mosaic_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
-                        cairo_t* context)
-{
-	CCMMosaic* self = CCM_MOSAIC (plugin);
-	CCMRegion* damaged = NULL;
-	gboolean ret = FALSE;		
-	
-	if (self->priv->damage)
-	{
-		ccm_region_destroy (self->priv->damage);
-		self->priv->damage = NULL;
-	}
-	
-	ret = ccm_screen_plugin_paint(CCM_SCREEN_PLUGIN_PARENT (plugin), screen, 
-								  context);
-	
-	if (self->priv->damage && !ccm_region_empty (self->priv->damage))
-	{
-		ccm_screen_add_damaged_region (screen, self->priv->damage);
-		ccm_region_destroy (self->priv->damage);
-		self->priv->damage = NULL;
-	}
-	damaged = ccm_screen_get_damaged (screen);
-	
-	if (ret && damaged && !ccm_region_empty(damaged) && self->priv->enabled)
-	{
-		cairo_rectangle_t* rects;
-		gint nb_rects, cpt;
-		
-		cairo_save(context);
-		cairo_reset_clip (context);
-		
-		ccm_region_get_rectangles (damaged, &rects, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
-		{
-			ccm_debug("CLIP: %i,%i %i,%i", (int)rects[cpt].x, (int)rects[cpt].y,
-							 (int)rects[cpt].width, (int)rects[cpt].height);
-			cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
-							 rects[cpt].width, rects[cpt].height);
-		}
-		cairo_clip(context);
-		cairo_set_source_surface (context, self->priv->surface, 0, 0);
-		cairo_paint(context);
-		cairo_restore (context);
-	}
-	
-	return ret;
 }
 
 static void
-ccm_mosaic_screen_damage(CCMScreenPlugin* plugin, CCMScreen* screen,
-						 CCMRegion* area, CCMWindow* window)
+ccm_mosaic_on_key_press(CCMMosaic* self)
 {
-	CCMMosaic* self = CCM_MOSAIC (plugin);
+	g_return_if_fail(self != NULL);
 	
-	if (self->priv->enabled)
+	self->priv->enabled = ~self->priv->enabled;
+		
+	if (self->priv->areas)
 	{
-		CCMMosaicArea* win_area = NULL;
 		gint cpt;
-		
-		for (cpt = 0; cpt < self->priv->nb_areas && !win_area; cpt++)
+		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
 		{
-			if (self->priv->areas[cpt].window == window)
-				win_area = &self->priv->areas[cpt];
+			ccm_window_set_transform(self->priv->areas[cpt].window,
+									 &self->priv->areas[cpt].initial);
 		}
-		
-		if (win_area)
-		{
-			GList* item = ccm_screen_get_windows(self->priv->screen);
-			CCMRegion* damaged = ccm_mosaic_get_damaged_area(self, win_area);
-			gboolean top = FALSE;
-						
-			for (;item; item = item->next)
-			{
-				if (ccm_window_is_viewable(item->data))
-				{
-					gboolean found = item->data == win_area->window;
-					top |= item->data == win_area->window;
-					
-					for (cpt = 0; cpt < self->priv->nb_areas && !found; cpt++)
-						found = self->priv->areas[cpt].window == item->data;
-					
-					if (!found)
-					{
-						ccm_drawable_damage_region_silently(item->data, 
-															damaged);
-						if (!top)
-							ccm_drawable_damage_region_silently(item->data, 
-																area);
-					}
-				}
-			}
-			ccm_region_destroy(damaged);
-		}
-		else
-		{
-			CCMRegion** damaged = NULL;
-			
-			if (self->priv->nb_areas)
-			{
-				gint cpt;
-				damaged = g_new0(CCMRegion*, self->priv->nb_areas);
-			
-				for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
-				{
-					CCMRegion* tmp = NULL;
-					if (self->priv->areas[cpt].window)
-					{
-						g_object_get(G_OBJECT(self->priv->areas[cpt].window), 
-									 "damaged", &tmp, NULL);
-					}
-					if (tmp) damaged[cpt] = ccm_region_copy(tmp);
-				}
-			}
-			ccm_screen_plugin_damage(CCM_SCREEN_PLUGIN_PARENT (plugin), screen, 
-									 area, window);
-			if (damaged)
-			{
-				gint cpt;
-				for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
-				{
-					if (damaged[cpt])
-					{
-						ccm_drawable_damage_region_silently(CCM_DRAWABLE(self->priv->areas[cpt].window),
-															damaged[cpt]);
-						
-						ccm_region_destroy(damaged[cpt]);
-					}
-				}
-				g_free(damaged);
-			}
-		}
-
+		g_free(self->priv->areas);
+		self->priv->areas = NULL;
 	}
-	else
-		ccm_screen_plugin_damage(CCM_SCREEN_PLUGIN_PARENT (plugin), screen, 
-								 area, window);
+	self->priv->nb_areas = 0;
+	
+	if (self->priv->enabled) ccm_mosaic_check_area(self);
+	
+	ccm_screen_damage(self->priv->screen);
 }
 
-static gboolean
-ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
-						cairo_t* context, cairo_surface_t* surface,
-						gboolean y_invert)
+static void
+ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
-	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	CCMMosaic* self = CCM_MOSAIC(_ccm_screen_get_plugin (screen, CCM_TYPE_MOSAIC));
-	CCMWindowType type = ccm_window_get_hint_type (window);
-	gboolean ret = FALSE;
+	CCMMosaic* self = CCM_MOSAIC(plugin);
+	gint cpt;
+	GError* error = NULL;
+	gchar* shortcut;
 	
-	if (self->priv->enabled)
+	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
 	{
-		if (ccm_drawable_is_damaged (CCM_DRAWABLE(window)))
-		{	
-			if (CCM_WINDOW_XWINDOW(window) != self->priv->window &&
-				ccm_window_is_viewable(window) && 
-				!ccm_window_is_input_only(window) && 
-				ccm_window_is_decorated(window) && 
-				(type == CCM_WINDOW_TYPE_NORMAL || type == CCM_WINDOW_TYPE_DIALOG)) 
-			{
-				if (self->priv->surface)
-				{
-					cairo_surface_t* target = cairo_get_target (context);
-					g_object_set(G_OBJECT(window), "use_image", TRUE, NULL);
-					ret = ccm_mosaic_paint_area (self, window, target,
-												 surface, y_invert);
-				}
-			}
-			else
-				ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window,
-											  context, surface, y_invert);
-		}
+		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
+		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
+												  "mosaic", 
+												  CCMMosaicOptions[cpt]);
 	}
-	else
-		ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window,
-									  context, surface, y_invert);
+	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	
-	return ret;
+	self->priv->screen = screen;
+	shortcut = 
+	   ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT], &error);
+	if (error)
+	{
+		g_error_free(error);
+		error = NULL;
+		g_warning("Error on get mosaic shortcut configuration value");
+		shortcut = g_strdup("<Super>Tab");
+	}
+	self->priv->keybind = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
+	g_free(shortcut);
+	
+	g_signal_connect_swapped(self->priv->screen, "window-destroyed", 
+							 G_CALLBACK(ccm_mosaic_check_area), self);
+	g_signal_connect_swapped(self->priv->keybind, "key_press", 
+							 G_CALLBACK(ccm_mosaic_on_key_press), self);
 }
 
 static void
 ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface)
 {
 	iface->load_options 	= ccm_mosaic_screen_load_options;
-	iface->paint 			= ccm_mosaic_screen_paint;
-	iface->add_window 		= ccm_mosaic_screen_add_window;
+	iface->paint 			= NULL;
+	iface->add_window 		= NULL;
 	iface->remove_window 	= NULL;
-	iface->damage			= ccm_mosaic_screen_damage;
-}
-
-static void
-ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface)
-{
-	iface->load_options 	 = NULL;
-	iface->query_geometry 	 = NULL;
-	iface->paint 			 = ccm_mosaic_window_paint;
-	iface->map				 = NULL;
-	iface->unmap			 = NULL;
-	iface->query_opacity  	 = NULL;
-	iface->move				 = NULL;
-	iface->resize			 = NULL;
-	iface->set_opaque_region = NULL;
-	iface->get_origin		 = NULL;
+	iface->damage			= NULL;
 }

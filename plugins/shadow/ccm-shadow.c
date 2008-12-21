@@ -26,6 +26,7 @@
 #include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-window.h"
+#include "ccm-pixmap.h"
 #include "ccm-shadow.h"
 #include "ccm-config.h"
 #include "ccm-cairo-utils.h"
@@ -34,9 +35,12 @@
 
 enum
 {
-	CCM_SHADOW_BORDER,
+	CCM_SHADOW_REAL_BLUR,
+	CCM_SHADOW_OFFSET,
 	CCM_SHADOW_RADIUS,
+	CCM_SHADOW_SIGMA,
 	CCM_SHADOW_COLOR,
+	CCM_SHADOW_ALPHA,
 	CCM_SHADOW_OPTION_N
 };
 
@@ -50,9 +54,12 @@ enum
 };
 
 static gchar* CCMShadowOptions[CCM_SHADOW_OPTION_N] = {
-	"border",
+	"real_blur",
+	"offset",
 	"radius",
-	"color"
+	"sigma",
+	"color",
+	"alpha"
 };
 
 static void ccm_shadow_window_iface_init(CCMWindowPluginClass* iface);
@@ -71,15 +78,19 @@ struct _CCMShadowPrivate
 	CCMScreen* 			screen;
 	
 	gboolean			enable;
-	int 				border;
+	gboolean			real_blur;
+	int 				offset;
 	int 				radius;
+	double 				sigma;
 	GdkColor*			color;
+	double				alpha;
 	
 	guint 				id_check;
 	
 	CCMWindow* 			window;
 	
-	cairo_surface_t* 	shadow[CCM_SHADOW_SIDE_N];
+	CCMPixmap*			shadow;
+	cairo_surface_t*	shadow_image;
 	
 	CCMRegion* 			geometry;
 	
@@ -96,16 +107,19 @@ ccm_shadow_init (CCMShadow *self)
 	
 	self->priv = CCM_SHADOW_GET_PRIVATE(self);
 	
-	self->priv->enable = TRUE;
-	self->priv->id_check = 0;
-	self->priv->border = 12;
-	self->priv->radius = 8;
-	self->priv->color = NULL;
-	self->priv->window = NULL;
 	self->priv->screen = NULL;
+	self->priv->enable = TRUE;
+	self->priv->real_blur = FALSE;
+	self->priv->offset = 0;
+	self->priv->radius = 14;
+	self->priv->sigma = 7;
+	self->priv->color = NULL;
+	self->priv->alpha = 0.6;
+	self->priv->id_check = 0;
+	self->priv->window = NULL;
+	self->priv->shadow = NULL;
+	self->priv->shadow_image = NULL;
 	self->priv->geometry = NULL;
-	for (cpt = 0; cpt < CCM_SHADOW_SIDE_N; cpt++)
-		self->priv->shadow[cpt] = NULL;
 	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; cpt++) 
 		self->priv->options[cpt] = NULL;
 }
@@ -127,18 +141,17 @@ ccm_shadow_finalize (GObject *object)
 		}
 	}
 	
-	for (cpt = 0; cpt < CCM_SHADOW_SIDE_N; cpt++)
-	{
-		if (self->priv->shadow[cpt])
-			cairo_surface_destroy(self->priv->shadow[cpt]);
-		self->priv->shadow[cpt] = NULL;
-	}
-	
 	if (self->priv->geometry) 
 	{
 		ccm_region_destroy (self->priv->geometry);
 		self->priv->geometry = NULL;
 	}
+	
+	if (CCM_IS_PIXMAP(self->priv->shadow))
+		g_object_unref(self->priv->shadow);
+	
+	if (self->priv->shadow_image) 
+		cairo_surface_destroy(self->priv->shadow_image);
 	
 	if (self->priv->color) g_free(self->priv->color);
 	
@@ -154,239 +167,6 @@ ccm_shadow_class_init (CCMShadowClass *klass)
 	
 	klass->shadow_atom = None;
 	object_class->finalize = ccm_shadow_finalize;
-}
-
-static void
-ccm_shadow_create_shadow(CCMShadow* self, CCMWindow* window)
-{
-	cairo_surface_t* tmp = NULL;
-	cairo_rectangle_t clipbox, *rects;
-	cairo_t* ctx;
-	gint cpt;
-	
-	ccm_region_get_clipbox(self->priv->geometry, &clipbox);
-	if (clipbox.width == 0 || clipbox.height == 0 || self->priv->border == 0)
-		return;
-	
-	for (cpt = 0; cpt < CCM_SHADOW_SIDE_N; cpt++)
-	{
-		double width = 0, height = 0;
-		gint i, nb_rects;
-		CCMRegion* area = ccm_region_copy(self->priv->geometry);
-		ccm_region_offset(area, -clipbox.x, -clipbox.y);
-		
-		switch (cpt)
-		{
-			case CCM_SHADOW_SIDE_TOP:
-				ccm_region_offset(area, self->priv->border / 2, 
-								  self->priv->border / 2);
-				width = clipbox.width + self->priv->border;
-				height = self->priv->border;
-			break;
-			case CCM_SHADOW_SIDE_BOTTOM:
-				ccm_region_offset(area, self->priv->border / 2, 
-								  - clipbox.height + self->priv->border / 2);
-				width = clipbox.width + self->priv->border;
-				height = self->priv->border;
-			break;
-			case CCM_SHADOW_SIDE_RIGHT:
-				ccm_region_offset(area, - clipbox.width + self->priv->border / 2, 
-								  self->priv->border / 2);
-				width = self->priv->border;
-				height = clipbox.height + self->priv->border;
-			break;
-			case CCM_SHADOW_SIDE_LEFT:
-				ccm_region_offset(area, self->priv->border / 2, 
-								  self->priv->border / 2);
-				width = self->priv->border;
-				height = clipbox.height + self->priv->border;
-			break;
-		}
-		if (self->priv->shadow[cpt])
-			cairo_surface_destroy(self->priv->shadow[cpt]);
-		if (cpt == CCM_SHADOW_SIDE_RIGHT || cpt == CCM_SHADOW_SIDE_LEFT)
-		{
-			tmp = 
-				cairo_image_surface_create (CAIRO_FORMAT_ARGB32, height, width);
-			ctx = cairo_create(tmp);
-			cairo_translate(ctx, height / 2, width / 2);
-			cairo_rotate(ctx, - M_PI / 2);
-			cairo_translate(ctx, - width / 2, - height / 2);
-		}
-		else
-		{
-			self->priv->shadow[cpt] = 
-				cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
-			ctx = cairo_create(self->priv->shadow[cpt]);
-		}
-		
-		cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
-		cairo_paint(ctx);
-		cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-		if (self->priv->color)
-			gdk_cairo_set_source_color(ctx, self->priv->color);
-		else
-			cairo_set_source_rgb (ctx, 0.f, 0.f, 0.f);
-		ccm_region_get_rectangles(area, &rects, &nb_rects);
-		for (i = 0; i < nb_rects; i++)
-			cairo_rectangle(ctx, rects[i].x, rects[i].y, 
-							rects[i].width, rects[i].height);
-		g_free(rects);		
-		ccm_region_destroy(area);
-		cairo_fill(ctx);
-		cairo_destroy(ctx);
-		if (cpt == CCM_SHADOW_SIDE_RIGHT || cpt == CCM_SHADOW_SIDE_LEFT)
-		{
-			cairo_image_surface_blur(tmp, self->priv->radius, 
-									 self->priv->radius, 0, 0, -1, -1);
-			self->priv->shadow[cpt] = 
-				cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
-			ctx = cairo_create(self->priv->shadow[cpt]);
-			cairo_translate(ctx, width / 2, height / 2);
-			cairo_rotate(ctx, M_PI / 2);
-			cairo_translate(ctx, - height / 2, - width / 2); 
-			cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-			cairo_set_source_surface(ctx, tmp, 0, 0);
-			cairo_paint(ctx);
-			cairo_destroy(ctx);
-			cairo_surface_destroy(tmp);
-		}
-		else
-		{
-			cairo_image_surface_blur(self->priv->shadow[cpt], 
-									 self->priv->radius, self->priv->radius,
-									 0, 0, -1, -1);
-		}
-	}
-}
-
-static void
-ccm_shadow_paint_shadow(CCMShadow* self, CCMWindow* window, cairo_t* context)
-{
-	cairo_rectangle_t area;
-		
-	if (self->priv->geometry && 
-		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(window), &area))
-	{
-		gint i, nb_rects;
-		cairo_rectangle_t* rects;
-		cairo_matrix_t matrix;
-		CCMRegion* tmp = ccm_region_rectangle(&area);
-		
-		cairo_get_matrix(context, &matrix);
-		cairo_translate(context, 
-						(((double)self->priv->border / matrix.xx) - 
-						 (double)self->priv->border) / 2.0f,
-						(((double)self->priv->border / matrix.yy) -
-						 (double)self->priv->border) / 2.0f);
-
-		ccm_region_subtract(tmp, self->priv->geometry);
-		cairo_translate(context, -area.x, -area.y);
-		ccm_region_get_rectangles(tmp, &rects, &nb_rects);
-		for (i = 0; i < nb_rects; i++)
-			cairo_rectangle(context, rects[i].x, rects[i].y,
-							rects[i].width, rects[i].height);
-		cairo_clip(context);
-		g_free(rects);
-		ccm_region_destroy(tmp);
-		cairo_translate(context, area.x, area.y);
-		
-		for (i = 0; i < CCM_SHADOW_SIDE_N; i++)
-		{
-			cairo_save(context);
-			switch (i)
-			{
-				case CCM_SHADOW_SIDE_TOP:
-					cairo_rectangle (context, self->priv->border, 0, 
-									 area.width - 2 * self->priv->border, 
-									 self->priv->border);
-					cairo_move_to(context, self->priv->border, 0);
-					cairo_line_to(context, 0, 0);
-					cairo_line_to(context, self->priv->border, 
-								  self->priv->border);
-					cairo_move_to(context, area.width - self->priv->border, 0);
-					cairo_line_to(context, area.width, 0);
-					cairo_line_to(context, area.width - self->priv->border, 
-								  self->priv->border);
-					cairo_clip(context);
-				break;
-				case CCM_SHADOW_SIDE_RIGHT:
-					cairo_rectangle (context, 
-									 area.width - self->priv->border, 
-									 self->priv->border, 
-									 self->priv->border, 
-									 area.height - 2 * self->priv->border);
-					cairo_move_to(context, area.width, self->priv->border);
-					cairo_line_to(context, area.width, 0);
-					cairo_line_to(context, area.width - self->priv->border, 
-								  self->priv->border);
-					cairo_move_to(context, area.width, 
-								  area.height - self->priv->border);
-					cairo_line_to(context, area.width, area.height);
-					cairo_line_to(context, area.width - self->priv->border, 
-								  area.height - self->priv->border);
-					cairo_clip(context);
-					cairo_translate (context, 
-									 area.width - self->priv->border, 
-									 0);
-				break;
-				case CCM_SHADOW_SIDE_BOTTOM:
-					cairo_rectangle (context, 
-									 self->priv->border, 
-									 area.height - self->priv->border, 
-									 area.width - 2 * self->priv->border, 
-									 self->priv->border);
-					cairo_move_to(context, area.width - self->priv->border, 
-								  area.height);
-					cairo_line_to(context, area.width, area.height);
-					cairo_line_to(context, area.width - self->priv->border, 
-								  area.height - self->priv->border);
-					cairo_move_to(context, self->priv->border, area.height);
-					cairo_line_to(context, 0, area.height);
-					cairo_line_to(context, self->priv->border, 
-								  area.height - self->priv->border);
-					cairo_clip(context);
-					cairo_translate (context, 
-									 0, 
-									 area.height - self->priv->border);
-				break;
-				case CCM_SHADOW_SIDE_LEFT:
-					cairo_rectangle (context, 0, 
-									 self->priv->border, 
-									 self->priv->border, 
-									 area.height - 2 * self->priv->border);
-					cairo_move_to(context, 0, 
-								  area.height - self->priv->border);
-					cairo_line_to(context, 0, area.height);
-					cairo_line_to(context, self->priv->border, 
-								  area.height - self->priv->border);
-					cairo_move_to(context, 0, self->priv->border);
-					cairo_line_to(context, 0, 0);
-					cairo_line_to(context, self->priv->border, 
-								  self->priv->border);
-					cairo_clip(context);
-				break;
-			}
-			cairo_set_source_surface(context, self->priv->shadow[i], 
-									 0, 0);
-			cairo_paint_with_alpha(context, ccm_window_get_opacity(window));
-			cairo_restore(context);
-		}
-	}	
-}
-
-static gboolean
-ccm_shadow_check_needed(CCMShadow* self)
-{
-	g_return_val_if_fail(CCM_IS_SHADOW(self), FALSE);
-	
-	ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-	ccm_drawable_query_geometry(CCM_DRAWABLE(self->priv->window));
-	ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-
-	self->priv->id_check = 0;
-	
-	return FALSE;
 }
 
 static gboolean 
@@ -411,6 +191,41 @@ ccm_shadow_need_shadow(CCMShadow* self)
 			type == CCM_WINDOW_TYPE_POPUP_MENU || 
 			type == CCM_WINDOW_TYPE_TOOLTIP || 
 			type == CCM_WINDOW_TYPE_MENU);
+}
+
+static gboolean
+ccm_shadow_check_needed(CCMShadow* self)
+{
+	g_return_val_if_fail(CCM_IS_SHADOW(self), FALSE);
+	
+	if (!ccm_shadow_need_shadow(self) && self->priv->geometry)
+	{
+		if (self->priv->shadow_image) 
+			cairo_surface_destroy(self->priv->shadow_image);
+		self->priv->shadow_image = NULL;
+	
+		if (self->priv->shadow) 
+			g_object_unref(self->priv->shadow);
+		self->priv->shadow = NULL;
+		
+		if (self->priv->geometry) 
+			ccm_region_destroy (self->priv->geometry);
+		self->priv->geometry = NULL;
+		
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+		ccm_drawable_query_geometry(CCM_DRAWABLE(self->priv->window));
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+	}
+	else if (!self->priv->geometry)
+	{
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+		ccm_drawable_query_geometry(CCM_DRAWABLE(self->priv->window));
+		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+	}
+	
+	self->priv->id_check = 0;
+	
+	return FALSE;
 }
 
 static void
@@ -449,7 +264,8 @@ ccm_shadow_query_avoid_shadow(CCMShadow* self)
 						 (gboolean)*data);
 		self->priv->enable = *data == 0 ? TRUE : FALSE;
 		if (!self->priv->id_check) 
-			g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
+			self->priv->id_check = 
+				g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
 		g_free(data);
 	}
 }
@@ -471,6 +287,206 @@ ccm_shadow_create_atoms(CCMShadow* self)
 										  "_CCM_SHADOW_DISABLED", 
 										  False);
 	}
+}
+
+static void
+ccm_shadow_create_fake_shadow(CCMShadow* self)
+{
+	g_return_if_fail(self != NULL);
+
+	cairo_surface_t* tmp;
+	cairo_t* cr;
+	CCMRegion* opaque = ccm_region_copy(self->priv->geometry);
+	cairo_rectangle_t* rects;
+	gint cpt, nb_rects;
+	cairo_rectangle_t clipbox;
+	cairo_path_t* path;
+	gint border = self->priv->radius * 2;
+
+	ccm_region_get_clipbox(self->priv->geometry, &clipbox);
+	
+	ccm_region_offset(opaque, 
+					  -clipbox.x + self->priv->radius, 
+					  -clipbox.y + self->priv->radius );
+
+	// Create tmp surface for shadow
+	tmp = cairo_image_surface_create(CAIRO_FORMAT_A8, 
+									 clipbox.width + border, 
+									 clipbox.height + border);
+	cr = cairo_create(tmp);
+	cairo_set_source_rgba(cr, 0, 0, 0, 1);
+	ccm_region_get_rectangles(opaque, &rects, &nb_rects);
+	for (cpt = 0; cpt < nb_rects; cpt++)
+		cairo_rectangle(cr, rects[cpt].x, rects[cpt].y,
+						rects[cpt].width, rects[cpt].height);
+	
+	path = cairo_copy_path(cr);
+	g_free(rects);
+	ccm_region_destroy(opaque);
+	cairo_destroy(cr);
+	cairo_surface_destroy(tmp);
+	
+	// Create shadow surface
+	self->priv->shadow_image = cairo_blur_path(path, self->priv->radius, 1, 
+											   clipbox.width + border, 
+											   clipbox.height + border);
+	
+	cairo_path_destroy(path);
+}
+
+static void
+ccm_shadow_create_blur_shadow(CCMShadow* self)
+{
+	g_return_if_fail(self != NULL);
+
+	cairo_surface_t* tmp, *side;
+	cairo_t* cr;
+	CCMRegion* opaque = ccm_region_copy(self->priv->geometry);
+	cairo_rectangle_t* rects;
+	gint cpt, nb_rects;
+	cairo_rectangle_t clipbox;
+	gint border = self->priv->radius * 2;
+
+	ccm_region_get_clipbox(self->priv->geometry, &clipbox);
+	
+	ccm_region_offset(opaque, 
+					  -clipbox.x + self->priv->radius, 
+					  -clipbox.y + self->priv->radius );
+
+	// Create tmp surface for shadow
+	tmp = cairo_image_surface_create(CAIRO_FORMAT_A8, 
+									 clipbox.width + border, 
+									 clipbox.height + border);
+	cr = cairo_create(tmp);
+	cairo_set_source_rgba(cr, 0, 0, 0, 1);
+	ccm_region_get_rectangles(opaque, &rects, &nb_rects);
+	for (cpt = 0; cpt < nb_rects; cpt++)
+		cairo_rectangle(cr, rects[cpt].x, rects[cpt].y,
+						rects[cpt].width, rects[cpt].height);
+	cairo_fill(cr);
+	g_free(rects);
+	ccm_region_destroy(opaque);
+	cairo_destroy(cr);
+	
+	/* Create shadow surface */
+	self->priv->shadow_image = 
+			cairo_image_surface_create(CAIRO_FORMAT_A8, 
+									   clipbox.width + border, 
+									   clipbox.height + border);
+	cr = cairo_create(self->priv->shadow_image);
+	
+	/* top side */
+	//    0   b                                           w  w+b
+	// 0 -+---+-------------------------------------------+---+---
+	//      +                                               +
+	// b      +<----------------------------------------->+
+	//                            w - b
+	side = cairo_image_surface_blur(tmp, self->priv->radius, 
+									self->priv->sigma, 0, 0, 
+									clipbox.width + border, border);
+	cairo_save(cr);
+	cairo_rectangle (cr, border, 0, clipbox.width - border, border);
+	cairo_move_to(cr, border, 0);
+	cairo_line_to(cr, 0, 0);
+	cairo_line_to(cr, border, border);
+	cairo_move_to(cr, clipbox.width, 0);
+	cairo_line_to(cr, clipbox.width + border, 0);
+	cairo_line_to(cr, clipbox.width, border);
+	cairo_clip(cr);
+	cairo_set_source_surface(cr, side, 0, 0);
+	cairo_paint(cr);
+	cairo_restore(cr);
+	cairo_surface_destroy(side);
+	
+	/* right side */
+	//       w  w+b
+	// 0 ----+   +  
+	//         + |
+	// b     +   + 
+	//       |   |
+	//       |   | h - b
+	//       |   |
+	// h     +   +
+	//         + | 
+	// h+b       +
+	side = cairo_image_surface_blur(tmp, self->priv->radius, 
+									self->priv->sigma, 
+									clipbox.width, 0, border, 
+									clipbox.height + border);
+	cairo_save(cr);
+	cairo_rectangle (cr, clipbox.width, border, border, 
+					 clipbox.height - border);
+	cairo_move_to(cr, clipbox.width + border, border);
+	cairo_line_to(cr, clipbox.width + border, 0);
+	cairo_line_to(cr, clipbox.width, border);
+	cairo_move_to(cr, clipbox.width + border, clipbox.height);
+	cairo_line_to(cr, clipbox.width + border, 
+				  clipbox.height + border);
+	cairo_line_to(cr, clipbox.width, clipbox.height);
+	cairo_clip(cr);
+	cairo_translate (cr, clipbox.width, 0);
+	cairo_set_source_surface(cr, side, 0, 0);
+	cairo_paint(cr);
+	cairo_surface_destroy(side);
+	cairo_restore(cr);
+
+	/* bottom side */
+	//                              w - b
+	// h      +   +<------------------------------------>+
+	//          +                                          +
+	// h+b ---+---+--------------------------------------+---+---
+	//        0   b                                      w  w+b
+	side = cairo_image_surface_blur(tmp, self->priv->radius, 
+									self->priv->sigma, 0, clipbox.height, 
+									clipbox.width + border, border);
+	cairo_save(cr);
+	cairo_rectangle (cr, border, clipbox.height, 
+					 clipbox.width - border, border);
+	cairo_move_to(cr, border, clipbox.height + border);
+	cairo_line_to(cr, 0, clipbox.height + border);
+	cairo_line_to(cr, border, clipbox.height);
+	cairo_move_to(cr, clipbox.width, clipbox.height + border);
+	cairo_line_to(cr, clipbox.width + border, 
+				  clipbox.height + border);
+	cairo_line_to(cr, clipbox.width, clipbox.height);
+	cairo_clip(cr);
+	cairo_translate (cr, 0, clipbox.height);
+	cairo_set_source_surface(cr, side, 0, 0);
+	cairo_paint(cr);
+	cairo_surface_destroy(side);
+	cairo_restore(cr);
+	
+	// left side
+	//       0   b
+	// 0 ----+     
+	//       | + 
+	// b     +   + 
+	//       |   |
+	//       |   | h-b
+	//       |   |
+	// h     +   +
+	//       | +
+	// h+b   +
+	side = cairo_image_surface_blur(tmp, self->priv->radius, 
+									self->priv->sigma, 0, 0, border, 
+									clipbox.height + border);
+	cairo_save(cr);
+	cairo_rectangle (cr, 0, border, border, 
+					 clipbox.height - border);
+	cairo_move_to(cr, 0, border);
+	cairo_line_to(cr, 0, 0);
+	cairo_line_to(cr, border, border);
+	cairo_move_to(cr, 0, clipbox.height);
+	cairo_line_to(cr, 0, clipbox.height + border);
+	cairo_line_to(cr, border, clipbox.height);
+	cairo_clip(cr);
+	cairo_set_source_surface(cr, side, 0, 0);
+	cairo_paint(cr);
+	cairo_surface_destroy(side);
+	cairo_restore(cr);
+	cairo_destroy(cr);
+	
+	cairo_surface_destroy(tmp);
 }
 
 static void
@@ -506,6 +522,104 @@ ccm_shadow_on_event(CCMShadow* self, XEvent* event)
 }
 
 static void
+ccm_shadow_on_property_changed(CCMShadow* self, CCMPropertyType changed,
+							   CCMWindow* window)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(window != NULL);
+	
+	if (!self->priv->id_check) 
+		self->priv->id_check = g_idle_add ((GSourceFunc)ccm_shadow_check_needed, 
+										   self);
+}
+
+static void
+ccm_shadow_on_pixmap_destroyed(CCMShadow* self)
+{
+	g_return_if_fail (self != NULL);
+	
+	self->priv->shadow = NULL;
+}
+
+static void
+ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
+{
+	g_return_if_fail (self != NULL);
+   
+	if (self->priv->shadow)
+	{
+		CCMPixmap* pixmap = 
+			(CCMPixmap*)g_object_get_data(G_OBJECT(self->priv->shadow), 
+										  "CCMShadowPixmap");
+		cairo_surface_t* surface = 
+			ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
+		cairo_t* ctx = 
+			ccm_drawable_create_context(CCM_DRAWABLE(self->priv->shadow));
+		cairo_rectangle_t* rects;
+		gint cpt, nb_rects;
+		cairo_rectangle_t clipbox;
+				
+		ccm_region_get_clipbox(self->priv->geometry, &clipbox);
+			
+		if (!self->priv->shadow_image)
+		{
+			if (self->priv->real_blur)
+				ccm_shadow_create_blur_shadow(self);
+			else
+				ccm_shadow_create_fake_shadow(self);
+		}
+		
+		if (area)
+		{
+			cairo_translate(ctx, self->priv->radius, self->priv->radius);
+			ccm_region_get_rectangles(area, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+				cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
+								rects[cpt].width, rects[cpt].height);
+			cairo_clip(ctx);
+			g_free(rects);
+		}
+		else
+		{
+			cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
+			cairo_paint(ctx);
+			cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+			cairo_set_source_rgba(ctx, 
+								  (double)self->priv->color->red / 65535.0f,
+								  (double)self->priv->color->green / 65535.0f,
+								  (double)self->priv->color->blue / 65535.0f,
+								  self->priv->alpha);
+			cairo_mask_surface(ctx, self->priv->shadow_image,
+							   self->priv->offset, self->priv->offset);
+			
+			cairo_translate(ctx, self->priv->radius, self->priv->radius);
+			cairo_translate(ctx, -clipbox.x, -clipbox.y);
+			ccm_region_get_rectangles(self->priv->geometry, &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; cpt++)
+				cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
+								rects[cpt].width, rects[cpt].height);
+			cairo_clip(ctx);
+			g_free(rects);
+			cairo_translate(ctx, clipbox.x, clipbox.y);			
+		}
+		gboolean freeze ;
+		g_object_get(self->priv->shadow, "freeze", &freeze, NULL);
+		if (!freeze)
+		{
+			cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+			cairo_set_source_surface(ctx, surface, 0, 0);
+			cairo_paint(ctx);
+		}
+		cairo_destroy(ctx);
+		cairo_surface_destroy(surface);
+		if (area)
+		{
+			ccm_drawable_damage_region(CCM_DRAWABLE(self->priv->shadow), area);
+		}
+	}
+}
+
+static void
 ccm_shadow_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
@@ -537,14 +651,23 @@ ccm_shadow_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	self->priv->window = window;
 	ccm_shadow_create_atoms(self);
 	
-	self->priv->border = 
-		ccm_config_get_integer(self->priv->options[CCM_SHADOW_BORDER], &error);
+	self->priv->real_blur = 
+		ccm_config_get_boolean(self->priv->options[CCM_SHADOW_REAL_BLUR], &error);
 	if (error)
 	{
-		g_warning("Error on get shadow border configuration value");
+		g_warning("Error on get shadow realblur configuration value");
 		g_error_free(error);
 		error = NULL;
-		self->priv->border = 14;
+		self->priv->real_blur = FALSE;
+	}
+	self->priv->offset = 
+		ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET], &error);
+	if (error)
+	{
+		g_warning("Error on get shadow offset configuration value");
+		g_error_free(error);
+		error = NULL;
+		self->priv->offset = 0;
 	}
 	self->priv->radius = 
 		ccm_config_get_integer(self->priv->options[CCM_SHADOW_RADIUS], &error);
@@ -553,7 +676,16 @@ ccm_shadow_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 		g_warning("Error on get shadow radius configuration value");
 		g_error_free(error);
 		error = NULL;
-		self->priv->border = 8;
+		self->priv->radius = 14;
+	}
+	self->priv->sigma = 
+		ccm_config_get_float(self->priv->options[CCM_SHADOW_SIGMA], &error);
+	if (error)
+	{
+		g_warning("Error on get shadow radius configuration value");
+		g_error_free(error);
+		error = NULL;
+		self->priv->sigma = 7;
 	}
 	self->priv->color = 
 		ccm_config_get_color(self->priv->options[CCM_SHADOW_COLOR], &error);
@@ -564,6 +696,18 @@ ccm_shadow_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 		error = NULL;
 		self->priv->color = g_new0(GdkColor, 1);
 	}
+	self->priv->alpha = 
+		ccm_config_get_float(self->priv->options[CCM_SHADOW_ALPHA], &error);
+	if (error)
+	{
+		g_warning("Error on get shadow alpha configuration value");
+		g_error_free(error);
+		error = NULL;
+		self->priv->alpha = 0.6;
+	}
+	
+	g_signal_connect_swapped(window, "property-changed",
+							 G_CALLBACK(ccm_shadow_on_property_changed), self);
 }
 
 static CCMRegion*
@@ -572,31 +716,21 @@ ccm_shadow_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMRegion* geometry = NULL;
 	cairo_rectangle_t area;
 	CCMShadow* self = CCM_SHADOW(plugin);
-	gint cpt;
 	
 	if (self->priv->geometry) 
 		ccm_region_destroy (self->priv->geometry);
 	self->priv->geometry = NULL;
-	for (cpt = 0; cpt < 4; cpt++)
-	{
-		if (self->priv->shadow[cpt])
-			cairo_surface_destroy(self->priv->shadow[cpt]);
-		self->priv->shadow[cpt] = NULL;
-	}
-	
+		
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
 												window);
 	if (geometry && ccm_shadow_need_shadow(self))
 	{
 		self->priv->geometry = ccm_region_copy (geometry);
 		ccm_region_get_clipbox(geometry, &area);
-		ccm_shadow_create_shadow(self, window);
-		ccm_region_offset(geometry, -self->priv->border / 2, 
-						  -self->priv->border / 2);
-		ccm_region_resize(geometry, area.width + self->priv->border, 
-						  area.height + self->priv->border);
+		ccm_region_offset(geometry, -self->priv->radius, -self->priv->radius);
+		ccm_region_resize(geometry, area.width + self->priv->radius * 2, 
+						  area.height + self->priv->radius * 2);
 	}
-	
 	return geometry;
 }
 
@@ -604,71 +738,10 @@ static void
 ccm_shadow_window_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
-	gboolean need = ccm_shadow_need_shadow(self);
-
+	
 	ccm_shadow_query_avoid_shadow(self);
 	
-	if ((need && !self->priv->shadow[0]) || 
-		(!need && self->priv->shadow[0]))
-	{
-		if (!self->priv->id_check) 
-			g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
-	}
-	
 	ccm_window_plugin_map(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-}
-
-static gboolean
-ccm_shadow_window_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
-						cairo_t* context, cairo_surface_t* surface,
-						gboolean y_invert)
-{
-	CCMShadow* self = CCM_SHADOW(plugin);
-	gboolean need = ccm_shadow_need_shadow(self);
-	gboolean ret = FALSE;
-	
-	if ((need && !self->priv->shadow[0]) || 
-		(!need && self->priv->shadow[0]))
-	{
-		if (!self->priv->id_check) 
-			g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
-	}
-	
-	if (need && self->priv->geometry)
-	{
-		cairo_rectangle_t* rects;
-		gint cpt, nb_rects;
-		cairo_matrix_t matrix, initial, translate;
-			
-		cairo_save(context);
-			
-		ccm_window_get_transform(window, &initial);
-
-		ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
-			cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
-							 rects[cpt].width, rects[cpt].height);
-		cairo_clip(context);
-		g_free(rects);
-		
-		cairo_matrix_init_translate(&translate, self->priv->border / 2, 
-									self->priv->border / 2);
-		cairo_matrix_multiply(&matrix, &initial, &translate);
-		ccm_window_set_transform(window, &matrix);
-		ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
-									  window, context, surface, y_invert);
-		ccm_window_set_transform(window, &initial);
-		cairo_restore(context);
-		cairo_save(context);
-		ccm_window_transform(window, context, y_invert);
-		ccm_shadow_paint_shadow(self, window, context);		
-		cairo_restore(context);
-	} 
-	else
-		ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin),
-									  window, context, surface, y_invert);
-	
-	return ret;
 }
 
 static void 
@@ -685,8 +758,8 @@ ccm_shadow_window_move(CCMWindowPlugin* plugin, CCMWindow* window,
 		if (x != area.x || y != area.y)
 		{
 			ccm_region_offset(self->priv->geometry, x - area.x, y - area.y);
-			x -= self->priv->border / 2;
-			y -= self->priv->border / 2;
+			x -= self->priv->radius;
+			y -= self->priv->radius;
 		}
 		else
 			return;
@@ -709,8 +782,24 @@ ccm_shadow_window_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 		if (width != area.width || height != area.height)
 		{
 			ccm_region_resize(self->priv->geometry, width, height);
-			border = self->priv->border;
-			ccm_shadow_create_shadow(self, window);
+			border = self->priv->radius;
+			
+			if (self->priv->shadow_image)
+				cairo_surface_destroy(self->priv->shadow_image);
+			self->priv->shadow_image = NULL;
+			
+			if (self->priv->shadow) 
+				g_object_unref(self->priv->shadow);
+			self->priv->shadow = NULL;
+			
+			if (self->priv->geometry) 
+				ccm_region_destroy(self->priv->geometry);
+			self->priv->geometry = NULL;
+			
+			if (!self->priv->id_check) 
+				self->priv->id_check = 
+					g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
+		
 		}
 		else
 			return;
@@ -762,12 +851,51 @@ ccm_shadow_window_get_origin(CCMWindowPlugin* plugin, CCMWindow* window,
 	}
 }
 
+static CCMPixmap*
+ccm_shadow_window_get_pixmap(CCMWindowPlugin* plugin, CCMWindow* window)
+{
+	CCMShadow* self = CCM_SHADOW(plugin);
+	CCMPixmap* pixmap = NULL;
+	
+	pixmap = ccm_window_plugin_get_pixmap (CCM_WINDOW_PLUGIN_PARENT(plugin),
+										   window);
+
+	if (pixmap && self->priv->geometry)
+	{
+		gint swidth, sheight;
+		cairo_rectangle_t clipbox;
+		
+		ccm_region_get_clipbox(self->priv->geometry, &clipbox);
+		swidth = clipbox.width + self->priv->radius * 2;
+		sheight = clipbox.height + self->priv->radius * 2;    
+	
+		if (self->priv->shadow) g_object_unref(self->priv->shadow);
+		self->priv->shadow = ccm_window_create_pixmap(window, swidth, 
+													  sheight, 32);
+		
+		g_object_set_data_full(G_OBJECT(self->priv->shadow), "CCMShadowPixmap", 
+							   pixmap, (GDestroyNotify)g_object_unref);
+		
+		g_object_set_data_full(G_OBJECT(pixmap), "CCMShadow", 
+							   self, (GDestroyNotify)ccm_shadow_on_pixmap_destroyed);
+		
+		g_signal_connect_swapped(pixmap, "damaged",
+								 G_CALLBACK(ccm_shadow_on_pixmap_damage), self);
+
+		ccm_shadow_on_pixmap_damage(self, NULL);
+		
+		pixmap = self->priv->shadow;
+	}
+	
+	return pixmap;
+}
+
 static void
 ccm_shadow_window_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	 = ccm_shadow_window_load_options;
 	iface->query_geometry 	 = ccm_shadow_window_query_geometry;
-	iface->paint 			 = ccm_shadow_window_paint;
+	iface->paint 			 = NULL;
 	iface->map				 = ccm_shadow_window_map;
 	iface->unmap			 = NULL;
 	iface->query_opacity  	 = NULL;
@@ -775,6 +903,7 @@ ccm_shadow_window_iface_init(CCMWindowPluginClass* iface)
 	iface->resize			 = ccm_shadow_window_resize;
 	iface->set_opaque_region = ccm_shadow_window_set_opaque_region;
 	iface->get_origin		 = ccm_shadow_window_get_origin;
+	iface->get_pixmap		 = ccm_shadow_window_get_pixmap;
 }
 
 static void

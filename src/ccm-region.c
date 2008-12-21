@@ -32,10 +32,10 @@
 	 (b).y2 = pixman_double_to_fixed((r).y + (r).height);}
 	
 #define PIXMAN_BOX_TO_CAIRO_RECTANGLE(b, r)  \
-	{(r).x = pixman_fixed_to_double((b).x1); \
-	 (r).y = pixman_fixed_to_double((b).y1); \
-	 (r).width = pixman_fixed_to_double((b).x2 - (b).x1); \
-	 (r).height = pixman_fixed_to_double((b).y2 - (b).y1);}
+	{(r).x = pixman_fixed_to_double(pixman_fixed_ceil((b).x1)); \
+	 (r).y = pixman_fixed_to_double(pixman_fixed_ceil((b).y1)); \
+	 (r).width = pixman_fixed_to_double(pixman_fixed_ceil((b).x2 - (b).x1)); \
+	 (r).height = pixman_fixed_to_double(pixman_fixed_ceil((b).y2 - (b).y1));}
 
 #define X_RECTANGLE_TO_PIXMAN_BOX(r, b)  \
 	{(b).x1 = pixman_int_to_fixed((r).x); \
@@ -44,16 +44,16 @@
 	 (b).y2 = pixman_int_to_fixed((r).y + (r).height);}
 
 #define PIXMAN_BOX_TO_X_RECTANGLE(b, r)  \
-	{(r).x = pixman_fixed_to_int((b).x1); \
-	 (r).y = pixman_fixed_to_int((b).y1); \
-	 (r).width = pixman_fixed_to_int((b).x2 - (b).x1); \
-	 (r).height = pixman_fixed_to_int((b).y2 - (b).y1);}
+	{(r).x = pixman_fixed_to_int(pixman_fixed_ceil((b).x1)); \
+	 (r).y = pixman_fixed_to_int(pixman_fixed_ceil((b).y1)); \
+	 (r).width = pixman_fixed_to_int(pixman_fixed_ceil((b).x2 - (b).x1)); \
+	 (r).height = pixman_fixed_to_int(pixman_fixed_ceil((b).y2 - (b).y1));}
 
 #define PIXMAN_BOX_TO_REGION_BOX(b, r)  \
-	{(r).x1 = (short)pixman_fixed_to_int((b).x1); \
-	 (r).y1 = (short)pixman_fixed_to_int((b).y1); \
-	 (r).x2 = (short)pixman_fixed_to_int((b).x2); \
-	 (r).y2 = (short)pixman_fixed_to_int((b).y2);}
+	{(r).x1 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).x1)); \
+	 (r).y1 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).y1)); \
+	 (r).x2 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).x2)); \
+	 (r).y2 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).y2));}
 
 struct _CCMRegion
 {
@@ -63,7 +63,7 @@ struct _CCMRegion
 void
 _ccm_region_print(CCMRegion* self)
 {
-	cairo_rectangle_t clipbox, *rects;
+	cairo_rectangle_t clipbox, *rects = NULL;
 	int cpt, nb_rects;
 	
 	ccm_region_get_clipbox(self, &clipbox);
@@ -75,7 +75,7 @@ _ccm_region_print(CCMRegion* self)
 		ccm_log("      : %f,%f %f,%f", rects[cpt].x, rects[cpt].y,
 				rects[cpt].width, rects[cpt].height);
 	}
-	g_free(rects);
+	if (rects) g_free(rects);
 }
 
 CCMRegion*
@@ -294,6 +294,11 @@ ccm_region_transform(CCMRegion* self, cairo_matrix_t* matrix)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(matrix != NULL);
+	
+	if (matrix->xx == 1.0f && matrix->yy == 1.0f &&
+		matrix->x0 == 0.0f && matrix->y0 == 0.0f &&
+		matrix->xy == 0.0f && matrix->yx == 0.0f)
+		return;
 	
 	int n_boxes, cpt;
 	pixman_box32_t* extents = pixman_region32_extents(&self->reg);
