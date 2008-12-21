@@ -612,6 +612,13 @@ ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
 		}
 		cairo_destroy(ctx);
 		cairo_surface_destroy(surface);
+		if (area)
+		{
+			CCMRegion* tmp = ccm_region_copy(area);
+			ccm_region_offset(tmp, self->priv->radius, self->priv->radius);
+			ccm_drawable_damage_region(CCM_DRAWABLE(self->priv->shadow), tmp);
+			ccm_region_destroy(tmp);
+		}
 	}
 }
 

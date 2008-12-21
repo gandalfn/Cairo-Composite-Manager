@@ -1,5 +1,11 @@
 2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_on_pixmap_damage):
+	  - force damage on shadow pixmap paint, some damage can be eaten 
+	    between send and process.
+
+2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* src/ccm-screen.c (impl_ccm_screen_paint):
 	  - Don't check window state on remove.
 
