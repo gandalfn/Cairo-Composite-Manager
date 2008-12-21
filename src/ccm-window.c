@@ -1076,7 +1076,7 @@ ccm_window_check_mask(CCMWindow* self)
 			ccm_region_offset(tmp1, (x - clipbox.x), (y - clipbox.y));
 			
 			// Paint out size region
-			cairo_set_source_rgba(ctx, 1, 1, 1, 1);
+			cairo_set_source_rgba(ctx, 1, 1, 1, self->priv->opacity);
 			ccm_region_get_rectangles(tmp1, &rects, &nb_rects);
 			for (cpt = 0; cpt < nb_rects; cpt++)
 				cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,

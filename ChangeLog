@@ -1,5 +1,10 @@
 2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* src/ccm-window.c (ccm_window_check_mask):
+	  - Apply window opacity on check mask
+
+2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* src/ccm-window-plugin.c:
 	* src/ccm-window-plugin.h:
 	* src/ccm-window.c:
