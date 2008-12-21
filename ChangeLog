@@ -1,5 +1,13 @@
 2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_on_pixmap_damage),
+	(ccm_shadow_window_resize):
+	* src/ccm-window.c (ccm_window_on_pixmap_damaged):
+	  - Offset pixmap damage with window geometry instead with get_origin.
+	  - Don't send damage on pixmap shadow damage.
+
+2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* src/ccm-window.c (ccm_window_check_mask):
 	  - Apply window opacity on check mask
 

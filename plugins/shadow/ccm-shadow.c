@@ -612,10 +612,6 @@ ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
 		}
 		cairo_destroy(ctx);
 		cairo_surface_destroy(surface);
-		if (area)
-		{
-			ccm_drawable_damage_region(CCM_DRAWABLE(self->priv->shadow), area);
-		}
 	}
 }
 
@@ -799,7 +795,6 @@ ccm_shadow_window_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 			if (!self->priv->id_check) 
 				self->priv->id_check = 
 					g_idle_add ((GSourceFunc)ccm_shadow_check_needed, self);
-		
 		}
 		else
 			return;

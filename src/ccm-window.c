@@ -1259,10 +1259,11 @@ ccm_window_on_pixmap_damaged(CCMWindow* self, CCMRegion* area)
 	g_return_if_fail (self != NULL);
     g_return_if_fail (area != NULL);
 	
-	int x, y;
+	cairo_rectangle_t geometry;
 	
-	ccm_window_plugin_get_origin(self->priv->plugin, self, &x, &y);
-	ccm_region_offset(area, x, y);
+	if (ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self), &geometry))
+		ccm_region_offset(area, geometry.x, geometry.y);
+	
 	ccm_drawable_damage_region(CCM_DRAWABLE(self), area);
 }
 
