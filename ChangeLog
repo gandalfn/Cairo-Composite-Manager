@@ -1,3 +1,8 @@
+2008-12-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/freeze/ccm-freeze.c (ccm_freeze_paint):
+	  - Draw frozen shape only on real geometry.
+
 2008-12-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/shadow/ccm-shadow.c (ccm_shadow_window_resize):
