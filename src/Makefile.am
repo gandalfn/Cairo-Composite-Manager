@@ -35,54 +35,54 @@ cairo_compmgr_SOURCES = \
     ccm-debug.h \
     ccm-debug.c \
     ccm-region.c \
-	ccm-region.h \
-	ccm-plugin.h \
-	ccm-plugin.c \
-	ccm-drawable.h \
-	ccm-drawable.c \
-	ccm-image.h \
-	ccm-image.c \
+    ccm-region.h \
+    ccm-plugin.h \
+    ccm-plugin.c \
+    ccm-drawable.h \
+    ccm-drawable.c \
+    ccm-image.h \
+    ccm-image.c \
     ccm-pixmap.h \
-	ccm-pixmap.c \
-	ccm-pixmap-backend.h \
-	ccm-pixmap-backend.c \
-	ccm-pixmap-image.h \
-	ccm-pixmap-image.c \
+    ccm-pixmap.c \
+    ccm-pixmap-backend.h \
+    ccm-pixmap-backend.c \
+    ccm-pixmap-image.h \
+    ccm-pixmap-image.c \
     ccm-pixmap-buffered-image.h \
-	ccm-pixmap-buffered-image.c \
-	ccm-window.h \
-	ccm-window.c \
-	ccm-window-backend.h \
-	ccm-window-backend.c \
-	ccm-window-plugin.h \
-	ccm-window-plugin.c \
-	ccm-screen.h \
-	ccm-screen.c \
-	ccm-screen-plugin.h \
-	ccm-screen-plugin.c \
-	ccm-display.h \
-	ccm-display.c \
-	ccm-watch.c \
-	ccm-watch.h \
-	ccm-extension.h \
-	ccm-extension.c \
-	ccm-extension-loader.h \
-	ccm-extension-loader.c \
-	ccm-tray-menu.h \
-	ccm-tray-menu.c \
-	ccm-tray-icon.h \
-	ccm-tray-icon.c \
-	ccm-keybind.h \
-	ccm-keybind.c \
-	ccm-property-async.h \
-	ccm-property-async.c \
-	ccm.h \
-	cairo-compmgr.c
+    ccm-pixmap-buffered-image.c \
+    ccm-window.h \
+    ccm-window.c \
+    ccm-window-backend.h \
+    ccm-window-backend.c \
+    ccm-window-plugin.h \
+    ccm-window-plugin.c \
+    ccm-screen.h \
+    ccm-screen.c \
+    ccm-screen-plugin.h \
+    ccm-screen-plugin.c \
+    ccm-display.h \
+    ccm-display.c \
+    ccm-watch.c \
+    ccm-watch.h \
+    ccm-extension.h \
+    ccm-extension.c \
+    ccm-extension-loader.h \
+    ccm-extension-loader.c \
+    ccm-tray-menu.h \
+    ccm-tray-menu.c \
+    ccm-tray-icon.h \
+    ccm-tray-icon.c \
+    ccm-keybind.h \
+    ccm-keybind.c \
+    ccm-property-async.h \
+    ccm-property-async.c \
+    ccm.h \
+    cairo-compmgr.c
 	
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \
-	ccm-pixmap-xrender.h \
-	ccm-pixmap-xrender.c \
+    ccm-pixmap-xrender.h \
+    ccm-pixmap-xrender.c \
     ccm-window-xrender.h \
 	ccm-window-xrender.c
 endif

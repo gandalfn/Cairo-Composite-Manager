@@ -57,7 +57,6 @@ CCM_DEFINE_PLUGIN (CCMMosaic, ccm_mosaic, CCM_TYPE_PLUGIN,
 
 typedef struct {
 	cairo_rectangle_t   geometry;
-	cairo_matrix_t      initial;
 	CCMWindow*			window;
 } CCMMosaicArea;
 
@@ -145,17 +144,11 @@ ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window)
 		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
 		{   
 			if (!self->priv->areas[cpt].window)
-			{
-				ccm_window_get_transform(window,
-										 &self->priv->areas[cpt].initial);
 				self->priv->areas[cpt].window = window;
-			}
 		}
 	}
 	else
 	{
-		ccm_window_get_transform(window,
-								 &self->priv->areas[id_area].initial);		
 		self->priv->areas[id_area].window = window;
 	}
 }
@@ -184,23 +177,24 @@ ccm_mosaic_set_window_transform(CCMMosaic* self)
 	{
 		cairo_matrix_t transform;
 		gfloat scale;
-		const cairo_rectangle_t* win_area = ccm_window_get_area(self->priv->areas[cpt].window);
+		cairo_rectangle_t win_area;
+		
+		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self->priv->areas[cpt].window),
+										  &win_area);
 		
 		cairo_matrix_init_identity(&transform);
 		
-		scale = MIN(self->priv->areas[cpt].geometry.height / win_area->height,
-					self->priv->areas[cpt].geometry.width / win_area->width);
+		scale = MIN(self->priv->areas[cpt].geometry.height / win_area.height,
+					self->priv->areas[cpt].geometry.width / win_area.width);
 		
 		cairo_matrix_translate (&transform, 
-								self->priv->areas[cpt].geometry.x + 
-								self->priv->areas[cpt].geometry.width / 2, 
-								self->priv->areas[cpt].geometry.y + 
-								self->priv->areas[cpt].geometry.height / 2);
+								(self->priv->areas[cpt].geometry.x - win_area.x) -
+								(((win_area.width * scale) - self->priv->areas[cpt].geometry.width) / 2),
+								(self->priv->areas[cpt].geometry.y - win_area.y) - 
+								(((win_area.height * scale) - self->priv->areas[cpt].geometry.height) / 2));
 		cairo_matrix_scale(&transform, scale, scale);
-		cairo_matrix_translate (&transform, 
-								-(win_area->width / 2) - win_area->x,
-								-(win_area->height / 2) - win_area->y);
-		ccm_window_set_transform(self->priv->areas[cpt].window, &transform);
+		ccm_drawable_push_matrix(CCM_DRAWABLE(self->priv->areas[cpt].window),
+								 "CCMMosaic", &transform);
 	}
 }
 
@@ -301,8 +295,8 @@ ccm_mosaic_on_key_press(CCMMosaic* self)
 		gint cpt;
 		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
 		{
-			ccm_window_set_transform(self->priv->areas[cpt].window,
-									 &self->priv->areas[cpt].initial);
+			ccm_drawable_pop_matrix(CCM_DRAWABLE(self->priv->areas[cpt].window),
+									"CCMMosaic");
 		}
 		g_free(self->priv->areas);
 		self->priv->areas = NULL;
@@ -344,8 +338,8 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	self->priv->keybind = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
 	g_free(shortcut);
 	
-	g_signal_connect_swapped(self->priv->screen, "window-destroyed", 
-							 G_CALLBACK(ccm_mosaic_check_area), self);
+	/*g_signal_connect_swapped(self->priv->screen, "window-destroyed", 
+							 G_CALLBACK(ccm_mosaic_check_area), self);*/
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_mosaic_on_key_press), self);
 }

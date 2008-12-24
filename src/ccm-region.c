@@ -20,6 +20,7 @@
  * 	Boston, MA  02110-1301, USA.
  */
  
+#include <string.h>
 #include <pixman.h>
 
 #include "ccm-debug.h"
@@ -337,6 +338,20 @@ ccm_region_transform(CCMRegion* self, cairo_matrix_t* matrix)
 }
 
 void
+ccm_region_transform_invert(CCMRegion* self, cairo_matrix_t* matrix)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(matrix != NULL);
+
+	cairo_matrix_t invert;
+	memcpy(&invert, matrix, sizeof(cairo_matrix_t));
+	
+	g_return_if_fail(cairo_matrix_invert(&invert) == CAIRO_STATUS_SUCCESS);
+	
+	ccm_region_transform(self, &invert);
+}
+
+void
 ccm_region_offset(CCMRegion* self, int dx, int dy)
 {
 	g_return_if_fail(self != NULL);
@@ -373,6 +388,20 @@ ccm_region_device_transform(CCMRegion* self, cairo_matrix_t* matrix)
 	ccm_region_get_clipbox(self, &clipbox);
 	ccm_region_offset(self, -clipbox.x, -clipbox.y);
 	ccm_region_transform(self, matrix);
+	ccm_region_offset(self, clipbox.x, clipbox.y);
+}
+
+void
+ccm_region_device_transform_invert(CCMRegion* self, cairo_matrix_t* matrix)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(matrix != NULL);
+	
+	cairo_rectangle_t clipbox;
+	
+	ccm_region_get_clipbox(self, &clipbox);
+	ccm_region_offset(self, -clipbox.x, -clipbox.y);
+	ccm_region_transform_invert(self, matrix);
 	ccm_region_offset(self, clipbox.x, clipbox.y);
 }
 

@@ -255,19 +255,11 @@ ccm_magnifier_get_enable(CCMMagnifier *self)
 {
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
-	GList* item = ccm_screen_get_windows(self->priv->screen);
 	
 	ccm_screen_damage(self->priv->screen);
 	self->priv->enabled = 
 		ccm_config_get_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE], 
 							   NULL);
-	
-	for (;item; item = item->next)
-	{
-		if (ccm_window_is_viewable(item->data))
-			g_object_set(G_OBJECT(item->data), "use_image", 
-						 self->priv->enabled ? TRUE : FALSE, NULL);
-	}
 	
 	if (self->priv->enabled)
 	{
@@ -685,16 +677,19 @@ ccm_magnifier_create_window_info(CCMMagnifier *self)
 	cairo_t* context;
 	int width, height;
 	char* text;
+	CCMWindow* cow = ccm_screen_get_overlay_window(self->priv->screen);
+	cairo_surface_t* surface = ccm_drawable_get_surface(CCM_DRAWABLE(cow));
 	
 	if (self->priv->surface_window_info) 
 		cairo_surface_destroy(self->priv->surface_window_info);
 	
 	self->priv->surface_window_info = 
-		cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+		cairo_surface_create_similar(surface, CAIRO_CONTENT_COLOR_ALPHA,
 								   self->priv->restrict_area.width * 
 								   (CCM_MAGNIFIER_WINDOW_INFO_WIDTH / 100.f),
 								   self->priv->restrict_area.height * 
 								   (CCM_MAGNIFIER_WINDOW_INFO_HEIGHT / 100.f));
+	cairo_surface_destroy(surface);
 	context = cairo_create(self->priv->surface_window_info);
 	cairo_set_operator(context, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(context);
@@ -787,7 +782,6 @@ ccm_magnifier_cursor_get_surface(CCMMagnifier* self)
 	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
 	XFixesCursorImage *cursor_image;
 	gint cpt;
-	
 	
 	cursor_image = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(display));
 	
@@ -1013,11 +1007,15 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	
 	if (self->priv->enabled && !self->priv->surface) 
 	{
+		CCMWindow* cow = ccm_screen_get_overlay_window(screen);
+		cairo_surface_t* surface = ccm_drawable_get_surface(CCM_DRAWABLE(cow));
 		cairo_t* ctx;
 		
-		self->priv->surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, 
+		self->priv->surface = cairo_surface_create_similar (surface, 
+								CAIRO_CONTENT_COLOR,
 								self->priv->area.width / self->priv->scale, 
 								self->priv->area.height / self->priv->scale);
+		cairo_surface_destroy(surface);
 		ctx = cairo_create (self->priv->surface);
 		cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
 		cairo_paint(ctx);
@@ -1211,7 +1209,7 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		{
 			cairo_t* ctx = cairo_create (self->priv->surface);
 			cairo_path_t* damaged_path;
-			cairo_matrix_t matrix, initial, translate;
+			cairo_matrix_t translate;
 			
 			ccm_debug_window(window, "MAGNIFIER PAINT WINDOW");
 
@@ -1219,9 +1217,6 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 				self->priv->damaged = ccm_region_copy (tmp);
 			else
 				ccm_region_union (self->priv->damaged, tmp);
-			
-			ccm_window_get_transform (window, &initial);
-			ccm_window_get_transform (window, &matrix);
 			
 			cairo_rectangle (ctx, 0, 0,
 							 self->priv->area.width / self->priv->scale, 
@@ -1231,19 +1226,19 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			cairo_matrix_init_translate (&translate, 
 										 -self->priv->x_offset, 
 										 -self->priv->y_offset);
-			cairo_matrix_multiply (&matrix, &matrix, &translate);
-			ccm_window_set_transform (window, &matrix);
 			
 			cairo_translate (ctx, -self->priv->x_offset, -self->priv->y_offset);
 			damaged_path = ccm_drawable_get_damage_path(CCM_DRAWABLE(window), ctx);
 			cairo_clip (ctx);
 			cairo_path_destroy (damaged_path);
 			
-			g_object_set(G_OBJECT(window), "use_image", TRUE, NULL);
+			ccm_drawable_push_matrix (CCM_DRAWABLE(window), 
+									  "CCMMagnifier", &translate);
+			
 			ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window,
 								    ctx, surface, y_invert);
 			cairo_destroy (ctx);
-			ccm_window_set_transform (window, &initial);
+			ccm_drawable_pop_matrix (CCM_DRAWABLE(window), "CCMMagnifier");
 		}
 		
 		ccm_region_destroy(tmp);

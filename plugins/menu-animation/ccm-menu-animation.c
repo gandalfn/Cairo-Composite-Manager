@@ -195,12 +195,13 @@ ccm_menu_animation_on_new_frame (CCMMenuAnimation* self, int num_frame,
 	gdouble progress = ccm_timeline_get_progress (timeline);
 	cairo_rectangle_t geometry;
 	cairo_matrix_t matrix;
+	CCMRegion* damage;
 	
 	ccm_debug_window(self->priv->window, "MENU ANIMATION %i %f", num_frame, progress);
 	
 	progress = MAX(progress, 0.01f);
-	ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self->priv->window),
-									   &geometry);
+	ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE(self->priv->window),
+											  &geometry);
 	cairo_matrix_init_identity (&matrix);
 	switch (self->priv->y_pos)
 	{
@@ -234,14 +235,21 @@ ccm_menu_animation_on_new_frame (CCMMenuAnimation* self, int num_frame,
 		default:
 			break;
 	}
-	ccm_window_set_transform (self->priv->window, &matrix);
+	
+	ccm_drawable_push_matrix (CCM_DRAWABLE(self->priv->window), 
+							  "CCMMenuAnimation", &matrix);
+	damage = ccm_region_rectangle(&geometry);
+	ccm_drawable_damage_region(CCM_DRAWABLE(self->priv->window),
+							   damage);
+	ccm_region_destroy(damage);
 	ccm_drawable_damage(CCM_DRAWABLE(self->priv->window));
 }
 
 static void
 ccm_menu_animation_on_map_unmap_unlocked(CCMMenuAnimation* self)
 {
-	ccm_window_init_transfrom (self->priv->window);
+	ccm_drawable_pop_matrix (CCM_DRAWABLE(self->priv->window),
+							 "CCMMenuAnimation");
 }
 
 static void
@@ -401,7 +409,9 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		{
 			cairo_matrix_t matrix;
 			cairo_matrix_scale(&matrix, 0.01, 0.01);
-			ccm_window_set_transform (window, &matrix);
+			ccm_drawable_push_matrix (CCM_DRAWABLE(self->priv->window), 
+									  "CCMMenuAnimation", &matrix);
+
 		}
 		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, 
 										   (CCMPluginUnlockFunc)ccm_menu_animation_on_map_unmap_unlocked,
@@ -439,8 +449,8 @@ ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 			ccm_menu_animation_finish(self);
 		}
 		else
-			ccm_window_init_transfrom (window);
-			
+			ccm_drawable_pop_matrix (CCM_DRAWABLE(self->priv->window), 
+									 "CCMMenuAnimation");
 		
 		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap, 
 										   (CCMPluginUnlockFunc)ccm_menu_animation_on_map_unmap_unlocked,

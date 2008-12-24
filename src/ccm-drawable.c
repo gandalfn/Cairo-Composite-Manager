@@ -25,6 +25,35 @@
 #include "ccm-drawable.h"
 #include "ccm-display.h"
 
+#define CCM_TYPE_DRAWABLE_MATRIX             (ccm_drawable_matrix_get_type ())
+
+static cairo_matrix_t *
+ccm_drawable_matrix_copy(cairo_matrix_t *matrix)
+{
+	return g_memdup(matrix, sizeof(cairo_matrix_t));
+}
+
+static void
+ccm_drawable_matrix_free(cairo_matrix_t *matrix)
+{
+	g_free(matrix);
+}
+
+static GType
+ccm_drawable_matrix_get_type(void)
+{
+	static GType type = 0;
+	if (type == 0) 
+	{
+		type = g_boxed_type_register_static("CCMDrawableMatrix",
+											(GBoxedCopyFunc) 
+											ccm_drawable_matrix_copy,
+											(GBoxedFreeFunc) 
+											ccm_drawable_matrix_free);
+	}
+	return type;
+}
+
 enum
 {
     PROP_0,
@@ -33,7 +62,8 @@ enum
 	PROP_GEOMETRY,
 	PROP_DEPTH,
 	PROP_VISUAL,
-	PROP_DAMAGED
+	PROP_DAMAGED,
+	PROP_TRANSFORM
 };
 
 enum
@@ -50,6 +80,7 @@ struct _CCMDrawablePrivate
 {
 	Drawable			drawable;
 	CCMScreen* 			screen;
+	CCMRegion*			device;
 	CCMRegion*			geometry;
 	guint				depth;
 	Visual*				visual;
@@ -58,6 +89,7 @@ struct _CCMDrawablePrivate
 	cairo_rectangle_t   last_pos_size;
 	
 	CCMRegion*			damaged;
+	GData*				transform;
 };
 
 #define CCM_DRAWABLE_GET_PRIVATE(o)  \
@@ -85,11 +117,20 @@ ccm_drawable_set_property(GObject *object,
 			priv->drawable = g_value_get_ulong (value);
 			break;
 		case PROP_GEOMETRY:
+			if (priv->device) ccm_region_destroy (priv->device);
 			if (priv->geometry) ccm_region_destroy (priv->geometry);
+			priv->device = NULL;
+			priv->geometry = NULL;
+			
 			if (g_value_get_pointer (value))
+			{
+				cairo_matrix_t transform;
+				
+				transform = ccm_drawable_get_transform(CCM_DRAWABLE(object));
+				priv->device = ccm_region_copy(g_value_get_pointer (value));
 				priv->geometry = ccm_region_copy(g_value_get_pointer (value));
-			else
-				priv->geometry = NULL;
+				ccm_region_device_transform(priv->geometry, &transform);
+			}
 			break;
 		case PROP_DEPTH:
 			priv->depth = g_value_get_uint (value);
@@ -130,6 +171,14 @@ ccm_drawable_get_property (GObject* object,
 		case PROP_DAMAGED:
 			g_value_set_pointer (value, priv->damaged);
 			break;
+    	case PROP_TRANSFORM:
+		{
+			cairo_matrix_t transform;
+			
+			transform = ccm_drawable_get_transform(CCM_DRAWABLE(object));
+			g_value_set_boxed (value, &transform);
+		}
+		break;
     	default:
 			break;
     }
@@ -138,8 +187,10 @@ ccm_drawable_get_property (GObject* object,
 static void
 ccm_drawable_init (CCMDrawable *self)
 {
+	cairo_matrix_t init;
 	self->priv = CCM_DRAWABLE_GET_PRIVATE(self);
 	self->priv->drawable = 0;
+	self->priv->device = NULL;
 	self->priv->geometry = NULL;
 	self->priv->depth = 0;
 	self->priv->visual = NULL;
@@ -149,6 +200,10 @@ ccm_drawable_init (CCMDrawable *self)
 	self->priv->last_pos_size.y = 0;
 	self->priv->last_pos_size.width = 0;
 	self->priv->last_pos_size.height = 0;
+	self->priv->transform = NULL;
+	g_datalist_init(&self->priv->transform);
+	cairo_matrix_init_identity(&init);
+	ccm_drawable_push_matrix(self, "CCMDrawable", &init);
 }
 
 static void
@@ -164,6 +219,11 @@ ccm_drawable_finalize (GObject *object)
 	self->priv->drawable = 0;
 	self->priv->depth = 0;
 	self->priv->visual = NULL;
+	if (self->priv->device) 
+	{
+		ccm_region_destroy(self->priv->device);
+		self->priv->device = NULL;
+	}
 	if (self->priv->geometry) 
 	{
 		ccm_region_destroy(self->priv->geometry);
@@ -174,7 +234,12 @@ ccm_drawable_finalize (GObject *object)
 		ccm_region_destroy(self->priv->damaged);
 		self->priv->damaged = NULL;
 	}
-	
+	if (self->priv->transform)
+	{
+		g_datalist_clear(&self->priv->transform);
+		g_datalist_init(&self->priv->transform);
+	}
+
 	G_OBJECT_CLASS (ccm_drawable_parent_class)->finalize (object);
 }
 
@@ -231,6 +296,13 @@ ccm_drawable_class_init (CCMDrawableClass *klass)
 			     			  "Damaged region of the drawable",
 			     			  G_PARAM_READABLE));
 
+	g_object_class_install_property(object_class, PROP_TRANSFORM,
+		g_param_spec_boxed ("transform",
+		 					"Transform",
+			     			"Tranform matrix of the drawable",
+							CCM_TYPE_DRAWABLE_MATRIX,
+							G_PARAM_READABLE));
+
 	signals[DAMAGED] = g_signal_new ("damaged",
 									 G_OBJECT_CLASS_TYPE (object_class),
 									 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -249,7 +321,10 @@ __ccm_drawable_query_geometry(CCMDrawable* self)
 	gint x, y;
 	guint width, height;
 	cairo_rectangle_t rectangle;
+	cairo_matrix_t matrix = ccm_drawable_get_transform(self);
 	
+	if (self->priv->device) ccm_region_destroy(self->priv->device);
+	self->priv->device = NULL;
 	if (self->priv->geometry) ccm_region_destroy(self->priv->geometry);
 	self->priv->geometry = NULL;
 		
@@ -266,7 +341,9 @@ __ccm_drawable_query_geometry(CCMDrawable* self)
 	rectangle.width = (double)width;
 	rectangle.height = (double)height;
 	
+	self->priv->device =  ccm_region_rectangle(&rectangle);
 	self->priv->geometry =  ccm_region_rectangle(&rectangle);
+	ccm_region_device_transform(self->priv->geometry, &matrix);
 }
 
 static void
@@ -276,11 +353,17 @@ __ccm_drawable_move(CCMDrawable* self, int x, int y)
 	
 	cairo_rectangle_t geometry;
 	
-	if (ccm_drawable_get_geometry_clipbox(self, &geometry))
+	if (self->priv->geometry)
 	{
-		ccm_region_offset(self->priv->geometry, 
+		cairo_matrix_t matrix = ccm_drawable_get_transform(self);
+		
+		ccm_region_get_clipbox(self->priv->device, &geometry);
+		ccm_region_offset(self->priv->device, 
 						  x - (int)geometry.x, 
 						  y - (int)geometry.y);
+		ccm_region_destroy(self->priv->geometry);
+		self->priv->geometry = ccm_region_copy(self->priv->device);
+		ccm_region_transform(self->priv->geometry, &matrix);
 	}
 }
 
@@ -289,10 +372,22 @@ __ccm_drawable_resize(CCMDrawable* self, int width, int height)
 {
 	g_return_if_fail(self != NULL);
 	
-	if (self->priv->geometry)
+	if (self->priv->device)
 	{
-		ccm_region_resize(self->priv->geometry, width, height);
+		cairo_matrix_t matrix = ccm_drawable_get_transform(self);
+		
+		ccm_region_resize(self->priv->device, width, height);
+		ccm_region_destroy(self->priv->geometry);
+		self->priv->geometry = ccm_region_copy(self->priv->device);
+		ccm_region_transform(self->priv->geometry, &matrix);
 	}
+}
+
+static void
+ccm_drawable_foreach_transform(GQuark key, cairo_matrix_t* matrix,
+							   cairo_matrix_t* transform)
+{
+	cairo_matrix_multiply(transform, transform, matrix);
 }
 
 /**
@@ -458,6 +553,23 @@ ccm_drawable_get_geometry(CCMDrawable* self)
 }
 
 /**
+ * ccm_drawable_get_device_geometry:
+ * @self: #CCMDrawable
+ *
+ * Gets the region covered by the Drawable. The coordinates are 
+ * relative to the parent Drawable. 
+ *
+ * Returns: const #CCMRegion
+ **/
+const CCMRegion*
+ccm_drawable_get_device_geometry(CCMDrawable* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	return self->priv->geometry;
+}
+
+/**
  * ccm_drawable_get_geometry_clipbox:
  * @self: #CCMDrawable
  * @area: #cairo_rectangle_t
@@ -476,6 +588,31 @@ ccm_drawable_get_geometry_clipbox(CCMDrawable* self, cairo_rectangle_t* area)
 	if (self->priv->geometry)
 	{
 		ccm_region_get_clipbox(self->priv->geometry, area);
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+/**
+ * ccm_drawable_get_device_geometry_clipbox:
+ * @self: #CCMDrawable
+ * @area: #cairo_rectangle_t
+ *
+ * Gets the rectangle region covered by the Drawable. The coordinates are 
+ * relative to the parent Drawable. 
+ *
+ * Returns: FALSE if fail
+ **/
+gboolean
+ccm_drawable_get_device_geometry_clipbox(CCMDrawable* self, cairo_rectangle_t* area)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(area != NULL, FALSE);
+	
+	if (self->priv->device)
+	{
+		ccm_region_get_clipbox(self->priv->device, area);
 		return TRUE;
 	}
 	
@@ -648,7 +785,7 @@ ccm_drawable_damage(CCMDrawable* self)
 /**
  * ccm_drawable_undamage_region:
  * @self: #CCMDrawable
- @ @region: #Region
+ * @region: #CCMRegion
  *
  * Remove a part of damaged region of a drawable
  **/
@@ -818,4 +955,127 @@ ccm_drawable_get_geometry_path(CCMDrawable* self, cairo_t* context)
 	}
 			
 	return path;
+}
+
+/**
+ * ccm_drawable_push_matrix:
+ * @self: #CCMDrawable
+ * @key: matrix key
+ * @matrix: #cairo_matrix_t
+ *
+ * Push a matrix in #CCMDrawable transform stack with @key if a matrix already
+ * exist for this key it was replaced.
+ **/
+void
+ccm_drawable_push_matrix(CCMDrawable* self, gchar* key, cairo_matrix_t* matrix)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(key != NULL);
+	g_return_if_fail(matrix != NULL);
+	
+	cairo_rectangle_t clipbox;
+	cairo_matrix_t transform = ccm_drawable_get_transform(self);
+	
+	if (self->priv->device)
+	{
+		ccm_region_get_clipbox(self->priv->device, &clipbox);
+		ccm_region_destroy(self->priv->geometry);
+		self->priv->geometry = NULL;
+		if (self->priv->damaged)
+		{
+			ccm_region_offset(self->priv->damaged, -clipbox.x, -clipbox.y);
+			ccm_region_transform_invert(self->priv->damaged, &transform);
+			ccm_region_offset(self->priv->damaged, clipbox.x, clipbox.y);
+		}
+	}
+	g_datalist_set_data_full(&self->priv->transform, key, 
+							 g_memdup(matrix, sizeof(cairo_matrix_t)), g_free);
+	
+	transform = ccm_drawable_get_transform(self);
+	if (self->priv->device)
+	{
+		ccm_region_get_clipbox(self->priv->device, &clipbox);
+		self->priv->geometry = ccm_region_copy(self->priv->device);
+		ccm_region_device_transform(self->priv->geometry, &transform);
+		if (self->priv->damaged)
+		{
+			ccm_region_offset(self->priv->damaged, -clipbox.x, -clipbox.y);
+			ccm_region_transform(self->priv->damaged, &transform);
+			ccm_region_offset(self->priv->damaged, clipbox.x, clipbox.y);
+		}
+	}
+	
+	g_object_notify(G_OBJECT(self), "transform");
+}
+
+/**
+ * ccm_drawable_pop_matrix:
+ * @self: #CCMDrawable
+ * @key: matrix key
+ *
+ * Pop a matrix associated with @key from #CCMDrawable transform stack.
+ **/
+void
+ccm_drawable_pop_matrix(CCMDrawable* self, gchar* key)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(key != NULL);
+	
+	cairo_rectangle_t clipbox;
+	cairo_matrix_t transform = ccm_drawable_get_transform(self);
+	
+	if (self->priv->device)
+	{
+		ccm_region_get_clipbox(self->priv->device, &clipbox);
+		ccm_region_destroy(self->priv->geometry);
+		self->priv->geometry = NULL;
+		if (self->priv->damaged)
+		{
+			ccm_region_offset(self->priv->damaged, -clipbox.x, -clipbox.y);
+			ccm_region_transform_invert(self->priv->damaged, &transform);
+			ccm_region_offset(self->priv->damaged, clipbox.x, clipbox.y);
+		}
+	}
+	
+	g_datalist_remove_data(&self->priv->transform, key);
+	
+	transform = ccm_drawable_get_transform(self);
+	if (self->priv->device)
+	{
+		ccm_region_get_clipbox(self->priv->device, &clipbox);
+		self->priv->geometry = ccm_region_copy(self->priv->device);
+		ccm_region_device_transform(self->priv->geometry, &transform);
+		if (self->priv->damaged)
+		{
+			ccm_region_offset(self->priv->damaged, -clipbox.x, -clipbox.y);
+			ccm_region_transform(self->priv->damaged, &transform);
+			ccm_region_offset(self->priv->damaged, clipbox.x, clipbox.y);
+		}
+	}
+	
+	g_object_notify(G_OBJECT(self), "transform");
+}
+
+/**
+ * ccm_drawable_get_transform:
+ * self:  #CCMDrawable
+ *
+ * Get the current #cairo_matrix_t transform
+ *
+ * return: #cairo_matrix_t
+ **/
+cairo_matrix_t
+ccm_drawable_get_transform(CCMDrawable* self)
+{
+	cairo_matrix_t matrix;
+	
+	cairo_matrix_init_identity(&matrix);
+	
+	g_return_val_if_fail(self != NULL, matrix);
+	
+	g_datalist_foreach(&self->priv->transform, 
+					   (GDataForeachFunc)ccm_drawable_foreach_transform, 
+					   &matrix);
+	
+	return matrix;
 }

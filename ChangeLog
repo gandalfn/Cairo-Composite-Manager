@@ -1,3 +1,43 @@
+2008-12-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_get_enable),
+	(ccm_magnifier_create_window_info),
+	(ccm_magnifier_cursor_get_surface), (ccm_magnifier_screen_paint),
+	(ccm_magnifier_window_paint):
+	* plugins/menu-animation/ccm-menu-animation.c
+	(ccm_menu_animation_on_new_frame),
+	(ccm_menu_animation_on_map_unmap_unlocked),
+	(ccm_menu_animation_map), (ccm_menu_animation_unmap):
+	* plugins/mosaic/ccm-mosaic.c (ccm_mosaic_find_area),
+	(ccm_mosaic_set_window_transform), (ccm_mosaic_on_key_press),
+	(ccm_mosaic_screen_load_options):
+	* src/Makefile.am:
+	* src/ccm-drawable.c (ccm_drawable_matrix_copy),
+	(ccm_drawable_matrix_free), (ccm_drawable_matrix_get_type),
+	(ccm_drawable_set_property), (ccm_drawable_get_property),
+	(ccm_drawable_init), (ccm_drawable_finalize),
+	(ccm_drawable_class_init), (__ccm_drawable_query_geometry),
+	(__ccm_drawable_move), (__ccm_drawable_resize),
+	(ccm_drawable_foreach_transform),
+	(ccm_drawable_get_device_geometry),
+	(ccm_drawable_get_device_geometry_clipbox),
+	(ccm_drawable_push_matrix), (ccm_drawable_pop_matrix),
+	(ccm_drawable_get_transform):
+	* src/ccm-region.c (ccm_region_transform_invert),
+	(ccm_region_device_transform_invert):
+	* src/ccm-window.c (ccm_window_init), (impl_ccm_window_resize),
+	(ccm_window_check_mask), (impl_ccm_window_set_opaque_region),
+	(ccm_window_on_pixmap_damaged), (ccm_window_on_transform_changed),
+	(ccm_window_new), (ccm_window_transform):
+	* src/ccm.h:
+	  - New matrix transformation management :
+	    The transformations are now managed by CCMDrawable. A plugin can 
+	    push/pop a matrix transform associated with a key. The final 
+	    transformation is apply on geometry/damaged/opaque regions which is all 
+	    pushed matrix cumulated on ccm_drawable_get_transform. 
+	    We can continue to get the original geometry region with device api
+	    (ccm_drawable_get_device_geometry, ccm_drawable_get_device_geometry_clipbox).
+
 2008-12-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/freeze/ccm-freeze.c (ccm_freeze_paint):
