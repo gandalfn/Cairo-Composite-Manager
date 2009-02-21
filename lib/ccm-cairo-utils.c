@@ -41,6 +41,15 @@ void
 cairo_rectangle_round (cairo_t *cr, double x, double y, double w, double h,
                        int radius, CairoCorners corners)
 {
+	//       x x+r                    x+w-r
+	// y       +-------------------------+
+	//        +                           +
+	// y+r   +                             +
+	//       |                             |
+	//       |                             |
+	// y+h-r +                             +
+	//        +                           +
+	// y+h     +-------------------------+
 	if (corners & CAIRO_CORNER_TOPLEFT)
 		cairo_move_to (cr, x+radius, y);
 	else
@@ -65,6 +74,35 @@ cairo_rectangle_round (cairo_t *cr, double x, double y, double w, double h,
 		cairo_arc (cr, x+radius,   y+radius,   radius, M_PI, M_PI * 1.5);
 	else
 		cairo_line_to (cr, x, y);
+}
+
+void
+cairo_notebook_page_round (cairo_t *cr, double x, double y, double w, double h,
+						   double tx, double tw, double th, int radius)
+{
+	// x    x+tx+r  x+tx+tw-r
+	//          +-----+   y
+	//         +       +  y+r
+	//        |         |
+	//  x+r  +           + y+th-r          x+w-r
+	//   +--+             +-----------------+      y+th
+	//  +   tx            x+tx+tw+r          +
+	// +                                      +    y+th+r
+	// |                                      |
+	cairo_move_to (cr, x+tx+radius, y);
+	cairo_arc (cr, x+tx+tw-radius, y+radius,    radius, M_PI * 1.5, M_PI * 2);
+	cairo_arc_negative (cr, x+tx+tw+radius, y+th-radius, radius, M_PI, M_PI * 0.5);
+	cairo_arc (cr, x+w-radius,     y+th+radius, radius, M_PI * 1.5, M_PI * 2);
+	cairo_arc (cr, x+w-radius,     y+h-radius,  radius, 0, M_PI * 0.5);
+	cairo_arc (cr, x+radius,       y+h-radius,  radius, M_PI * 0.5, M_PI);
+	if (tx >= radius)
+	{
+		cairo_arc (cr, x+radius,       y+th+radius, radius, M_PI, M_PI * 1.5);
+		cairo_arc_negative (cr, x+tx-radius, y+th-radius, radius, M_PI * 0.5, 0);
+		cairo_arc (cr, x+tx+radius,   y+radius,   radius, M_PI, M_PI * 1.5);
+	}
+	else
+		cairo_arc (cr, x+radius,   y+radius,   radius, M_PI, M_PI * 1.5);
 }
 
 /* G(x,y) = 1/(2 * PI * sigma^2) * exp(-(x^2 + y^2)/(2 * sigma^2))
@@ -181,13 +219,13 @@ cairo_image_surface_blur (cairo_surface_t *surface,
 	surface = cairo_image_surface_create_for_data (p, cairo_format, w, h, s);
 	cairo_surface_set_user_data (surface, &data_key, p, g_free);
 	pixman_image_unref (dst);
-
+	
 	return surface;
 }
 
 cairo_surface_t*
-cairo_blur_path(cairo_path_t* path, int border, double step, 
-				double width, double height)
+cairo_blur_path(cairo_path_t* path, cairo_path_t* clip, int border, 
+				double step, double width, double height)
 {
 	g_return_val_if_fail(path != NULL, NULL);
 	g_return_val_if_fail(border > 0, NULL);
@@ -199,6 +237,14 @@ cairo_blur_path(cairo_path_t* path, int border, double step,
 	cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_A8, 
 														  width, height);
 	cairo_t* cr = cairo_create(surface);
+	
+	// Get clip
+	if (clip)
+	{
+		cairo_append_path(cr, clip);
+		cairo_clip(cr);
+		cairo_new_path(cr);
+	}
 	
 	// Get path extents
 	cairo_append_path(cr, path);
@@ -215,13 +261,13 @@ cairo_blur_path(cairo_path_t* path, int border, double step,
 		double y_scale = (double)((y2 - y1) + cpt) / (double)(y2 - y1);
 		
 		if (p < 0.5)
-			alpha =p * 0.10;
+			alpha =p * 0.12;
 		else if (p >= 0.5 && p < 0.75)
-			alpha = 0.10 + ((p - 0.5) * (0.24 - 0.05));
+			alpha = 0.12 + ((p - 0.5) * (0.24 - 0.12));
 		else if (p >= 0.75 && p < 1)
 			alpha = 0.24 + ((p - 0.75) * (1 - 0.24));
 		else 
-			alpha = 1;
+			alpha = 0.72;
 		
 		cairo_save(cr);
 		cairo_scale(cr, x_scale, y_scale);

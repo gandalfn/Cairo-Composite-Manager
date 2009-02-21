@@ -1,0 +1,4 @@
+[duration]
+Type=float
+Default=0.25
+_Description=Fade animation duration

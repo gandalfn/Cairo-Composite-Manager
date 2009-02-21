@@ -32,6 +32,7 @@
 G_BEGIN_DECLS
 
 #define CCM_TYPE_DRAWABLE             (ccm_drawable_get_type ())
+#define CCM_TYPE_DRAWABLE_MATRIX      (ccm_drawable_matrix_get_type ())
 #define CCM_DRAWABLE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_DRAWABLE, CCMDrawable))
 #define CCM_DRAWABLE_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_DRAWABLE, CCMDrawableClass))
 #define CCM_IS_DRAWABLE(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_DRAWABLE))
@@ -66,6 +67,7 @@ struct _CCMDrawable
 };
 
 GType ccm_drawable_get_type (void) G_GNUC_CONST;
+GType ccm_drawable_matrix_get_type(void) G_GNUC_CONST;
 
 G_END_DECLS
 

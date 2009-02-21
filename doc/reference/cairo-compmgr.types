@@ -1,0 +1,29 @@
+#include "ccm.h"
+#include "ccm-drawable.h"
+#include "ccm-pixmap.h"
+#include "ccm-window.h"
+#include "ccm-window-plugin.h"
+#include "ccm-screen.h"
+#include "ccm-screen-plugin.h"
+#include "ccm-display.h"
+#include "ccm-preferences.h"
+#include "ccm-preferences-page.h"
+#include "ccm-preferences-page-plugin.h"
+#include "ccm-region.h"
+#include "ccm-keybind.h"
+#include "ccm-config.h"
+#include "ccm-timeline.h"
+
+ccm_drawable_get_type
+ccm_pixmap_get_type
+ccm_window_get_type
+ccm_window_plugin_get_type
+ccm_screen_get_type
+ccm_screen_plugin_get_type
+ccm_display_get_type
+ccm_preferences_page_get_type
+ccm_preferences_page_plugin_get_type
+ccm_keybind_get_type
+ccm_config_get_type
+ccm_timeline_get_type
+

@@ -1,0 +1,121 @@
+<!-- ##### SECTION Title ##### -->
+CCMScreenPlugin
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO CCM_SCREEN_PLUGIN_GET_INTERFACE ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_SCREEN_PLUGIN_PARENT ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_SCREEN_PLUGIN_ROOT ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_SCREEN_PLUGIN_LOCK_ROOT_METHOD ##### -->
+<para>
+
+</para>
+
+@plugin: 
+@func: 
+@callback: 
+@data: 
+
+
+<!-- ##### MACRO CCM_SCREEN_PLUGIN_UNLOCK_ROOT_METHOD ##### -->
+<para>
+
+</para>
+
+@plugin: 
+@func: 
+
+
+<!-- ##### STRUCT CCMScreenPlugin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION ccm_screen_plugin_load_options ##### -->
+<para>
+
+</para>
+
+@self: 
+@screen: 
+
+
+<!-- ##### FUNCTION ccm_screen_plugin_paint ##### -->
+<para>
+
+</para>
+
+@self: 
+@screen: 
+@ctx: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_plugin_add_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@screen: 
+@window: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_plugin_remove_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@screen: 
+@window: 
+
+
+<!-- ##### FUNCTION ccm_screen_plugin_damage ##### -->
+<para>
+
+</para>
+
+@self: 
+@screen: 
+@area: 
+@window: 
+
+

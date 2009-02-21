@@ -1,0 +1,125 @@
+<!-- ##### SECTION Title ##### -->
+CCMImage
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT CCMImage ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION ccm_image_new ##### -->
+<para>
+
+</para>
+
+@display: 
+@visual: 
+@format: 
+@width: 
+@height: 
+@depth: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_image_destroy ##### -->
+<para>
+
+</para>
+
+@image: 
+
+
+<!-- ##### FUNCTION ccm_image_get_image ##### -->
+<para>
+
+</para>
+
+@image: 
+@pixmap: 
+@x: 
+@y: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_image_get_sub_image ##### -->
+<para>
+
+</para>
+
+@image: 
+@pixmap: 
+@x: 
+@y: 
+@width: 
+@height: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_image_put_image ##### -->
+<para>
+
+</para>
+
+@image: 
+@pixmap: 
+@x_src: 
+@y_src: 
+@x: 
+@y: 
+@width: 
+@height: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_image_get_data ##### -->
+<para>
+
+</para>
+
+@image: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_image_get_width ##### -->
+<para>
+
+</para>
+
+@image: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_image_get_height ##### -->
+<para>
+
+</para>
+
+@image: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_image_get_stride ##### -->
+<para>
+
+</para>
+
+@image: 
+@Returns: 
+
+

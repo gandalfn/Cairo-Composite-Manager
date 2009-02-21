@@ -1,0 +1,14 @@
+[area]
+Type=string
+Default=<Super>Button1
+_Description=The snapshot screen ara shortcut key.
+
+[window]
+Type=string
+Default=<Super><Alt>Button1
+_Description=The snapshot window shortcut key.
+
+[color]
+Type=string
+Default=#729FCF
+_Description=Snapshot select color.

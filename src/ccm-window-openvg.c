@@ -248,7 +248,7 @@ ccm_window_openvg_flush_region(CCMDrawable* drawable, CCMRegion* region)
 		
 		ccm_drawable_get_geometry_clipbox (drawable, &geometry);
 		ccm_region_get_rectangles(region, &rects, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
+		for (cpt = 0; cpt < nb_rects; ++cpt)
 		{
 			gint x = rects[cpt].x > 0 ? rects[cpt].x : 0;
 			gint y = geometry.height - (rects[cpt].height + rects[cpt].y);

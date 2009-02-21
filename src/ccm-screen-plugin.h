@@ -31,6 +31,7 @@
 G_BEGIN_DECLS
 
 #define CCM_TYPE_SCREEN_PLUGIN             		(ccm_screen_plugin_get_type ())
+#define CCM_SCREEN_PLUGIN(obj)                  (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_SCREEN_PLUGIN, CCMScreenPlugin))
 #define CCM_IS_SCREEN_PLUGIN(obj)          		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_SCREEN_PLUGIN))
 #define CCM_SCREEN_PLUGIN_GET_INTERFACE(obj)   	(G_TYPE_INSTANCE_GET_INTERFACE ((obj), CCM_TYPE_SCREEN_PLUGIN, CCMScreenPluginClass))
 
@@ -56,6 +57,7 @@ G_BEGIN_DECLS
 }
 
 typedef struct _CCMScreenPluginClass CCMScreenPluginClass;
+typedef struct _CCMScreenPluginClass CCMScreenPluginIface;
 typedef struct _CCMScreenPlugin CCMScreenPlugin;
 
 struct _CCMScreenPluginClass

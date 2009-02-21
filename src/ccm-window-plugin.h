@@ -32,6 +32,7 @@
 G_BEGIN_DECLS
 
 #define CCM_TYPE_WINDOW_PLUGIN                 (ccm_window_plugin_get_type ())
+#define CCM_WINDOW_PLUGIN(obj)                 (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_WINDOW_PLUGIN, CCMWindowPlugin))
 #define CCM_IS_WINDOW_PLUGIN(obj)              (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_WINDOW_PLUGIN))
 #define CCM_WINDOW_PLUGIN_GET_INTERFACE(obj)   (G_TYPE_INSTANCE_GET_INTERFACE ((obj), CCM_TYPE_WINDOW_PLUGIN, CCMWindowPluginClass))
 
@@ -57,6 +58,7 @@ G_BEGIN_DECLS
 }
 
 typedef struct _CCMWindowPluginClass CCMWindowPluginClass;
+typedef struct _CCMWindowPluginClass CCMWindowPluginIface;
 typedef struct _CCMWindowPlugin CCMWindowPlugin;
 
 struct _CCMWindowPluginClass

@@ -20,11 +20,14 @@
  * 	Boston, MA  02110-1301, USA.
  */
 #include <math.h>
+#include <string.h>
 
+#include "ccm-property-async.h"
 #include "ccm-debug.h"
 #include "ccm-config.h"
 #include "ccm-drawable.h"
 #include "ccm-window.h"
+#include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-timeline.h"
 #include "ccm-fade.h"
@@ -40,6 +43,7 @@ static gchar* CCMFadeOptions[CCM_FADE_OPTION_N] = {
 	"duration"
 };
 
+static void ccm_fade_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_fade_window_iface_init(CCMWindowPluginClass* iface);
 static void	ccm_fade_on_error(CCMFade* self, CCMWindow* window);
 static void ccm_fade_on_property_changed(CCMFade* self, 
@@ -48,17 +52,24 @@ static void ccm_fade_on_property_changed(CCMFade* self,
 
 CCM_DEFINE_PLUGIN (CCMFade, ccm_fade, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_fade,
+										   CCM_TYPE_SCREEN_PLUGIN,
+										   ccm_fade_screen_iface_init);
+				   CCM_IMPLEMENT_INTERFACE(ccm_fade,
 										   CCM_TYPE_WINDOW_PLUGIN,
 										   ccm_fade_window_iface_init))
 
 struct _CCMFadePrivate
 {	
+	CCMScreen* screen;
+	
 	CCMWindow* window;
 	
 	gfloat origin;
 	
 	gfloat duration;
 	CCMTimeline* timeline;
+	
+	gboolean	   force_disable;
 	
 	CCMConfig* options[CCM_FADE_OPTION_N];
 };
@@ -74,9 +85,11 @@ ccm_fade_init (CCMFade *self)
 	self->priv = CCM_FADE_GET_PRIVATE(self);
 	self->priv->origin = 1.0f;
 	self->priv->duration = 1.0f;
+	self->priv->screen = NULL;
 	self->priv->window = NULL;
 	self->priv->timeline = NULL;
-	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++) 
+	self->priv->force_disable = FALSE;
+	for (cpt = 0; cpt < CCM_FADE_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
 
@@ -86,15 +99,18 @@ ccm_fade_finalize (GObject *object)
 	CCMFade* self = CCM_FADE(object);
 	gint cpt;
 	
-	g_signal_handlers_disconnect_by_func(self->priv->window, 
-										 ccm_fade_on_property_changed, 
-										 self);	
+	if (self->priv->window)
+	{
+		g_signal_handlers_disconnect_by_func(self->priv->window, 
+											 ccm_fade_on_property_changed, 
+											 self);	
 	
-	g_signal_handlers_disconnect_by_func(self->priv->window, 
-										 ccm_fade_on_error, 
-										 self);	
+		g_signal_handlers_disconnect_by_func(self->priv->window, 
+											 ccm_fade_on_error, 
+											 self);	
+	}
 	
-	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_FADE_OPTION_N; ++cpt)
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	
 	if (self->priv->timeline) 
@@ -248,13 +264,148 @@ ccm_fade_on_option_changed(CCMFade* self, CCMConfig* config)
 }
 
 static void
+ccm_fade_on_get_fade_disable_property(CCMFade* self,  
+									  guint n_items, gchar* result, 
+									  CCMPropertyASync* prop)
+{
+	g_return_if_fail(CCM_IS_PROPERTY_ASYNC(prop));
+	
+	if (!CCM_IS_FADE(self)) 
+	{
+		g_object_unref(prop);
+		return;
+	}
+	
+	Atom property = ccm_property_async_get_property (prop);
+	
+	if (result)
+	{
+		if (property == CCM_FADE_GET_CLASS(self)->fade_disable_atom)
+		{
+			gulong disable;
+			memcpy(&disable, result, sizeof(gulong));
+		
+			ccm_debug_window(self->priv->window, "_CCM_FADE_DISABLE %i", 
+						    (gboolean)disable);
+			self->priv->force_disable = disable == 1 ? TRUE : FALSE;
+		}
+	}
+	
+	g_object_unref(prop);
+}
+
+static void
+ccm_fade_query_force_disable(CCMFade* self)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(self->priv->window != NULL);
+	
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));
+	
+	Window child = None;
+	
+	g_object_get(G_OBJECT(self->priv->window), "child", &child, NULL);
+	
+	if (!child)
+	{
+		ccm_debug_window(self->priv->window, "QUERY FADE 0x%x", child);
+		CCMPropertyASync* prop = 
+			ccm_property_async_new (display, 
+			                        CCM_WINDOW_XWINDOW(self->priv->window),
+			                        CCM_FADE_GET_CLASS(self)->fade_disable_atom,
+			                        XA_CARDINAL, 32);
+		
+		g_signal_connect(prop, "error", G_CALLBACK(g_object_unref), NULL);
+		g_signal_connect_swapped(prop, "reply", 
+		                         G_CALLBACK(ccm_fade_on_get_fade_disable_property), 
+		                         self);
+	}
+	else
+	{
+		ccm_debug_window(self->priv->window, "QUERY CHILD FADE 0x%x", child);
+		CCMPropertyASync* prop = 
+			ccm_property_async_new (display, child,
+			                        CCM_FADE_GET_CLASS(self)->fade_disable_atom,
+			                        XA_CARDINAL, 32);
+		
+		g_signal_connect(prop, "error", G_CALLBACK(g_object_unref), NULL);
+		g_signal_connect_swapped(prop, "reply", 
+		                         G_CALLBACK(ccm_fade_on_get_fade_disable_property), 
+		                         self);	
+	}
+}
+
+static void
+ccm_fade_create_atoms(CCMFade* self)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(CCM_FADE_GET_CLASS(self) != NULL);
+	
+	CCMFadeClass* klass = CCM_FADE_GET_CLASS(self);
+	
+	if (!klass->fade_disable_atom)
+	{
+		CCMDisplay* display = 
+			ccm_drawable_get_display(CCM_DRAWABLE(self->priv->window));
+		
+		klass->fade_disable_atom = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+												"_CCM_FADE_DISABLE", 
+												False);
+	}
+}
+
+static void
+ccm_fade_on_event(CCMFade* self, XEvent* event)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(event != NULL);
+	
+	switch (event->type)
+	{
+		case PropertyNotify:
+		{
+			XPropertyEvent* property_event = (XPropertyEvent*)event;
+			CCMWindow* window;
+			
+			if (property_event->atom == CCM_FADE_GET_CLASS(self)->fade_disable_atom)
+			{
+				window = ccm_screen_find_window_or_child (self->priv->screen,
+														  property_event->window);
+				if (window) 
+				{
+					CCMFade* plugin = 
+						CCM_FADE(_ccm_window_get_plugin (window, 
+													CCM_TYPE_FADE));
+					ccm_fade_query_force_disable(plugin);
+				}
+			}
+		}
+		break;
+		default:
+		break;
+	}
+}
+
+static void
+ccm_fade_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
+{
+	CCMFade* self = CCM_FADE(plugin);
+	CCMDisplay* display = ccm_screen_get_display(screen);
+	
+	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
+	self->priv->screen = screen;
+	g_signal_connect_swapped(display, "event", 
+							 G_CALLBACK(ccm_fade_on_event), self);
+}
+
+static void
 ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_FADE_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_FADE_OPTION_N; ++cpt)
 	{
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
@@ -268,6 +419,9 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	self->priv->window = window;
+	
+	ccm_fade_create_atoms(self);
+	
 	self->priv->origin = ccm_window_get_opacity (window);
 	
 	g_signal_connect_swapped(window, "property-changed",
@@ -278,39 +432,57 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 							 self);
 
 	ccm_fade_get_duration(self);
+	ccm_fade_query_force_disable(self);
+}
+
+static CCMRegion*
+ccm_fade_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
+{
+	CCMRegion* geometry = NULL;
+	CCMFade* self = CCM_FADE(plugin);
+	
+	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
+												window);
+	
+	ccm_fade_query_force_disable (self);
+
+	return geometry;
 }
 
 static void
 ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
-	guint current_frame = 0;
 	
-	if (ccm_timeline_is_playing (self->priv->timeline))
+	if (!self->priv->force_disable)
 	{
-		current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
-		ccm_timeline_stop(self->priv->timeline);
-		ccm_fade_finish (self);
+		guint current_frame = 0;
+	
+		if (ccm_timeline_is_playing (self->priv->timeline))
+		{
+			current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
+			ccm_timeline_stop(self->priv->timeline);
+			ccm_fade_finish (self);
+		}
+		else
+		{
+			self->priv->origin = ccm_window_get_opacity (window);
+			ccm_window_set_opacity (window, 0.0);
+		}
+	
+		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, 
+										   (CCMPluginUnlockFunc)ccm_fade_on_map_unmap_unlocked, 
+										   self);
+	
+		ccm_debug_window(window, "FADE MAP %i", current_frame);
+		ccm_timeline_set_direction (self->priv->timeline, 
+									CCM_TIMELINE_FORWARD);
+		ccm_timeline_rewind(self->priv->timeline);
+		ccm_timeline_start (self->priv->timeline);
+	
+		if (current_frame > 0)
+			ccm_timeline_advance (self->priv->timeline, current_frame);
 	}
-	else
-	{
-		self->priv->origin = ccm_window_get_opacity (window);
-		ccm_window_set_opacity (window, 0.0);
-	}
-	
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, 
-									   (CCMPluginUnlockFunc)ccm_fade_on_map_unmap_unlocked, 
-									   self);
-	
-	ccm_debug_window(window, "FADE MAP %i", current_frame);
-	ccm_timeline_set_direction (self->priv->timeline, 
-								CCM_TIMELINE_FORWARD);
-	ccm_timeline_rewind(self->priv->timeline);
-	ccm_timeline_start (self->priv->timeline);
-	
-	if (current_frame > 0)
-		ccm_timeline_advance (self->priv->timeline, current_frame);
-	
 	ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
 
@@ -318,31 +490,35 @@ static void
 ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
-	guint current_frame = 0;
-		
-	if (ccm_timeline_is_playing (self->priv->timeline))
-	{
-		current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
-		ccm_timeline_stop(self->priv->timeline);
-		ccm_fade_finish (self);
-	}
-	else
-		ccm_window_set_opacity (window, self->priv->origin);
 	
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap, 
-									   (CCMPluginUnlockFunc)ccm_fade_on_map_unmap_unlocked, 
-									   self);
-		
-	ccm_debug_window(window, "FADE UNMAP");
-	ccm_timeline_set_direction (self->priv->timeline, 
-								CCM_TIMELINE_BACKWARD);
-	ccm_timeline_rewind(self->priv->timeline);
-	ccm_timeline_start (self->priv->timeline);
-	if (current_frame > 0)
+	if (!self->priv->force_disable)
 	{
-		guint num_frame = ccm_timeline_get_n_frames (self->priv->timeline) - 
-						  current_frame;
-		ccm_timeline_advance (self->priv->timeline, num_frame);
+		guint current_frame = 0;
+		
+		if (ccm_timeline_is_playing (self->priv->timeline))
+		{
+			current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
+			ccm_timeline_stop(self->priv->timeline);
+			ccm_fade_finish (self);
+		}
+		else
+			ccm_window_set_opacity (window, self->priv->origin);
+	
+		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap, 
+										   (CCMPluginUnlockFunc)ccm_fade_on_map_unmap_unlocked, 
+										   self);
+		
+		ccm_debug_window(window, "FADE UNMAP %i", current_frame);
+		ccm_timeline_set_direction (self->priv->timeline, 
+									CCM_TIMELINE_BACKWARD);
+		ccm_timeline_rewind(self->priv->timeline);
+		ccm_timeline_start (self->priv->timeline);
+		if (current_frame > 0)
+		{
+			guint num_frame = ccm_timeline_get_n_frames (self->priv->timeline) - 
+							  current_frame;
+			ccm_timeline_advance (self->priv->timeline, num_frame);
+		}
 	}
 	ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 }
@@ -351,7 +527,7 @@ static void
 ccm_fade_window_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	 = ccm_fade_window_load_options;
-	iface->query_geometry 	 = NULL;
+	iface->query_geometry 	 = ccm_fade_window_query_geometry;
 	iface->paint 			 = NULL;
 	iface->map				 = ccm_fade_map;
 	iface->unmap			 = ccm_fade_unmap;
@@ -362,3 +538,12 @@ ccm_fade_window_iface_init(CCMWindowPluginClass* iface)
 	iface->get_origin		 = NULL;
 }
 
+static void
+ccm_fade_screen_iface_init(CCMScreenPluginClass* iface)
+{
+	iface->load_options 	= ccm_fade_screen_load_options;
+	iface->paint			= NULL;
+	iface->add_window		= NULL;
+	iface->remove_window	= NULL;
+	iface->damage			= NULL;
+}

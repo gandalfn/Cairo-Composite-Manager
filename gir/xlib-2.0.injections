@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<injections xmlns="http://www.gtk.org/introspection/core/1.0"
+            xmlns:c="http://www.gtk.org/introspection/c/1.0"
+            xmlns:glib="http://www.gtk.org/introspection/glib/1.0">
+    <inject path="namespace[@name='xlib']">
+        <record name="Visual" c:type="Visual"/>
+        <record name="XRectangle" c:type="XRectangle"/>
+    </inject>
+</injections>

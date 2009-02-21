@@ -1,0 +1,14 @@
+[x]
+Type=int
+Default=20
+_Description=Perf window x pos.
+
+[y]
+Type=int
+Default=20
+_Description=Perf window y pos.
+
+[shortcut]
+Type=string
+Default=<Super>f
+_Description=The magnifier shortcut key.

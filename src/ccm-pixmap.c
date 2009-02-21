@@ -147,6 +147,11 @@ ccm_pixmap_class_init (CCMPixmapClass *klass)
 	object_class->set_property = ccm_pixmap_set_property;
 	object_class->get_property = ccm_pixmap_get_property;
 	
+	/**
+	 * CCMPixmap:y_invert:
+	 *
+	 * This property indicate if the pixmap paint is y inverted.
+	 */
 	g_object_class_install_property(object_class, PROP_Y_INVERT,
 		g_param_spec_boolean("y_invert",
 		 					 "Y Invert",
@@ -154,6 +159,11 @@ ccm_pixmap_class_init (CCMPixmapClass *klass)
 							 FALSE,
 			     			 G_PARAM_READABLE | G_PARAM_WRITABLE));
 	
+	/**
+	 * CCMPixmap:freeze:
+	 *
+	 * This property locks paint and damage if is true.
+	 */
 	g_object_class_install_property(object_class, PROP_FREEZE,
 		g_param_spec_boolean("freeze",
 		 					 "Freeze",
@@ -204,7 +214,7 @@ ccm_pixmap_on_damage(CCMPixmap* self, Damage damage, CCMDisplay* display)
 			{
 				CCMRegion* damaged = ccm_region_new();
 				
-				for (cpt = 0; cpt < nb_rects; cpt++)
+				for (cpt = 0; cpt < nb_rects; ++cpt)
 				{
 					ccm_region_union_with_xrect(damaged, &rects[cpt]);
 					ccm_debug ("PIXMAP DAMAGE %i,%i,%i,%i", 
@@ -233,7 +243,6 @@ ccm_pixmap_register_damage(CCMPixmap* self)
 	self->priv->damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (display),
 								  		CCM_PIXMAP_XPIXMAP (self),
 								  		XDamageReportNonEmpty);
-	ccm_display_sync (display);
 	if (!ccm_display_pop_error (display))
 	{
     	XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
@@ -286,6 +295,16 @@ ccm_pixmap_new (CCMDrawable* drawable, Pixmap xpixmap)
 	return self;
 }
 
+/**
+ * ccm_pixmap_new_from_visual:
+ * @screen: #CCMScreen
+ * @visual: XVisual
+ * @xpixmap: pixmap
+ *
+ * Create a new pixmap for a screen visual
+ *
+ * Returns: #CCMPixmap
+ **/
 CCMPixmap*
 ccm_pixmap_new_from_visual (CCMScreen* screen, Visual* visual, Pixmap xpixmap)
 {
@@ -314,6 +333,15 @@ ccm_pixmap_new_from_visual (CCMScreen* screen, Visual* visual, Pixmap xpixmap)
 	return self;
 }
 
+/**
+ * ccm_pixmap_image_new:
+ * @drawable: #CCMDrawable
+ * @xpixmap: pixmap
+ *
+ * Create a new pixmap which software rendering backend
+ *
+ * Returns: #CCMPixmap
+ **/
 CCMPixmap*
 ccm_pixmap_image_new (CCMDrawable* drawable, Pixmap xpixmap)
 {

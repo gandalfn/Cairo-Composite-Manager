@@ -45,6 +45,8 @@ typedef struct _CCMFade CCMFade;
 struct _CCMFadeClass
 {
 	CCMPluginClass parent_class;
+
+    Atom		   fade_disable_atom;
 };
 
 typedef struct _CCMFadePrivate CCMFadePrivate;

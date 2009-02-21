@@ -1,6 +1,7 @@
 [CCMPlugin]
 Plugin=ccm-decoration
+Version=@VERSION@
 _Name=Decoration
-_Description=Window Decoration Effects
+_Description=Transparent window decoration
 Backends=xrender;glitz
 Depends=shadow

@@ -31,6 +31,15 @@ main(int argc, char**argv)
     cairo_surface_destroy(png);
     cairo_surface_destroy(blur);
     
-    return 0;
+    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 400, 400);
+    cr = cairo_create(surface);
+    cairo_set_source_rgb(cr, 1, 0, 0);
+    cairo_notebook_page_round(cr, 100, 100, 200, 200, 30, 50, 50, 10);
+    cairo_stroke(cr);
+    cairo_destroy(cr);
     
+    cairo_surface_write_to_png(surface, "test-round.png");
+    cairo_surface_destroy(surface);
+    
+    return 0;
 }

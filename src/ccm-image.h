@@ -38,6 +38,9 @@ gboolean  ccm_image_get_image		(CCMImage* image, CCMPixmap* pixmap,
 								 	 int x, int y);
 gboolean  ccm_image_get_sub_image	(CCMImage* image, CCMPixmap* pixmap, 
 								 	 int x, int y, int width, int height);
+gboolean  ccm_image_put_image       (CCMImage* image, CCMPixmap* pixmap, 
+                                     int x_src, int y_src,
+                                     int x, int y, int width, int height);
 guchar*   ccm_image_get_data		(CCMImage* image);
 gint 	  ccm_image_get_width		(CCMImage* image);
 gint	  ccm_image_get_height		(CCMImage* image);

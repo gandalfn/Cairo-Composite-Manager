@@ -1,0 +1,7 @@
+[CCMPlugin]
+Plugin=ccm-snapshot
+Version=@VERSION@
+_Name=Snapshot
+_Description=Take a snapshot of a window or a screen area
+Backends=xrender;glitz
+Depends=

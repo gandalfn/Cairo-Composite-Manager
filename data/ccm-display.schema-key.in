@@ -1,0 +1,15 @@
+[enable]
+Type=bool
+Default=true
+_Description=Enable Cairo Composite Manager.
+
+[use_xshm]
+Type=bool
+Default=true
+_Description=Use xshm
+
+[unmanaged_screen]
+Type=list
+ListType=int
+Default=
+_Description=List of unmanaged screen.

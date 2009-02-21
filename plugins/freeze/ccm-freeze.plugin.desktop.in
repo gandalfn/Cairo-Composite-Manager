@@ -1,6 +1,7 @@
 [CCMPlugin]
 Plugin=ccm-freeze
+Version=@VERSION@
 _Name=Freeze
-_Description=Window Freeze Animation
+_Description=Obscured windows frozen
 Backends=xrender;glitz
 Depends=

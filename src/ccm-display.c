@@ -26,7 +26,7 @@
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xfixes.h>
-#include <X11/extensions/XTest.h>
+#include <X11/extensions/XInput.h>
 #include <X11/extensions/shape.h>
 #include <gtk/gtk.h>
 
@@ -76,25 +76,38 @@ typedef struct
     int			error_base;
 } CCMExtension;
 
+typedef struct
+{
+	gulong press;
+	gulong release;
+	gulong motion;
+} CCMPointerEvents;
+
 struct _CCMDisplayPrivate
 {
-	Display*	xdisplay;
+	Display*			xdisplay;
 	
-	gint 		nb_screens;
-	CCMScreen 	**screens;
+	gint 				nb_screens;
+	CCMScreen**			screens;
 	
-	CCMExtension shape;
-	CCMExtension composite;
-	CCMExtension damage;
-	CCMExtension shm;
-	gboolean	 shm_shared_pixmap;
-	CCMExtension fixes;
-	CCMExtension test;
+	CCMExtension		shape;
+	CCMExtension		composite;
+	CCMExtension		damage;
+	CCMExtension		shm;
+	gboolean			shm_shared_pixmap;
+	CCMExtension		fixes;
+	CCMExtension		input;
 	
-	gboolean 	 use_shm;
+	GSList*  			pointers;
+	int					type_button_press;
+	int					type_button_release;
+	int					type_motion_notify;
+	CCMPointerEvents	last_events;
 	
-	gint		 fd;
-	CCMConfig*   options[CCM_DISPLAY_OPTION_N];
+	gboolean 			use_shm;
+	
+	gint				fd;
+	CCMConfig*			options[CCM_DISPLAY_OPTION_N];
 };
 
 static gint   CCMLastXError = 0;
@@ -175,6 +188,13 @@ ccm_display_init (CCMDisplay *self)
 	self->priv->screens = NULL;
 	self->priv->shm_shared_pixmap = FALSE;
 	self->priv->use_shm = FALSE;
+	self->priv->pointers = NULL;
+	self->priv->type_button_press = 0;
+	self->priv->type_button_release = 0;
+	self->priv->type_motion_notify = 0;
+	self->priv->last_events.press = 0;
+	self->priv->last_events.release = 0;
+	self->priv->last_events.motion = 0;
 }
 
 static void
@@ -184,9 +204,18 @@ ccm_display_finalize (GObject *object)
 	gint cpt;
 	
 	ccm_debug("DISPLAY FINALIZE");
+	if (self->priv->pointers)
+	{
+		GSList* item;
+		
+		for (item = self->priv->pointers; item; item = item->next)
+			XCloseDevice(self->priv->xdisplay, item->data);
+		g_slist_free(self->priv->pointers);
+	}
+	
 	if (self->priv->nb_screens) 
 	{
-		for (cpt = 0; cpt < self->priv->nb_screens; cpt++)
+		for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
 		{
 			if (self->priv->screens[cpt])
 			{
@@ -198,7 +227,7 @@ ccm_display_finalize (GObject *object)
 					  self->priv->screens);
 	}
 	
-	for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; ++cpt)
 		g_object_unref(self->priv->options[cpt]);
 	
 	if (self->priv->fd) fd_remove_watch (self->priv->fd);
@@ -263,7 +292,7 @@ ccm_display_load_config(CCMDisplay* self)
 	
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; ++cpt)
 	{
 		self->priv->options[cpt] = ccm_config_new(-1, NULL, 
 												  CCMDisplayOptions[cpt]);
@@ -271,6 +300,28 @@ ccm_display_load_config(CCMDisplay* self)
 	self->priv->use_shm = 
 		ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM],
 							   NULL) &&	self->priv->shm.available;
+}
+
+static void
+ccm_display_get_pointers(CCMDisplay *self)
+{
+	g_return_if_fail(self != NULL);
+	
+	XDeviceInfo *info;
+    gint ndevices, cpt;
+	
+	info = XListInputDevices(self->priv->xdisplay, &ndevices);
+	for (cpt = 0; cpt < ndevices; ++cpt)
+	{
+		XDeviceInfo* current = &info[cpt];
+        if (current->use == IsXExtensionPointer)
+		{
+			XDevice* device = XOpenDevice(self->priv->xdisplay, current->id);
+			ccm_debug("Found device: %s (%d)", current->name, current->id);
+            self->priv->pointers = g_slist_append(self->priv->pointers, device);
+		}
+	}
+	XFree(info);
 }
 
 static gboolean
@@ -359,22 +410,21 @@ ccm_display_init_xfixes(CCMDisplay *self)
 }
 
 static gboolean
-ccm_display_init_test(CCMDisplay *self)
+ccm_display_init_input(CCMDisplay *self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	int major, minor;
-	
-	if (XTestQueryExtension (self->priv->xdisplay,
-							 &self->priv->test.event_base,
-							 &self->priv->test.error_base,
-							 &major, &minor))
-    {
-		self->priv->test.available = TRUE;
-		ccm_debug("TEST ERROR BASE: %i", self->priv->test.error_base);
-		return TRUE;
-    }
+	XExtensionVersion	*version;
     
+    version = XGetExtensionVersion(self->priv->xdisplay, INAME);
+
+    if (version && (version != (XExtensionVersion*) NoSuchExtension)) 
+	{
+		self->priv->input.available = TRUE;
+		XFree(version);
+		return TRUE;
+    } 
+	
     return FALSE;
 }
 
@@ -423,7 +473,105 @@ ccm_display_process_events(CCMDisplay* self)
 		}
 		else
 		{
-			g_signal_emit (self, signals[EVENT], 0, &xevent);
+			gboolean proceed = FALSE;
+			
+			// Check if event is not already proceed by device events
+			if (xevent.type == self->priv->type_button_press)
+			{
+				XDeviceButtonEvent* button_event = 
+					(XDeviceButtonEvent*)g_memdup(&xevent, sizeof(XEvent));
+				
+				proceed = self->priv->last_events.press == xevent.xany.serial;
+				self->priv->last_events.press = xevent.xany.serial;
+				
+				xevent.xany.type = ButtonPress;
+				xevent.xany.serial = button_event->serial;
+				xevent.xany.send_event = button_event->send_event;
+				xevent.xany.display = button_event->display;
+				xevent.xany.window = button_event->window;
+				xevent.xbutton.root = button_event->root;
+				xevent.xbutton.subwindow = button_event->subwindow;
+				xevent.xbutton.time = button_event->time;
+				xevent.xbutton.x = button_event->x;
+				xevent.xbutton.y = button_event->y;
+				xevent.xbutton.x_root = button_event->x_root;
+				xevent.xbutton.y_root = button_event->y_root;
+				xevent.xbutton.state = button_event->state;
+				xevent.xbutton.button = button_event->button;
+				xevent.xbutton.same_screen = button_event->same_screen;
+				
+				g_free(button_event);
+			}
+			else if (xevent.type == self->priv->type_button_release)
+			{
+				XDeviceButtonEvent* button_event = 
+					(XDeviceButtonEvent*)g_memdup(&xevent, sizeof(XEvent));
+				
+				proceed = self->priv->last_events.release == xevent.xany.serial;
+				self->priv->last_events.release = xevent.xany.serial;
+				
+				xevent.xany.type = ButtonRelease;
+				xevent.xany.serial = button_event->serial;
+				xevent.xany.send_event = button_event->send_event;
+				xevent.xany.display = button_event->display;
+				xevent.xany.window = button_event->window;
+				xevent.xbutton.root = button_event->root;
+				xevent.xbutton.subwindow = button_event->subwindow;
+				xevent.xbutton.time = button_event->time;
+				xevent.xbutton.x = button_event->x;
+				xevent.xbutton.y = button_event->y;
+				xevent.xbutton.x_root = button_event->x_root;
+				xevent.xbutton.y_root = button_event->y_root;
+				xevent.xbutton.state = button_event->state;
+				xevent.xbutton.button = button_event->button;
+				xevent.xbutton.same_screen = button_event->same_screen;
+				
+				g_free(button_event);
+			}
+			else if (xevent.type == self->priv->type_motion_notify)
+			{
+				XDeviceMotionEvent* motion_event = 
+					(XDeviceMotionEvent*)g_memdup(&xevent, sizeof(XEvent));
+				
+				proceed = self->priv->last_events.motion == xevent.xany.serial;
+				self->priv->last_events.motion = xevent.xany.serial;
+				
+				xevent.xany.type = MotionNotify;
+				xevent.xany.serial = motion_event->serial;
+				xevent.xany.send_event = motion_event->send_event;
+				xevent.xany.display = motion_event->display;
+				xevent.xany.window = motion_event->window;
+				xevent.xmotion.root = motion_event->root;
+				xevent.xmotion.subwindow = motion_event->subwindow;
+				xevent.xmotion.time = motion_event->time;
+				xevent.xmotion.x = motion_event->x;
+				xevent.xmotion.y = motion_event->y;
+				xevent.xmotion.x_root = motion_event->x_root;
+				xevent.xmotion.y_root = motion_event->y_root;
+				xevent.xmotion.state = motion_event->state;
+				xevent.xmotion.is_hint = motion_event->is_hint;
+				xevent.xmotion.same_screen = motion_event->same_screen;
+				
+				g_free(motion_event);
+			}
+			else if (xevent.type == ButtonPress)
+			{
+				proceed = self->priv->last_events.press == xevent.xany.serial;
+				self->priv->last_events.press = xevent.xany.serial;
+			}
+			else if (xevent.type == ButtonRelease)
+			{
+				proceed = self->priv->last_events.release == xevent.xany.serial;
+				self->priv->last_events.release = xevent.xany.serial;
+			}
+			else if (xevent.type == MotionNotify)
+			{
+				proceed = self->priv->last_events.motion == xevent.xany.serial;
+				self->priv->last_events.motion = xevent.xany.serial;
+			}
+			
+			if (!proceed)
+				g_signal_emit (self, signals[EVENT], 0, &xevent);
 		}
 	}
 }
@@ -482,12 +630,14 @@ ccm_display_new(gchar* display)
 		return NULL;
 	}
 	
-	if (!ccm_display_init_test(self))
+	if (!ccm_display_init_input(self))
 	{
 		g_object_unref(self);
 		g_warning("TEST init failed for %s", display);
 		return NULL;
 	}
+	
+	ccm_display_get_pointers(self);
 	
 	ccm_display_load_config(self);
 	
@@ -498,7 +648,7 @@ ccm_display_new(gchar* display)
 	
 	unmanaged = ccm_config_get_integer_list(self->priv->options[CCM_DISPLAY_UNMANAGED_SCREEN], NULL);
 	
-	for (cpt = 0; cpt < self->priv->nb_screens; cpt++)
+	for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
 	{
 		gboolean found = FALSE;
 		
@@ -554,6 +704,66 @@ ccm_display_get_shape_notify_event_type(CCMDisplay* self)
 	return self->priv->shape.event_base + ShapeNotify;
 }
 
+gboolean
+ccm_display_report_device_event(CCMDisplay* self, CCMScreen* screen,
+								gboolean report)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_val_if_fail(screen != NULL, FALSE);
+	
+	CCMWindow* root = ccm_screen_get_root_window(screen);
+	GSList* item;
+	
+	for (item = self->priv->pointers; item; item = item->next)
+	{
+		XDevice* pointer = (XDevice*)item->data;
+		XEventClass event[10];
+		gint cpt, nb = 0;
+		
+		if (report)
+		{
+			XInputClassInfo* class;
+			
+			for (class = pointer->classes, cpt = 0; 
+				 cpt < pointer->num_classes; class++, ++cpt) 
+			{
+				switch (class->input_class) 
+				{
+				    case ButtonClass:
+						DeviceButtonPress(pointer, 
+										  self->priv->type_button_press, 
+										  event[nb++]);
+						DeviceButtonRelease(pointer, 
+											self->priv->type_button_release, 
+											event[nb++]);
+						break;
+					case ValuatorClass:
+						DeviceButton1Motion(pointer, 0, event[nb++]);
+						DeviceButton2Motion(pointer, 0, event[nb++]);
+						DeviceButton3Motion(pointer, 0, event[nb++]);
+						DeviceButton4Motion(pointer, 0, event[nb++]);
+						DeviceButton5Motion(pointer, 0, event[nb++]);
+						DeviceButtonMotion(pointer, 0, event[nb++]);
+						DeviceMotionNotify(pointer, 
+										   self->priv->type_motion_notify, 
+										   event[nb++]);
+						break;
+					default:
+						break;
+				}
+			}
+		}
+		else
+			NoExtensionEvent(pointer, 0, event[nb++]);
+		
+		if (XSelectExtensionEvent(self->priv->xdisplay, 
+								  CCM_WINDOW_XWINDOW(root), event, nb)) 
+			return FALSE;
+	}
+	
+	return TRUE;
+}
+
 void
 ccm_display_sync(CCMDisplay* self)
 {
@@ -588,6 +798,8 @@ ccm_display_trap_error(CCMDisplay* self)
 gint
 ccm_display_pop_error(CCMDisplay* self)
 {
+	ccm_display_sync(self);
+	
 	return CCMLastXError;
 }
 

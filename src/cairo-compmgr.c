@@ -24,12 +24,17 @@
 
 #include <config.h>
 #include <signal.h>
-#include <gnome.h>
+#include <stdlib.h>
 
 #include "ccm.h"
 #include "ccm-debug.h"
+#include "ccm-config.h"
 #include "ccm-tray-icon.h"
 #include "ccm-extension-loader.h"
+
+#ifdef ENABLE_GOBJECT_INTROSPECTION
+#include <girepository.h>
+#endif
 
 /*
  * Standard gettext macros.
@@ -66,12 +71,6 @@ crash(int signum)
 	}
 }
 
-static void 
-session_die (GnomeClient *client, gpointer client_data)
-{
-	gtk_main_quit ();
-}
-
 static void
 log_func(const gchar *log_domain, GLogLevelFlags log_level,
 		 const gchar *message, gpointer user_data)
@@ -85,27 +84,59 @@ int
 main(gint argc, gchar **argv)
 {
 	CCMTrayIcon* trayicon;
-	GnomeClient* client;
-	
+    GError* error = NULL;
+    gchar* user_plugin_path = NULL;
+    
+#ifdef ENABLE_GOBJECT_INTROSPECTION
+    static gchar* gir_output = NULL;
+#endif
+    
+    GOptionEntry options[] = 
+    {
+#ifdef ENABLE_GOBJECT_INTROSPECTION
+		{ "introspect-dump", 'i', 0, G_OPTION_ARG_STRING, &gir_output,
+ 		  N_("Dump gobject introspection file"),
+ 		  N_("types.txt,out.xml") },
+#endif
+		{ NULL, '\0', 0, 0, NULL, NULL, NULL }
+ 	};
+
 #ifdef ENABLE_NLS
 	bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);
 #endif
-
+    
 	signal(SIGSEGV, crash);
-	gnome_program_init (PACKAGE_NAME, VERSION,
-						LIBGNOMEUI_MODULE, argc, argv,
-                        GNOME_PARAM_NONE);
-	
+    
+    if (!gtk_init_with_args (&argc, &argv, NULL, options, NULL, &error)) 
+    {
+		g_print ("%s\n", error->message);
+		return 1;
+	}
+
+#ifdef ENABLE_GOBJECT_INTROSPECTION
+    if (gir_output)
+    {
+        if (!g_irepository_dump (gir_output, &error))
+        {
+            g_print ("%s\n", error->message);
+            return 1;
+        }
+        return 0;
+    }
+#endif
+    
 	g_log_set_default_handler(log_func, NULL);
-	client = gnome_master_client();
-	gnome_client_set_restart_style(client, GNOME_RESTART_IF_RUNNING);
-	g_signal_connect (client, "save_yourself", G_CALLBACK (gtk_true), NULL);
-	g_signal_connect (client, "die", G_CALLBACK (session_die), NULL);
-	
-	ccm_extension_loader_add_plugin_path(PACKAGE_PLUGIN_DIR);
-	
+
+    ccm_config_set_backend ("gconf");
+    ccm_extension_loader_add_plugin_path(PACKAGE_PLUGIN_DIR);
+    
+    user_plugin_path = g_strdup_printf("%s/%s/plugins", g_get_user_data_dir(),
+                                       PACKAGE);
+    ccm_extension_loader_add_plugin_path (user_plugin_path);
+    g_free(user_plugin_path);
+    
 	trayicon = ccm_tray_icon_new ();
 	gtk_main();
 	g_object_unref(trayicon);

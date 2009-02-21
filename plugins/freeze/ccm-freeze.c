@@ -93,7 +93,7 @@ ccm_freeze_init (CCMFreeze *self)
 	self->priv->last_ping = 0;
 	self->priv->pid = 0;
 	self->priv->timeline = NULL;
-	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; cpt++) 
+	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
 
@@ -112,7 +112,7 @@ ccm_freeze_finalize (GObject *object)
 												 ccm_freeze_on_event, 
 												 self);	
 	}
-	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; ++cpt)
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	self->priv->window = NULL;
 	if (self->priv->color) g_free(self->priv->color);
@@ -303,7 +303,7 @@ ccm_freeze_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; ++cpt)
 	{
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "freeze", 
@@ -360,17 +360,18 @@ ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	{
 		const CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(window));
 		const cairo_rectangle_t* area = ccm_window_get_area(window);
+		cairo_rectangle_t clipbox;
 		CCMRegion* tmp = ccm_region_copy((CCMRegion*)geometry);
-		int x, y, cpt, nb_rects;
+		int cpt, nb_rects;
 		cairo_rectangle_t* rects;
 		
-		ccm_window_plugin_get_origin(plugin, window, &x, &y);
-		ccm_region_offset(tmp, x - area->x, y - area->y);
+		ccm_region_get_clipbox (tmp, &clipbox);
+		ccm_region_offset(tmp, area->x - clipbox.x, area->y - clipbox.y);
 		ccm_region_resize(tmp, area->width, area->height);
 		cairo_save(context);
 		
 		ccm_region_get_rectangles(tmp, &rects, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
+		for (cpt = 0; cpt < nb_rects; ++cpt)
 			cairo_rectangle(context, rects[cpt].x, rects[cpt].y, 
 							rects[cpt].width, rects[cpt].height);
 		cairo_clip(context);

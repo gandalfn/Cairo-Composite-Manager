@@ -1,3 +1,9 @@
+2009-02-21  Nicolas Bruguier  <gandalfn@rohan>
+
+	reviewed by: <delete if not using a buddy>
+
+	* POTFILES.skip:
+
 2008-11-09  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* Makefile.in.in:

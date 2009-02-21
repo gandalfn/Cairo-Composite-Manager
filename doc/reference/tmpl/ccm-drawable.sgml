@@ -1,0 +1,323 @@
+<!-- ##### SECTION Title ##### -->
+CCMDrawable
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT CCMDrawable ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMDrawable::damaged ##### -->
+<para>
+
+</para>
+
+@ccmdrawable: the object which received the signal.
+@arg1: 
+
+<!-- ##### ARG CCMDrawable:damaged ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDrawable:depth ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDrawable:drawable ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDrawable:geometry ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDrawable:screen ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDrawable:transform ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDrawable:visual ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION ccm_drawable_get_screen ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_display ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_xid ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_visual ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_format ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_depth ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_query_geometry ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_geometry ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_device_geometry ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_geometry_clipbox ##### -->
+<para>
+
+</para>
+
+@self: 
+@area: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_device_geometry_clipbox ##### -->
+<para>
+
+</para>
+
+@self: 
+@area: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_is_damaged ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_damage_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@area: 
+
+
+<!-- ##### FUNCTION ccm_drawable_damage_region_silently ##### -->
+<para>
+
+</para>
+
+@self: 
+@area: 
+
+
+<!-- ##### FUNCTION ccm_drawable_damage ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_drawable_undamage_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@region: 
+
+
+<!-- ##### FUNCTION ccm_drawable_repair ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_drawable_move ##### -->
+<para>
+
+</para>
+
+@self: 
+@x: 
+@y: 
+
+
+<!-- ##### FUNCTION ccm_drawable_resize ##### -->
+<para>
+
+</para>
+
+@self: 
+@width: 
+@height: 
+
+
+<!-- ##### FUNCTION ccm_drawable_flush ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_drawable_flush_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@region: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_surface ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_create_context ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_geometry_path ##### -->
+<para>
+
+</para>
+
+@self: 
+@context: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_damage_path ##### -->
+<para>
+
+</para>
+
+@self: 
+@context: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_drawable_push_matrix ##### -->
+<para>
+
+</para>
+
+@self: 
+@key: 
+@matrix: 
+
+
+<!-- ##### FUNCTION ccm_drawable_pop_matrix ##### -->
+<para>
+
+</para>
+
+@self: 
+@key: 
+
+
+<!-- ##### FUNCTION ccm_drawable_get_transform ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+

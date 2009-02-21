@@ -1,0 +1,252 @@
+<!-- ##### SECTION Title ##### -->
+CCMRegion
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT CCMRegion ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION ccm_region_new ##### -->
+<para>
+
+</para>
+
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_copy ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_rectangle ##### -->
+<para>
+
+</para>
+
+@rectangle: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_xrectangle ##### -->
+<para>
+
+</para>
+
+@rectangle: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_create ##### -->
+<para>
+
+</para>
+
+@x: 
+@y: 
+@width: 
+@height: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_destroy ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_region_get_clipbox ##### -->
+<para>
+
+</para>
+
+@self: 
+@clipbox: 
+
+
+<!-- ##### FUNCTION ccm_region_get_rectangles ##### -->
+<para>
+
+</para>
+
+@self: 
+@rectangles: 
+@n_rectangles: 
+
+
+<!-- ##### FUNCTION ccm_region_get_boxes ##### -->
+<para>
+
+</para>
+
+@self: 
+@n_box: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_get_xrectangles ##### -->
+<para>
+
+</para>
+
+@self: 
+@rectangles: 
+@n_rectangles: 
+
+
+<!-- ##### FUNCTION ccm_region_empty ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_offset ##### -->
+<para>
+
+</para>
+
+@self: 
+@dx: 
+@dy: 
+
+
+<!-- ##### FUNCTION ccm_region_resize ##### -->
+<para>
+
+</para>
+
+@self: 
+@width: 
+@height: 
+
+
+<!-- ##### FUNCTION ccm_region_scale ##### -->
+<para>
+
+</para>
+
+@self: 
+@scale_width: 
+@scale_height: 
+
+
+<!-- ##### FUNCTION ccm_region_union_with_rect ##### -->
+<para>
+
+</para>
+
+@self: 
+@rect: 
+
+
+<!-- ##### FUNCTION ccm_region_union_with_xrect ##### -->
+<para>
+
+</para>
+
+@self: 
+@rect: 
+
+
+<!-- ##### FUNCTION ccm_region_intersect ##### -->
+<para>
+
+</para>
+
+@self: 
+@other: 
+
+
+<!-- ##### FUNCTION ccm_region_union ##### -->
+<para>
+
+</para>
+
+@self: 
+@other: 
+
+
+<!-- ##### FUNCTION ccm_region_subtract ##### -->
+<para>
+
+</para>
+
+@self: 
+@other: 
+
+
+<!-- ##### FUNCTION ccm_region_transform ##### -->
+<para>
+
+</para>
+
+@self: 
+@matrix: 
+
+
+<!-- ##### FUNCTION ccm_region_transform_invert ##### -->
+<para>
+
+</para>
+
+@self: 
+@matrix: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_device_transform ##### -->
+<para>
+
+</para>
+
+@self: 
+@matrix: 
+
+
+<!-- ##### FUNCTION ccm_region_device_transform_invert ##### -->
+<para>
+
+</para>
+
+@self: 
+@matrix: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_region_point_in ##### -->
+<para>
+
+</para>
+
+@self: 
+@x: 
+@y: 
+@Returns: 
+
+

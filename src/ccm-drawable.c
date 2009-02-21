@@ -39,7 +39,7 @@ ccm_drawable_matrix_free(cairo_matrix_t *matrix)
 	g_free(matrix);
 }
 
-static GType
+GType
 ccm_drawable_matrix_get_type(void)
 {
 	static GType type = 0;
@@ -122,7 +122,8 @@ ccm_drawable_set_property(GObject *object,
 			priv->device = NULL;
 			priv->geometry = NULL;
 			
-			if (g_value_get_pointer (value))
+			if (g_value_get_pointer (value) && 
+				!ccm_region_empty(g_value_get_pointer(value)))
 			{
 				cairo_matrix_t transform;
 				
@@ -258,31 +259,57 @@ ccm_drawable_class_init (CCMDrawableClass *klass)
 	klass->move = __ccm_drawable_move;
 	klass->resize = __ccm_drawable_resize;
 	
+	/**
+	 * CCMDrawable:screen:
+	 *
+	 * Screen of the drawable.
+	 */
 	g_object_class_install_property(object_class, PROP_SCREEN,
 		g_param_spec_pointer ("screen",
 		 					 "Screen",
 			     			 "Screen of the drawable",
 			     			 G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
     
-    g_object_class_install_property(object_class, PROP_XDRAWABLE,
+    /**
+	 * CCMDrawable:drawable:
+	 *
+	 * The X resource (window or pixmap) belonging to a Drawable.
+	 */
+	g_object_class_install_property(object_class, PROP_XDRAWABLE,
 		g_param_spec_ulong ("drawable",
 		 					"Drawable",
 			     			"Xid of the drawable",
 			     			0, G_MAXLONG, None,
 			     			G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 	
+	/**
+	 * CCMDrawable:geometry:
+	 *
+	 * Geometry of the drawable, if the drawable have transformation returns
+	 * the transformed geometry.
+	 */
 	g_object_class_install_property(object_class, PROP_GEOMETRY,
 		g_param_spec_pointer ("geometry",
 		 					  "Geometry",
 			     			  "Geometry of the drawable",
 			     			  G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
+	/**
+	 * CCMDrawable:visual:
+	 *
+	 * Visual of the drawable.
+	 */
 	g_object_class_install_property(object_class, PROP_VISUAL,
 		g_param_spec_pointer ("visual",
 		 					  "Visual",
 			     			  "Visual of the drawable",
 			     			  G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
+	/**
+	 * CCMDrawable:depth:
+	 *
+	 * Depth of the drawable.
+	 */
 	g_object_class_install_property(object_class, PROP_DEPTH,
 		g_param_spec_uint ("depth",
 		 				   "Depth",
@@ -290,12 +317,22 @@ ccm_drawable_class_init (CCMDrawableClass *klass)
 						    0, G_MAXUINT, None,
 			     			G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
 
+	/**
+	 * CCMDrawable:geometry:
+	 *
+	 * Damaged region of the drawable
+	 */
 	g_object_class_install_property(object_class, PROP_DAMAGED,
 		g_param_spec_pointer ("damaged",
 		 					  "Damaged",
 			     			  "Damaged region of the drawable",
 			     			  G_PARAM_READABLE));
 
+	/**
+	 * CCMDrawable:transform:
+	 *
+	 * The cumulated #cairo_matrix_t transforms of the drawable
+	 */
 	g_object_class_install_property(object_class, PROP_TRANSFORM,
 		g_param_spec_boxed ("transform",
 		 					"Transform",
@@ -303,6 +340,13 @@ ccm_drawable_class_init (CCMDrawableClass *klass)
 							CCM_TYPE_DRAWABLE_MATRIX,
 							G_PARAM_READABLE));
 
+	/**
+	 * CCMDrawable::damaged:
+	 * @self: #CCMDrawable
+	 * @damaged: damaged #CCMRegion
+	 *
+	 * Emitted when a #CCMRegion of the drawable is damaged.
+	 */
 	signals[DAMAGED] = g_signal_new ("damaged",
 									 G_OBJECT_CLASS_TYPE (object_class),
 									 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -521,8 +565,7 @@ ccm_drawable_get_xid(CCMDrawable* self)
  * ccm_drawable_query_geometry:
  * @self: #CCMDrawable
  *
- * Gets the region covered by the Drawable. The coordinates are relative 
- * to the parent Drawable. 
+ * Request the region covered by the Drawable. 
  **/
 void
 ccm_drawable_query_geometry(CCMDrawable* self)
@@ -540,7 +583,8 @@ ccm_drawable_query_geometry(CCMDrawable* self)
  * @self: #CCMDrawable
  *
  * Gets the region covered by the Drawable. The coordinates are 
- * relative to the parent Drawable. 
+ * relative to the parent Drawable. If the drawable have some transformations
+ * this function return the transformed region
  *
  * Returns: const #CCMRegion
  **/
@@ -557,7 +601,8 @@ ccm_drawable_get_geometry(CCMDrawable* self)
  * @self: #CCMDrawable
  *
  * Gets the region covered by the Drawable. The coordinates are 
- * relative to the parent Drawable. 
+ * relative to the parent Drawable. This function always return the non
+ * transformed geometry.
  *
  * Returns: const #CCMRegion
  **/
@@ -566,7 +611,7 @@ ccm_drawable_get_device_geometry(CCMDrawable* self)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
-	return self->priv->geometry;
+	return self->priv->device;
 }
 
 /**
@@ -575,7 +620,8 @@ ccm_drawable_get_device_geometry(CCMDrawable* self)
  * @area: #cairo_rectangle_t
  *
  * Gets the rectangle region covered by the Drawable. The coordinates are 
- * relative to the parent Drawable. 
+ * relative to the parent Drawable. If the drawable have some transformations
+ * this function return the transformed clipbox.
  *
  * Returns: FALSE if fail
  **/
@@ -600,7 +646,8 @@ ccm_drawable_get_geometry_clipbox(CCMDrawable* self, cairo_rectangle_t* area)
  * @area: #cairo_rectangle_t
  *
  * Gets the rectangle region covered by the Drawable. The coordinates are 
- * relative to the parent Drawable. 
+ * relative to the parent Drawable. This function always return the non
+ * transformed clipbox.
  *
  * Returns: FALSE if fail
  **/
@@ -704,7 +751,7 @@ ccm_drawable_flush_region(CCMDrawable* self, CCMRegion* region)
  * ccm_drawable_is_damaged:
  * @self: #CCMDrawable
  *
- * Return is drawable is damaged
+ * Return if drawable is damaged
  *
  * Returns: #gboolean
  **/
@@ -891,7 +938,7 @@ ccm_drawable_create_context(CCMDrawable* self)
  * @self: #CCMDrawable
  * @context: #cairo_t 
  *
- * Get damaged path
+ * Get damaged path.
  *
  * Returns: #cairo_path_t
  **/
@@ -910,7 +957,7 @@ ccm_drawable_get_damage_path(CCMDrawable* self, cairo_t* context)
 		gint nb_rects, cpt;
 	
 		ccm_region_get_rectangles(self->priv->damaged, &rectangles, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
+		for (cpt = 0; cpt < nb_rects; ++cpt)
 		{
 			cairo_rectangle(context, rectangles[cpt].x, rectangles[cpt].y,
 							rectangles[cpt].width, rectangles[cpt].height);
@@ -927,7 +974,7 @@ ccm_drawable_get_damage_path(CCMDrawable* self, cairo_t* context)
  * @self: #CCMDrawable
  * @context: #cairo_t 
  *
- * Get geometry path
+ * Get geometry path.
  *
  * Returns: #cairo_path_t
  **/
@@ -945,7 +992,7 @@ ccm_drawable_get_geometry_path(CCMDrawable* self, cairo_t* context)
 		gint nb_rects, cpt;
 	
 		ccm_region_get_rectangles(self->priv->geometry, &rectangles, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
+		for (cpt = 0; cpt < nb_rects; ++cpt)
 		{
 			cairo_rectangle(context, rectangles[cpt].x, rectangles[cpt].y,
 							rectangles[cpt].width, rectangles[cpt].height);
@@ -984,8 +1031,15 @@ ccm_drawable_push_matrix(CCMDrawable* self, gchar* key, cairo_matrix_t* matrix)
 		if (self->priv->damaged)
 		{
 			ccm_region_offset(self->priv->damaged, -clipbox.x, -clipbox.y);
-			ccm_region_transform_invert(self->priv->damaged, &transform);
-			ccm_region_offset(self->priv->damaged, clipbox.x, clipbox.y);
+			if (ccm_region_transform_invert(self->priv->damaged, &transform))
+			{
+				ccm_region_offset(self->priv->damaged, clipbox.x, clipbox.y);
+			}
+			else
+			{
+				ccm_region_destroy(self->priv->damaged);
+				self->priv->damaged = ccm_region_copy(self->priv->device);
+			}
 		}
 	}
 	g_datalist_set_data_full(&self->priv->transform, key, 
@@ -1032,8 +1086,15 @@ ccm_drawable_pop_matrix(CCMDrawable* self, gchar* key)
 		if (self->priv->damaged)
 		{
 			ccm_region_offset(self->priv->damaged, -clipbox.x, -clipbox.y);
-			ccm_region_transform_invert(self->priv->damaged, &transform);
-			ccm_region_offset(self->priv->damaged, clipbox.x, clipbox.y);
+			if (ccm_region_transform_invert(self->priv->damaged, &transform))
+			{
+				ccm_region_offset(self->priv->damaged, clipbox.x, clipbox.y);
+			}
+			else
+			{
+				ccm_region_destroy(self->priv->damaged);
+				self->priv->damaged = ccm_region_copy(self->priv->device);
+			}
 		}
 	}
 	

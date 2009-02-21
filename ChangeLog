@@ -1,3 +1,305 @@
+2009-02-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+    It's a long time I don't push modifications due a lack of time to
+    synchronize my job branches with official repos and I have many changes :(
+    Here is a list of changes since the last commit:
+    - merge input redirection experimental branch
+    - merge bindings experimental branch
+    - remove all libgnome deps
+    - beginning to new configuration api to have gconf optionnal
+    - new snapshot plugin
+    - new automate plugin (WIP)
+    - add preferences ui and plugin API
+    - fix many many issues
+    - add vala plugin bindings
+    - gobject introspection support
+    - ...
+    
+	* data/cairo-compmgr.pc.in:
+	* data/ccm-display.schema-key.in:
+	* data/ccm-preferences.ui:
+	* data/ccm-screen.schema-key.in:
+	* doc/Makefile.am:
+	* doc/reference/Makefile.am:
+	* doc/reference/cairo-compmgr-docs.xml:
+	* doc/reference/cairo-compmgr-sections.txt:
+	* doc/reference/cairo-compmgr-undocumented.txt:
+	* doc/reference/cairo-compmgr.types:
+	* doc/reference/check-doc-coverage.sh:
+	* doc/reference/check-doc-syntax.sh:
+	* doc/reference/tmpl/cairo-compmgr-unused.sgml:
+	* doc/reference/tmpl/ccm-debug.sgml:
+	* doc/reference/tmpl/ccm-display.sgml:
+	* doc/reference/tmpl/ccm-drawable.sgml:
+	* doc/reference/tmpl/ccm-image.sgml:
+	* doc/reference/tmpl/ccm-keybind.sgml:
+	* doc/reference/tmpl/ccm-pixmap.sgml:
+	* doc/reference/tmpl/ccm-preferences-page-plugin.sgml:
+	* doc/reference/tmpl/ccm-preferences-page.sgml:
+	* doc/reference/tmpl/ccm-region.sgml:
+	* doc/reference/tmpl/ccm-screen-plugin.sgml:
+	* doc/reference/tmpl/ccm-screen.sgml:
+	* doc/reference/tmpl/ccm-window-plugin.sgml:
+	* doc/reference/tmpl/ccm-window.sgml:
+	* doc/reference/version.xml.in:
+	* dolt.m4:
+	* gir/Makefile.am:
+	* gir/cairo-1.0.injections:
+	* gir/xlib-2.0.injections:
+	* gtk-doc.make:
+	* lib/ccm-config-gconf.c (ccm_config_gconf_init),
+	(ccm_config_gconf_finalize), (ccm_config_gconf_class_init),
+	(ccm_config_gconf_on_change), (ccm_config_gconf_copy_entry),
+	(ccm_config_gconf_initialize), (ccm_config_gconf_get_boolean),
+	(ccm_config_gconf_set_boolean), (ccm_config_gconf_get_integer),
+	(ccm_config_gconf_set_integer), (ccm_config_gconf_get_float),
+	(ccm_config_gconf_set_float), (ccm_config_gconf_get_string),
+	(ccm_config_gconf_set_string), (ccm_config_gconf_get_string_list),
+	(ccm_config_gconf_set_string_list),
+	(ccm_config_gconf_get_integer_list),
+	(ccm_config_gconf_set_integer_list):
+	* lib/ccm-config-gconf.h:
+	* lib/ccm-config-key.c (ccm_config_key_init),
+	(ccm_config_key_finalize), (ccm_config_key_class_init),
+	(ccm_config_key_initialize):
+	* lib/ccm-config-key.h:
+	* lib/ccm-config-schema.c (ccm_config_schema_init),
+	(ccm_config_schema_finalize), (ccm_config_schema_class_init),
+	(ccm_config_schema_get_path), (ccm_config_schema_get_filename),
+	(ccm_config_schema_new), (ccm_config_schema_new_from_file),
+	(ccm_config_schema_get_value_type),
+	(ccm_config_schema_get_description),
+	(ccm_config_schema_get_default), (ccm_config_schema_write_gconf):
+	* lib/ccm-config-schema.h:
+	* plugin.make:
+	* plugins/automate/Makefile.am:
+	* plugins/automate/ccm-action-pointer-motion.vala:
+	* plugins/automate/ccm-action-pointer-press.vala:
+	* plugins/automate/ccm-action-pointer-release.vala:
+	* plugins/automate/ccm-action-pointer.vala:
+	* plugins/automate/ccm-action.vala:
+	* plugins/automate/ccm-automate-dialog.vala:
+	* plugins/automate/ccm-automate.plugin.desktop.in:
+	* plugins/automate/ccm-automate.schema-key.in:
+	* plugins/automate/ccm-automate.ui:
+	* plugins/automate/ccm-automate.vala:
+	* plugins/automate/ccm-story-board.vala:
+	* plugins/decoration/ccm-decoration.schema-key.in:
+	* plugins/fade/ccm-fade.schema-key.in:
+	* plugins/freeze/ccm-freeze.schema-key.in:
+	* plugins/magnifier/ccm-magnifier.schema-key.in:
+	* plugins/menu-animation/ccm-menu-animation.schema-key.in:
+	* plugins/mosaic/ccm-mosaic.schema-key.in:
+	* plugins/opacity/ccm-opacity.schema-key.in:
+	* plugins/perf/ccm-perf.schema-key.in:
+	* plugins/shadow/ccm-shadow.schema-key.in:
+	* plugins/snapshot/Makefile.am:
+	* plugins/snapshot/ccm-snapshot-dialog.c
+	(ccm_snapshot_dialog_init), (ccm_snapshot_dialog_finalize),
+	(ccm_snapshot_dialog_class_init), (ccm_snapshot_dialog_on_close),
+	(ccm_snapshot_dialog_on_response),
+	(ccm_snapshot_dialog_on_realize),
+	(ccm_snapshot_dialog_paint_snapshot),
+	(ccm_snapshot_dialog_on_expose_event), (ccm_snapshot_dialog_new):
+	* plugins/snapshot/ccm-snapshot-dialog.h:
+	* plugins/snapshot/ccm-snapshot.c (ccm_snapshot_init),
+	(ccm_snapshot_finalize), (ccm_snapshot_class_init),
+	(ccm_snapshot_on_area_key_press),
+	(ccm_snapshot_on_area_key_motion),
+	(ccm_snapshot_on_area_key_release),
+	(ccm_snapshot_on_window_key_press),
+	(ccm_snapshot_on_window_key_release),
+	(ccm_snapshot_get_area_keybind), (ccm_snapshot_get_window_keybind),
+	(ccm_snapshot_get_color), (ccm_snapshot_on_option_changed),
+	(ccm_snapshot_screen_load_options), (ccm_snapshot_screen_paint):
+	* plugins/snapshot/ccm-snapshot.h:
+	* plugins/snapshot/ccm-snapshot.plugin.desktop.in:
+	* plugins/snapshot/ccm-snapshot.schema-key.in:
+	* plugins/snapshot/ccm-snapshot.schemas.in:
+	* plugins/snapshot/ccm-snapshot.ui:
+	* plugins/vala-test/Makefile.am:
+	* plugins/vala-test/ccm-vala-window-plugin.plugin.desktop.in:
+	* plugins/vala-test/ccm-vala-window-plugin.schema-key.in:
+	* plugins/vala-test/ccm-vala-window-plugin.vala:
+	* shave-libtool.in:
+	* shave.in:
+	* shave.m4:
+	* src/ccm-cell-extension.c (ccm_cell_extension_init),
+	(ccm_cell_extension_finalize), (ccm_cell_extension_class_init),
+	(ccm_cell_extension_iface_init),
+	(ccm_cell_extension_on_enable_clicked),
+	(ccm_cell_extension_start_editing), (ccm_cell_extension_new),
+	(ccm_cell_extension_set_active), (ccm_cell_extension_get_path),
+	(ccm_cell_extension_get_active):
+	* src/ccm-cell-extension.h:
+	* src/ccm-cell-renderer-extension.c
+	(ccm_cell_renderer_extension_set_gobject_property),
+	(ccm_cell_renderer_extension_get_gobject_property),
+	(ccm_cell_renderer_extension_init),
+	(ccm_cell_renderer_extension_finalize),
+	(ccm_cell_renderer_extension_class_init),
+	(ccm_cell_renderer_extension_on_editing_done),
+	(ccm_cell_renderer_extension_start_editing),
+	(ccm_cell_renderer_extension_new):
+	* src/ccm-cell-renderer-extension.h:
+	* src/ccm-marshallers.list:
+	* src/ccm-preferences-page-plugin.c
+	(ccm_preferences_page_plugin_base_init),
+	(ccm_preferences_page_plugin_get_type),
+	(_ccm_preferences_page_plugin_get_root),
+	(ccm_preferences_page_plugin_init_general_section):
+	* src/ccm-preferences-page-plugin.h:
+	* src/ccm-preferences-page.c (ccm_preferences_page_init),
+	(ccm_preferences_page_finalize), (ccm_preferences_page_class_init),
+	(ccm_preferences_page_iface_init),
+	(ccm_preferences_page_load_config),
+	(ccm_preferences_page_on_section_changed),
+	(ccm_preferences_page_init_sections_list),
+	(ccm_preferences_page_on_plugin_edited),
+	(ccm_preferences_page_on_plugin_changed),
+	(ccm_preferences_page_on_plugins_modified),
+	(ccm_preferences_page_init_plugins_list),
+	(ccm_preferences_page_init_backends_list),
+	(ccm_preferences_page_on_composite_desktop_toggled),
+	(ccm_preferences_page_on_backend_changed),
+	(ccm_preferences_page_on_refresh_rate_changed),
+	(impl_ccm_preferences_page_init_general_section),
+	(ccm_preferences_page_init_general_section),
+	(ccm_preferences_page_init_desktop_section),
+	(ccm_preferences_page_init_windows_section),
+	(ccm_preferences_page_init_effects_section),
+	(ccm_preferences_page_init_accessibility_section),
+	(ccm_preferences_page_init_utilities_section):
+	* src/ccm-preferences-page.h:
+	* src/ccm-preferences.c (ccm_preferences_init),
+	(ccm_preferences_finalize), (ccm_preferences_class_init),
+	(ccm_preferences_on_screen_change), (ccm_preferences_create_page),
+	(ccm_preferences_on_expose_event):
+	* src/ccm-preferences.h:
+	* tools/Makefile.am:
+	* tools/ccm-schema-key-to-gconf.c (main):
+	* vapi/Makefile.am:
+	* vapi/X.vapi:
+	* vapi/cairo-compmgr.deps:
+	* vapi/cairo-compmgr.vapi:
+	* vapi/math.vapi:
+
+2009-01-10  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac
+	* plugins/Makefile.am:
+	* plugins/snapshot/Makefile.am:
+	* plugins/snapshot/ccm-snapshot-dialog.c:
+	* plugins/snapshot/ccm-snapshot-dialog.h:
+	* plugins/snapshot/ccm-snapshot.c:
+	* plugins/snapshot/ccm-snapshot.h:
+	* plugins/snapshot/ccm-snapshot.plugin.desktop.in:
+	* plugins/snapshot/ccm-snapshot.schemas.in:
+	* plugins/snapshot/ccm-snapshot.ui:
+	  - New snapshot plugin.
+	 
+	* src/ccm-preferences-page-plugin.c:
+	* src/ccm-preferences-page-plugin.h:
+	* src/ccm-preferences-page.c:
+	* src/ccm-preferences-page.h:
+	* src/ccm-preferences.c:
+	* src/ccm-preferences.h:
+	* data/Makefile.am
+	* data/ccm-preferences.ui:
+	* src/ccm-tray-menu.c:
+	* src/ccm-extension-loader.c
+	* src/ccm-extension-loader.h
+	  - New configuration tool and beginning to add preferences plugin API.
+	  
+	* plugins/decoration/Makefile.am:
+	* plugins/decoration/ccm-decoration.plugin.desktop.in:
+	* plugins/fade/Makefile.am:
+	* plugins/fade/ccm-fade.plugin.desktop.in:
+	* plugins/freeze/Makefile.am:
+	* plugins/freeze/ccm-freeze.plugin.desktop.in:
+	* plugins/magnifier/Makefile.am:
+	* plugins/magnifier/ccm-magnifier.plugin.desktop.in:
+	* plugins/menu-animation/Makefile.am:
+	* plugins/menu-animation/ccm-menu-animation.plugin.desktop.in:
+	* plugins/mosaic/Makefile.am:
+	* plugins/mosaic/ccm-mosaic.plugin.desktop.in:
+	* plugins/opacity/Makefile.am:
+	* plugins/opacity/ccm-opacity.plugin.desktop.in:
+	* plugins/perf/Makefile.am:
+	* plugins/perf/ccm-perf.plugin.desktop.in:
+	* plugins/shadow/Makefile.am:
+	* plugins/shadow/ccm-shadow.plugin.desktop.in:
+	* plugins/snapshot/Makefile.am:
+	* plugins/snapshot/ccm-snapshot.plugin.desktop.in:
+	* src/ccm-extension.c:
+	* src/ccm-extension.h:
+	* configure.ac
+	  - Add plugin version item.
+
+	* AUTHORS
+	  - Add initial authors of timeline, watch and blur.
+	  
+	* lib/Makefile.am
+	  - Fix test-boxed-blur build
+	  
+	* lib/ccm-cairo-utils.c:
+	* lib/ccm-cairo-utils.h:
+	* lib/test-boxed-blur.c:
+	  - Add cairo_notebook_page_round method, add clip path when draw fake 
+	    shadow.
+	    
+	* lib/ccm-config.c:
+	  - Initialize value on destroy.
+	  
+	* src/ccm-window.c
+	* plugins/decoration/ccm-decoration.c
+	* plugins/decoration/ccm-decoration.schemas.in:
+	  - Don't try to resize opaque region on destroy. Use mask_width and 
+	    mask_height properties instead to check mask size instead try to get 
+	    surface size, more portable with multiple backend.
+	  
+	* src/ccm-window.c:
+	* plugins/freeze/ccm-freeze.c:
+	  - Get window window area with ccm_window_get_attribs on resize and move 
+	    instead recalculate it with region and paint freeze with this area.
+	    Fix freeze paint area is not on window.
+	
+	* src/ccm-window.c:
+	* plugins/menu-animation/ccm-menu-animation.c:
+	  - Add window transform to child transient window and API to get child
+	    transient. In menu-animation damage child transient window on each
+	    frame.
+	  
+	* plugins/magnifier/ccm-magnifier.c
+	* plugins/mosaic/ccm-mosaic.c
+	* plugins/opacity/ccm-opacity.c
+	* plugins/shadow/ccm-shadow.c
+	* src/Makefile.am
+	* src/cairo-compmgr.c
+	* src/ccm-display.c
+	* src/ccm-drawable.c
+	* src/ccm-extension-loader.c
+	* src/ccm-extension-loader.h
+	* src/ccm-extension.c
+	* src/ccm-extension.h
+	* src/ccm-image.c
+	* src/ccm-image.h
+	* src/ccm-keybind.c
+	* src/ccm-marshallers.list
+	* src/ccm-pixmap-image.c
+	* src/ccm-pixmap.c
+	* src/ccm-pixmap.h
+	* src/ccm-preferences.c
+	* src/ccm-preferences.h
+	* src/ccm-region.c
+	* src/ccm-screen.c
+	* src/ccm-tray-menu.c
+	* src/ccm-window-xrender.c
+	* src/ccm-window.c
+	* src/ccm-window.h
+	* src/ccm.h
+
+
 2008-12-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/magnifier/ccm-magnifier.c (ccm_magnifier_get_enable),
@@ -808,7 +1110,7 @@
 	* plugins/shadow/ccm-shadow.c (ccm_shadow_check_needed),
 	(ccm_shadow_need_shadow), (ccm_shadow_set_opaque_region):
 	* src/ccm-config.c (ccm_config_new):
-	* src/ccm-debug.c (ccm_log_region):
+	* src/ccm-debug.c (ccm_debug_region):
 	* src/ccm-debug.h:
 	* src/ccm-display.h:
 	* src/ccm-drawable.c (ccm_drawable_set_property),

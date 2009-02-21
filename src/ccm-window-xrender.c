@@ -181,7 +181,7 @@ ccm_window_xrender_flush_region(CCMDrawable* drawable, CCMRegion* region)
 		gint nb_rects, cpt;
 
 		ccm_region_get_rectangles(region, &rects, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; cpt++)
+		for (cpt = 0; cpt < nb_rects; ++cpt)
 		{
 			XCopyArea(CCM_DISPLAY_XDISPLAY(display),
 					  self->priv->back_buffer, CCM_WINDOW_XWINDOW(self), 
@@ -216,6 +216,6 @@ ccm_window_xrender_create_pixmap(CCMWindow* self, int width, int height, int dep
 
 	if (xpixmap == None)
 		return NULL;
-		
+	
 	return ccm_pixmap_new_from_visual(screen, vinfo.visual, xpixmap);
 }

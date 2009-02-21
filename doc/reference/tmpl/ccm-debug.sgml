@@ -1,0 +1,109 @@
+<!-- ##### SECTION Title ##### -->
+CCMDebug
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### FUNCTION ccm_log ##### -->
+<para>
+
+</para>
+
+@format: 
+@Varargs: 
+
+
+<!-- ##### FUNCTION ccm_log_window ##### -->
+<para>
+
+</para>
+
+@window: 
+@format: 
+@Varargs: 
+
+
+<!-- ##### FUNCTION ccm_log_atom ##### -->
+<para>
+
+</para>
+
+@display: 
+@atom: 
+@format: 
+@Varargs: 
+
+
+<!-- ##### FUNCTION ccm_log_region ##### -->
+<para>
+
+</para>
+
+@drawable: 
+@format: 
+@Varargs: 
+
+
+<!-- ##### FUNCTION ccm_log_print_backtrace ##### -->
+<para>
+
+</para>
+
+
+
+<!-- ##### MACRO ccm_debug ##### -->
+<para>
+
+</para>
+
+@...: 
+
+
+<!-- ##### MACRO ccm_debug_window ##### -->
+<para>
+
+</para>
+
+@window: 
+@format...: 
+
+
+<!-- ##### MACRO ccm_debug_atom ##### -->
+<para>
+
+</para>
+
+@display: 
+@atom: 
+@format...: 
+
+
+<!-- ##### MACRO ccm_debug_region ##### -->
+<para>
+
+</para>
+
+@drawable: 
+@format...: 
+
+
+<!-- ##### MACRO ccm_debug_backtrace ##### -->
+<para>
+
+</para>
+
+
+

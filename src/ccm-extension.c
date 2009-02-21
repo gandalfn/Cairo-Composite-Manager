@@ -31,6 +31,7 @@ struct _CCMExtensionPrivate
 	gchar*				name;
 	gchar*				label;
 	gchar*				description;
+	gchar*				version;
 	gchar* 				filename;
 	gchar**				backends;
 	gchar**				depends;
@@ -54,6 +55,7 @@ ccm_extension_init (CCMExtension *self)
 	self->priv->name = NULL;
 	self->priv->label = NULL;
 	self->priv->description = NULL;
+	self->priv->version = NULL;
 	self->priv->filename = NULL;
 	self->priv->module = NULL;
 	self->priv->backends = NULL;
@@ -70,6 +72,7 @@ ccm_extension_finalize (GObject *object)
 	if (self->priv->name) g_free(self->priv->name);
 	if (self->priv->label) g_free(self->priv->label);
 	if (self->priv->description) g_free(self->priv->description);
+	if (self->priv->version) g_free(self->priv->version);
 	if (self->priv->filename) g_free(self->priv->filename);
 	if (self->priv->module) g_module_close (self->priv->module);
 	if (self->priv->backends) g_strfreev(self->priv->backends);
@@ -152,7 +155,7 @@ ccm_extension_new (gchar* filename)
 		g_object_unref(self);
 		return NULL;
 	}
-	for (cpt = 0; self->priv->name[cpt];  cpt++)
+	for (cpt = 0; self->priv->name[cpt];  ++cpt)
 	{
 		if (self->priv->name[cpt] == '-')
 			self->priv->name[cpt] = '_';
@@ -170,6 +173,12 @@ ccm_extension_new (gchar* filename)
 														   "Description", 
 														   NULL, NULL);
 	
+	/* Get version */
+	self->priv->version = g_key_file_get_locale_string(plugin_file, 
+													   PLUGIN_SECTION,
+													   "Version", 
+													   NULL, NULL);
+
 	/* Get backends */
 	self->priv->backends = g_key_file_get_string_list(plugin_file, 
 													  PLUGIN_SECTION,
@@ -202,6 +211,22 @@ ccm_extension_get_label(CCMExtension* self)
 	return (const gchar*)self->priv->label;
 }
 
+const gchar*
+ccm_extension_get_description(CCMExtension* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	return (const gchar*)self->priv->description;
+}
+
+const gchar*
+ccm_extension_get_version(CCMExtension* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	return (const gchar*)self->priv->version;
+}
+
 GType
 ccm_extension_get_type_object (CCMExtension* self)
 {
@@ -212,7 +237,7 @@ ccm_extension_get_type_object (CCMExtension* self)
 	//GType backend = ccm_window_backend_get_type();
 	
 	/* Check if plugin support current backend */
-	/*for (cpt = 0; self->priv->backends && self->priv->backends[cpt]; cpt++)
+	/*for (cpt = 0; self->priv->backends && self->priv->backends[cpt]; ++cpt)
 	{
 #ifndef DISABLE_XRENDER_BACKEND
 		if (!g_ascii_strcasecmp("xrender", self->priv->backends[cpt]) &&
@@ -249,7 +274,7 @@ _ccm_extension_compare(CCMExtension* self, CCMExtension* other)
 	
 	if (other->priv->depends)
 	{
-		for (cpt = 0; other->priv->depends[cpt]; cpt++)
+		for (cpt = 0; other->priv->depends[cpt]; ++cpt)
 		{
 			if (!g_ascii_strcasecmp (other->priv->depends[cpt], 
 									 self->priv->label))
@@ -259,7 +284,7 @@ _ccm_extension_compare(CCMExtension* self, CCMExtension* other)
 	
 	if (self->priv->depends)
 	{
-		for (cpt = 0; self->priv->depends[cpt]; cpt++)
+		for (cpt = 0; self->priv->depends[cpt]; ++cpt)
 		{
 			if (!g_ascii_strcasecmp (self->priv->depends[cpt], 
 									 other->priv->label))

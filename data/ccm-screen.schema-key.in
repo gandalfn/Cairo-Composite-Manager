@@ -1,0 +1,50 @@
+[backend]
+Type=string
+Default=xrender
+_Description=Cairo Composite Manager backend (xrender (2D), glitz (OpenGL)) need a restart of cairo-compmgr.
+
+[native_pixmap_bind]
+Type=bool
+Default=true
+_Description=Use pixmap bind associated to backend.
+
+[use_buffered_pixmap]
+Type=bool
+Default=true
+_Description=Use buffered pixmap.
+
+[plugins]
+Type=list
+ListType=string
+Default=opacity,fade,shadow,menu-animation,magnifier,decoration,freeze,mosaic,snapshot
+_Description=List of active plugins.
+
+[refresh_rate]
+Type=int
+Default=60
+_Description=Refresh rate in Hz.
+
+[indirect]
+Type=bool
+Default=false
+_Description=Use indirect rendering.
+
+[background]
+Type=string
+Default=
+_Description=Default background pixmap.
+
+[color_background]
+Type=string
+Default=#000000
+_Description=Default background color.
+
+[background_x]
+Type=int
+Default=0
+_Description=Default background pixmap x position (= 0 image is centered).
+
+[background_y]
+Type=int
+Default=0
+_Description=Default background pixmap y position (= 0 image is centered).

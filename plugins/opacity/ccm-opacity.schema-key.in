@@ -1,0 +1,19 @@
+[opacity]
+Type=float
+Default=0.85
+_Description=Opacity of menus.
+
+[increase]
+Type=string
+Default=<Super>Button4
+_Description=The increase opacity shortcut key.
+
+[decrease]
+Type=string
+Default=<Super>Button5
+_Description=The decrease opacity shortcut key.
+
+[step]
+Type=float
+Default=0.1
+_Description=Opacity step on increase/decrease.

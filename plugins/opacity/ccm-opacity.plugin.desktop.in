@@ -1,6 +1,7 @@
 [CCMPlugin]
 Plugin=ccm-opacity
+Version=@VERSION@
 _Name=Opacity
-_Description=Window Opacity
+_Description=Add setting windows opacity
 Backends=xrender;glitz
 Depends=fade

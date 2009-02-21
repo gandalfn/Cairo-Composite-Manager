@@ -1,0 +1,3 @@
+ccm_display_get_device_button_press_type
+ccm_display_get_device_button_release_type
+ccm_display_get_device_motion_notify_type

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+               "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd" [
+<!ENTITY version SYSTEM "version.xml">
+]>
+<book id="index" xmlns:xi="http://www.w3.org/2003/XInclude">
+  <bookinfo>
+    <title>Cairo Composite Manager Reference Manual</title>
+    <releaseinfo>
+      for &version;. The latest version of this documentation can be found on-line at
+      <ulink role="online-location" url="http://cairo-compmgr.tuxfamily.org/documentation/reference/index.html">http://cairo-compmgr.tuxfamily.org/documentation/reference/index.html</ulink>.
+    </releaseinfo>
+  </bookinfo>
+
+  <chapter>
+    <title>Cairo Composite Manager</title>
+    <xi:include href="xml/ccm-drawable.xml"/>
+    <xi:include href="xml/ccm-pixmap.xml"/>
+    <xi:include href="xml/ccm-window.xml"/>
+    <xi:include href="xml/ccm-window-plugin.xml"/>
+    <xi:include href="xml/ccm-screen.xml"/>
+    <xi:include href="xml/ccm-screen-plugin.xml"/>
+    <xi:include href="xml/ccm-display.xml"/>
+    <xi:include href="xml/ccm-preferences-page.xml"/>
+    <xi:include href="xml/ccm-preferences-page-plugin.xml"/>
+    <xi:include href="xml/ccm-image.xml"/>
+    <xi:include href="xml/ccm-debug.xml"/>
+    <xi:include href="xml/ccm-keybind.xml"/>
+  </chapter>
+</book>

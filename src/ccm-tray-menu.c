@@ -26,6 +26,7 @@
 #include "ccm-debug.h"
 #include "ccm-config.h"
 #include "ccm-display.h"
+#include "ccm-preferences.h"
 #include "ccm-tray-menu.h"
 
 /*
@@ -60,9 +61,11 @@ struct _CCMTrayMenuPrivate
 {
 	CCMDisplay* 	display;
 	GtkWidget* 		ccm_menu;
+	GtkWidget* 		preferences_menu;
 	GtkWidget* 		about_menu;
 	GtkWidget* 		quit_menu;
 	CCMConfig* 		config;
+	CCMPreferences* preferences;
 };
 
 #define CCM_TRAY_MENU_GET_PRIVATE(o) \
@@ -74,9 +77,11 @@ ccm_tray_menu_init (CCMTrayMenu *self)
 	self->priv = CCM_TRAY_MENU_GET_PRIVATE(self);
 	self->priv->display = NULL;
 	self->priv->ccm_menu = NULL;
+	self->priv->preferences_menu = NULL;
 	self->priv->about_menu = NULL;
 	self->priv->quit_menu = NULL;
 	self->priv->config = NULL;
+	self->priv->preferences = NULL;
 }
 
 static void
@@ -86,7 +91,8 @@ ccm_tray_menu_finalize (GObject *object)
 	
 	if (self->priv->display) g_object_unref(self->priv->display);
 	if (self->priv->config) g_object_unref(self->priv->config);
-
+	if (self->priv->preferences) g_object_unref(self->priv->preferences);
+	
 	G_OBJECT_CLASS (ccm_tray_menu_parent_class)->finalize (object);
 }
 
@@ -109,6 +115,13 @@ ccm_tray_menu_ccm_menu_activate (CCMTrayMenu* self, GtkWidget* ccm_menu)
 	ccm_debug("CCM ACTIVATE %i", val);
 	
 	ccm_config_set_boolean (self->priv->config, val, NULL);
+}
+
+static void
+ccm_tray_menu_preferences_menu_activate (CCMTrayMenu* self, 
+										 GtkWidget* preferences_menu)
+{
+	ccm_preferences_show (self->priv->preferences);
 }
 
 static void
@@ -179,6 +192,18 @@ ccm_tray_menu_new (void)
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(self->priv->ccm_menu),
 								   val);
 		
+	/* Get preferences dialog */
+	self->priv->preferences = ccm_preferences_new ();
+	
+	/* Create preferences menu */
+	self->priv->preferences_menu = 
+		gtk_image_menu_item_new_from_stock(GTK_STOCK_PREFERENCES, NULL);
+	g_signal_connect_swapped(GTK_WIDGET(self->priv->preferences_menu), 
+							 "activate", 
+							 (GCallback)ccm_tray_menu_preferences_menu_activate, 
+							 self);
+	gtk_menu_shell_append(GTK_MENU_SHELL(self), self->priv->preferences_menu);
+
 	/* Create separator */
 	separator = gtk_separator_menu_item_new();
 	gtk_menu_shell_append(GTK_MENU_SHELL(self), separator);

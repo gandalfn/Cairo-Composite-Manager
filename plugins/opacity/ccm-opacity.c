@@ -90,7 +90,7 @@ ccm_opacity_init (CCMOpacity *self)
 	self->priv->step = 0.1f;
 	self->priv->window = NULL;
 	self->priv->opacity = 1.0;
-	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++) 
+	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
 
@@ -104,12 +104,19 @@ ccm_opacity_finalize (GObject *object)
 	g_signal_handlers_disconnect_by_func(self->priv->window, 
 										 ccm_opacity_on_property_changed, 
 										 self);	
+	self->priv->window = NULL;
 	
-	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; ++cpt)
+	{
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
+		self->priv->options[cpt] = NULL;
+	}
 	
 	if (self->priv->increase) g_object_unref(self->priv->increase);
+	self->priv->increase = NULL;
+
 	if (self->priv->decrease) g_object_unref(self->priv->decrease);
+	self->priv->decrease = NULL;
 	
 	G_OBJECT_CLASS (ccm_opacity_parent_class)->finalize (object);
 }
@@ -130,15 +137,18 @@ ccm_opacity_change_opacity(CCMWindow* window, gfloat value)
 	g_return_if_fail(window != NULL);
 	
 	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(window));
+	Window child;
 	guint32 opacity = value * 0xffffffff;
+	
+	g_object_get(G_OBJECT(window), "child", &child, NULL);
 	
 	if (value == 1.0f)
 		XDeleteProperty (CCM_DISPLAY_XDISPLAY(display), 
-						 CCM_WINDOW_XWINDOW(window), 
+						 child ? child : CCM_WINDOW_XWINDOW(window), 
 						 CCM_WINDOW_GET_CLASS(window)->opacity_atom);
 	else
 		XChangeProperty(CCM_DISPLAY_XDISPLAY(display), 
-						CCM_WINDOW_XWINDOW(window), 
+						child ? child : CCM_WINDOW_XWINDOW(window), 
 						CCM_WINDOW_GET_CLASS(window)->opacity_atom, 
 						XA_CARDINAL, 32, PropModeReplace, 
 						(unsigned char *) &opacity, 1L);
@@ -336,9 +346,8 @@ ccm_opacity_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	CCMOpacity* self = CCM_OPACITY(plugin);
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; ++cpt)
 	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "opacity", 
 												  CCMOpacityOptions[cpt]);
@@ -363,7 +372,7 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; ++cpt)
 	{
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 

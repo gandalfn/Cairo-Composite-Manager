@@ -1,0 +1,4 @@
+[show]
+Type=string
+Default=<Super>a
+_Description=Show automate dialog shortcut key.

@@ -1,6 +1,7 @@
 [CCMPlugin]
 Plugin=ccm-mosaic
+Version=@VERSION@
 _Name=Mosaic
-_Description=Cairo Composite Manager Mosaic
+_Description=Mosaic window selector
 Backends=xrender;glitz
 Depends=shadow

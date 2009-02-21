@@ -1,0 +1,14 @@
+[delay]
+Type=int
+Default=5
+_Description=Freeze ping delay in seconds.
+
+[duration]
+Type=float
+Default=0.3
+_Description=Freeze animation duration
+
+[color]
+Type=string
+Default=#000000
+_Description=Freeze color

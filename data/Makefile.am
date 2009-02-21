@@ -1,13 +1,34 @@
 pixmapsdir = $(datadir)/pixmaps/cairo-compmgr
+uidir = $(datadir)/cairo-compmgr/ui
+pkgconfigdir = $(libdir)/pkgconfig
+
+pkgconfig_DATA = cairo-compmgr.pc
 
 pixmaps_DATA = \
     cairo-compmgr.png \
 	cairo-compmgr-on-24.png \
 	cairo-compmgr-off-24.png 
 
+ui_DATA = ccm-preferences.ui
+
+CAIRO_COMPMGR_SCHEMAS = \
+    ccm-display.schema-key.in \
+    ccm-screen.schema-key.in
+
 schemasdir = $(GCONF_SCHEMA_FILE_DIR)
-schemas_in_files = cairo-compmgr.schemas.in
+schemas_in_files = $(CAIRO_COMPMGR_SCHEMAS:.schema-key.in=.schemas.in)
 schemas_DATA = $(schemas_in_files:.schemas.in=.schemas)
+
+schemakeydir = $(datadir)/cairo-compmgr/schemas
+schemakey_DATA = $(CAIRO_COMPMGR_SCHEMAS:.schema-key.in=.schema-key)
+
+ccm-display.schemas.in: ccm-display.schema-key
+	${top_builddir}/tools/ccm-schema-key-to-gconf --schema-key=$< --schema-gconf=$@
+
+ccm-screen.schemas.in: ccm-screen.schema-key
+	${top_builddir}/tools/ccm-schema-key-to-gconf --plugin --schema-key=$< --schema-gconf=$@
+
+%.schema-key: %.schema-key.in $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*po) ; $(INTLTOOL_MERGE) $(top_srcdir)/po $< $@ -d -u -c $(top_builddir)/po/.intltool-merge-cache
 
 @INTLTOOL_SCHEMAS_RULE@
 
@@ -32,8 +53,13 @@ desktopdir = $(datadir)/applications
 desktop_DATA = $(DESKTOP_FILES)
 
 EXTRA_DIST = cairo-compmgr.desktop.in \
-             $(schemas_in_files) \
+             $(CAIRO_COMPMGR_SCHEMAS) \
+             $(ui_DATA) \
+			 $(pkgconfig_DATA) \
 			 $(pixmaps_DATA)
 
-CLEANFILES = $(schemas_DATA) \
-             $(DESKTOP_FILES)
+CLEANFILES = $(schemakey_DATA) \
+             $(schemas_DATA) \
+             $(schemas_in_files) \
+             $(pkgconfig_DATA) \
+			 $(DESKTOP_FILES)

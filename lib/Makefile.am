@@ -1,3 +1,5 @@
+cairo_compmgr_includedir = $(includedir)/cairo-compmgr
+
 INCLUDES = \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
 	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
@@ -7,6 +9,11 @@ INCLUDES = \
     $(CAIRO_COMPMGR_CFLAGS)
 
 lib_LTLIBRARIES = libcairo_compmgr.la
+
+cairo_compmgr_include_HEADERS =  \
+	ccm-config.h \
+	ccm-timeline.h \
+	ccm-cairo-utils.h
 
 libcairo_compmgr_la_SOURCES =  \
     eggaccelerators.c \
@@ -18,7 +25,13 @@ libcairo_compmgr_la_SOURCES =  \
 	ccm-timeout-pool.c \
 	ccm-timeout-pool.h \
 	ccm-cairo-utils.c \
-	ccm-cairo-utils.h
+	ccm-cairo-utils.h \
+	ccm-config-key.h \
+	ccm-config-key.c \
+	ccm-config-gconf.h \
+	ccm-config-gconf.c \
+	ccm-config-schema.h \
+	ccm-config-schema.c
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
 
@@ -28,6 +41,5 @@ noinst_PROGRAMS = test-boxed-blur
 
 test_boxed_blur_SOURCES = test-boxed-blur.c
 
-test_boxed_blur_LDADD = $(CAIRO_COMPMGR_LIBS) ../lib/libcairo_compmgr.la
-
+test_boxed_blur_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
 

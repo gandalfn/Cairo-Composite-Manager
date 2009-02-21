@@ -45,6 +45,8 @@ typedef struct _CCMMenuAnimation CCMMenuAnimation;
 struct _CCMMenuAnimationClass
 {
 	CCMPluginClass parent_class;
+
+    Atom		   animation_atom;
 };
 
 typedef struct _CCMMenuAnimationPrivate CCMMenuAnimationPrivate;

@@ -24,6 +24,7 @@
 #include "ccm-extension.h"
 #include "ccm-window-plugin.h"
 #include "ccm-screen-plugin.h"
+#include "ccm-preferences-page-plugin.h"
 
 static GSList* CCMPluginPath = NULL;
 
@@ -109,6 +110,47 @@ ccm_extension_loader_new ()
 	}
 
 	return g_object_ref(self);
+}
+
+GSList*
+ccm_extension_loader_get_preferences_plugins (CCMExtensionLoader* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	GSList* item, *plugins = NULL;
+	
+	for (item = self->priv->plugins; item; item = item->next)
+	{
+		GType plugin = ccm_extension_get_type_object(item->data);
+		
+		if (g_type_is_a(plugin, CCM_TYPE_PREFERENCES_PAGE_PLUGIN))
+		{
+			plugins = g_slist_append(plugins, GINT_TO_POINTER(plugin));
+		}
+	}
+	
+	return plugins;
+}
+
+GSList*
+ccm_extension_loader_get_screen_window_plugins (CCMExtensionLoader* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	GSList* item, *plugins = NULL;
+	
+	for (item = self->priv->plugins; item; item = item->next)
+	{
+		GType plugin = ccm_extension_get_type_object(item->data);
+		
+		if (g_type_is_a(plugin, CCM_TYPE_SCREEN_PLUGIN) ||
+			g_type_is_a(plugin, CCM_TYPE_WINDOW_PLUGIN))
+		{
+			plugins = g_slist_append(plugins, item->data);
+		}
+	}
+	
+	return plugins;
 }
 
 GSList*

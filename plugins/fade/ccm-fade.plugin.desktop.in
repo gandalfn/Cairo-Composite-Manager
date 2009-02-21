@@ -1,6 +1,7 @@
 [CCMPlugin]
 Plugin=ccm-fade
+Version=@VERSION@
 _Name=Fade
-_Description=Window Fade Animation
+_Description=Fade effect on window map/unmap
 Backends=xrender;glitz
 Depends=Shadow

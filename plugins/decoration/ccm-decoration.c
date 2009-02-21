@@ -97,7 +97,7 @@ ccm_decoration_init (CCMDecoration *self)
 	self->priv->opaque = NULL;
 	self->priv->id_check = 0;
 	
-	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; cpt++) 
+	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
 
@@ -118,33 +118,22 @@ ccm_decoration_finalize (GObject *object)
 											 ccm_decoration_on_opacity_changed, 
 											 self);	
 	}
+	self->priv->window = NULL;
 	
 	if (self->priv->opaque)
-	{
-		cairo_rectangle_t clipbox;
-		
-		ccm_region_get_clipbox(self->priv->opaque, &clipbox);
-		ccm_region_offset(self->priv->opaque, 
-						  -self->priv->left, -self->priv->top);
-		ccm_region_resize(self->priv->opaque, 
-						  clipbox.width + self->priv->left + self->priv->right,
-						  clipbox.height + self->priv->top + self->priv->bottom);
-		if (CCM_IS_WINDOW(self->priv->window) && 
-			G_OBJECT(self->priv->window)->ref_count)
-			ccm_window_set_opaque_region(self->priv->window, 
-										 self->priv->opaque);
-
 		ccm_region_destroy(self->priv->opaque);
-	}
 	self->priv->opaque = NULL;
 
 	if (self->priv->geometry)
 		ccm_region_destroy(self->priv->geometry);
 	self->priv->geometry = NULL;
 
-	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt)
+	{
 		if (self->priv->options[cpt]) 
 			g_object_unref(self->priv->options[cpt]);
+		self->priv->options[cpt] = NULL;
+	}
 	
 	G_OBJECT_CLASS (ccm_decoration_parent_class)->finalize (object);
 }
@@ -232,7 +221,7 @@ ccm_decoration_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt)
 	{
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
@@ -294,7 +283,10 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		mask = cairo_surface_create_similar(surface, CAIRO_CONTENT_ALPHA,
 										    clipbox.width, clipbox.height);
 		cairo_surface_destroy(surface);
-		g_object_set(self->priv->window, "mask", mask, NULL);
+		g_object_set(self->priv->window, 
+					 "mask", mask,
+					 "mask_width", (int)clipbox.width, 
+					 "mask_height", (int)clipbox.height, NULL);
 		
 		ctx = cairo_create(mask);
 		cairo_set_source_rgba(ctx, 0, 0, 0, 0);
@@ -335,7 +327,7 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		else
 			cairo_set_source_rgba(ctx, 1, 1, 1, self->priv->opacity * opacity);
 		
-		for (cpt = 0; cpt < nb_rects; cpt++)
+		for (cpt = 0; cpt < nb_rects; ++cpt)
 			cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y, 
 							rects[cpt].width, rects[cpt].height);
 		g_free(rects);

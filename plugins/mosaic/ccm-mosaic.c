@@ -30,7 +30,6 @@
 #include "ccm-window.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"
-#include "ccm-extension-loader.h"
 #include "ccm-mosaic.h"
 #include "ccm-keybind.h"
 #include "ccm.h"
@@ -87,7 +86,7 @@ ccm_mosaic_init (CCMMosaic *self)
 	self->priv->areas = NULL;
 	self->priv->nb_areas = 0;
 	self->priv->keybind = NULL;
-	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++) 
+	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
 
@@ -97,10 +96,15 @@ ccm_mosaic_finalize (GObject *object)
 	CCMMosaic* self = CCM_MOSAIC(object);
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; ++cpt)
+	{
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
+		self->priv->options[cpt] = NULL;
+	}
 	if (self->priv->keybind) g_object_unref(self->priv->keybind);
+	self->priv->keybind = NULL;
 	if (self->priv->areas) g_free(self->priv->areas);
+	self->priv->areas = NULL;
 	
 	G_OBJECT_CLASS (ccm_mosaic_parent_class)->finalize (object);
 }
@@ -116,6 +120,37 @@ ccm_mosaic_class_init (CCMMosaicClass *klass)
 }
 
 static void
+ccm_mosaic_switch_keep_above(CCMMosaic* self, CCMWindow* window,
+							 gboolean keep_above)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(window != NULL);
+	
+	XEvent event;
+	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(window));
+	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
+	CCMWindow* root = ccm_screen_get_root_window(screen);
+	Window child = None;
+	
+	g_object_get(G_OBJECT(window), "child", &child, NULL);
+	event.xclient.type = ClientMessage;
+	
+	event.xclient.message_type = CCM_WINDOW_GET_CLASS(window)->state_atom;
+	event.xclient.display = CCM_DISPLAY_XDISPLAY(display);
+	event.xclient.window = child ? child : CCM_WINDOW_XWINDOW(window);
+	event.xclient.send_event = True;
+	event.xclient.format = 32;
+	event.xclient.data.l[0] = keep_above ? 1 : 0;
+	event.xclient.data.l[1] = CCM_WINDOW_GET_CLASS(window)->state_above_atom;
+	event.xclient.data.l[2] = 0l;
+	event.xclient.data.l[3] = 0l;
+	event.xclient.data.l[4] = 0l;
+
+	XSendEvent (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root), True,
+				SubstructureRedirectMask | SubstructureNotifyMask, &event);
+}
+
+static void
 ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window)
 {
 	g_return_if_fail(self != NULL);
@@ -124,7 +159,7 @@ ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window)
 	gint id_area = -1, cpt;
 	gfloat search = G_MAXFLOAT;
 	
-	for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
+	for (cpt = 0; cpt < self->priv->nb_areas; ++cpt)
 	{
 		gfloat scale;
 		const cairo_rectangle_t* win_area = ccm_window_get_area(window);
@@ -141,7 +176,7 @@ ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window)
 	
 	if (id_area < 0)
 	{
-		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
+		for (cpt = 0; cpt < self->priv->nb_areas; ++cpt)
 		{   
 			if (!self->priv->areas[cpt].window)
 				self->priv->areas[cpt].window = window;
@@ -173,7 +208,7 @@ ccm_mosaic_set_window_transform(CCMMosaic* self)
 		}
 	}
 	
-	for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
+	for (cpt = 0; cpt < self->priv->nb_areas; ++cpt)
 	{
 		cairo_matrix_t transform;
 		gfloat scale;
@@ -195,6 +230,7 @@ ccm_mosaic_set_window_transform(CCMMosaic* self)
 		cairo_matrix_scale(&transform, scale, scale);
 		ccm_drawable_push_matrix(CCM_DRAWABLE(self->priv->areas[cpt].window),
 								 "CCMMosaic", &transform);
+		ccm_mosaic_switch_keep_above(self, self->priv->areas[cpt].window, TRUE);
 	}
 }
 
@@ -268,7 +304,7 @@ ccm_mosaic_check_area(CCMMosaic* self)
 				gint cpt;
 				gboolean found = FALSE;
 				
-				for (cpt = 0; cpt < self->priv->nb_areas && !found; cpt++)
+				for (cpt = 0; cpt < self->priv->nb_areas && !found; ++cpt)
 					 found = self->priv->areas[cpt].window == item->data;
 				
 				changed |= !found;
@@ -284,19 +320,19 @@ ccm_mosaic_check_area(CCMMosaic* self)
 }
 
 static void
-ccm_mosaic_on_key_press(CCMMosaic* self)
+ccm_mosaic_check_windows(CCMMosaic* self)
 {
 	g_return_if_fail(self != NULL);
-	
-	self->priv->enabled = ~self->priv->enabled;
-		
+
 	if (self->priv->areas)
 	{
 		gint cpt;
-		for (cpt = 0; cpt < self->priv->nb_areas; cpt++)
+		for (cpt = 0; cpt < self->priv->nb_areas; ++cpt)
 		{
 			ccm_drawable_pop_matrix(CCM_DRAWABLE(self->priv->areas[cpt].window),
 									"CCMMosaic");
+			ccm_mosaic_switch_keep_above(self, self->priv->areas[cpt].window,
+										 FALSE);
 		}
 		g_free(self->priv->areas);
 		self->priv->areas = NULL;
@@ -309,6 +345,16 @@ ccm_mosaic_on_key_press(CCMMosaic* self)
 }
 
 static void
+ccm_mosaic_on_key_press(CCMMosaic* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	self->priv->enabled = ~self->priv->enabled;
+	
+	ccm_mosaic_check_windows(self);
+}
+
+static void
 ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMMosaic* self = CCM_MOSAIC(plugin);
@@ -316,7 +362,7 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	GError* error = NULL;
 	gchar* shortcut;
 	
-	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; ++cpt)
 	{
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 

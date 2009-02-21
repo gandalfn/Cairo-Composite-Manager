@@ -1,0 +1,56 @@
+<!-- ##### SIGNAL CCMDisplay::button-press-event ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMDisplay::button-release-event ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMDisplay::motion-notify-event ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
+<!-- ##### FUNCTION ccm_display_get_device_button_press_type ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_display_get_device_button_release_type ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_display_get_device_motion_notify_type ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_pixmap_flush ##### -->
+<para>
+
+</para>
+
+@self: 
+@area: 
+

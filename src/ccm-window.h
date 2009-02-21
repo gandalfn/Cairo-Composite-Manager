@@ -43,8 +43,8 @@ G_BEGIN_DECLS
 struct _CCMWindowClass
 {
 	CCMDrawableClass parent_class;
-	
-	Atom			 atom;
+
+    Atom			 atom;
 	Atom			 none_atom;
 	Atom			 utf8_string_atom;
 	Atom			 name_atom;

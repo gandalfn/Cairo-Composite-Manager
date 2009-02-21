@@ -36,7 +36,6 @@
 #include "ccm-window.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"
-#include "ccm-extension-loader.h"
 #include "ccm-perf.h"
 #include "ccm-keybind.h"
 #include "ccm-cairo-utils.h"
@@ -116,7 +115,7 @@ ccm_perf_init (CCMPerf *self)
 	self->priv->timer = g_timer_new();
 	self->priv->screen = NULL;
 	self->priv->keybind = NULL;
-	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++) 
+	for (cpt = 0; cpt < CCM_PERF_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
 
@@ -126,7 +125,7 @@ ccm_perf_finalize (GObject *object)
 	CCMPerf* self = CCM_PERF(object);
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_PERF_OPTION_N; ++cpt)
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	if (self->priv->timer) g_timer_destroy (self->priv->timer);
 	if (self->priv->keybind) g_object_unref (self->priv->keybind);
@@ -232,7 +231,7 @@ ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	gchar* shortcut;
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_PERF_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_PERF_OPTION_N; ++cpt)
 	{
 		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 

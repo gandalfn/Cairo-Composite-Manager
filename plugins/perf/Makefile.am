@@ -1,52 +1,28 @@
-INCLUDES = \
-	-I../../src \
-	-I../../lib \
-	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
-	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
-	-DPACKAGE_PIXMAP_DIR=\""$(datadir)/pixmaps/cairo-compmgr"\" \
-	-DPACKAGE_DATA_DIR=\""$(datadir)"\" $(CAIRO_COMPMGR_CFLAGS)
+PLUGIN = ccm-perf
+PLUGIN_UI = 
+PLUGIN_SCHEMA = ccm-perf.schema-key.in
 
-plugindir = $(libdir)/cairo-compmgr
+PLUGIN_SOURCES = ccm-perf.c ccm-perf.h
+
+if ENABLE_PERF_PLUGIN
+include $(top_srcdir)/plugin.make
 
 plugin_LTLIBRARIES = \
 	libccm_perf.la 
 
+libccm_perf_la_CFLAGS = \
+    -DPACKAGE_PIXMAP_DIR=\""$(datadir)/pixmaps/cairo-compmgr"\" \
+    $(CCM_PERF_PLUGIN_CFLAGS)
+    
 libccm_perf_la_SOURCES = \
-	ccm-perf.c ccm-perf.h
+	$(PLUGIN_SOURCES)
 
-libccm_perf_la_LDFLAGS =  -module -avoid-version -no-undefined
+libccm_perf_la_LDFLAGS =  $(PLUGIN_LDFLAGS)
 
-libccm_perf_la_LIBADD =  ../../lib/libcairo_compmgr.la
-
-plugin_in_files = ccm-perf.plugin.desktop.in
-%.plugin: %.plugin.desktop.in $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*po) ; $(INTLTOOL_MERGE) $(top_srcdir)/po $< $@ -d -u -c $(top_builddir)/po/.intltool-merge-cache
-
-plugin_DATA = ccm-perf.plugin
-
-schemasdir = $(GCONF_SCHEMA_FILE_DIR)
-schemas_in_files = ccm-perf.schemas.in
-schemas_DATA = $(schemas_in_files:.schemas.in=.schemas)
-
-@INTLTOOL_SCHEMAS_RULE@
-
-if GCONF_SCHEMAS_INSTALL
-# don't do this if we are building in eg. rpm
-install-data-local:
-	if test -z "$(DESTDIR)" ; then \
-	  for p in $(schemas_DATA) ; do \
-	    GCONF_CONFIG_SOURCE=$(GCONF_SCHEMA_CONFIG_SOURCE) $(GCONFTOOL) --makefile-install-rule $(top_builddir)/plugins/perf/$$p ; \
-	  done \
-	fi
+libccm_perf_la_LIBADD =  $(PLUGIN_LIBADD) $(CCM_PERF_PLUGIN_LIBS)
 else
-install-data-local:
+EXTRA_DIST = $(PLUGIN_SCHEMA) \
+             $(PLUGIN_SOURCES) \
+			 $(PLUGIN).desktop.in
 endif
-
-EXTRA_DIST = $(schemas_in_files) \
-			 $(plugin_DATA) \
-			 $(plugin_in_files)
-
-CLEAN_FILES = $(schemas_DATA) \
-              $(plugin_DATA)
-
-
 

@@ -1,0 +1,9 @@
+[spacing]
+Type=int
+Default=20
+_Description=The spacing between each areas of mosaic.
+
+[shortcut]
+Type=string
+Default=<Super>Tab
+_Description=The mosaic shortcut key.

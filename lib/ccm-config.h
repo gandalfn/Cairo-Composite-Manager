@@ -24,7 +24,6 @@
 #define _CCM_CONFIG_H_
 
 #include <glib-object.h>
-#include <gconf/gconf-client.h>
 #include <gdk/gdk.h>
 
 G_BEGIN_DECLS
@@ -45,7 +44,32 @@ struct _CCMConfigClass
 {
 	GObjectClass parent_class;
 	
-	GConfClient* client;
+    gboolean     (*initialize)       (CCMConfig* config, int screen, 
+                                      gchar* extension, gchar* key);
+
+    gboolean     (*get_boolean)      (CCMConfig* config, GError** error);
+    void         (*set_boolean)      (CCMConfig* config, gboolean value, 
+                                      GError** error);
+
+    gint         (*get_integer)	     (CCMConfig* config, GError** error);
+    void 		 (*set_integer)	     (CCMConfig* config, gint value,
+                                      GError** error);
+
+    gfloat       (*get_float)        (CCMConfig* config, GError** error);
+    void         (*set_float)	     (CCMConfig* config, gfloat value,
+                                      GError** error);
+
+    gchar* 		 (*get_string)	     (CCMConfig* config, GError** error);
+    void 		 (*set_string)	     (CCMConfig* config, gchar * value,
+                                      GError** error);
+
+    GSList*      (*get_string_list)	 (CCMConfig* config, GError** error);
+    void 		 (*set_string_list)	 (CCMConfig* config, GSList * value,
+                                      GError** error);
+
+    GSList*		 (*get_integer_list) (CCMConfig* config, GError** error);
+    void		 (*set_integer_list) (CCMConfig* config, GSList * value,
+                                      GError** error);
 };
 
 struct _CCMConfig
@@ -58,7 +82,8 @@ struct _CCMConfig
 enum _CCMConfigError
 {
 	CCM_CONFIG_ERROR_NONE,
-	CCM_CONFIG_ERROR_IS_NULL
+	CCM_CONFIG_ERROR_IS_NULL,
+    CCM_CONFIG_ERROR_NOT_SUPPORTED
 };
 
 GQuark			ccm_config_error_quark				();
@@ -67,6 +92,8 @@ GType 			ccm_config_get_type 				(void) G_GNUC_CONST;
 CCMConfig* 		ccm_config_new 						(int screen,
 													 gchar* extension, 
 													 gchar* key);
+void            ccm_config_set_backend              (const gchar* backend);
+void            ccm_config_changed                  (CCMConfig* self);
 gboolean 		ccm_config_get_boolean				(CCMConfig* self,
 													 GError** error);
 void 			ccm_config_set_boolean				(CCMConfig* self, 

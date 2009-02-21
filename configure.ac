@@ -1,16 +1,38 @@
 m4_define(ccm_version_major, 0)
 m4_define(ccm_version_minor, 2)
-m4_define(ccm_version_micro, 3)
+m4_define(ccm_version_micro, 90)
 AC_INIT(cairo-compmgr, ccm_version_major.ccm_version_minor.ccm_version_micro)
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AM_CONFIG_HEADER(config.h)
 AM_MAINTAINER_MODE
-dnl Enable debug
+
+dnl ****************************************************************************
+dnl Packages version required
+dnl ****************************************************************************
+GTK_REQUIRED=2.10.0
+CAIRO_REQUIRED=1.8.0
+PIXMAN_REQUIRED=0.12.0
+CAIRO_XLIB_REQUIRED=1.8.0
+CAIRO_XLIB_XRENDER_REQUIRED=1.8.0
+CAIRO_GLITZ_REQUIRED=1.8.0
+CAIRO_OPENVG_REQUIRED=1.5.7
+GLITZ_REQUIRED=0.5.7
+GLITZ_GLX_REQUIRED=0.5.7
+GL_PROTO_REQUIRED=1.4.9
+VALA_REQUIRED=0.5.6
+GOBJECT_INTROSPECTION_REQUIRED=0.6.2
+
+dnl ****************************************************************************
+dnl Check for debug flags
+dnl ****************************************************************************
 AC_ARG_ENABLE(debug,
   [  --disable-debug        Disable debug],
   [use_debug=$enableval], [use_debug=yes])
 
+dnl ****************************************************************************
+dnl Check for build
+dnl ****************************************************************************
 IT_PROG_INTLTOOL
 AC_ISC_POSIX
 AC_PROG_CC
@@ -23,13 +45,17 @@ if test "x$GCC" = "xyes" ; then
 fi
 AM_PROG_CC_STDC
 AC_HEADER_STDC
-dnl AC_PROG_CC_C99
 
+dnl ****************************************************************************
+dnl define version
+dnl ****************************************************************************
+VERSION="ccm_version_major.ccm_version_minor.ccm_version_micro"
+AC_SUBST(VERSION)
 LIBS_VERSION="`expr ccm_version_major + ccm_version_micro`:ccm_version_minor:ccm_version_micro"
 AC_SUBST(LIBS_VERSION)
 
 dnl ***************************************************************************
-dnl Internatinalization
+dnl Internationalization
 dnl ***************************************************************************
 GETTEXT_PACKAGE=cairo-compmgr
 AC_SUBST(GETTEXT_PACKAGE)
@@ -37,8 +63,11 @@ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE", [GETTEXT package name])
 AM_GLIB_GNU_GETTEXT
 
 AM_PROG_LIBTOOL
+DOLT
 
-dnl gconf checks
+dnl ****************************************************************************
+dnl Check for gconf
+dnl ****************************************************************************
 AC_PATH_PROG(GCONFTOOL, gconftool-2, no)
 
 if test x"$GCONFTOOL" = xno; then
@@ -47,31 +76,95 @@ fi
 
 AM_GCONF_SOURCE_2
 
-GTK_REQUIRED=2.10.0
-CAIRO_REQUIRED=1.4.10
-PIXMAN_REQUIRED=0.9.6
-CAIRO_XLIB_REQUIRED=1.4.10
-CAIRO_XLIB_XRENDER_REQUIRED=1.4.10
-CAIRO_GLITZ_REQUIRED=1.4.10
-CAIRO_OPENVG_REQUIRED=1.5.7
-GLITZ_REQUIRED=0.5.6
-GLITZ_GLX_REQUIRED=0.5.6
-GL_PROTO_REQUIRED=1.4.9
-
+dnl ****************************************************************************
+dnl Check for packages
+dnl ****************************************************************************
 PKG_CHECK_MODULES(CAIRO_COMPMGR, 
        [xcomposite,
         xdamage,
         xext,
-        xtst,
+        xi,
         cairo >= $CAIRO_REQUIRED,
         pixman-1 >= $PIXMAN_REQUIRED,
         gtk+-2.0 >= $GTK_REQUIRED,
-        libgnomeui-2.0,
-        gconf-2.0,
-        libgtop-2.0])
+        gconf-2.0])
 AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 
+dnl ****************************************************************************
+dnl Check for gtk-doc and docbook
+dnl ****************************************************************************
+GTK_DOC_CHECK([1.6])
+
+dnl ****************************************************************************
+dnl Check for vala
+dnl ****************************************************************************
+PKG_CHECK_MODULES(VALA, [vala-1.0 >= $VALA_REQUIRED],
+                      [vala="yes"], [vala="no"])
+if test x"$vala" = xyes; then
+    AC_PATH_PROG(VALAC, valac, no)
+    if test x"$VALAC" = xno; then
+        AC_MSG_ERROR([valac executable not found in your path - should be installed with vala])
+    fi
+    AC_SUBST(VALAC)
+fi
+AM_CONDITIONAL(HAVE_VALA, [test x$vala = xyes])
+
+dnl ****************************************************************************
+dnl Check gobject introspection
+dnl ****************************************************************************
+AC_ARG_ENABLE(gobject-introspection,
+  [  --enable-gobject-introspection        Enable GObject introspection],
+  [gir=$enableval], [gir=no])
+
+if [ test x$gir = xyes ]; then
+    PKG_CHECK_MODULES(CCM_GOBJECT_INTROSPECTION, 
+           [gobject-introspection-1.0 >= $GOBJECT_INTROSPECTION_REQUIRED],
+           [gir="yes"],
+           [gir="no"])
+	AC_SUBST(CCM_GOBJECT_INTROSPECTION_CFLAGS)
+    AC_SUBST(CCM_GOBJECT_INTROSPECTION_LIBS)
+fi
+
+if [ test x$gir = xyes ]; then    
+    G_IR_SCANNER=`$PKG_CONFIG --variable=g_ir_scanner gobject-introspection-1.0`
+    AC_SUBST(G_IR_SCANNER)
+    G_IR_COMPILER=`$PKG_CONFIG --variable=g_ir_compiler gobject-introspection-1.0`
+    AC_SUBST(G_IR_COMPILER)
+    G_IR_GENERATE=`$PKG_CONFIG --variable=g_ir_generate gobject-introspection-1.0`
+    AC_SUBST(G_IR_GENERATE)
+    GIRDIR=`$PKG_CONFIG --variable=girdir gobject-introspection-1.0`
+    AC_SUBST(GIRDIR)
+    TYPELIBDIR="$($PKG_CONFIG --variable=typelibdir gobject-introspection-1.0)"
+    AC_SUBST(TYPELIBDIR)
+    GIRINSTDIR=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=girdir gobject-introspection-1.0`
+    AC_SUBST(GIRINSTDIR)
+    TYPELIBINSTDIR="$($PKG_CONFIG --define-variable=prefix=$prefix --variable=typelibdir gobject-introspection-1.0)"
+    AC_SUBST(TYPELIBINSTDIR)
+fi
+
+AM_CONDITIONAL(ENABLE_GOBJECT_INTROSPECTION, [test x$gir = xyes])
+
+dnl ****************************************************************************
+dnl Check for build perf plugin
+dnl ****************************************************************************
+AC_ARG_ENABLE(perf-plugin,
+  [  --enable-perf-plugin        Enable perf plugin],
+  [perfplugin=$enableval], [perfplugin=no])
+
+if [ test x$perfplugin = xyes ]; then
+    PKG_CHECK_MODULES(CCM_PERF_PLUGIN, 
+           [libgtop-2.0],
+           [perfplugin="yes"],
+           [perfplugin="no"])
+	AC_SUBST(CCM_PERF_PLUGIN_CFLAGS)
+    AC_SUBST(CCM_PERF_PLUGIN_LIBS)
+fi
+AM_CONDITIONAL(ENABLE_PERF_PLUGIN, [test x$perfplugin = xyes])
+
+dnl ****************************************************************************
+dnl Check for xrender backend
+dnl ****************************************************************************
 PKG_CHECK_MODULES(CCM_XRENDER_BACKEND,
  		[xrender,
 		 cairo-xlib >= $CAIRO_XLIB_REQUIRED,
@@ -83,6 +176,9 @@ AC_SUBST(CCM_XRENDER_BACKEND_LIBS)
 
 AM_CONDITIONAL(HAVE_XRENDER_BACKEND, [test x$xrenderbackend = xyes])
 
+dnl ****************************************************************************
+dnl Check for openvg backend
+dnl ****************************************************************************
 PKG_CHECK_MODULES(CCM_OPENVG_BACKEND,
  		[xrender,
 		 cairo-openvg >= $CAIRO_OPENVG_REQUIRED,
@@ -94,6 +190,9 @@ AC_SUBST(CCM_OPENVG_BACKEND_LIBS)
 
 AM_CONDITIONAL(HAVE_OPENVG_BACKEND, [test x$openvgbackend = xyes])
 
+dnl ****************************************************************************
+dnl Check for glitz backend
+dnl ****************************************************************************
 AC_ARG_ENABLE(glitz,
   [  --enable-glitz        Enable glitz],
   [glitzbackend=$enableval], [glitzbackend=no])
@@ -111,6 +210,9 @@ fi
 
 AM_CONDITIONAL(HAVE_GLITZ_BACKEND, [test x$glitzbackend = xyes])
 
+dnl ****************************************************************************
+dnl Check for glitz tfp backend
+dnl ****************************************************************************
 if [ test x$glitzbackend = xyes ]; then
 	AC_ARG_ENABLE(glitz-tfp,
 	  [  --disable-glitz-tfp        Disable glitz tfp],
@@ -131,34 +233,72 @@ if [ test x$glitzbackend = xyes ]; then
 fi                  
 AM_CONDITIONAL(HAVE_GLITZ_TFP_BACKEND, [test x$glitztfpbackend = xyes])
 
-AC_CHECK_LIB(m, round, [M_LIBS="-lm"], AC_MSG_ERROR([libm is required to
-build cairo-compmgr. This lib comes with GNU C libraries (glibc) and you can
-find the lastest version from http://www.gnu.org/software/libc/]))
-AC_SUBST(M_LIBS)
-
+SHAVE_INIT([.])
 
 AC_OUTPUT([
+shave
+shave-libtool
 Makefile
 lib/Makefile
 src/Makefile
+tools/Makefile
+gir/Makefile
+vapi/Makefile
 po/Makefile.in
+doc/Makefile
+doc/reference/Makefile
+doc/reference/version.xml
 plugins/Makefile
 plugins/shadow/Makefile
+plugins/shadow/ccm-shadow.plugin.desktop
 plugins/opacity/Makefile
+plugins/opacity/ccm-opacity.plugin.desktop
 plugins/fade/Makefile
+plugins/fade/ccm-fade.plugin.desktop
 plugins/freeze/Makefile
+plugins/freeze/ccm-freeze.plugin.desktop
 plugins/menu-animation/Makefile
+plugins/menu-animation/ccm-menu-animation.plugin.desktop
 plugins/magnifier/Makefile
+plugins/magnifier/ccm-magnifier.plugin.desktop
 plugins/mosaic/Makefile
+plugins/mosaic/ccm-mosaic.plugin.desktop
 plugins/perf/Makefile
+plugins/perf/ccm-perf.plugin.desktop
 plugins/decoration/Makefile
+plugins/decoration/ccm-decoration.plugin.desktop
+plugins/snapshot/Makefile
+plugins/snapshot/ccm-snapshot.plugin.desktop
+plugins/vala-test/Makefile
+plugins/vala-test/ccm-vala-window-plugin.plugin.desktop
+plugins/automate/Makefile
+plugins/automate/ccm-automate.plugin.desktop
 data/Makefile
 data/cairo-compmgr.desktop.in
+data/cairo-compmgr.pc
 ])
 echo " "
 echo "-------------------------------------------------------------------"
 echo "Conditionally built backends:"
 echo "-------------------------------------------------------------------"
+if [ test x$gir = xyes ]; then
+        echo "Enable GObject introspection: ...............YES"
+else
+        echo "Enable GObject introspection: ...............NO"
+fi
+
+if [ test x$vala = xyes ]; then
+        echo "Enable Vala bindings:         ...............YES"
+else
+        echo "Enable Vala bindings:         ...............NO"
+fi
+
+if [ test x$perfplugin = xyes ]; then
+        echo "Building perf plugin: .......................YES"
+else
+        echo "Building perf plugin: .......................NO"
+fi
+
 if [ test x$xrenderbackend = xyes ]; then
         echo "Building XRender backend: ...................YES"
 else

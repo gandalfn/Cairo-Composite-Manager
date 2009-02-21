@@ -24,9 +24,10 @@
 #include <X11/Xatom.h>
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/shape.h>
-#include <X11/extensions/XTest.h>
+#include <X11/extensions/XInput.h>
 #include <gdk/gdk.h>
 #include <strings.h>
+#include <math.h>
 
 #include "ccm.h"
 #include "ccm-debug.h"
@@ -77,6 +78,8 @@ static void 	ccm_screen_on_window_error		(CCMScreen* self,
 static void 	ccm_screen_on_window_property_changed(CCMScreen* self, 
 												  	  CCMPropertyType changed,
 												      CCMWindow* window);
+CCMWindow*		ccm_screen_find_window_from_input(CCMScreen* self, 
+												  Window xwindow);
 
 G_DEFINE_TYPE_EXTENDED (CCMScreen, ccm_screen, G_TYPE_OBJECT, 0,
 						G_IMPLEMENT_INTERFACE(CCM_TYPE_SCREEN_PLUGIN,
@@ -124,6 +127,8 @@ struct _CCMScreenPrivate
 	CCMWindow* 			cow;
 	Window				selection_owner;
 	CCMWindow*          fullscreen;
+	CCMWindow*			active;
+	Window				over_mouse;
 	
 	CCMRegion*			damaged;
 	CCMRegion*			root_damage;
@@ -319,6 +324,8 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->cow = NULL;
 	self->priv->selection_owner = None;
 	self->priv->fullscreen = NULL;
+	self->priv->active = NULL;
+	self->priv->over_mouse = None;
 	self->priv->damaged = NULL;
 	self->priv->root_damage = NULL;
 	self->priv->stack = NULL;
@@ -350,7 +357,7 @@ ccm_screen_finalize (GObject *object)
 	if (self->priv->plugin_loader)
 		g_object_unref(self->priv->plugin_loader);
 	
-	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; ++cpt)
 		g_object_unref(self->priv->options[cpt]);
 	
 	if (self->priv->id_pendings)
@@ -373,8 +380,10 @@ ccm_screen_finalize (GObject *object)
 	}
 	if (self->priv->windows) 
 	{
-		g_list_foreach(self->priv->windows, (GFunc)g_object_unref, NULL);
-		g_list_free(self->priv->windows);
+		GList* tmp = self->priv->windows;
+		self->priv->windows = NULL;
+		g_list_foreach(tmp, (GFunc)g_object_unref, NULL);
+		g_list_free(tmp);
 	}
 	if (self->priv->removed) 
 	{
@@ -650,7 +659,7 @@ ccm_screen_load_config(CCMScreen* self)
 	GError* error = NULL;
 	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; cpt++)
+	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; ++cpt)
 	{
 		self->priv->options[cpt] = ccm_config_new(self->priv->number, NULL, 
 												  CCMScreenOptions[cpt]);
@@ -679,6 +688,9 @@ ccm_screen_valid_window(CCMScreen* self, CCMWindow* window)
 	
 	cairo_rectangle_t geometry;
 	
+	if (ccm_screen_find_window_from_input(self, CCM_WINDOW_XWINDOW(window)))
+		return FALSE;
+		
 	if (self->priv->root && 
 		CCM_WINDOW_XWINDOW(window) == CCM_WINDOW_XWINDOW(self->priv->root))
 		return FALSE;
@@ -717,43 +729,6 @@ ccm_screen_create_overlay_window(CCMScreen* self)
 	return self->priv->cow != NULL;
 }
 
-static void
-ccm_screen_destroy_window (CCMScreen* self, CCMWindow* window)
-{
-	ccm_debug_window(window, "DESTROY WINDOW");
-	
-	self->priv->windows = g_list_remove(self->priv->windows, window);
-	
-	if (CCM_IS_WINDOW(window))
-	{
-		g_signal_handlers_disconnect_by_func(window, 
-											 ccm_screen_on_window_damaged, 
-											 self);
-		g_signal_handlers_disconnect_by_func(window, 
-											 ccm_screen_on_window_error, 
-											 self);
-		g_signal_handlers_disconnect_by_func(window, 
-											 ccm_screen_on_window_property_changed, 
-											 self);
-	}
-	if (self->priv->fullscreen == window)
-	{
-		self->priv->fullscreen = NULL;
-		ccm_screen_damage (self);
-	}		
-	else if (CCM_IS_WINDOW(window) && !ccm_window_is_input_only(window))
-	{
-		const CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(window));
-		if (geometry && !ccm_region_empty ((CCMRegion*)geometry))
-			ccm_screen_damage_region(self, geometry);
-		else
-			ccm_screen_damage (self);
-	}
-	if (G_IS_OBJECT(window)) g_object_unref(window);
-	
-	g_signal_emit (self, signals[WINDOW_DESTROYED], 0);
-}
-
 #if 0
 static void
 ccm_screen_print_stack(CCMScreen* self)
@@ -762,14 +737,14 @@ ccm_screen_print_stack(CCMScreen* self)
 	
 	GList* item;
 	
-	ccm_log("XID\t\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\t\tName");
+	ccm_debug("XID\t\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\t\tName");
 	for (item = self->priv->windows; item; item = item->next)
 	{
 		CCMWindow* transient = ccm_window_transient_for (item->data);
 		CCMWindow* leader = ccm_window_get_group_leader (item->data);
 
 		if (ccm_window_is_viewable (item->data))
-		ccm_log("0x%lx\t%i\t%i\t%i\t%i\t%i\t\t%i\t%i\t0x%08lx\t0x%08lx\t%s", 
+		ccm_debug("0x%lx\t%i\t%i\t%i\t%i\t%i\t\t%i\t%i\t0x%08lx\t0x%08lx\t%s", 
 				CCM_WINDOW_XWINDOW(item->data), 
 				ccm_window_is_viewable (item->data),
 				ccm_window_get_hint_type (item->data),
@@ -798,7 +773,7 @@ ccm_screen_print_real_stack(CCMScreen* self)
 			   CCM_WINDOW_XWINDOW(root), &w, &p, 
 			   &windows, &n_windows);
 	g_print("XID\tVisible\tType\tManaged\tDecorated\tFullscreen\tKA\tKB\tTransient\tGroup\tName\n");
-	for (cpt = 0; cpt < n_windows; cpt++)
+	for (cpt = 0; cpt < n_windows; ++cpt)
 	{
 		CCMWindow *window = ccm_screen_find_window_or_child (self, windows[cpt]);
 		if (window)
@@ -823,6 +798,45 @@ ccm_screen_print_real_stack(CCMScreen* self)
 }
 
 #endif 
+
+static void
+ccm_screen_destroy_window (CCMScreen* self, CCMWindow* window)
+{
+	ccm_debug_window(window, "DESTROY WINDOW");
+	
+	self->priv->windows = g_list_remove(self->priv->windows, window);
+	
+	if (CCM_IS_WINDOW(window))
+	{
+		g_signal_handlers_disconnect_by_func(window, 
+											 ccm_screen_on_window_damaged, 
+											 self);
+		g_signal_handlers_disconnect_by_func(window, 
+											 ccm_screen_on_window_error, 
+											 self);
+		g_signal_handlers_disconnect_by_func(window, 
+											 ccm_screen_on_window_property_changed, 
+											 self);
+	}
+	if (self->priv->fullscreen == window)
+	{
+		self->priv->fullscreen = NULL;
+		ccm_screen_damage (self);
+	}		
+	else if (CCM_IS_WINDOW(window) && 
+			 ccm_window_is_viewable(window) &&
+			 !ccm_window_is_input_only(window))
+	{
+		const CCMRegion* geometry = ccm_drawable_get_geometry (CCM_DRAWABLE(window));
+		if (geometry && !ccm_region_empty ((CCMRegion*)geometry))
+			ccm_screen_damage_region(self, geometry);
+		else
+			ccm_screen_damage (self);
+	}
+	if (G_IS_OBJECT(window)) g_object_unref(window);
+	
+	g_signal_emit (self, signals[WINDOW_DESTROYED], 0);
+}
 
 CCMWindow*
 ccm_screen_find_window(CCMScreen* self, Window xwindow)
@@ -864,6 +878,58 @@ ccm_screen_find_window_or_child(CCMScreen* self, Window xwindow)
 	if (child) ccm_debug_window(child, "PARENT OF 0x%lx", xwindow);
 	
 	return child;
+}
+
+CCMWindow*
+ccm_screen_find_window_from_input(CCMScreen* self, Window xwindow)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(xwindow != None, NULL);
+	
+	GList* item;
+	CCMWindow* child = NULL;
+	
+	for (item = g_list_last(self->priv->windows); item; item = item->prev)
+	{
+		if (CCM_IS_WINDOW(item->data))
+		{
+			Window xinput = None;
+			g_object_get(G_OBJECT(item->data), "input", &xinput, NULL);
+			if (xinput == xwindow) 
+				child = CCM_WINDOW(item->data);
+		}
+	}
+	if (child) ccm_debug_window(child, "PARENT OF 0x%lx", xwindow);
+	
+	return child;
+}
+
+CCMWindow*
+ccm_screen_find_window_at_pos(CCMScreen* self, int x, int y)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	GList* item;
+	CCMWindow* found = NULL;
+	
+	for (item = g_list_last(self->priv->windows); item && !found; 
+		 item = item->prev)
+	{
+		if (CCM_IS_WINDOW(item->data) && 
+			ccm_window_is_viewable(item->data) &&
+			!ccm_window_is_input_only(item->data))
+		{
+			CCMRegion* geometry = 
+				(CCMRegion*)ccm_drawable_get_geometry(item->data);
+			
+			if (geometry && ccm_region_point_in(geometry, x, y))
+			{
+				found = CCM_WINDOW(item->data);
+			}
+		}
+	}
+	
+	return found;
 }
 
 static void
@@ -968,7 +1034,7 @@ ccm_screen_query_stack(CCMScreen* self)
 	}
 		
 	ccm_screen_update_stack (self);
-	for (cpt = 0; cpt < self->priv->n_windows; cpt++)
+	for (cpt = 0; cpt < self->priv->n_windows; ++cpt)
 	{
 		CCMWindow *window = ccm_window_new(self, self->priv->stack[cpt]);
 		if (window)
@@ -992,7 +1058,7 @@ ccm_screen_check_stack(CCMScreen* self)
 	
 	ccm_screen_update_stack (self);
 	
-	for (cpt = 0; cpt < self->priv->n_windows; cpt++)
+	for (cpt = 0; cpt < self->priv->n_windows; ++cpt)
 	{
 		CCMWindow* window = ccm_screen_find_window (self, self->priv->stack[cpt]);
 		
@@ -1013,10 +1079,11 @@ ccm_screen_check_stack(CCMScreen* self)
 				ccm_screen_valid_window(self, window))
 			{
 				ccm_debug_window(window, "CHECK STACK NEW WINDOW");
-				if (ccm_window_is_viewable (window))
+				if (ccm_window_is_viewable (window) &&
+				    !ccm_window_is_input_only (window))
 				{
 					ccm_debug_window(window, "CHECK STACK NEW WINDOW MAP");
-					ccm_window_map(window);
+					//ccm_window_map(window);
 					viewable = g_list_append(viewable, window);
 				}
 				g_signal_connect_swapped(window, "damaged", 
@@ -1054,7 +1121,7 @@ ccm_screen_check_stack(CCMScreen* self)
 				if (new_viewable && g_list_last (new_viewable))
 				{
 					last_viewable = g_list_find(stack, 
-											  g_list_last (new_viewable)->data);
+											    g_list_last (new_viewable)->data);
 					if (last_viewable)
 						stack = g_list_insert_before (stack, 
 													  last_viewable->next,
@@ -1093,56 +1160,6 @@ ccm_screen_check_stack(CCMScreen* self)
 }
 
 static void
-ccm_screen_check_stack_position(CCMScreen* self, CCMWindow* window)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(window != NULL);
-	
-	CCMWindow* below = NULL;
-	GList* below_link;
-	guint cpt;
-	
-	for (cpt = 0; cpt < self->priv->n_windows; cpt++)
-	{
-		if (self->priv->stack[cpt] == CCM_WINDOW_XWINDOW(window)) 
-		{
-			if (cpt > 0)
-				below = ccm_screen_find_window_or_child (self, self->priv->stack[cpt - 1]);
-			break;
-		}
-	}
-	
-	below_link = g_list_find(self->priv->windows, below);
-	if (below_link && below_link->next && below_link->next->data == window) 
-		return;
-	
-	ccm_debug_window(window, "CHECK_STACK_POSITION");
-	
-	self->priv->windows = g_list_remove(self->priv->windows, window);
-	if (below_link)
-	{
-		self->priv->windows = g_list_insert_before (self->priv->windows, 
-													below_link->next, window);
-		if (ccm_window_is_viewable (below))
-			ccm_drawable_damage (CCM_DRAWABLE(below));
-	}
-	else if (cpt > 0)
-		self->priv->windows = g_list_append (self->priv->windows, window);
-	else
-		self->priv->windows = g_list_prepend (self->priv->windows, window);
-	
-	if (ccm_window_is_viewable (window))
-		ccm_drawable_damage (CCM_DRAWABLE(window));
-	
-#if 0
-	g_print("Stack\n");
-	ccm_screen_print_stack (self);
-	g_print("Real stack\n");
-	ccm_screen_print_real_stack (self);
-#endif
-}
-
-static void
 ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* sibling)
 {
 	g_return_if_fail(self != NULL);
@@ -1150,41 +1167,6 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* sibling)
 	g_return_if_fail(sibling != NULL);
 	
 	GList* sibling_link = g_list_find(self->priv->windows, sibling);
-	
-	guint pos_window = g_list_index (self->priv->windows, window);
-	guint pos_sibling = g_list_index (self->priv->windows, sibling);
-	
-	cairo_rectangle_t geometry;
-		
-	if (pos_window > pos_sibling) return;
-	
-	if (ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP)
-		return;
-	
-	if (ccm_window_get_opaque_clipbox (window, &geometry))
-	{
-		if (geometry.x == 0 && geometry.y == 0 && 
-			geometry.width == CCM_SCREEN_XSCREEN(self)->width &&
-			geometry.height == CCM_SCREEN_XSCREEN(self)->height)
-		{
-			GList* item;
-			gboolean found= FALSE;
-			
-			for (item = g_list_find(self->priv->windows, window); 
-				 item; 
-				 item = item->prev)
-			{
-				if (item->data != window && 
-					ccm_window_is_viewable(item->data))
-				{
-					found = TRUE;
-					break;
-				}
-			}
-			
-			if (!found) return;
-		}
-	}
 	
 	ccm_debug_window(window, "RESTACK AFTER 0x%x", CCM_WINDOW_XWINDOW(sibling));
 	
@@ -1235,20 +1217,23 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 				ccm_debug_window(window, "PAINT SCREEN");
 				ret |= ccm_window_paint(window, self->priv->ctx, self->priv->buffered);
 			}
-			if (g_list_find(self->priv->removed, window))
-			{
-				self->priv->removed = g_list_remove (self->priv->removed, window);
-				destroy = g_list_append(destroy, window);
-			}
 		}
 	}
-	if (destroy)
+	for (item = g_list_first(self->priv->removed); item; item = item->next)
 	{
-		for (item = g_list_first(destroy); item; item = item->next)
+		if (!ccm_window_is_viewable (item->data) ||
+			ccm_window_is_input_only (item->data))
 		{
 			self->priv->windows = g_list_remove (self->priv->windows, item->data);
 			ccm_screen_destroy_window (self, item->data);
+			destroy = g_list_append(destroy, item->data);
 		}
+	}
+
+	if (destroy)
+	{
+		for (item = g_list_first(destroy); item; item = item->next)
+			self->priv->removed = g_list_remove (self->priv->removed, item->data);
 		g_list_free(destroy);
 	}
 	
@@ -1341,8 +1326,6 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	g_signal_connect_swapped(window, "property-changed", 
 							 G_CALLBACK(ccm_screen_on_window_property_changed), self);
 	
-	if (ccm_window_is_viewable(window)) ccm_window_map(window);
-	
 	return TRUE;
 }
 
@@ -1356,7 +1339,7 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 	if (link)
 	{
 		ccm_debug_window(window, "REMOVE");
-
+		
 		if (!ccm_window_is_viewable (window) ||
 			ccm_window_is_input_only (window))
 			ccm_screen_destroy_window(self, window);
@@ -1382,7 +1365,7 @@ ccm_screen_get_window_plugins(CCMScreen* self)
 		
 		g_error_free(error);
 		g_warning("Error on get plugins list set default");
-		for (cpt = 0; default_plugins[cpt]; cpt++)
+		for (cpt = 0; default_plugins[cpt]; ++cpt)
 		{
 			filter = g_slist_append(filter, g_strdup(default_plugins[cpt]));
 		}
@@ -1420,7 +1403,7 @@ ccm_screen_get_plugins(CCMScreen* self)
 		
 		g_error_free(error);
 		g_warning("Error on get plugins list set default");
-		for (cpt = 0; default_plugins[cpt]; cpt++)
+		for (cpt = 0; default_plugins[cpt]; ++cpt)
 		{
 			filter = g_slist_append(filter, g_strdup(default_plugins[cpt]));
 		}
@@ -1490,7 +1473,7 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 				
 				cairo_save(self->priv->ctx);
 				ccm_region_get_rectangles (self->priv->root_damage, &rects, &nb_rects);
-				for (cpt = 0; cpt < nb_rects; cpt++)
+				for (cpt = 0; cpt < nb_rects; ++cpt)
 					cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
 									 rects[cpt].width, rects[cpt].height);
 				g_free(rects);
@@ -1511,39 +1494,6 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 		{
 			if (self->priv->damaged)
 			{
-//#define CCM_TRACK_DAMAGE
-#ifdef CCM_TRACK_DAMAGE
-				cairo_rectangle_t* rects;
-				gint cpt, nb_rects;
-				static gint i = 0;
-
-				switch (i)
-				{
-					case 0:
-						cairo_set_source_rgba (self->priv->ctx, 1, 0, 0, 0.5);
-						i++;
-						break;
-					case 1:
-						cairo_set_source_rgba (self->priv->ctx, 0, 1, 0, 0.5);
-						i++;
-						break;
-					case 2:
-						cairo_set_source_rgba (self->priv->ctx, 0, 0, 1, 0.5);
-						i = 0;
-						break;
-					default:
-						break;
-				}
-						
-				ccm_region_get_rectangles (self->priv->damaged, &rects, &nb_rects);
-				for (cpt = 0; cpt < nb_rects; cpt++)
-				{
-					cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
-									 rects[cpt].width, rects[cpt].height);
-					cairo_fill(self->priv->ctx);
-				}
-				g_free(rects);
-#endif
 				ccm_drawable_flush_region (CCM_DRAWABLE(self->priv->cow),
 										   self->priv->damaged);
 				ccm_region_destroy(self->priv->damaged);
@@ -1658,6 +1608,7 @@ impl_ccm_screen_damage(CCMScreenPlugin* plugin, CCMScreen* self,
 			{
 				opaque = ccm_window_get_opaque_region(window);
 				if (ccm_window_is_viewable(window) && 
+					!ccm_window_is_input_only(window) &&
 					opaque && !ccm_region_empty((CCMRegion*)opaque))
 				{
 					ccm_debug_window(item->data, "UNDAMAGE BELOW");
@@ -1729,8 +1680,55 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(event != NULL);
 	
+		
 	switch (event->type)
 	{
+		case ButtonPress:
+		case ButtonRelease:
+		{
+			XButtonEvent* button_event = ((XButtonEvent*)event);
+			
+			if (button_event->root != CCM_WINDOW_XWINDOW(self->priv->root))
+				return;
+			
+			CCMWindow* input = 
+				ccm_screen_find_window_from_input(self, button_event->window);
+			
+			if (input)
+			{
+				CCMWindow* window = ccm_screen_find_window_at_pos(self,
+													button_event->x_root,
+													button_event->y_root);
+
+				self->priv->over_mouse = 
+						ccm_window_redirect_event(window, event, 
+												  self->priv->over_mouse);
+			}
+		}
+		break;
+		case MotionNotify:
+		{
+			XMotionEvent* motion_event = ((XMotionEvent*)event);
+			
+			if (motion_event->root != CCM_WINDOW_XWINDOW(self->priv->root))
+				return;
+			
+			CCMWindow* window = ccm_screen_find_window_at_pos(self,
+												motion_event->x_root,
+												motion_event->y_root);
+			if (window)
+			{
+				Window input = None;
+				g_object_get(G_OBJECT(window), "input", &input, NULL);
+				if (input)
+				{
+					self->priv->over_mouse = 
+						ccm_window_redirect_event(window, event, 
+												  self->priv->over_mouse);
+				}
+			}
+		}
+		break;
 		case CreateNotify:
 		{	
 			XCreateWindowEvent* create_event = ((XCreateWindowEvent*)event);
@@ -1757,7 +1755,8 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		case DestroyNotify:
 		{	
 			CCMWindow* window = ccm_screen_find_window(self,
-										((XCreateWindowEvent*)event)->window);
+										((XDestroyWindowEvent*)event)->window);
+			ccm_debug("REMOVE 0x%x", ((XDestroyWindowEvent*)event)->window);
 			if (window) 
 			{
 				ccm_debug_window(window, "EVENT REMOVE");
@@ -1821,6 +1820,9 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			CCMWindow* parent = ccm_screen_find_window(self,
 											((XReparentEvent*)event)->parent);
 				
+			ccm_debug("REPARENT 0x%x, 0x%x", ((XReparentEvent*)event)->parent,
+					((XReparentEvent*)event)->window);
+			
 			if (parent == self->priv->root)
 			{
 				if (!window)
@@ -1852,29 +1854,14 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			if (window) 
 			{
 				ccm_debug_window(window,"CIRCULATE");
-				ccm_screen_check_stack_position (self, window);
+				ccm_screen_add_check_pending (self);
 			}
 		}
 		break;
 		case ConfigureNotify:
 		{
-			XEvent ce;
 			XConfigureEvent* configure_event = (XConfigureEvent*)event;
 			CCMWindow* window;
-			
-			while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
-										  configure_event->window,
-                                          event->type, &ce)) 
-			{
-                if (ce.xconfigure.above != configure_event->above &&
-					ce.xconfigure.width != configure_event->width &&
-					ce.xconfigure.above != configure_event->height) 
-				{
-                    XPutBackEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), &ce);
-                    break;
-                }
-                configure_event = &ce.xconfigure;
-			}
 			
 			window = ccm_screen_find_window(self, configure_event->window);
 			
@@ -1913,10 +1900,30 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			
 			ccm_debug_atom(self->priv->display, property_event->atom, 
 						   "PROPERTY_NOTIFY");
-
-			if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom ||
-				property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_list_atom ||
-				property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->active_atom)
+			
+			if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->active_atom)
+			{
+				guint32* data;
+				guint n_items;
+				Window active;
+				
+				ccm_screen_add_check_pending (self);
+				data = ccm_window_get_property(self->priv->root, 
+							CCM_WINDOW_GET_CLASS(self->priv->root)->active_atom,
+							XA_WINDOW, &n_items);
+				if (data)
+				{
+					active = (Window)*data;
+					if (active)
+						self->priv->active = 
+							ccm_screen_find_window_or_child (self, (Window)*data);
+					else
+						self->priv->active = NULL;
+					g_free(data);
+				}
+			}
+			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom ||
+					 property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_list_atom)
 			{
 				ccm_screen_add_check_pending (self);
 			}
@@ -1992,7 +1999,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				{
 					gint cpt;
 					
-					for (cpt = 1; cpt < 3; cpt++)
+					for (cpt = 1; cpt < 3; ++cpt)
 					{
 						switch (client_event->data.l[0])
 						{
@@ -2040,6 +2047,28 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		}
 		break;
 		default:
+		{
+			// Check for shape notify
+			if (event->type == ccm_display_get_shape_notify_event_type(self->priv->display))
+			{
+				XShapeEvent* shape_event = (XShapeEvent*)event;
+				
+				CCMWindow* window = ccm_screen_find_window_or_child (self,
+													   shape_event->window);
+				if (window)
+				{
+					const CCMRegion* geometry = 
+						ccm_drawable_get_device_geometry(CCM_DRAWABLE(window));
+	
+					if (!geometry || !ccm_region_is_shaped((CCMRegion*)geometry))
+					{
+						ccm_drawable_damage (CCM_DRAWABLE(window));
+						ccm_drawable_query_geometry (CCM_DRAWABLE(window));
+						ccm_drawable_damage (CCM_DRAWABLE(window));
+					}
+				}
+			}
+		}
 		break;
 	}
 }
@@ -2111,6 +2140,8 @@ ccm_screen_new(CCMDisplay* display, guint number)
 	area.width = self->priv->xscreen->width;
 	area.height = self->priv->xscreen->height;
 	self->priv->root_damage = ccm_region_rectangle (&area);
+	
+	ccm_display_report_device_event(display, self, TRUE);
 	
 	return self;
 }
@@ -2197,7 +2228,8 @@ ccm_screen_remove_window(CCMScreen* self, CCMWindow* window)
 	
 	if (!g_list_find(self->priv->removed, window))
 	{
-		if (ccm_window_is_viewable(window)) 
+		if (ccm_window_is_viewable(window) &&
+			!ccm_window_is_input_only (window)) 
 		{
 			ccm_debug_window(window, "UNMAP ON REMOVE");
 			ccm_window_unmap (window);
@@ -2220,6 +2252,7 @@ ccm_screen_damage(CCMScreen* self)
 	area.width = CCM_SCREEN_XSCREEN(self)->width;
 	area.height = CCM_SCREEN_XSCREEN(self)->height;
 		
+	ccm_debug("DAMAGE SCREEN");
 	screen_geometry = ccm_region_rectangle (&area);	
 	ccm_screen_damage_region (self, screen_geometry);
 	ccm_region_destroy (screen_geometry);
@@ -2233,6 +2266,8 @@ ccm_screen_damage_region(CCMScreen* self, const CCMRegion* area)
 	
 	GList* item;
 	
+	ccm_debug("SCREEN DAMAGE REGION");
+	
 	for (item = g_list_last(self->priv->windows); item; item = item->prev)
 	{
 		if (CCM_IS_WINDOW(item->data) &&
@@ -2240,7 +2275,6 @@ ccm_screen_damage_region(CCMScreen* self, const CCMRegion* area)
 			ccm_window_is_viewable (item->data))
 		{
 			ccm_drawable_damage_region (item->data, area);
-			break;
 		}
 	}
 }
@@ -2259,6 +2293,15 @@ ccm_screen_undamage_region(CCMScreen* self, const CCMRegion* area)
 			ccm_window_is_viewable (item->data))
 		{
 			ccm_drawable_undamage_region (item->data, (CCMRegion*)area);
+		}
+	}
+	if (self->priv->root_damage)
+	{
+		ccm_region_subtract (self->priv->root_damage, (CCMRegion*)area);
+		if (ccm_region_empty (self->priv->root_damage))
+		{
+			ccm_region_destroy (self->priv->root_damage);
+			self->priv->root_damage = NULL;
 		}
 	}
 }
@@ -2308,38 +2351,6 @@ ccm_screen_add_damaged_region (CCMScreen *self, CCMRegion* region)
 		self->priv->damaged = ccm_region_copy(region);
 }
 
-void
-ccm_screen_activate_window(CCMScreen* self, CCMWindow* window, Time timestamp)
-{
-	g_return_if_fail(self != NULL);
-    g_return_if_fail(window != NULL);
-	
-	XClientMessageEvent event;
-    CCMDisplay* display = ccm_screen_get_display (self);
-	CCMWindow* root = ccm_screen_get_root_window (self);
-
-	XChangeProperty (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(window), 
-					 CCM_WINDOW_GET_CLASS(root)->user_time_atom, XA_CARDINAL, 
-					 32, PropModeReplace, (guchar *)&timestamp, 1);
-	Window child;
-	g_object_get(G_OBJECT(window), "child", &child, NULL);
-							
-							
-	bzero (&event, sizeof (XClientMessageEvent));
-	event.type = ClientMessage;
-  	event.display = CCM_DISPLAY_XDISPLAY(display);
-  	event.window = child ? child : CCM_WINDOW_XWINDOW(window);
-  	event.message_type = CCM_WINDOW_GET_CLASS(root)->active_atom;
-	event.format = 32;
-	event.data.l[0] = 2;
-  	event.data.l[1] = timestamp;
-  	event.data.l[2] = None;
-
-  	XSendEvent (CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root), False,
-				SubstructureRedirectMask | SubstructureNotifyMask, (XEvent*)&event); 
-	ccm_display_sync(display);
-}
-
 gboolean
 ccm_screen_query_pointer(CCMScreen* self, CCMWindow** below, 
 						 gint *x, gint *y)
@@ -2357,34 +2368,9 @@ ccm_screen_query_pointer(CCMScreen* self, CCMWindow** below,
 					  CCM_WINDOW_XWINDOW(root), &r, &w, x, y, &xw, &yw,
 					  &state))
 	{
-		if (below) *below = ccm_screen_find_window_or_child (self, w);
+		if (below) *below = ccm_screen_find_window_at_pos (self, *x, *y);
 		ret = CCM_WINDOW_XWINDOW(root) == r;
 	}
 	
 	return ret;
-}
-
-void
-ccm_screen_motion_input_redirect(CCMScreen* self, cairo_matrix_t* transform,
-								 int x, int y)
-{
-	g_return_if_fail(self != NULL);
-	
-	double x_redirect = x, y_redirect = y;
-	
-	cairo_matrix_transform_point(transform, &x_redirect, &y_redirect);
-	XTestFakeMotionEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
-						 self->priv->number, 
-						 (int)x_redirect, (int)y_redirect, 0);
-}
-
-void
-ccm_screen_button_input_redirect(CCMScreen* self, cairo_matrix_t* transform,
-							     int x, int y, int button, gboolean pressed)
-{
-	g_return_if_fail(self != NULL);
-	
-	ccm_screen_motion_input_redirect(self, transform, x, y);
-	XTestFakeButtonEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
-						 button, pressed, 0);
 }

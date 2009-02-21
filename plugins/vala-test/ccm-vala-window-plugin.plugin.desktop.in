@@ -1,0 +1,7 @@
+[CCMPlugin]
+Plugin=ccm-vala-window-plugin
+Version=@VERSION@
+_Name=Vala-Window-Plugin
+_Description=Vala test window plugin
+Backends=xrender;glitz
+Depends=

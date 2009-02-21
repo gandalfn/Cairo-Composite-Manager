@@ -1,0 +1,18 @@
+prefix=@prefix@
+libdir=${prefix}/lib
+bindir=${prefix}/bin
+includedir=${prefix}/include
+datadir=${prefix}/share
+sysconfdir=@sysconfdir@
+
+pluginsdir=${libdir}/cairo-compmgr
+uidir=${datadir}/cairo-compmgr/ui
+schemasdir=${datadir}/cairo-compmgr/schemas
+
+Cflags: -I${includedir}/cairo-compmgr
+Requires: cairo gtk+-2.0 gconf-2.0
+Libs: -L${libdir} -lcairo_compmgr
+
+Name: cairo-compmgr
+Description: Cairo Composite Manager
+Version: @VERSION@

@@ -247,7 +247,7 @@ ccm_window_glitz_flush_region(CCMDrawable* drawable, CCMRegion* region)
 			box = (glitz_box_t*)ccm_region_get_boxes(region, &nbox);
 			if (box)
 			{
-				for (cpt = 0; cpt < nbox; cpt++)
+				for (cpt = 0; cpt < nbox; ++cpt)
 				{
 					box[cpt].x1 = box[cpt].x1 > 0 ? box[cpt].x1 : 0;
 					box[cpt].y1 = box[cpt].y1 > 0 ? box[cpt].y1 : 0;

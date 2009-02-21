@@ -1,0 +1,79 @@
+<!-- ##### SECTION Title ##### -->
+CCMPreferencesPagePlugin
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_PARENT ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_ROOT ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_LOCK_ROOT_METHOD ##### -->
+<para>
+
+</para>
+
+@plugin: 
+@func: 
+@callback: 
+@data: 
+
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_UNLOCK_ROOT_METHOD ##### -->
+<para>
+
+</para>
+
+@plugin: 
+@func: 
+
+
+<!-- ##### STRUCT CCMPreferencesPagePlugin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION ccm_preferences_page_plugin_init_general_section ##### -->
+<para>
+
+</para>
+
+@self: 
+@preferences: 
+@general_section: 
+
+

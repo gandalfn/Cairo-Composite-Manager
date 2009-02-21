@@ -1,6 +1,7 @@
 [CCMPlugin]
 Plugin=ccm-perf
+Version=@VERSION@
 _Name=Perf
-_Description=Cairo Composite Manager Perfomance
+_Description=Show cairo composite manager ressources
 Backends=xrender;glitz
 Depends=

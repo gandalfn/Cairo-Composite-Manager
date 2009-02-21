@@ -1,0 +1,44 @@
+<!-- ##### SECTION Title ##### -->
+CCMPreferencesPage
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT CCMPreferencesPage ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION ccm_preferences_page_new ##### -->
+<para>
+
+</para>
+
+@preferences: 
+@screen_num: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_preferences_page_get_widget ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+

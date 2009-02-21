@@ -1,0 +1,29 @@
+[real_blur]
+Type=bool
+Default=false
+_Description=Shadow use real blur.
+
+[offset]
+Type=int
+Default=0
+_Description=Shadow offset in pixel.
+
+[radius]
+Type=int
+Default=14
+_Description=Shadow blur radius.
+
+[sigma]
+Type=float
+Default=7
+_Description=Shadow blur sigma.
+
+[color]
+Type=string
+Default=#000000
+_Description=Shadow color.
+
+[alpha]
+Type=float
+Default=0.6
+_Description=Shadow alpha.

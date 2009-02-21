@@ -1,0 +1,275 @@
+<!-- ##### SECTION Title ##### -->
+CCMScreen
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO CCM_SCREEN_XSCREEN ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_SCREEN_NUMBER ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### STRUCT CCMScreen ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMScreen::plugins-changed ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+
+<!-- ##### SIGNAL CCMScreen::refresh-rate-changed ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+
+<!-- ##### SIGNAL CCMScreen::window-destroyed ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+
+<!-- ##### ARG CCMScreen:backend ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMScreen:buffered-pixmap ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMScreen:display ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMScreen:filtered-damage ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMScreen:indirect-rendering ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMScreen:native-pixmap-bind ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMScreen:number ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMScreen:refresh-rate ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMScreen:window-plugins ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION ccm_screen_new ##### -->
+<para>
+
+</para>
+
+@display: 
+@number: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_get_display ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_get_xscreen ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_get_number ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_get_root_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_get_overlay_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_add_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_remove_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+
+
+<!-- ##### FUNCTION ccm_screen_damage ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_screen_damage_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@region: 
+
+
+<!-- ##### FUNCTION ccm_screen_undamage_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@area: 
+
+
+<!-- ##### FUNCTION ccm_screen_get_windows ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_get_damaged ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_add_damaged_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@region: 
+
+
+<!-- ##### FUNCTION ccm_screen_remove_damaged_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@region: 
+
+
+<!-- ##### FUNCTION ccm_screen_find_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@xwindow: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_find_window_or_child ##### -->
+<para>
+
+</para>
+
+@self: 
+@xwindow: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_screen_query_pointer ##### -->
+<para>
+
+</para>
+
+@self: 
+@below: 
+@x: 
+@y: 
+@Returns: 
+
+

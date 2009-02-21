@@ -226,6 +226,48 @@ ccm_image_get_sub_image(CCMImage* image, CCMPixmap* pixmap,
 	return ret;
 }
 
+gboolean
+ccm_image_put_image(CCMImage* image, CCMPixmap* pixmap, int x_src, int y_src,
+					int x, int y, int width, int height)
+{
+	g_return_val_if_fail(image != NULL, FALSE);
+	g_return_val_if_fail(pixmap != NULL, FALSE);
+	
+	CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(pixmap));
+	XGCValues gcv;
+	GC gc;
+	gboolean ret = FALSE;
+	
+	gcv.graphics_exposures = FALSE;
+	gcv.subwindow_mode = IncludeInferiors;
+		
+	gc = XCreateGC(CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(pixmap),
+				   GCGraphicsExposures | GCSubwindowMode, &gcv);
+	if (!gc) return ret;
+	
+	if (image->xshm)
+	{
+		ret = XShmPutImage (CCM_DISPLAY_XDISPLAY(image->display), 
+							CCM_PIXMAP_XPIXMAP(pixmap), gc,
+							image->image, x_src, y_src, x, y, 
+							width, height, False);
+	}
+	else
+	{
+		ret = XPutImage (CCM_DISPLAY_XDISPLAY(image->display),
+						 CCM_PIXMAP_XPIXMAP(pixmap), gc,
+						 image->image, x_src, y_src, x, y, 
+						 width, height);
+	}
+	
+	ccm_display_sync(image->display);
+	
+	XFreeGC(CCM_DISPLAY_XDISPLAY(image->display), gc);
+	
+	if (!ret) ccm_debug("ERROR ON FLUSH PIXMAP");
+	return ret;
+}
+
 guchar*
 ccm_image_get_data(CCMImage* image)
 {

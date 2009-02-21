@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<injections xmlns="http://www.gtk.org/introspection/core/1.0"
+            xmlns:c="http://www.gtk.org/introspection/c/1.0"
+            xmlns:glib="http://www.gtk.org/introspection/glib/1.0">
+    <inject path="namespace[@name='cairo']">
+        <record name="path_t" c:type="cairo_path_t"/>
+        <record name="rectangle_t" c:type="cairo_rectangle_t">
+            <field name="x" writable="1">
+                <type name="double" c:type="double"/>
+            </field>
+            <field name="y" writable="1">
+                <type name="double" c:type="double"/>
+            </field>
+            <field name="width" writable="1">
+                <type name="double" c:type="double"/>
+            </field>
+            <field name="height" writable="1">
+                <type name="double" c:type="double"/>
+            </field>
+        </record>
+        <enumeration name="format_t" c:type="cairo_format_t">
+            <member name="formatargb32" 
+                    value="0" 
+                    c:identifier="CAIRO_FORMAT_ARGB32"/>
+            <member name="formatrgb24" 
+                    value="1" 
+                    c:identifier="CAIRO_FORMAT_RGB24"/>
+            <member name="formata8" 
+                    value="2" 
+                    c:identifier="CAIRO_FORMAT_A8"/>
+            <member name="formata1" 
+                    value="3" 
+                    c:identifier="CAIRO_FORMAT_A1"/>
+        </enumeration>
+        <enumeration name="status_t" c:type="cairo_status_t">
+            <member name="statussuccess"
+                  value="0"
+                  c:identifier="CAIRO_STATUS_SUCCESS"/>
+            <member name="statusnomemory"
+                  value="1"
+                  c:identifier="CAIRO_STATUS_NO_MEMORY"/>
+            <member name="statusinvalidrestore"
+                  value="2"
+                  c:identifier="CAIRO_STATUS_INVALID_RESTORE"/>
+            <member name="statusinvalidpopgroup"
+                  value="3"
+                  c:identifier="CAIRO_STATUS_INVALID_POP_GROUP"/>
+            <member name="statusnocurrentpoint"
+                  value="4"
+                  c:identifier="CAIRO_STATUS_NO_CURRENT_POINT"/>
+            <member name="statusinvalidmatrix"
+                  value="5"
+                  c:identifier="CAIRO_STATUS_INVALID_MATRIX"/>
+            <member name="statusinvalidstatus"
+                  value="6"
+                  c:identifier="CAIRO_STATUS_INVALID_STATUS"/>
+            <member name="statusnullpointer"
+                  value="7"
+                  c:identifier="CAIRO_STATUS_NULL_POINTER"/>
+            <member name="statusinvalidstring"
+                  value="8"
+                  c:identifier="CAIRO_STATUS_INVALID_STRING"/>
+            <member name="statusinvalidpathdata"
+                  value="9"
+                  c:identifier="CAIRO_STATUS_INVALID_PATH_DATA"/>
+            <member name="statusreaderror"
+                  value="10"
+                  c:identifier="CAIRO_STATUS_READ_ERROR"/>
+            <member name="statuswriteerror"
+                  value="11"
+                  c:identifier="CAIRO_STATUS_WRITE_ERROR"/>
+            <member name="statussurfacefinished"
+                  value="12"
+                  c:identifier="CAIRO_STATUS_SURFACE_FINISHED"/>
+            <member name="statussurfacetypemismatch"
+                  value="13"
+                  c:identifier="CAIRO_STATUS_SURFACE_TYPE_MISMATCH"/>
+            <member name="statuspatterntypemismatch"
+                  value="14"
+                  c:identifier="CAIRO_STATUS_PATTERN_TYPE_MISMATCH"/>
+            <member name="statusinvalidcontent"
+                  value="15"
+                  c:identifier="CAIRO_STATUS_INVALID_CONTENT"/>
+            <member name="statusinvalidformat"
+                  value="16"
+                  c:identifier="CAIRO_STATUS_INVALID_FORMAT"/>
+            <member name="statusinvalidvisual"
+                  value="17"
+                  c:identifier="CAIRO_STATUS_INVALID_VISUAL"/>
+            <member name="statusfilenotfound"
+                  value="18"
+                  c:identifier="CAIRO_STATUS_FILE_NOT_FOUND"/>
+            <member name="statusinvaliddash"
+                  value="19"
+                  c:identifier="CAIRO_STATUS_INVALID_DASH"/>
+            <member name="statusinvaliddsccomment"
+                  value="20"
+                  c:identifier="CAIRO_STATUS_INVALID_DSC_COMMENT"/>
+            <member name="statusinvalidindex"
+                  value="21"
+                  c:identifier="CAIRO_STATUS_INVALID_INDEX"/>
+            <member name="statusclipnotrepresentable"
+                  value="22"
+                  c:identifier="CAIRO_STATUS_CLIP_NOT_REPRESENTABLE"/>
+            <member name="statustempfileerror"
+                  value="23"
+                  c:identifier="CAIRO_STATUS_TEMP_FILE_ERROR"/>
+            <member name="statusinvalidstride"
+                  value="24"
+                  c:identifier="CAIRO_STATUS_INVALID_STRIDE"/>
+            <member name="statusfonttypemismatch"
+                  value="25"
+                  c:identifier="CAIRO_STATUS_FONT_TYPE_MISMATCH"/>
+            <member name="statususerfontimmutable"
+                  value="26"
+                  c:identifier="CAIRO_STATUS_USER_FONT_IMMUTABLE"/>
+            <member name="statususerfonterror"
+                  value="27"
+                  c:identifier="CAIRO_STATUS_USER_FONT_ERROR"/>
+            <member name="statusnegativecount"
+                  value="28"
+                  c:identifier="CAIRO_STATUS_NEGATIVE_COUNT"/>
+            <member name="statusinvalidclusters"
+                  value="29"
+                  c:identifier="CAIRO_STATUS_INVALID_CLUSTERS"/>
+            <member name="statusinvalidslant"
+                  value="30"
+                  c:identifier="CAIRO_STATUS_INVALID_SLANT"/>
+            <member name="statusinvalidweight"
+                  value="31"
+                  c:identifier="CAIRO_STATUS_INVALID_WEIGHT"/>
+        </enumeration>
+    </inject>
+</injections>

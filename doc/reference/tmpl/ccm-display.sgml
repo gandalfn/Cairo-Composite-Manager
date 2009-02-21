@@ -1,0 +1,161 @@
+<!-- ##### SECTION Title ##### -->
+CCMDisplay
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO CCM_DISPLAY_XDISPLAY ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### STRUCT CCMDisplay ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMDisplay::damage-event ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMDisplay::event ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMDisplay::xfixes-cursor-event ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
+<!-- ##### ARG CCMDisplay:shm-shared-pixmap ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDisplay:use-xshm ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDisplay:xdisplay ##### -->
+<para>
+
+</para>
+
+<!-- ##### FUNCTION ccm_display_new ##### -->
+<para>
+
+</para>
+
+@display: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_display_get_xdisplay ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_display_get_screen ##### -->
+<para>
+
+</para>
+
+@self: 
+@number: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_display_get_shape_notify_event_type ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_display_sync ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_display_grab ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_display_ungrab ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_display_trap_error ##### -->
+<para>
+
+</para>
+
+@self: 
+
+
+<!-- ##### FUNCTION ccm_display_pop_error ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_display_report_device_event ##### -->
+<para>
+
+</para>
+
+@self: 
+@screen: 
+@report: 
+@Returns: 
+
+

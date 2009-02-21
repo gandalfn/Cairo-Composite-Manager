@@ -141,8 +141,11 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 	
 	if (rep->generic.type == X_Error)
 	{
-		g_signal_emit (self, signals[ERROR], 0);
-		return False;
+		_XGetAsyncReply(dpy, (char *)&replbuf, rep, buf, len,
+						(sizeof(xError) - sizeof(xReply)) >> 2,
+						False);
+		g_signal_emit (self, signals[ERROR], 0);		
+		return True;
 	}
 	
 	reply = (xGetPropertyReply *)
@@ -223,6 +226,7 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 	
 		if (self->priv->data)
 		{
+			(self->priv->data)[nbytes] = '\0';
 			self->priv->n_items = reply->nItems;
 			ccm_debug("DATA %i", self->priv->n_items);
 			self->priv->id = g_idle_add_full (G_PRIORITY_HIGH, 
@@ -236,6 +240,10 @@ ccm_property_async_handler (Display *dpy, xReply *rep, char *buf,
 			g_signal_emit (self, signals[ERROR], 0);
 			return BadAlloc;
 		}
+	}
+	else
+	{
+		g_signal_emit (self, signals[ERROR], 0);
 	}
 	
 	return True;
@@ -274,7 +282,6 @@ ccm_property_async_new(CCMDisplay* display, Window window, Atom property,
   	req->longLength = length;
 	
 	UnlockDisplay (dpy);
-	SyncHandle ();
 	
 	return self;
 }

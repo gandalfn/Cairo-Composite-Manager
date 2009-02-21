@@ -1,0 +1,4 @@
+[enable]
+Type=bool
+Default=false
+_Description=Vala window test plugin.

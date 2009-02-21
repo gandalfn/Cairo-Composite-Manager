@@ -106,11 +106,11 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 	geometry = ccm_drawable_get_geometry (drawable);
 	if (geometry)
 	{
-		g_print("-> geometry : \n");
+		ccm_log("-> geometry : ");
 		ccm_region_get_rectangles ((CCMRegion*)geometry, &rects, &nb_rects);
 	
-		for (cpt = 0; cpt < nb_rects; cpt++)
-			g_print("--> %i, %i, %i, %i\n", (int)rects[cpt].x, (int)rects[cpt].y,
+		for (cpt = 0; cpt < nb_rects; ++cpt)
+			ccm_log("--> %i, %i, %i, %i", (int)rects[cpt].x, (int)rects[cpt].y,
 					(int)rects[cpt].width, (int)rects[cpt].height);
 		g_free(rects);
 	}	
@@ -118,11 +118,11 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 	g_object_get (drawable, "damaged", &damaged, NULL);
 	if (damaged)
 	{
-		g_print("-> damaged : \n");
+		ccm_log("-> damaged : ");
 		ccm_region_get_rectangles ((CCMRegion*)damaged, &rects, &nb_rects);
 		
-		for (cpt = 0; cpt < nb_rects; cpt++)
-			g_print("--> %i, %i, %i, %i\n", (int)rects[cpt].x, (int)rects[cpt].y,
+		for (cpt = 0; cpt < nb_rects; ++cpt)
+			ccm_log("--> %i, %i, %i, %i", (int)rects[cpt].x, (int)rects[cpt].y,
 					(int)rects[cpt].width, (int)rects[cpt].height);
 		g_free(rects);
 	}

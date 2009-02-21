@@ -1,6 +1,7 @@
 [CCMPlugin]
 Plugin=ccm-menu-animation
+Version=@VERSION@
 _Name=Menu-Animation
-_Description=Menu Zoom Animation
+_Description=Add animation on menu open/close
 Backends=xrender;glitz
 Depends=fade;shadow

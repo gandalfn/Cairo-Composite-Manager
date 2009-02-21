@@ -38,6 +38,9 @@ typedef enum
 void
 cairo_rectangle_round (cairo_t *cr, double x, double y, double w, double h,
                        int radius, CairoCorners corners);
+void
+cairo_notebook_page_round (cairo_t *cr, double x, double y, double w, double h,
+						   double tx, double tw, double th, int radius);
 
 cairo_surface_t* cairo_image_surface_blur (cairo_surface_t *surface,
 					   int              radius,
@@ -47,7 +50,8 @@ cairo_surface_t* cairo_image_surface_blur (cairo_surface_t *surface,
 					   int              width,
 					   int              height);
 
-cairo_surface_t* cairo_blur_path(cairo_path_t* path, int border, double step, 
-				 double width, double height);
+cairo_surface_t* cairo_blur_path(cairo_path_t* path, cairo_path_t* clip,
+                                 int border, double step, 
+                                 double width, double height);
 				  
 #endif /* _CCM_CAIRO_UTILS_H_ */

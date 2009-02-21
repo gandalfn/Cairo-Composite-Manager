@@ -10,13 +10,6 @@
                  attribute="Supported-Project-Types"
                  value="automake"/>
 	</plugin>
-	<plugin name="Symbol Browser"
-            url="http://anjuta.org/plugins/"
-            mandatory="yes">
-		<require group="Anjuta Plugin"
-                 attribute="Location"
-                 value="anjuta-symbol-browser:SymbolBrowserPlugin"/>
-	</plugin>
 	<plugin name="Make Build System"
             url="http://anjuta.org/plugins/"
             mandatory="yes">

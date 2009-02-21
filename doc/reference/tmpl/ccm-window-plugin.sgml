@@ -1,0 +1,181 @@
+<!-- ##### SECTION Title ##### -->
+CCMWindowPlugin
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### MACRO CCM_WINDOW_PLUGIN_GET_INTERFACE ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_WINDOW_PLUGIN_PARENT ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_WINDOW_PLUGIN_ROOT ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+
+<!-- ##### MACRO CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD ##### -->
+<para>
+
+</para>
+
+@plugin: 
+@func: 
+@callback: 
+@data: 
+
+
+<!-- ##### MACRO CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD ##### -->
+<para>
+
+</para>
+
+@plugin: 
+@func: 
+
+
+<!-- ##### STRUCT CCMWindowPlugin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### FUNCTION ccm_window_plugin_load_options ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_query_geometry ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_paint ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+@ctx: 
+@surface: 
+@y_invert: 
+@Returns: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_map ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_unmap ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_query_opacity ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_move ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+@x: 
+@y: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_resize ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+@width: 
+@height: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_set_opaque_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+@area: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_get_origin ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+@x: 
+@y: 
+
+
+<!-- ##### FUNCTION ccm_window_plugin_get_pixmap ##### -->
+<para>
+
+</para>
+
+@self: 
+@window: 
+@Returns: 
+
+

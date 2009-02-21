@@ -46,6 +46,9 @@ struct _CCMPixmapImagePrivate
 static cairo_surface_t* ccm_pixmap_image_get_surface	(CCMDrawable* drawable);
 static gboolean	  		ccm_pixmap_image_repair 		(CCMDrawable* drawable,
 														 CCMRegion* area);
+static void				ccm_pixmap_image_flush       	(CCMDrawable* drawable);
+static void				ccm_pixmap_image_flush_region	(CCMDrawable* drawable, 
+													     CCMRegion* area);
 static void		  		ccm_pixmap_image_bind 		  	(CCMPixmap* self);
 static void		  		ccm_pixmap_image_release 		(CCMPixmap* self);
 
@@ -74,6 +77,8 @@ ccm_pixmap_image_class_init (CCMPixmapImageClass *klass)
 
 	CCM_DRAWABLE_CLASS(klass)->repair = ccm_pixmap_image_repair;
 	CCM_DRAWABLE_CLASS(klass)->get_surface = ccm_pixmap_image_get_surface;
+	CCM_DRAWABLE_CLASS(klass)->flush = ccm_pixmap_image_flush;
+	CCM_DRAWABLE_CLASS(klass)->flush_region = ccm_pixmap_image_flush_region;
 	CCM_PIXMAP_CLASS(klass)->bind = ccm_pixmap_image_bind;
 	CCM_PIXMAP_CLASS(klass)->release = ccm_pixmap_image_release;
 	
@@ -142,7 +147,7 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 			gint nb_rects, cpt;
 			
 			ccm_region_get_xrectangles (area, &rects, &nb_rects);
-			for (cpt = 0; cpt < nb_rects; cpt++)
+			for (cpt = 0; cpt < nb_rects; ++cpt)
 			{
 				if (!ccm_image_get_sub_image (self->priv->image,
 											  CCM_PIXMAP(self), 
@@ -192,3 +197,43 @@ ccm_pixmap_image_get_surface (CCMDrawable* drawable)
 	return self->priv->surface;
 }
 
+static void
+ccm_pixmap_image_flush (CCMDrawable* drawable)
+{
+	g_return_if_fail(drawable != NULL);
+	
+	CCMPixmapImage *self = CCM_PIXMAP_IMAGE(drawable);
+	
+	if (self->priv->image)
+	{
+		cairo_rectangle_t clipbox;
+		
+		ccm_drawable_get_device_geometry_clipbox (drawable, &clipbox);
+		
+		ccm_image_put_image (self->priv->image, CCM_PIXMAP(self), 0, 0, 0, 0,
+							 clipbox.width, clipbox.height);
+	}
+}
+
+static void
+ccm_pixmap_image_flush_region (CCMDrawable* drawable, CCMRegion* area)
+{
+	g_return_if_fail(drawable != NULL);
+	g_return_if_fail(area != NULL);
+	
+	CCMPixmapImage *self = CCM_PIXMAP_IMAGE(drawable);
+	
+	if (self->priv->image)
+	{
+		XRectangle* rects;
+		gint cpt, nb_rects;
+		
+		ccm_region_get_xrectangles (area, &rects, &nb_rects);
+		for (cpt = 0; cpt < nb_rects; ++cpt)
+			ccm_image_put_image (self->priv->image, CCM_PIXMAP(self), 
+								 rects[cpt].x, rects[cpt].y,
+								 rects[cpt].x, rects[cpt].y,
+								 rects[cpt].width, rects[cpt].height);
+		g_free(rects);
+	}
+}

@@ -57,12 +57,12 @@ struct _CCMPixmap
 
 GType 	    ccm_pixmap_get_type 	    (void) G_GNUC_CONST;
 CCMPixmap*  ccm_pixmap_new      	    (CCMDrawable* drawable, 
-					     Pixmap xpixmap);
+					                     Pixmap xpixmap);
 CCMPixmap*  ccm_pixmap_image_new   	    (CCMDrawable* drawable, 
-				             Pixmap xpixmap);
-CCMPixmap*  ccm_pixmap_new_from_visual      (CCMScreen* screen, 
-                                             Visual* visual, 
-					     Pixmap xpixmap);
+				                         Pixmap xpixmap);
+CCMPixmap*  ccm_pixmap_new_from_visual  (CCMScreen* screen, 
+                                         Visual* visual, 
+                                         Pixmap xpixmap);
                                          
 G_END_DECLS
 

@@ -1,0 +1,59 @@
+<!-- ##### SECTION Title ##### -->
+CCMKeybind
+
+<!-- ##### SECTION Short_Description ##### -->
+
+
+<!-- ##### SECTION Long_Description ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION See_Also ##### -->
+<para>
+
+</para>
+
+<!-- ##### SECTION Stability_Level ##### -->
+
+
+<!-- ##### STRUCT CCMKeybind ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMKeybind::key-motion ##### -->
+<para>
+
+</para>
+
+@ccmkeybind: the object which received the signal.
+@arg1: 
+@arg2: 
+
+<!-- ##### SIGNAL CCMKeybind::key-press ##### -->
+<para>
+
+</para>
+
+@ccmkeybind: the object which received the signal.
+
+<!-- ##### SIGNAL CCMKeybind::key-release ##### -->
+<para>
+
+</para>
+
+@ccmkeybind: the object which received the signal.
+
+<!-- ##### FUNCTION ccm_keybind_new ##### -->
+<para>
+
+</para>
+
+@screen: 
+@keystring: 
+@exclusive: 
+@Returns: 
+
+
