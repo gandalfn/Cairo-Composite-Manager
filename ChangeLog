@@ -1,4 +1,10 @@
-2009-02-22  Nicolas Bruguier  <gandalfn@rohan>
+2009-02-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* shave-libtool.in:
+	* shave.in:
+	  - Update with latest git version of shave.
+
+2009-02-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* lib/test-config.c (on_config_changed), (main):
     * lib/Makefile.am:
