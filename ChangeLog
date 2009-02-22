@@ -1,3 +1,21 @@
+2009-02-22  Nicolas Bruguier  <gandalfn@rohan>
+
+	* lib/test-config.c (on_config_changed), (main):
+    * lib/Makefile.am:
+      - Add config test utility.
+    * lib/ccm-config-key.c:
+    * lib/ccm-config-key.h:
+    * lib/ccm-config-schema.c:
+    * lib/ccm-config.c:
+      - Implement key file backend for configuration need to be more tested.
+    * plugins/automate/ccm-automate.plugin.desktop.in:
+      - Fix name of plugin
+    * src/ccm-cell-renderer-extension.c:
+    * src/ccm-preferences-page.c:
+      - Fix a memory leak.
+    * src/ccm-screen.c:
+      - Force map visible window on screen query_stack.
+
 2009-02-21  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     It's a long time I don't push modifications due a lack of time to

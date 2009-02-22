@@ -139,6 +139,12 @@ ccm_cell_renderer_extension_init (CCMCellRendererExtension *self)
 static void
 ccm_cell_renderer_extension_finalize (GObject *object)
 {
+	CCMCellRendererExtension* self = CCM_CELL_RENDERER_EXTENSION(object);
+	
+	if (self->priv->name) g_free(self->priv->name);
+	if (self->priv->description) g_free(self->priv->description);
+	if (self->priv->version) g_free(self->priv->version);
+	
 	G_OBJECT_CLASS (ccm_cell_renderer_extension_parent_class)->finalize (object);
 }
 

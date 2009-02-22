@@ -90,11 +90,10 @@ static gchar*
 ccm_config_schema_get_path(gchar* path, int screen, gchar* name)
 {
 	g_return_val_if_fail(path != NULL, NULL);
-	g_return_val_if_fail(name != NULL, NULL);
 	
-	return g_strdup_printf("%s/%s/%s/%s.schema-key", path, CCM_CONFIG_SCHEMA_PATH,
-	                       screen < 0 ? CCM_CONFIG_SCHEMA_GENERAL_PATH :
-		                   CCM_CONFIG_SCHEMA_SCREEN_PATH, name);
+	return g_strdup_printf("%s/%s/ccm-%s.schema-key", path, 
+	                       CCM_CONFIG_SCHEMA_PATH, 
+	                       name ? name : screen < 0 ? "display" : "screen");
 }
 
 static gboolean
@@ -127,13 +126,11 @@ ccm_config_schema_get_filename(CCMConfigSchema* self)
 CCMConfigSchema*
 ccm_config_schema_new (int screen, gchar* name)
 {
-	g_return_val_if_fail(name != NULL, NULL);
-	
 	CCMConfigSchema* self = g_object_new(CCM_TYPE_CONFIG_SCHEMA, NULL);
 	GError* error = NULL;
 	
 	self->priv->screen = screen;
-	self->priv->name = g_strdup(name);
+	self->priv->name = name ? g_strdup(name) : NULL;
 	self->priv->file = g_key_file_new();
 		
 	if (!ccm_config_schema_get_filename (self))

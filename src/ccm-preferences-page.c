@@ -339,8 +339,8 @@ ccm_preferences_page_on_plugins_modified(CCMPreferencesPage* self,
 			{
 				if (g_ascii_strcasecmp(name, item->data) || active)
 				{
-					new = g_slist_append(new, 
-										 g_ascii_strdown(item->data, 
+					new = g_slist_prepend(new, 
+										  g_ascii_strdown(item->data, 
 														 strlen(item->data)));
 				}
 				found |= !g_ascii_strcasecmp(name, item->data);
@@ -348,7 +348,7 @@ ccm_preferences_page_on_plugins_modified(CCMPreferencesPage* self,
 			if (active && !found)
 			{
 				update = TRUE;
-				new = g_slist_append(new, g_ascii_strdown(name, strlen(name)));
+				new = g_slist_prepend(new, g_ascii_strdown(name, strlen(name)));
 			}
 			else if (!active && found)
 				update = TRUE;

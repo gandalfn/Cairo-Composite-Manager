@@ -1,7 +1,7 @@
 [CCMPlugin]
 Plugin=ccm-automate
 Version=@VERSION@
-_Name=Automate plugin
+_Name=Automate
 _Description=Automate record/play desktop actions
 Backends=xrender;glitz
 Depends=

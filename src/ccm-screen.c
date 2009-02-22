@@ -1041,6 +1041,9 @@ ccm_screen_query_stack(CCMScreen* self)
 		{
 			if (!ccm_screen_add_window(self, window))
 				g_object_unref(window);
+			else if (ccm_window_is_viewable (window) &&
+			         !ccm_window_is_input_only (window))
+				ccm_window_map(window);
 		}
 	}
 }

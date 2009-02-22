@@ -22,6 +22,7 @@
 
 #include "ccm-config.h"
 #include "ccm-config-gconf.h"
+#include "ccm-config-key.h"
 
 #define CCM_CONFIG_ERROR_QUARK g_quark_from_string("CCMConfigError")
 
@@ -128,16 +129,37 @@ ccm_config_class_init (CCMConfigClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 
 	g_type_class_add_private (klass, sizeof (CCMConfigPrivate));
-	
+
+	object_class->get_property = ccm_config_get_property;
+    object_class->set_property = ccm_config_set_property;
+	object_class->finalize = ccm_config_finalize;
+
+	g_object_class_install_property(object_class, PROP_SCREEN,
+		g_param_spec_int ("screen",
+		                  "Screen",
+		                  "Screen of config value",
+		                  -2, G_MAXINT, -1, 
+		                  G_PARAM_READWRITE));
+
+	g_object_class_install_property(object_class, PROP_EXTENSION,
+		g_param_spec_string ("extension",
+		                     "Extension",
+		              		 "Config extension name",
+		                     NULL,
+		              	     G_PARAM_READWRITE));
+
+	g_object_class_install_property(object_class, PROP_KEY,
+		g_param_spec_string ("key",
+		                     "Key",
+		              		 "Config key name",
+		                     NULL,
+		              	     G_PARAM_READWRITE));
+
 	signals[CHANGED] = g_signal_new ("changed",
 									 G_OBJECT_CLASS_TYPE (object_class),
 									 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 									 g_cclosure_marshal_VOID__VOID,
 									 G_TYPE_NONE, 0, G_TYPE_NONE);
-	
-	object_class->get_property = ccm_config_get_property;
-    object_class->set_property = ccm_config_set_property;
-	object_class->finalize = ccm_config_finalize;
 }
 
 GQuark
@@ -152,7 +174,7 @@ ccm_config_set_backend(const gchar* backend)
 	backend_type = CCM_TYPE_CONFIG_GCONF;
 	
 	if (!g_ascii_strcasecmp(backend, "key"))
-		backend_type = CCM_TYPE_CONFIG_GCONF;
+		backend_type = CCM_TYPE_CONFIG_KEY;
 }
 
 void
@@ -168,7 +190,8 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 {
 	g_return_val_if_fail(key != NULL, NULL);
 	
-	CCMConfig* self = g_object_new(backend_type, NULL);
+	CCMConfig* self = g_object_new(backend_type, "screen", screen,
+	                               "extension", extension, "key", key, NULL);
 	
 	if (!CCM_CONFIG_GET_CLASS(self)->initialize ||
 		!CCM_CONFIG_GET_CLASS(self)->initialize(self, screen, extension, key))

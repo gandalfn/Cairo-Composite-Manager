@@ -21,6 +21,8 @@
 #define _CCM_CONFIG_KEY_H_
 
 #include "ccm-config.h"
+
+#include <glib.h>
 #include <glib-object.h>
 
 G_BEGIN_DECLS
@@ -39,6 +41,9 @@ typedef struct _CCMConfigKey CCMConfigKey;
 struct _CCMConfigKeyClass
 {
 	CCMConfigClass parent_class;
+
+    GHashTable*    schemas;
+    GHashTable*    configs;
 };
 
 struct _CCMConfigKey
