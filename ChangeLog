@@ -1,3 +1,19 @@
+2009-02-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* debian/cairo-compmgr-dev.install:
+	* debian/cairo-compmgr-doc.install:
+	* debian/cairo-compmgr-plugins.install:
+	* debian/cairo-compmgr-vala.install:
+	* debian/cairo-compmgr.install:
+	* debian/changelog:
+	* debian/compat:
+	* debian/control:
+	* debian/copyright:
+	* debian/libcairo-compmgr-dev.install:
+	* debian/libcairo-compmgr0.install:
+	* debian/rules:
+	  - Append debian package directory.
+
 2009-02-22  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* shave-libtool.in:

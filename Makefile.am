@@ -21,8 +21,20 @@ EXTRA_DIST = $(cairo_compmgrdoc_DATA)\
 			 dolt.m4 \
 			 shave.m4 \
 			 shave.in \
-			 shave-libtool.in
-
+			 shave-libtool.in \
+             debian/changelog \
+             debian/compat \
+             debian/control \
+             debian/copyright \
+             debian/rules \
+             debian/cairo-compmgr.install \
+             debian/cairo-compmgr-plugins.install \
+             debian/cairo-compmgr-dev.install \
+             debian/cairo-compmgr-vala.install \
+             debian/cairo-compmgr-doc.install \
+             debian/libcairo-compmgr0.install \
+             debian/libcairo-compmgr-dev.install
+             
 DISTCLEANFILES = intltool-extract \
 				 intltool-merge \
 				 intltool-update \

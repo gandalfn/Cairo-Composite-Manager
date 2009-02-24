@@ -1,0 +1,2 @@
+debian/tmp/usr/bin/ccm-schema-key-to-gconf usr/bin
+debian/tmp/usr/include/cairo-compmgr/* usr/include/cairo-compmgr
