@@ -3,14 +3,39 @@ SUBDIRS = lib src tools plugins doc gir vapi data po
 doc: all
 	cd doc && $(MAKE) $(AM_MAKEFLAGS) doc
 	
-cairo_compmgrdocdir = ${prefix}/doc/cairo-compmgr
-cairo_compmgrdoc_DATA = \
-	README\
-	COPYING\
-	AUTHORS\
-	ChangeLog\
-	INSTALL\
-	NEWS
+deb-source: changelog dist 
+	mkdir -p packages
+	cd packages; \
+	rm -rf $(VERSION)-source; \
+	mkdir $(VERSION)-source; \
+	cd $(VERSION)-source; \
+	tar zxvf ../../cairo-compmgr-$(VERSION).tar.gz; \
+	cd cairo-compmgr-$(VERSION); \
+	echo y | debuild -S -sa -kDE69A0FB && \
+	cd .. && \
+	rm -rf cairo-compmgr-$(VERSION)
+
+deb: changelog dist
+	mkdir -p packages
+	cd packages; \
+	rm -rf $(VERSION); \
+	mkdir $(VERSION); \
+	cd $(VERSION); \
+	tar zxvf ../../cairo-compmgr-$(VERSION).tar.gz; \
+	cd cairo-compmgr-$(VERSION); \
+	echo y | debuild -sa && \
+	cd .. && \
+	rm -rf cairo-compmgr-$(VERSION) && \
+	rm -f *$(VERSION)*source* && \
+	rm -f *$(VERSION)*.build && \
+	rm -f *$(VERSION)*.changes
+	
+changelog:
+	if [ ! "$(shell dpkg-parsechangelog | grep ^Version | sed 's/.*: //; s/-.*//;')" = "$(VERSION)" ]; \
+	then \
+	    debchange --distribution $(shell lsb_release -c | awk '{print $$2}') -m -v "$(VERSION)-0ubuntu1~ppa1" "New upstream release."; \
+	    grep -v "^=" NEWS | awk 'BEGIN {show=0}{if ($$0 != ""){ if ($$1 == "Overview"){show++;} else if (show == 1) {gsub("* ", ""); cmd = sprintf("debchange \"%s\"", $$0); system(cmd);}}}'; \
+	fi	    
 
 EXTRA_DIST = $(cairo_compmgrdoc_DATA)\
 			 intltool-extract.in \

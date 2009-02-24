@@ -1,3 +1,16 @@
+Overview of Changes in Cairo Composite Manager 0.2.90
+====================================
+
+* API cleanup
+* Add decoration plugin
+* Add snapshot plugin
+* Add vala bindings
+* Fix shadow plugins
+* Fix mosaic plugins
+* Add experimental automate plugin
+* Add vala plugin sample
+* Various fixes
+
 Overview of Changes in Cairo Composite Manager 0.2.2
 ====================================
 

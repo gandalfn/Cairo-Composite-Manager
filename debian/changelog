@@ -1,8 +1,17 @@
 cairo-compmgr (0.2.90-0ubuntu1~ppa1) intrepid; urgency=low
 
   * New upstream release.
+  * API cleanup
+  * Add decoration plugin
+  * Add snapshot plugin
+  * Add vala bindings
+  * Fix shadow plugins
+  * Fix mosaic plugins
+  * Add experimental automate plugin
+  * Add vala plugin sample
+  * Various fixes
 
- -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Mon, 23 Feb 2009 23:49:32 +0100
+ -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Tue, 24 Feb 2009 22:49:51 +0100
 
 cairo-compmgr (0.2.2-0ubuntu1~ppa1) hardy; urgency=low
 
