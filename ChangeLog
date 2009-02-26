@@ -1,3 +1,11 @@
+2009-02-26  Nicolas Bruguier  <gandalfn@rohan>
+
+	* configure.ac:
+	* shave-libtool.in:
+	* shave.in:
+	* shave.m4:
+	  - Update with lastest shave release.
+
 2009-02-24  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* debian/cairo-compmgr-dev.install:
