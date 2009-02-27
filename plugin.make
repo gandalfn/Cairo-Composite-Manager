@@ -30,17 +30,18 @@ plugin_in_files = $(PLUGIN).plugin.desktop.in
 
 plugin_DATA = $(PLUGIN).plugin
 
+schemakeydir = $(datadir)/cairo-compmgr/schemas
+schemakey_DATA = $(PLUGIN_SCHEMA:.schema-key.in=.schema-key)
+
+%.schema-key: %.schema-key.in $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*po) ; $(INTLTOOL_MERGE) $(top_srcdir)/po $< $@ -d -u -c $(top_builddir)/po/.intltool-merge-cache
+
+if ENABLE_GCONF
 schemasdir = $(GCONF_SCHEMA_FILE_DIR)
 schemas_in_files = $(PLUGIN_SCHEMA:.schema-key.in=.schemas.in)
 schemas_DATA = $(schemas_in_files:.schemas.in=.schemas)
 
-schemakeydir = $(datadir)/cairo-compmgr/schemas
-schemakey_DATA = $(PLUGIN_SCHEMA:.schema-key.in=.schema-key)
-
 %.schemas.in: %.schema-key
 	${top_builddir}/tools/ccm-schema-key-to-gconf --plugin --schema-key=$< --schema-gconf=$@
-
-%.schema-key: %.schema-key.in $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*po) ; $(INTLTOOL_MERGE) $(top_srcdir)/po $< $@ -d -u -c $(top_builddir)/po/.intltool-merge-cache
 
 @INTLTOOL_SCHEMAS_RULE@
 
@@ -54,6 +55,7 @@ install-data-local:
 else
 install-data-local:
 endif
+endif
 
 ui_DATA = $(PLUGIN_UI)
 
@@ -66,6 +68,9 @@ CLEANFILES = $(PLUGIN).vala.stamp \
              $(PLUGIN_VALA_SOURCES:.vala=.c) \
 	         $(PLUGIN_VALA_SOURCES:.vala=.h) \
              $(schemakey_DATA) \
-             $(schemas_DATA) \
-             $(schemas_in_files) \
              $(plugin_DATA)
+
+if ENABLE_GCONF
+CLEANFILES += $(schemas_DATA) \
+              $(schemas_in_files)
+endif

@@ -21,8 +21,10 @@
  */
 
 #include "ccm-config.h"
-#include "ccm-config-gconf.h"
 #include "ccm-config-key.h"
+#ifdef ENABLE_GCONF
+#include "ccm-config-gconf.h"
+#endif
 
 #define CCM_CONFIG_ERROR_QUARK g_quark_from_string("CCMConfigError")
 
@@ -171,10 +173,12 @@ ccm_config_error_quark()
 void
 ccm_config_set_backend(const gchar* backend)
 {
-	backend_type = CCM_TYPE_CONFIG_GCONF;
+	backend_type = CCM_TYPE_CONFIG_KEY;
 	
-	if (!g_ascii_strcasecmp(backend, "key"))
-		backend_type = CCM_TYPE_CONFIG_KEY;
+#ifdef ENABLE_GCONF
+	if (!g_ascii_strcasecmp(backend, "gconf"))
+		backend_type = CCM_TYPE_CONFIG_GCONF;
+#endif
 }
 
 void

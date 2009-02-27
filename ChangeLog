@@ -1,4 +1,26 @@
-2009-02-26  Nicolas Bruguier  <gandalfn@rohan>
+2009-02-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* configure.ac:
+	* data/Makefile.am:
+	* lib/Makefile.am:
+	* lib/ccm-config-key.c (ccm_config_key_monitor_changed),
+	(ccm_config_key_monitor_sync), (ccm_config_key_monitor_new),
+	(ccm_config_key_set_boolean), (ccm_config_key_set_integer),
+	(ccm_config_key_set_float), (ccm_config_key_set_string),
+	(ccm_config_key_get_string_list), (ccm_config_key_set_string_list),
+	(ccm_config_key_get_integer_list),
+	(ccm_config_key_set_integer_list):
+	* lib/ccm-config.c (ccm_config_set_backend):
+	* lib/test-config.c (on_timeout), (main):
+	* plugin.make:
+	* src/Makefile.am:
+	* src/cairo-compmgr.c (main):
+	* src/ccm-screen.c:
+	  - Finalize key configuration backend.
+	  - Set gconf configuration backend has optionnal and enable by default
+	    key backend.
+
+2009-02-26  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* configure.ac:
 	* shave-libtool.in:

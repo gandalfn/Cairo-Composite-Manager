@@ -16,6 +16,33 @@
 
 #include "ccm-config.h"
 
+GSList* plugins = NULL;
+gboolean r = FALSE;
+
+gboolean
+on_timeout(CCMConfig* config)
+{
+    GSList* item;
+    
+    plugins = ccm_config_get_string_list(config, NULL);
+    for (item = plugins; item; item = item->next)
+    {
+        g_print("%s,", (gchar*)item->data);
+    }
+    g_print("\n");
+    if (r)
+        plugins = g_slist_remove_link(plugins, plugins);
+    else
+        plugins = g_slist_prepend(plugins, g_strdup("vala-window-plugin"));
+    r = !r;
+    
+    ccm_config_set_string_list(config, plugins, NULL);
+    g_slist_foreach(plugins, (GFunc)g_free, NULL);
+    g_slist_free(plugins);
+
+    return TRUE;
+}
+
 void
 on_config_changed(CCMConfig* config)
 {
@@ -52,15 +79,19 @@ main(gint argc, gchar**argv)
     ccm_config_set_backend ("key");
     
     config = ccm_config_new(-1, NULL, "enable");
-    g_object_unref(config);
-    config = ccm_config_new(0, NULL, "backend");
     g_signal_connect(config, "changed", G_CALLBACK(on_config_changed), NULL);
+//    config = ccm_config_new(0, NULL, "backend");
+//    g_signal_connect(config, "changed", G_CALLBACK(on_config_changed), NULL);
     other = ccm_config_new(0, NULL, "plugins");
-    GSList* item, * plugins = ccm_config_get_string_list(other, NULL);
+    GSList* item;
+    plugins = ccm_config_get_string_list(other, NULL);
     for (item = plugins; item; item = item->next)
     {
         g_print("%s\n", (gchar*)item->data);
+        g_free(item->data);
     }
+    g_slist_free(plugins);
+    //g_timeout_add_seconds(2, on_timeout, other);
     g_signal_connect(other, "changed", G_CALLBACK(on_config_changed), NULL);
     plugin = ccm_config_new(0, "fade", "duration");
     g_signal_connect(plugin, "changed", G_CALLBACK(on_config_changed), NULL);

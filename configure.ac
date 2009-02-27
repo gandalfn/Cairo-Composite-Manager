@@ -66,17 +66,6 @@ AM_PROG_LIBTOOL
 DOLT
 
 dnl ****************************************************************************
-dnl Check for gconf
-dnl ****************************************************************************
-AC_PATH_PROG(GCONFTOOL, gconftool-2, no)
-
-if test x"$GCONFTOOL" = xno; then
-  AC_MSG_ERROR([gconftool-2 executable not found in your path - should be installed with GConf])
-fi
-
-AM_GCONF_SOURCE_2
-
-dnl ****************************************************************************
 dnl Check for packages
 dnl ****************************************************************************
 PKG_CHECK_MODULES(CAIRO_COMPMGR, 
@@ -86,8 +75,7 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         xi,
         cairo >= $CAIRO_REQUIRED,
         pixman-1 >= $PIXMAN_REQUIRED,
-        gtk+-2.0 >= $GTK_REQUIRED,
-        gconf-2.0])
+        gtk+-2.0 >= $GTK_REQUIRED])
 AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 
@@ -95,6 +83,24 @@ dnl ****************************************************************************
 dnl Check for gtk-doc and docbook
 dnl ****************************************************************************
 GTK_DOC_CHECK([1.6])
+
+dnl ****************************************************************************
+dnl Check for gconf
+dnl ****************************************************************************
+PKG_CHECK_MODULES(CCM_GCONF, [gconf-2.0], [gconf="yes"], [gconf="no"])
+if test x"$gconf" = xyes; then
+    AC_PATH_PROG(GCONFTOOL, gconftool-2, no)
+
+    if test x"$GCONFTOOL" = xno; then
+      AC_MSG_ERROR([gconftool-2 executable not found in your path - should be installed with GConf])
+    fi
+    AM_GCONF_SOURCE_2
+    AC_SUBST(CCM_GCONF_CFLAGS)
+    AC_SUBST(CCM_GCONF_LIBS)
+else
+    AM_CONDITIONAL(GCONF_SCHEMAS_INSTALL, [test x$gconf = xyes])
+fi
+AM_CONDITIONAL(ENABLE_GCONF, [test x$gconf = xyes])
 
 dnl ****************************************************************************
 dnl Check for vala

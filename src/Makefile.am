@@ -40,6 +40,10 @@ if ENABLE_GOBJECT_INTROSPECTION
 INCLUDES += $(CCM_GOBJECT_INTROSPECTION_CFLAGS) -DENABLE_GOBJECT_INTROSPECTION
 endif 
 
+if ENABLE_GCONF
+INCLUDES += $(CCM_GCONF_CFLAGS) -DENABLE_GCONF
+endif
+
 ccm-marshallers.c: ccm-marshallers.list
 	glib-genmarshal --prefix ccm_cclosure_marshal --body $< > $@
 
@@ -176,6 +180,10 @@ endif
 if ENABLE_GOBJECT_INTROSPECTION
 cairo_compmgr_LDADD += $(CCM_GOBJECT_INTROSPECTION_LIBS)
 endif 
+
+if ENABLE_GCONF
+cairo_compmgr_LDADD += $(CCM_GCONF_LIBS)
+endif
 
 EXTRA_DIST = ccm-marshallers.list
 

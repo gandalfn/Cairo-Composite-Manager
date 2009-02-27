@@ -86,13 +86,21 @@ main(gint argc, gchar **argv)
 	CCMTrayIcon* trayicon;
     GError* error = NULL;
     gchar* user_plugin_path = NULL;
-    
+
+#ifdef ENABLE_GCONF
+    static gboolean use_gconf = FALSE;
+#endif
 #ifdef ENABLE_GOBJECT_INTROSPECTION
     static gchar* gir_output = NULL;
 #endif
     
     GOptionEntry options[] = 
     {
+#ifdef ENABLE_GCONF
+        { "use-gconf", 'g', 0, G_OPTION_ARG_NONE, &use_gconf,
+ 		  N_("Force use gconf for configuration files"),
+ 		  NULL },
+#endif
 #ifdef ENABLE_GOBJECT_INTROSPECTION
 		{ "introspect-dump", 'i', 0, G_OPTION_ARG_STRING, &gir_output,
  		  N_("Dump gobject introspection file"),
@@ -129,7 +137,13 @@ main(gint argc, gchar **argv)
     
 	g_log_set_default_handler(log_func, NULL);
 
-    ccm_config_set_backend ("gconf");
+#ifdef ENABLE_GCONF
+    if (use_gconf)
+        ccm_config_set_backend ("gconf");
+    else
+#endif
+        ccm_config_set_backend ("key");
+    
     ccm_extension_loader_add_plugin_path(PACKAGE_PLUGIN_DIR);
     
     user_plugin_path = g_strdup_printf("%s/%s/plugins", g_get_user_data_dir(),

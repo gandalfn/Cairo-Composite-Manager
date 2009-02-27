@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdlib.h>
 
 #include "ccm-config-schema.h"
 #include "ccm-config-key.h"
@@ -73,7 +74,6 @@ struct _CCMConfigKeyMonitor
 	GKeyFile*	  keyfile;
 	GSList*		  configs;
 	GFileMonitor* monitor;
-	gint		  id_update;
 };
 
 static void
@@ -87,17 +87,11 @@ ccm_config_key_monitor_changed (CCMConfigKeyMonitor* self,
 
 	switch (event_type) 
 	{
-		case G_FILE_MONITOR_EVENT_DELETED:
-		{
-			g_print("deleted %s\n", self->filename);
-		}
-		break;
 		case G_FILE_MONITOR_EVENT_CREATED:
 		case G_FILE_MONITOR_EVENT_CHANGED:
 		{
 			GSList* item;
 
-			g_print("changed %s\n", self->filename);
 			g_key_file_free(self->keyfile);
 			self->keyfile = g_key_file_new();
 			if (g_key_file_load_from_file(self->keyfile, self->filename, 
@@ -115,8 +109,6 @@ ccm_config_key_monitor_changed (CCMConfigKeyMonitor* self,
 					if (value && (!config->priv->value ||
 					    g_ascii_strcasecmp(config->priv->value, value)))
 					{
-						g_print("%s -> %s\n", config->priv->value, value);
-
 						if (config->priv->value) g_free(config->priv->value);
 						config->priv->value = g_strdup(value);
 						ccm_config_changed (CCM_CONFIG(config));
@@ -131,10 +123,10 @@ ccm_config_key_monitor_changed (CCMConfigKeyMonitor* self,
 	}
 }
 
-static gboolean
-ccm_config_key_monitor_update_file(CCMConfigKeyMonitor* self)
+static void
+ccm_config_key_monitor_sync(CCMConfigKeyMonitor* self)
 {
-	g_return_val_if_fail(self != NULL, FALSE);
+	g_return_if_fail(self != NULL);
 
 	gsize length;
 	gchar* data = g_key_file_to_data(self->keyfile, &length, NULL);
@@ -148,23 +140,6 @@ ccm_config_key_monitor_update_file(CCMConfigKeyMonitor* self)
 			g_error_free(error);
 		}
 		g_free(data);
-	}
-	self->id_update = 0;
-	
-	return FALSE;
-}
-
-static void
-ccm_config_key_monitor_sync(CCMConfigKeyMonitor* self)
-{
-	ccm_config_key_monitor_update_file(self);
-	return;
-	
-	if (!self->id_update)
-	{
-		self->id_update = g_idle_add_full(G_PRIORITY_LOW, 
-		                                  (GSourceFunc)ccm_config_key_monitor_update_file,
-		                                  self, NULL);
 	}
 }
 
@@ -198,7 +173,6 @@ ccm_config_key_monitor_new(gchar* filename)
 	}
 	g_signal_connect_swapped(self->monitor, "changed", 
 	                         G_CALLBACK(ccm_config_key_monitor_changed), self);
-	self->id_update = 0;
 	
 	return self;
 }
@@ -365,23 +339,6 @@ ccm_config_key_initialize (CCMConfig* config, int screen,
 	return TRUE;
 }
 
-static void
-ccm_config_key_sync_value(CCMConfigKey* self)
-{
-	gchar* value = g_key_file_get_string(self->priv->monitor->keyfile,
-	                                     self->priv->name, self->priv->key, 
-	                                     NULL);
-	
-	if (value && (!self->priv->value || 
-	              g_ascii_strcasecmp(self->priv->value, value)))
-	{
-		if (self->priv->value) g_free(self->priv->value);
-		self->priv->value = g_strdup(value);
-		ccm_config_key_monitor_sync (self->priv->monitor);
-	}
-	if (value) g_free(value);
-}
-
 static gboolean
 ccm_config_key_get_boolean(CCMConfig* config, GError** error)
 {
@@ -398,7 +355,7 @@ ccm_config_key_set_boolean(CCMConfig* config, gboolean value, GError** error)
 	
 	g_key_file_set_boolean(self->priv->monitor->keyfile,
 	                       self->priv->name, self->priv->key, value);
-	ccm_config_key_sync_value(self);
+	ccm_config_key_monitor_sync (self->priv->monitor);
 }
 	
 static gint
@@ -417,7 +374,7 @@ ccm_config_key_set_integer(CCMConfig* config, gint value, GError** error)
 	
 	g_key_file_set_integer(self->priv->monitor->keyfile,
 	                       self->priv->name, self->priv->key, value);
-	ccm_config_key_sync_value(self);
+	ccm_config_key_monitor_sync (self->priv->monitor);
 }
 	
 static gfloat
@@ -436,7 +393,7 @@ ccm_config_key_set_float(CCMConfig* config, gfloat value, GError** error)
 	
 	g_key_file_set_double(self->priv->monitor->keyfile,
 	                      self->priv->name, self->priv->key, value);
-	ccm_config_key_sync_value(self);
+	ccm_config_key_monitor_sync (self->priv->monitor);
 }
 
 static gchar *
@@ -457,7 +414,7 @@ ccm_config_key_set_string(CCMConfig* config, gchar * value, GError** error)
 	{
 		g_key_file_set_string(self->priv->monitor->keyfile,
 		                      self->priv->name, self->priv->key, value);
-		ccm_config_key_sync_value(self);
+		ccm_config_key_monitor_sync (self->priv->monitor);
 	}
 }
 
@@ -466,17 +423,22 @@ ccm_config_key_get_string_list(CCMConfig* config, GError** error)
 {
 	CCMConfigKey* self = CCM_CONFIG_KEY(config);
 	GSList* result = NULL;
-	gchar** list = g_key_file_get_string_list(self->priv->monitor->keyfile,
-	                                          self->priv->name, self->priv->key, 
-	                                          NULL, error);
-	if (list)
+	gchar* value = g_key_file_get_string(self->priv->monitor->keyfile,
+	                                     self->priv->name, self->priv->key, 
+	                                     error);
+	if (value)
 	{
-		gint cpt;
+		gchar** list = g_strsplit(value, ",", -1);
+		if (list)
+		{
+			gint cpt;
 		
-		for (cpt = 0; list[cpt]; cpt++)
-			result = g_slist_prepend(result, g_strdup(list[cpt]));
-		result = g_slist_reverse(result);
-		g_strfreev(list);
+			for (cpt = 0; list[cpt]; cpt++)
+				result = g_slist_prepend(result, g_strdup(list[cpt]));
+			result = g_slist_reverse(result);
+			g_strfreev(list);
+		}
+		g_free(value);
 	}
 
 	return result;
@@ -496,11 +458,11 @@ ccm_config_key_set_string_list(CCMConfig* config, GSList * value,
 		result[cpt] = g_strdup(item->data);
 	val = g_strjoinv(",", result);
 	g_strfreev(result);
-	g_print("%s\n", val ? val : "null");
 	g_key_file_set_string(self->priv->monitor->keyfile,
 	                      self->priv->name, self->priv->key, 
 	                      val ? val : "");
-	ccm_config_key_sync_value(self);
+	ccm_config_key_monitor_sync (self->priv->monitor);
+	g_free(val);
 }
 
 static GSList*
@@ -508,18 +470,22 @@ ccm_config_key_get_integer_list(CCMConfig* config, GError** error)
 {
 	CCMConfigKey* self = CCM_CONFIG_KEY(config);
 	GSList* result = NULL;
-	gsize length; 
-	gint* list = g_key_file_get_integer_list(self->priv->monitor->keyfile,
-	                                         self->priv->name, self->priv->key, 
-	                                         &length, error);
-	if (list)
+	gchar* value = g_key_file_get_string(self->priv->monitor->keyfile,
+	                                     self->priv->name, self->priv->key, 
+	                                     error);
+	if (value)
 	{
-		gint cpt;
+		gchar** list = g_strsplit(value, ",", -1);
+		if (list)
+		{
+			gint cpt;
 		
-		for (cpt = 0; cpt < length; cpt++)
-			result = g_slist_prepend(result, GINT_TO_POINTER(list[cpt]));
-		result = g_slist_reverse(result);
-		g_free(list);
+			for (cpt = 0; list[cpt]; cpt++)
+				result = g_slist_prepend(result, GINT_TO_POINTER(atoi(list[cpt])));
+			result = g_slist_reverse(result);
+			g_strfreev(list);
+		}
+		g_free(value);
 	}
 
 	return result;
@@ -543,7 +509,7 @@ ccm_config_key_set_integer_list(CCMConfig* config, GSList * value,
 	g_key_file_set_string(self->priv->monitor->keyfile,
 	                      self->priv->name, self->priv->key, 
 	                      val ? val : "");
-	ccm_config_key_sync_value(self);
+	ccm_config_key_monitor_sync (self->priv->monitor);
 
-	g_free(result);
+	g_free(val);
 }
