@@ -1,5 +1,14 @@
 2009-02-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* NEWS:
+	* configure.ac:
+	* src/ccm-screen.c (ccm_screen_on_window_property_changed):
+	* src/ccm-window.c (impl_ccm_window_resize):
+	  - New pre-release to test xdg key configuration files.
+	  - Fix some glitches when window return form fullscreen.
+
+2009-02-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* src/ccm-display.c (ccm_display_get_pointers):
 	* src/ccm-extension-loader.c
 	(ccm_extension_loader_get_preferences_plugins),

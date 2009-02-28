@@ -1153,6 +1153,29 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 		}
 		
 		ccm_window_get_attribs(self);
+
+		if (new_geometry)
+		{
+			cairo_rectangle_t clipbox;
+			CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
+		
+			ccm_region_get_clipbox (new_geometry, &clipbox);
+			if (clipbox.x <= 0 && clipbox.y <= 0 && 
+				clipbox.width >= CCM_SCREEN_XSCREEN(screen)->width &&
+				clipbox.height >= CCM_SCREEN_XSCREEN(screen)->height &&
+				!self->priv->is_fullscreen)
+			{
+				self->priv->is_fullscreen = TRUE;
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+							  CCM_PROPERTY_STATE);
+			}
+			else if (self->priv->is_fullscreen)
+			{
+				self->priv->is_fullscreen = FALSE;
+				g_signal_emit(self, signals[PROPERTY_CHANGED], 0, 
+							  CCM_PROPERTY_STATE);
+			}
+		}
 	}
 }
 

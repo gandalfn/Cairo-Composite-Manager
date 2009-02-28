@@ -1291,7 +1291,8 @@ ccm_screen_on_window_property_changed(CCMScreen* self, CCMPropertyType changed,
 			ccm_debug_window(window, "FULLSCREEN");
 			self->priv->fullscreen = window;
 		}
-		else if (self->priv->fullscreen == window)
+		else if (!ccm_window_is_fullscreen (window) && 
+		         self->priv->fullscreen == window)
 		{
 			ccm_debug_window(window, "UNFULLSCREEN");
 			self->priv->fullscreen = NULL;
