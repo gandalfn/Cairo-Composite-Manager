@@ -682,7 +682,7 @@ ccm_window_get_property_async(CCMWindow* self, Atom property_atom,
 							 	 G_CALLBACK(ccm_window_on_property_async_error), 
 								 self);
 		self->priv->properties_pending = 
-			g_slist_append (self->priv->properties_pending, property);
+			g_slist_prepend (self->priv->properties_pending, property);
 	}
 	else
 	{
@@ -695,7 +695,7 @@ ccm_window_get_property_async(CCMWindow* self, Atom property_atom,
 								 G_CALLBACK(ccm_window_on_property_async_error), 
 								 self);
 		self->priv->properties_pending = 
-				g_slist_append (self->priv->properties_pending, property);
+				g_slist_prepend (self->priv->properties_pending, property);
 	}
 }
 
@@ -1535,7 +1535,7 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 						G_CALLBACK(ccm_window_on_transient_transform_changed),  
 						self);
 					transient->priv->transients = 
-						g_slist_append(transient->priv->transients, self);
+						g_slist_prepend(transient->priv->transients, self);
 				}
 				if (self->priv->hint_type == CCM_WINDOW_TYPE_NORMAL)
 				{

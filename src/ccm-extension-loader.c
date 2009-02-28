@@ -125,11 +125,11 @@ ccm_extension_loader_get_preferences_plugins (CCMExtensionLoader* self)
 		
 		if (g_type_is_a(plugin, CCM_TYPE_PREFERENCES_PAGE_PLUGIN))
 		{
-			plugins = g_slist_append(plugins, GINT_TO_POINTER(plugin));
+			plugins = g_slist_prepend(plugins, GINT_TO_POINTER(plugin));
 		}
 	}
 	
-	return plugins;
+	return g_slist_reverse(plugins);
 }
 
 GSList*
@@ -146,11 +146,11 @@ ccm_extension_loader_get_screen_window_plugins (CCMExtensionLoader* self)
 		if (g_type_is_a(plugin, CCM_TYPE_SCREEN_PLUGIN) ||
 			g_type_is_a(plugin, CCM_TYPE_WINDOW_PLUGIN))
 		{
-			plugins = g_slist_append(plugins, item->data);
+			plugins = g_slist_prepend(plugins, item->data);
 		}
 	}
 	
-	return plugins;
+	return g_slist_reverse(plugins);
 }
 
 GSList*
@@ -181,11 +181,11 @@ ccm_extension_loader_get_screen_plugins (CCMExtensionLoader* self,
 			}
 			
 			if (found)
-				plugins = g_slist_append(plugins, GINT_TO_POINTER(plugin));
+				plugins = g_slist_prepend(plugins, GINT_TO_POINTER(plugin));
 		}
 	}
 	
-	return plugins;
+	return g_slist_reverse(plugins);
 }
 
 GSList*
@@ -216,11 +216,11 @@ ccm_extension_loader_get_window_plugins (CCMExtensionLoader* self,
 			}
 			
 			if (found)
-				plugins = g_slist_append(plugins, GINT_TO_POINTER(plugin));
+				plugins = g_slist_prepend(plugins, GINT_TO_POINTER(plugin));
 		}
 	}
 	
-	return plugins;
+	return g_slist_reverse(plugins);
 }
 
 void
@@ -230,5 +230,5 @@ ccm_extension_loader_add_plugin_path (gchar* path)
 	
 	if (g_file_test(path, G_FILE_TEST_EXISTS) && 
 		g_file_test(path, G_FILE_TEST_IS_DIR))
-		CCMPluginPath = g_slist_append(CCMPluginPath, g_strdup(path));
+		CCMPluginPath = g_slist_prepend(CCMPluginPath, g_strdup(path));
 }

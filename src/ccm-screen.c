@@ -1066,11 +1066,11 @@ ccm_screen_check_stack(CCMScreen* self)
 		if (window && !ccm_window_is_input_only(window) &&
 			!g_list_find(stack, window))
 		{
-			stack = g_list_append(stack, window);
+			stack = g_list_prepend(stack, window);
 			if (ccm_window_is_viewable (window))
 			{
 				ccm_debug_window(window, "STACK IS VIEWABLE");
-				viewable = g_list_append(viewable, window);
+				viewable = g_list_prepend(viewable, window);
 			}
 		}
 		else if (!window)
@@ -1085,7 +1085,7 @@ ccm_screen_check_stack(CCMScreen* self)
 				{
 					ccm_debug_window(window, "CHECK STACK NEW WINDOW MAP");
 					//ccm_window_map(window);
-					viewable = g_list_append(viewable, window);
+					viewable = g_list_prepend(viewable, window);
 				}
 				g_signal_connect_swapped(window, "damaged", 
 					 G_CALLBACK(ccm_screen_on_window_damaged), self);
@@ -1093,12 +1093,14 @@ ccm_screen_check_stack(CCMScreen* self)
 					 G_CALLBACK(ccm_screen_on_window_error), self);
 				g_signal_connect_swapped(window, "property-changed", 
 					 G_CALLBACK(ccm_screen_on_window_property_changed), self);
-				stack = g_list_append(stack, window);
+				stack = g_list_prepend(stack, window);
 			}
 			else if (window)
 				g_object_unref(window);
 		}
 	}
+	stack = g_list_reverse(stack);
+	viewable = g_list_reverse(viewable);
 	
 	for (item = g_list_first(self->priv->windows); item && stack; item = item->next)
 	{
@@ -1227,7 +1229,7 @@ impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx)
 		{
 			self->priv->windows = g_list_remove (self->priv->windows, item->data);
 			ccm_screen_destroy_window (self, item->data);
-			destroy = g_list_append(destroy, item->data);
+			destroy = g_list_prepend(destroy, item->data);
 		}
 	}
 
@@ -1345,7 +1347,7 @@ impl_ccm_screen_remove_window(CCMScreenPlugin* plugin, CCMScreen* self,
 			ccm_window_is_input_only (window))
 			ccm_screen_destroy_window(self, window);
 		else if (!g_list_find (self->priv->removed, window))
-			self->priv->removed = g_list_append (self->priv->removed, window);
+			self->priv->removed = g_list_prepend (self->priv->removed, window);
 	}
 }
 
@@ -1368,9 +1370,10 @@ ccm_screen_get_window_plugins(CCMScreen* self)
 		g_warning("Error on get plugins list set default");
 		for (cpt = 0; default_plugins[cpt]; ++cpt)
 		{
-			filter = g_slist_append(filter, g_strdup(default_plugins[cpt]));
+			filter = g_slist_prepend(filter, g_strdup(default_plugins[cpt]));
 		}
 		g_strfreev(default_plugins);
+		filter = g_slist_reverse(filter);
 	}
 	if (filter)
 	{
@@ -1406,9 +1409,10 @@ ccm_screen_get_plugins(CCMScreen* self)
 		g_warning("Error on get plugins list set default");
 		for (cpt = 0; default_plugins[cpt]; ++cpt)
 		{
-			filter = g_slist_append(filter, g_strdup(default_plugins[cpt]));
+			filter = g_slist_prepend(filter, g_strdup(default_plugins[cpt]));
 		}
 		g_strfreev(default_plugins);
+		filter = g_slist_reverse(filter);
 	}
 	if (filter)
 	{

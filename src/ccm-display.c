@@ -318,7 +318,7 @@ ccm_display_get_pointers(CCMDisplay *self)
 		{
 			XDevice* device = XOpenDevice(self->priv->xdisplay, current->id);
 			ccm_debug("Found device: %s (%d)", current->name, current->id);
-            self->priv->pointers = g_slist_append(self->priv->pointers, device);
+            self->priv->pointers = g_slist_prepend(self->priv->pointers, device);
 		}
 	}
 	XFree(info);

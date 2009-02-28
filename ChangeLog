@@ -1,3 +1,24 @@
+2009-02-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* src/ccm-display.c (ccm_display_get_pointers):
+	* src/ccm-extension-loader.c
+	(ccm_extension_loader_get_preferences_plugins),
+	(ccm_extension_loader_get_screen_window_plugins),
+	(ccm_extension_loader_get_screen_plugins),
+	(ccm_extension_loader_get_window_plugins),
+	(ccm_extension_loader_add_plugin_path):
+	* src/ccm-plugin.c (_ccm_plugin_lock_method):
+	* src/ccm-preferences-page.c
+	(ccm_preferences_page_on_composite_desktop_toggled):
+	* src/ccm-screen.c (ccm_screen_check_stack),
+	(impl_ccm_screen_paint), (impl_ccm_screen_remove_window),
+	(ccm_screen_get_window_plugins), (ccm_screen_get_plugins):
+	* src/ccm-window.c (ccm_window_get_property_async),
+	(ccm_window_on_get_property_async):
+	  - Little preformance improvement, use list_prepend and reverse instead
+	    list_append on multiple insertion. Avoid traverse all list on each
+	    insertion.
+
 2009-02-27  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* configure.ac:

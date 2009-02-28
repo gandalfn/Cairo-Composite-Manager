@@ -201,7 +201,7 @@ _ccm_plugin_lock_method(GObject* obj, gpointer func,
 	
 		cb->callback = callback;
 		cb->data = data;
-		lock->callbacks = g_slist_append(lock->callbacks, cb);
+		lock->callbacks = g_slist_prepend(lock->callbacks, cb);
 	}
 }
 
