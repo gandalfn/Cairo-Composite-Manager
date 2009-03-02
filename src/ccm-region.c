@@ -434,19 +434,97 @@ ccm_region_device_transform_invert(CCMRegion* self, cairo_matrix_t* matrix)
 	return ret;
 }
 
+/* 
+   Utility procedure Compress:
+   Replace r by the region r', where 
+     p in r' iff (Quantifer m <= dx) (p + m in r), and
+     Quantifier is Exists if grow is TRUE, For all if grow is FALSE, and
+     (x,y) + m = (x+m,y) if xdir is TRUE; (x,y+m) if xdir is FALSE.
+
+   Thus, if xdir is TRUE and grow is FALSE, r is replaced by the region
+   of all points p such that p and the next dx points on the same
+   horizontal scan line are all in r.  We do this using by noting
+   that p is the head of a run of length 2^i + k iff p is the head
+   of a run of length 2^i and p+2^i is the head of a run of length
+   k. Thus, the loop invariant: s contains the region corresponding
+   to the runs of length shift.  r contains the region corresponding
+   to the runs of length 1 + dxo & (shift-1), where dxo is the original
+   value of dx.  dx = dxo & ~(shift-1).  As parameters, s and t are
+   scratch regions, so that we don't have to allocate them on every
+   call.
+*/
+
+#define ZOpRegion(a,b) if (grow) ccm_region_union (a, b); \
+			 else ccm_region_intersect (a,b)
+#define ZShiftRegion(a,b) if (xdir) ccm_region_offset (a,b,0); \
+			  else ccm_region_offset (a,0,b)
+
+static void
+Compress(CCMRegion *r, CCMRegion *s, CCMRegion *t, guint dx,
+         int xdir, int grow)
+{
+	guint shift = 1;
+
+	pixman_region32_copy(&s->reg, &r->reg);
+	while (dx)
+	{
+		if (dx & shift)
+		{
+			ZShiftRegion(r, -(int)shift);
+			ZOpRegion(r, s);
+			dx -= shift;
+			if (!dx) break;
+        }
+		pixman_region32_copy(&t->reg, &s->reg);
+		ZShiftRegion(s, -(int)shift);
+		ZOpRegion(s, t);
+		shift <<= 1;
+    }
+}
+
+#undef ZOpRegion
+#undef ZShiftRegion
+
 void
 ccm_region_resize(CCMRegion* self, int width, int height)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(width != 0 && height != 0);
 	
-	cairo_rectangle_t clipbox;
-	cairo_matrix_t matrix;
+	CCMRegion *s, *t;
+	int grow;
+	int dx, dy;
+
+	pixman_box32_t* extents = pixman_region32_extents(&self->reg);
+
+	dx = pixman_fixed_to_int(extents->x2 - extents->x1) - width;
+	dy = pixman_fixed_to_int(extents->y2 - extents->y1) - height;
 	
-	ccm_region_get_clipbox(self, &clipbox);
-	cairo_matrix_init_scale(&matrix, (double)width / clipbox.width, 
-							(double)height / clipbox.height);
-	ccm_region_device_transform(self, &matrix);
+	if (!dx && !dy)
+		return;
+
+	s = ccm_region_new ();
+	t = ccm_region_new ();
+
+	grow = (dx < 0);
+	if (grow)
+		dx = -dx;
+	if (dx)
+		Compress(self, s, t, (unsigned) dx, TRUE, grow);
+	if (grow)
+		dx = -dx;
+	
+	grow = (dy < 0);
+	if (grow)
+		dy = -dy;
+	if (dy)
+		Compress(self, s, t, (unsigned) dy, FALSE, grow);
+	if (grow)
+		dy = -dy;
+	
+	ccm_region_offset (self, dx <= 0 ? - dx : 0, dy <= 0 ? -dy : 0);
+	ccm_region_destroy (s);
+	ccm_region_destroy (t);
 }
 
 void

@@ -118,8 +118,7 @@ ccm_preferences_on_title_on_size_allocate (CCMPreferences* self,
     cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba(ctx, 1, 1, 1, 1);
 
-	ccm_log("SIZE ALLOCATED");
-    for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
+	for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
 	{
 		GtkWidget* title = self->priv->screen_titles[cpt];
 
@@ -261,7 +260,6 @@ ccm_preferences_on_expose_event (CCMPreferences* self, GdkEventExpose* event,
 				(double)widget->style->bg[GTK_STATE_NORMAL].blue / 65535.0f,
 				0.9f);
 		}
-		ccm_log("%i, %i, %i", title->allocation.x, title->allocation.width, title->allocation.height);
 		cairo_notebook_page_round(ctx, 0, 0, width, height, 
 								  title->allocation.x, 
 								  title->allocation.width,
@@ -318,7 +316,6 @@ ccm_preferences_on_realize (CCMPreferences* self, GtkWidget* widget)
 		GtkWidget* title = self->priv->screen_titles[cpt];
 		
 		cairo_save(ctx);
-		ccm_log("%i, %i, %i", title->allocation.x, title->allocation.width, title->allocation.height);
 		cairo_notebook_page_round(ctx, 0, 0, width, height, 
 								  title->allocation.x, 
 								  title->allocation.width,

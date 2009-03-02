@@ -1,4 +1,16 @@
-2009-03-02  Nicolas Bruguier  <gandalfn@lub-internet.fr>
+2009-03-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/automate/Makefile.am:
+	  - automate plugin name.
+	* src/ccm-preferences.c
+	(ccm_preferences_on_title_on_size_allocate),
+	(ccm_preferences_on_expose_event), (ccm_preferences_on_realize):
+	  - preference dialog shape.
+	* src/ccm-region.c (Compress), (ccm_region_resize):
+	  - use gdk_region shrink instead scale to resize region, fix some
+	    window draw strangeness on resize.
+
+2009-03-02  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
     * lib/ccm-config.c:
     * lib/ccm-config.h:

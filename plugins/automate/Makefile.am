@@ -16,7 +16,7 @@ PLUGIN_VALA_SOURCES = \
 include $(top_srcdir)/plugin.make
 
 plugin_LTLIBRARIES = \
-	libccm-automate.la 
+	libccm_automate.la 
 
 libccm_automate_la_SOURCES = \
     $(PLUGIN_SOURCES) \
