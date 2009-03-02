@@ -1,3 +1,20 @@
+2009-03-02  Nicolas Bruguier  <gandalfn@lub-internet.fr>
+
+    * lib/ccm-config.c:
+    * lib/ccm-config.h:
+      - add ccm_config_set_color method.
+    * src/ccm-preferences-page.c:
+    * src/ccm-preferences-page.h:
+      - add ccm_preferences_page_get_screen_num method.
+    * src/ccm-preferences.c:
+      - shape window preference dialog.
+	* plugins/shadow/ccm-shadow.ui:
+	* plugins/shadow/shadow.svg:
+    * data/ccm-preferences.ui:
+    * plugins/shadow/Makefile.am:
+    * plugins/shadow/ccm-shadow.c:
+      - add shadow preferences.
+
 2009-02-28  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* NEWS:

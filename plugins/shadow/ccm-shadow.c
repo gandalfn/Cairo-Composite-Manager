@@ -33,6 +33,7 @@
 #include "ccm-config.h"
 #include "ccm-cairo-utils.h"
 #include "ccm-debug.h"
+#include "ccm-preferences-page-plugin.h"
 #include "ccm.h"
 
 enum
@@ -71,6 +72,7 @@ static void ccm_shadow_on_event(CCMShadow* self, XEvent* event);
 
 static void ccm_shadow_window_iface_init(CCMWindowPluginClass* iface);
 static void ccm_shadow_screen_iface_init(CCMScreenPluginClass* iface);
+static void ccm_shadow_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
 
 CCM_DEFINE_PLUGIN (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_shadow,
@@ -78,7 +80,10 @@ CCM_DEFINE_PLUGIN (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN,
 										   ccm_shadow_screen_iface_init);
 				   CCM_IMPLEMENT_INTERFACE(ccm_shadow,
 										   CCM_TYPE_WINDOW_PLUGIN,
-										   ccm_shadow_window_iface_init))
+										   ccm_shadow_window_iface_init);
+                   CCM_IMPLEMENT_INTERFACE(ccm_shadow,
+                                           CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                           ccm_shadow_preferences_page_iface_init))
 
 struct _CCMShadowPrivate
 {
@@ -101,6 +106,10 @@ struct _CCMShadowPrivate
 	cairo_surface_t*	shadow_image;
 	
 	CCMRegion* 			geometry;
+
+	GtkBuilder*			builder;
+
+	guint				handlers[CCM_SHADOW_OPTION_N];
 	
 	CCMConfig* 			options[CCM_SHADOW_OPTION_N];
 };
@@ -129,8 +138,12 @@ ccm_shadow_init (CCMShadow *self)
 	self->priv->shadow = NULL;
 	self->priv->shadow_image = NULL;
 	self->priv->geometry = NULL;
+	self->priv->builder = NULL;
 	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; ++cpt) 
+	{
+		self->priv->handlers[cpt] = 0;
 		self->priv->options[cpt] = NULL;
+	}
 }
 
 static void
@@ -179,6 +192,8 @@ ccm_shadow_finalize (GObject *object)
 		cairo_surface_destroy(self->priv->shadow_image);
 	
 	if (self->priv->color) g_free(self->priv->color);
+
+	if (self->priv->builder) g_object_unref(self->priv->builder);
 	
 	G_OBJECT_CLASS (ccm_shadow_parent_class)->finalize (object);
 }
@@ -755,7 +770,7 @@ ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
 								rects[cpt].width, rects[cpt].height);
 			cairo_clip(ctx);
 			g_free(rects);
-			cairo_translate(ctx, clipbox.x, clipbox.y);			
+			cairo_translate(ctx, clipbox.x, clipbox.y);
 		}
 		gboolean freeze ;
 		g_object_get(self->priv->shadow, "freeze", &freeze, NULL);
@@ -793,6 +808,24 @@ ccm_shadow_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 }
 
 static void
+ccm_shadow_on_option_changed(CCMShadow* self, CCMConfig* config)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(config != NULL);
+	
+	if (!self->priv->id_check) 
+	{
+		if (self->priv->geometry) 
+			ccm_region_destroy (self->priv->geometry);
+		self->priv->geometry = NULL;
+				
+		self->priv->id_check = g_timeout_add(500,
+		                                     (GSourceFunc)ccm_shadow_check_needed, 
+										     self);
+	}
+}
+
+static void
 ccm_shadow_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
@@ -806,6 +839,10 @@ ccm_shadow_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
 												  "shadow", 
 												  CCMShadowOptions[cpt]);
+		if (self->priv->options[cpt]) 
+			g_signal_connect_swapped(self->priv->options[cpt], "changed",
+			                         G_CALLBACK(ccm_shadow_on_option_changed),
+			                         self);
 	}
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
@@ -1055,6 +1092,188 @@ ccm_shadow_window_get_pixmap(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
+ccm_shadow_preferences_page_on_color_changed(GtkColorButton* button,
+                                             CCMConfig* config)
+{
+	GdkColor color;
+
+	gtk_color_button_get_color(button, &color);
+	ccm_config_set_color(config, &color, NULL);
+}
+
+static void
+ccm_shadow_preferences_page_on_alpha_changed(GtkColorButton* button,
+                                             CCMConfig* config)
+{
+	gint alpha = gtk_color_button_get_alpha(button);
+
+	ccm_config_set_float(config, (gfloat)alpha / 65535.f, NULL);
+}
+
+static void
+ccm_shadow_preferences_page_on_radius_changed(GtkAdjustment* adjustment,
+                                              CCMConfig* config)
+{
+	gdouble value = gtk_adjustment_get_value(adjustment);
+
+	ccm_config_set_integer (config, (gint)value, NULL);
+}
+
+static void
+ccm_shadow_preferences_page_on_sigma_changed(GtkAdjustment* adjustment,
+                                             CCMConfig* config)
+{
+	gdouble value = gtk_adjustment_get_value(adjustment);
+
+	ccm_config_set_float (config, (gfloat)value, NULL);
+}
+
+static void
+ccm_shadow_preferences_page_on_real_blur_changed(GtkToggleButton* button,
+                                                 CCMConfig* config)
+{
+	gboolean value = gtk_toggle_button_get_active(button);
+
+	ccm_config_set_boolean (config, value, NULL);
+}
+
+static void
+ccm_shadow_preferences_page_on_config_changed(CCMShadow* self,
+                                              CCMConfig* config)
+{
+	gchar* key = NULL;
+
+	g_object_get(config, "key", &key, NULL);
+	if (key)
+	{
+		if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_COLOR]))
+		{
+			GtkColorButton* color_conf = 
+				GTK_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
+						                                "color"));
+			GdkColor* color = ccm_config_get_color (config, NULL);
+			if (color)
+			{
+				gtk_color_button_set_color(color_conf, color);
+				g_free(color);
+			}
+			if (!self->priv->handlers[CCM_SHADOW_COLOR])
+			{
+				self->priv->handlers[CCM_SHADOW_COLOR] = 
+					g_signal_connect(color_conf, "color-set",
+					                 G_CALLBACK(ccm_shadow_preferences_page_on_color_changed),
+					                 config);
+			}
+		}
+		else if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_ALPHA]))
+		{
+			GtkColorButton* color_conf = 
+				GTK_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
+				                                        "color"));
+			gfloat alpha = ccm_config_get_float (config, NULL);
+			if (alpha)
+				gtk_color_button_set_alpha(color_conf, 
+				                           (int)((gfloat)65535 * alpha));
+			if (!self->priv->handlers[CCM_SHADOW_ALPHA])
+			{
+				self->priv->handlers[CCM_SHADOW_ALPHA] = 
+					g_signal_connect(color_conf, "color-set",
+					                 G_CALLBACK(ccm_shadow_preferences_page_on_alpha_changed),
+					                 config);
+			}
+		}
+		else if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_RADIUS]))
+		{
+			GtkAdjustment* radius_conf = 
+				GTK_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                      "radius_adjustment"));
+			gfloat radius = ccm_config_get_float (config, NULL);
+			if (radius)	gtk_adjustment_set_value(radius_conf, radius);
+			if (!self->priv->handlers[CCM_SHADOW_RADIUS])
+			{
+				self->priv->handlers[CCM_SHADOW_RADIUS] = 
+					g_signal_connect(radius_conf, "value-changed",
+					                 G_CALLBACK(ccm_shadow_preferences_page_on_radius_changed),
+					                 config);
+			}
+		}
+		else if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_SIGMA]))
+		{
+			GtkAdjustment* sigma_conf = 
+				GTK_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                      "sigma_adjustment"));
+			gfloat sigma = ccm_config_get_float (config, NULL);
+			if (sigma) gtk_adjustment_set_value(sigma_conf, sigma);
+			if (!self->priv->handlers[CCM_SHADOW_SIGMA])
+			{
+				self->priv->handlers[CCM_SHADOW_SIGMA] = 
+					g_signal_connect(sigma_conf, "value-changed",
+					                 G_CALLBACK(ccm_shadow_preferences_page_on_sigma_changed),
+					                 config);
+			}
+		}
+		else if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_REAL_BLUR]))
+		{
+			GtkToggleButton* real_blur_conf = 
+				GTK_TOGGLE_BUTTON(gtk_builder_get_object(self->priv->builder, 
+				                                         "real_blur"));
+			gboolean real_blur = ccm_config_get_boolean (config, NULL);
+			gtk_toggle_button_set_active(real_blur_conf, real_blur);
+			if (!self->priv->handlers[CCM_SHADOW_REAL_BLUR])
+			{
+				self->priv->handlers[CCM_SHADOW_REAL_BLUR] = 
+					g_signal_connect(real_blur_conf, "toggled",
+					                 G_CALLBACK(ccm_shadow_preferences_page_on_real_blur_changed),
+					                 config);
+			}
+		}
+		g_free(key);
+	}
+}
+
+static void
+ccm_shadow_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugin,
+                                                 CCMPreferencesPage* preferences,
+                                                 GtkWidget* windows_section)
+{
+	CCMShadow* self = CCM_SHADOW(plugin);
+	
+	self->priv->builder = gtk_builder_new();
+
+	if (gtk_builder_add_from_file(self->priv->builder, 
+	                              UI_DIR "/ccm-shadow.ui", NULL))
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "shadow"));
+		if (widget)
+		{
+			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
+			gint cpt;
+			
+			gtk_container_add(GTK_CONTAINER(windows_section), widget);
+
+			for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; ++cpt)
+			{
+				if (self->priv->options[cpt]) 
+					g_object_unref(self->priv->options[cpt]);
+				self->priv->options[cpt] = ccm_config_new(screen_num, 
+				                                          "shadow", 
+				                                          CCMShadowOptions[cpt]);
+				if (self->priv->options[cpt]) 
+				{
+					g_signal_connect_swapped(self->priv->options[cpt], 
+					                         "changed",
+					                         G_CALLBACK(ccm_shadow_preferences_page_on_config_changed),
+					                         self);
+					ccm_shadow_preferences_page_on_config_changed(self,
+					                                              self->priv->options[cpt]);
+				}
+			}
+		}
+	}
+}
+
+static void
 ccm_shadow_window_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	 = ccm_shadow_window_load_options;
@@ -1080,3 +1299,13 @@ ccm_shadow_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->damage			= NULL;
 }
 
+static void
+ccm_shadow_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
+{
+	iface->init_general_section       = NULL;
+    iface->init_desktop_section       = NULL;
+    iface->init_windows_section       = ccm_shadow_preferences_page_init_windows_section;
+    iface->init_effects_section		  = NULL;
+    iface->init_accessibility_section = NULL;
+    iface->init_utilities_section     = NULL;
+}

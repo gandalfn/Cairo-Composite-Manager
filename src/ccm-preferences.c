@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <X11/Xatom.h>
+#include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 
 #include "ccm-cairo-utils.h"
@@ -93,6 +95,52 @@ ccm_preferences_on_screen_change(CCMPreferences* self, GdkEventButton* event,
 }
 
 static void
+ccm_preferences_on_title_on_size_allocate (CCMPreferences* self,
+                                           GtkAllocation* allocation, 
+                                           GtkWidget* widget)
+{
+	gint width, height;
+	GdkPixmap* pixmap;
+	cairo_t* ctx;
+	gint cpt;
+
+	if (!widget->window) return;
+	
+    gdk_drawable_get_size(GDK_DRAWABLE(widget->window), &width, &height);
+
+	pixmap = gdk_pixmap_new(NULL, width, height, 1);
+	ctx = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+
+	cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(ctx, 0, 0, 0, 0);
+    cairo_paint(ctx);
+    
+    cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
+	cairo_set_source_rgba(ctx, 1, 1, 1, 1);
+
+	ccm_log("SIZE ALLOCATED");
+    for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
+	{
+		GtkWidget* title = self->priv->screen_titles[cpt];
+
+		cairo_save(ctx);
+		cairo_notebook_page_round(ctx, 0, 0, width, height, 
+								  title->allocation.x, 
+								  title->allocation.width,
+								  title->allocation.height, 6);
+		cairo_fill(ctx);
+		cairo_restore(ctx);
+	}
+	cairo_destroy(ctx);
+	
+    gdk_window_shape_combine_mask(widget->window, (GdkBitmap*)0, 0, 0);
+    gdk_window_input_shape_combine_mask(widget->window, (GdkBitmap*)0, 0, 0);
+    gdk_window_shape_combine_mask(widget->window, (GdkBitmap*)pixmap, 0, 0);
+    gdk_window_input_shape_combine_mask(widget->window, (GdkBitmap*)pixmap, 0, 0);
+	g_object_unref(pixmap);
+}
+
+static void
 ccm_preferences_create_page(CCMPreferences* self, int screen_num)
 {
 	g_return_if_fail(self != NULL);
@@ -118,6 +166,9 @@ ccm_preferences_create_page(CCMPreferences* self, int screen_num)
 
 	self->priv->screen_titles[screen_num] = 
 		GTK_WIDGET(gtk_builder_get_object(builder, "screen_title_frame"));
+	g_signal_connect_swapped(self->priv->screen_titles[screen_num], "size-allocate",
+	                         G_CALLBACK(ccm_preferences_on_title_on_size_allocate),
+	                         self);
 	if (!self->priv->screen_titles[screen_num]) return;
 	gtk_widget_show(self->priv->screen_titles[screen_num]);
 	gtk_box_pack_start(screen_button_box, 
@@ -210,6 +261,7 @@ ccm_preferences_on_expose_event (CCMPreferences* self, GdkEventExpose* event,
 				(double)widget->style->bg[GTK_STATE_NORMAL].blue / 65535.0f,
 				0.9f);
 		}
+		ccm_log("%i, %i, %i", title->allocation.x, title->allocation.width, title->allocation.height);
 		cairo_notebook_page_round(ctx, 0, 0, width, height, 
 								  title->allocation.x, 
 								  title->allocation.width,
@@ -233,6 +285,54 @@ ccm_preferences_on_expose_event (CCMPreferences* self, GdkEventExpose* event,
 	gtk_container_propagate_expose(GTK_CONTAINER(widget), child, event);
 	
 	return TRUE;
+}
+
+static void
+ccm_preferences_on_realize (CCMPreferences* self, GtkWidget* widget)
+{
+	GdkAtom atom_enable = gdk_atom_intern_static_string("_CCM_SHADOW_ENABLED");
+	gulong enable = 1;
+	gint width, height;
+	GdkPixmap* pixmap;
+	cairo_t* ctx;
+	gint cpt;
+	
+    gdk_property_change(widget->window, atom_enable, 
+                        gdk_x11_xatom_to_atom(XA_CARDINAL), 32, 
+                        GDK_PROP_MODE_REPLACE, (guchar *)&enable, 1);
+
+	gtk_window_get_size(GTK_WINDOW(widget), &width, &height);
+
+	pixmap = gdk_pixmap_new(NULL, width, height, 1);
+	ctx = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+
+	cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(ctx, 0, 0, 0, 0);
+    cairo_paint(ctx);
+    
+    cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
+	cairo_set_source_rgba(ctx, 1, 1, 1, 1);
+	
+    for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
+	{
+		GtkWidget* title = self->priv->screen_titles[cpt];
+		
+		cairo_save(ctx);
+		ccm_log("%i, %i, %i", title->allocation.x, title->allocation.width, title->allocation.height);
+		cairo_notebook_page_round(ctx, 0, 0, width, height, 
+								  title->allocation.x, 
+								  title->allocation.width,
+								  title->allocation.height, 6);
+		cairo_fill(ctx);
+		cairo_restore(ctx);
+	}
+	cairo_destroy(ctx);
+	
+    gdk_window_shape_combine_mask(widget->window, (GdkBitmap*)0, 0, 0);
+    gdk_window_input_shape_combine_mask(widget->window, (GdkBitmap*)0, 0, 0);
+    gdk_window_shape_combine_mask(widget->window, (GdkBitmap*)pixmap, 0, 0);
+    gdk_window_input_shape_combine_mask(widget->window, (GdkBitmap*)pixmap, 0, 0);
+	g_object_unref(pixmap);
 }
 
 CCMPreferences*
@@ -278,6 +378,8 @@ ccm_preferences_new (void)
 							 G_CALLBACK(ccm_preferences_hide), self);
 	g_signal_connect_swapped(shell, "response", 
 							 G_CALLBACK(ccm_preferences_hide), self);
+	g_signal_connect_swapped(shell, "realize", 
+							 G_CALLBACK(ccm_preferences_on_realize), self);
 	g_signal_connect_swapped(shell, "expose-event", 
 							 G_CALLBACK(ccm_preferences_on_expose_event), self);
 	

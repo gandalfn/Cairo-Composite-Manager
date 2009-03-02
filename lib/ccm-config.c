@@ -522,3 +522,26 @@ ccm_config_get_color(CCMConfig* self, GError** error)
 	
 	return color;
 }
+
+void
+ccm_config_set_color(CCMConfig* self, GdkColor* color, GError** error)
+{
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		return;
+	}
+
+	if (color)
+	{
+		gchar* value = g_strdup_printf("#%02x%02x%02x", 
+	                                   (int)(255.f * ((gfloat)color->red / 65535.f)),
+	                                   (int)(255.f * ((gfloat)color->green / 65535.f)),
+	                                   (int)(255.f * ((gfloat)color->blue / 65535.f)));
+		ccm_config_set_string(self, value, error);
+		g_free(value);
+	}
+}

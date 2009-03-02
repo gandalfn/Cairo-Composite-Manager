@@ -828,3 +828,11 @@ ccm_preferences_page_get_widget(CCMPreferencesPage* self)
 	
 	return GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "page"));
 }
+
+int
+ccm_preferences_page_get_screen_num(CCMPreferencesPage* self)
+{
+	g_return_val_if_fail(self != NULL, -1);
+
+	return self->priv->screen_num;
+}

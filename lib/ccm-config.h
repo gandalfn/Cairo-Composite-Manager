@@ -126,7 +126,9 @@ void			ccm_config_set_integer_list			(CCMConfig* self,
 													 GError** error);
 GdkColor*       ccm_config_get_color                (CCMConfig* self,
 													 GError** error);
-
+void			ccm_config_set_color				(CCMConfig* self, 
+							                         GdkColor* color, 
+							                         GError** error);
 
 G_END_DECLS
 

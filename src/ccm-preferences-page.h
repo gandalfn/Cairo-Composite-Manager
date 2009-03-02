@@ -53,6 +53,7 @@ struct _CCMPreferencesPage
 GType ccm_preferences_page_get_type (void) G_GNUC_CONST;
 CCMPreferencesPage* ccm_preferences_page_new (CCMPreferences* preferences, gint screen_num);
 GtkWidget* ccm_preferences_page_get_widget(CCMPreferencesPage* self);
+int ccm_preferences_page_get_screen_num(CCMPreferencesPage* self);
 G_END_DECLS
 
 #endif /* _CCM_PREFERENCES_PAGE_H_ */

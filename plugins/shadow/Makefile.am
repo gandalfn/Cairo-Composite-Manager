@@ -1,5 +1,5 @@
 PLUGIN = ccm-shadow
-PLUGIN_UI = 
+PLUGIN_UI = ccm-shadow.ui shadow.svg
 PLUGIN_SCHEMA = ccm-shadow.schema-key.in
 
 PLUGIN_SOURCES = ccm-shadow.c ccm-shadow.h
