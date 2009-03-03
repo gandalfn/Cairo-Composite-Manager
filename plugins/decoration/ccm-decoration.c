@@ -30,6 +30,7 @@
 #include "ccm-window.h"
 #include "ccm-decoration.h"
 #include "ccm-keybind.h"
+#include "ccm-preferences-page-plugin.h"
 #include "ccm.h"
 
 enum
@@ -45,6 +46,8 @@ static gchar* CCMDecorationOptions[CCM_DECORATION_OPTION_N] = {
 };
 
 static void ccm_decoration_window_iface_init  (CCMWindowPluginClass* iface);
+static void ccm_decoration_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
+
 static void ccm_decoration_create_mask		  (CCMDecoration* self);
 static void ccm_decoration_on_property_changed(CCMDecoration* self, 
 											   CCMPropertyType changed,
@@ -55,7 +58,10 @@ static void ccm_decoration_on_opacity_changed (CCMDecoration* self,
 CCM_DEFINE_PLUGIN (CCMDecoration, ccm_decoration, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_decoration,
 										   CCM_TYPE_WINDOW_PLUGIN,
-										   ccm_decoration_window_iface_init))
+										   ccm_decoration_window_iface_init);
+                   CCM_IMPLEMENT_INTERFACE(ccm_decoration,
+                                           CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                           ccm_decoration_preferences_page_iface_init))
 
 struct _CCMDecorationPrivate
 {	
@@ -73,6 +79,10 @@ struct _CCMDecorationPrivate
 	CCMRegion*		opaque;
 	
 	int				id_check;
+
+	GtkBuilder*		builder;
+
+	guint			handlers[CCM_DECORATION_OPTION_N];
 	
 	CCMConfig       *options[CCM_DECORATION_OPTION_N];
 };
@@ -96,9 +106,12 @@ ccm_decoration_init (CCMDecoration *self)
 	self->priv->geometry = NULL;
 	self->priv->opaque = NULL;
 	self->priv->id_check = 0;
-	
+	self->priv->builder = NULL;
 	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt) 
+	{
+		self->priv->handlers[cpt] = 0;
 		self->priv->options[cpt] = NULL;
+	}
 }
 
 static void
@@ -127,6 +140,8 @@ ccm_decoration_finalize (GObject *object)
 	if (self->priv->geometry)
 		ccm_region_destroy(self->priv->geometry);
 	self->priv->geometry = NULL;
+
+	if (self->priv->builder) g_object_unref(self->priv->builder);
 
 	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt)
 	{
@@ -489,6 +504,110 @@ ccm_decoration_window_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 							  width, height);
 }
 
+static void
+ccm_decoration_preferences_page_on_gradiant_changed(GtkToggleButton* button,
+                                                    CCMConfig* config)
+{
+	gboolean active = gtk_toggle_button_get_active(button);
+
+	ccm_config_set_boolean (config, active, NULL);
+}
+
+static void
+ccm_decoration_preferences_page_on_alpha_changed(GtkAdjustment* adjustment,
+                                                 CCMConfig* config)
+{
+	gdouble value = gtk_adjustment_get_value(adjustment);
+
+	ccm_config_set_float (config, (gfloat)value, NULL);
+}
+
+static void
+ccm_decoration_preferences_page_on_config_changed(CCMDecoration* self,
+                                                  CCMConfig* config)
+{
+	gchar* key = NULL;
+
+	g_object_get(config, "key", &key, NULL);
+	if (key)
+	{
+		if (!g_ascii_strcasecmp(key, CCMDecorationOptions[CCM_DECORATION_GRADIANT]))
+		{
+			GtkToggleButton* gradiant_conf = 
+				GTK_TOGGLE_BUTTON(gtk_builder_get_object(self->priv->builder, 
+				                                         "gradiant"));
+			gboolean active = ccm_config_get_boolean (config, NULL);
+			gtk_toggle_button_set_active(gradiant_conf, active);
+			if (!self->priv->handlers[CCM_DECORATION_GRADIANT])
+			{
+				self->priv->handlers[CCM_DECORATION_GRADIANT] = 
+					g_signal_connect(gradiant_conf, "toggled",
+					                 G_CALLBACK(ccm_decoration_preferences_page_on_gradiant_changed),
+					                 config);
+			}
+		}
+		else if (!g_ascii_strcasecmp(key, CCMDecorationOptions[CCM_DECORATION_OPACITY]))
+		{
+			GtkAdjustment* alpha_conf = 
+				GTK_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                      "alpha_adjustment"));
+			gfloat alpha = ccm_config_get_float (config, NULL);
+			if (alpha)	gtk_adjustment_set_value(alpha_conf, alpha);
+			if (!self->priv->handlers[CCM_DECORATION_OPACITY])
+			{
+				self->priv->handlers[CCM_DECORATION_OPACITY] = 
+					g_signal_connect(alpha_conf, "value-changed",
+					                 G_CALLBACK(ccm_decoration_preferences_page_on_alpha_changed),
+					                 config);
+			}
+		}
+		g_free(key);
+	}
+}
+
+static void
+ccm_decoration_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugin,
+                                                     CCMPreferencesPage* preferences,
+                                                     GtkWidget* windows_section)
+{
+	CCMDecoration* self = CCM_DECORATION(plugin);
+	
+	self->priv->builder = gtk_builder_new();
+
+	if (gtk_builder_add_from_file(self->priv->builder, 
+	                              UI_DIR "/ccm-decoration.ui", NULL))
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "decoration"));
+		if (widget)
+		{
+			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
+			gint cpt;
+			
+			gtk_container_add(GTK_CONTAINER(windows_section), widget);
+
+			for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt)
+			{
+				if (self->priv->options[cpt]) 
+					g_object_unref(self->priv->options[cpt]);
+				self->priv->options[cpt] = ccm_config_new(screen_num, 
+				                                          "decoration", 
+				                                          CCMDecorationOptions[cpt]);
+				if (self->priv->options[cpt]) 
+				{
+					g_signal_connect_swapped(self->priv->options[cpt], 
+					                         "changed",
+					                         G_CALLBACK(ccm_decoration_preferences_page_on_config_changed),
+					                         self);
+					ccm_decoration_preferences_page_on_config_changed(self,
+					                                                  self->priv->options[cpt]);
+				}
+			}
+		}
+	}
+	ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+													  preferences, windows_section);
+}
 
 static void
 ccm_decoration_window_iface_init(CCMWindowPluginClass* iface)
@@ -505,3 +624,13 @@ ccm_decoration_window_iface_init(CCMWindowPluginClass* iface)
 	iface->get_origin		 = NULL;
 }
 
+static void
+ccm_decoration_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
+{
+	iface->init_general_section       = NULL;
+    iface->init_desktop_section       = NULL;
+    iface->init_windows_section       = ccm_decoration_preferences_page_init_windows_section;
+    iface->init_effects_section		  = NULL;
+    iface->init_accessibility_section = NULL;
+    iface->init_utilities_section     = NULL;
+}

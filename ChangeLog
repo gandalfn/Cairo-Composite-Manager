@@ -1,5 +1,15 @@
 2009-03-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/decoration/ccm-decoration.ui:
+	* plugins/decoration/Makefile.am:
+	* plugins/decoration/ccm-decoration.c:
+      - Add decoration preferences page settings.
+	* plugins/shadow/ccm-shadow.c
+	* plugins/shadow/ccm-shadow.ui:
+      - Hide real blur in shadow preferences page since is too slow.
+
+2009-03-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/automate/Makefile.am:
 	  - automate plugin name.
 	* src/ccm-preferences.c

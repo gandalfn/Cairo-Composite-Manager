@@ -1129,15 +1129,6 @@ ccm_shadow_preferences_page_on_sigma_changed(GtkAdjustment* adjustment,
 }
 
 static void
-ccm_shadow_preferences_page_on_real_blur_changed(GtkToggleButton* button,
-                                                 CCMConfig* config)
-{
-	gboolean value = gtk_toggle_button_get_active(button);
-
-	ccm_config_set_boolean (config, value, NULL);
-}
-
-static void
 ccm_shadow_preferences_page_on_config_changed(CCMShadow* self,
                                               CCMConfig* config)
 {
@@ -1212,21 +1203,6 @@ ccm_shadow_preferences_page_on_config_changed(CCMShadow* self,
 					                 config);
 			}
 		}
-		else if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_REAL_BLUR]))
-		{
-			GtkToggleButton* real_blur_conf = 
-				GTK_TOGGLE_BUTTON(gtk_builder_get_object(self->priv->builder, 
-				                                         "real_blur"));
-			gboolean real_blur = ccm_config_get_boolean (config, NULL);
-			gtk_toggle_button_set_active(real_blur_conf, real_blur);
-			if (!self->priv->handlers[CCM_SHADOW_REAL_BLUR])
-			{
-				self->priv->handlers[CCM_SHADOW_REAL_BLUR] = 
-					g_signal_connect(real_blur_conf, "toggled",
-					                 G_CALLBACK(ccm_shadow_preferences_page_on_real_blur_changed),
-					                 config);
-			}
-		}
 		g_free(key);
 	}
 }
@@ -1271,6 +1247,8 @@ ccm_shadow_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugi
 			}
 		}
 	}
+	ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+													  preferences, windows_section);
 }
 
 static void

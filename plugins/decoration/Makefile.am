@@ -1,5 +1,5 @@
 PLUGIN = ccm-decoration
-PLUGIN_UI = 
+PLUGIN_UI = ccm-decoration.ui
 PLUGIN_SCHEMA = ccm-decoration.schema-key.in
 
 PLUGIN_SOURCES = ccm-decoration.c ccm-decoration.h
