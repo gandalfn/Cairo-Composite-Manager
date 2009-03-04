@@ -108,7 +108,8 @@ struct _CCMShadowPrivate
 	CCMRegion* 			geometry;
 
 	GtkBuilder*			builder;
-
+	gboolean			active;
+	
 	guint				handlers[CCM_SHADOW_OPTION_N];
 	
 	CCMConfig* 			options[CCM_SHADOW_OPTION_N];
@@ -139,6 +140,7 @@ ccm_shadow_init (CCMShadow *self)
 	self->priv->shadow_image = NULL;
 	self->priv->geometry = NULL;
 	self->priv->builder = NULL;
+	self->priv->active = TRUE;
 	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; ++cpt) 
 	{
 		self->priv->handlers[cpt] = 0;
@@ -1208,6 +1210,39 @@ ccm_shadow_preferences_page_on_config_changed(CCMShadow* self,
 }
 
 static void
+ccm_shadow_preferences_page_on_plugin_changed(CCMShadow* self,
+                                              gchar* name, gboolean active,
+                                              CCMPreferencesPage* preferences)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(name != NULL);
+	g_return_if_fail(preferences != NULL);
+
+	if (!g_ascii_strcasecmp(name, "shadow"))
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+			                                  "shadow"));
+		if (self->priv->active != active)
+		{
+			self->priv->active = active;
+			if (active)
+			{
+				gtk_widget_show(widget);
+				ccm_preferences_page_section_p(preferences, 
+					                           CCM_PREFERENCES_PAGE_SECTION_WINDOW);
+			}
+			else
+			{
+				gtk_widget_hide(widget);
+				ccm_preferences_page_section_v(preferences, 
+					                           CCM_PREFERENCES_PAGE_SECTION_WINDOW);
+			}
+		}
+	}
+}
+
+static void
 ccm_shadow_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugin,
                                                  CCMPreferencesPage* preferences,
                                                  GtkWidget* windows_section)
@@ -1226,7 +1261,8 @@ ccm_shadow_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugi
 			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
 			gint cpt;
 			
-			gtk_container_add(GTK_CONTAINER(windows_section), widget);
+			gtk_box_pack_start(GTK_BOX(windows_section), widget, 
+			                   FALSE, TRUE, 0);
 
 			for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; ++cpt)
 			{
@@ -1245,6 +1281,11 @@ ccm_shadow_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugi
 					                                              self->priv->options[cpt]);
 				}
 			}
+			ccm_preferences_page_section_p(preferences, 
+			                               CCM_PREFERENCES_PAGE_SECTION_WINDOW);
+			g_signal_connect_swapped(preferences, "plugin-state-changed",
+			                         G_CALLBACK(ccm_shadow_preferences_page_on_plugin_changed),
+			                         self);
 		}
 	}
 	ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),

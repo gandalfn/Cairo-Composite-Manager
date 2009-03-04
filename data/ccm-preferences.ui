@@ -100,43 +100,51 @@
       <column type="gchararray"/>
       <!-- column-name visible -->
       <column type="gboolean"/>
+      <!-- column-name count -->
+      <column type="gint"/>
     </columns>
     <data>
       <row>
         <col id="0">0</col>
         <col id="1" translatable="yes">applications-system</col>
         <col id="2" translatable="yes">&lt;b&gt;General&lt;/b&gt;</col>
-        <col id="3">True</col>
+        <col id="3">False</col>
+        <col id="4">0</col>
       </row>
       <row>
         <col id="0">1</col>
         <col id="1" translatable="yes">user-desktop</col>
         <col id="2" translatable="yes">&lt;b&gt;Desktop&lt;/b&gt;</col>
         <col id="3">False</col>
+        <col id="4">0</col>
       </row>
       <row>
         <col id="0">2</col>
         <col id="1" translatable="yes">preferences-system-windows</col>
         <col id="2" translatable="yes">&lt;b&gt;Window&lt;/b&gt;</col>
-        <col id="3">True</col>
+        <col id="3">False</col>
+        <col id="4">0</col>
       </row>
       <row>
         <col id="0">3</col>
         <col id="1" translatable="yes">window-new</col>
         <col id="2" translatable="yes">&lt;b&gt;Effects&lt;/b&gt;</col>
         <col id="3">False</col>
+        <col id="4">0</col>
       </row>
       <row>
         <col id="0">4</col>
         <col id="1" translatable="yes">preferences-desktop-accessibility</col>
         <col id="2" translatable="yes">&lt;b&gt;Accessibility&lt;/b&gt;</col>
         <col id="3">False</col>
+        <col id="4">0</col>
       </row>
       <row>
         <col id="0">5</col>
         <col id="1" translatable="yes">applications-utilities</col>
         <col id="2" translatable="yes">&lt;b&gt;Utilities&lt;/b&gt;</col>
         <col id="3">False</col>
+        <col id="4">0</col>
       </row>
     </data>
   </object>

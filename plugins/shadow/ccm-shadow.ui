@@ -61,7 +61,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkHScale" id="radius1">
+                  <object class="GtkHScale" id="radius">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="adjustment">radius_adjustment</property>
@@ -91,7 +91,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkHScale" id="sigma1">
+                  <object class="GtkHScale" id="sigma">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="adjustment">sigma_adjustment</property>
@@ -109,7 +109,7 @@
                   <object class="GtkHBox" id="hbox2">
                     <property name="visible">True</property>
                     <child>
-                      <object class="GtkColorButton" id="color1">
+                      <object class="GtkColorButton" id="color">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>

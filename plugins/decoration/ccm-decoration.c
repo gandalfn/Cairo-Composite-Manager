@@ -81,6 +81,7 @@ struct _CCMDecorationPrivate
 	int				id_check;
 
 	GtkBuilder*		builder;
+	gboolean		active;
 
 	guint			handlers[CCM_DECORATION_OPTION_N];
 	
@@ -107,6 +108,7 @@ ccm_decoration_init (CCMDecoration *self)
 	self->priv->opaque = NULL;
 	self->priv->id_check = 0;
 	self->priv->builder = NULL;
+	self->priv->active = TRUE;
 	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt) 
 	{
 		self->priv->handlers[cpt] = 0;
@@ -290,10 +292,7 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		cairo_surface_t* surface = 
 			ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->window));
 		
-		ccm_window_get_frame_extends(self->priv->window, &self->priv->left,
-									 &self->priv->right, &self->priv->top,
-									 &self->priv->bottom);
-		
+
 		ccm_region_get_clipbox(self->priv->geometry, &clipbox);
 		mask = cairo_surface_create_similar(surface, CAIRO_CONTENT_ALPHA,
 										    clipbox.width, clipbox.height);
@@ -566,6 +565,39 @@ ccm_decoration_preferences_page_on_config_changed(CCMDecoration* self,
 }
 
 static void
+ccm_decoration_preferences_page_on_plugin_changed(CCMDecoration* self,
+                                                  gchar* name, gboolean active,
+                                                  CCMPreferencesPage* preferences)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(name != NULL);
+	g_return_if_fail(preferences != NULL);
+	
+	if (!g_ascii_strcasecmp(name, "decoration"))
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+			                                  "decoration"));
+		if (self->priv->active != active)
+		{
+			self->priv->active = active;
+			if (active)
+			{
+				gtk_widget_show(widget);
+				ccm_preferences_page_section_p(preferences, 
+					                           CCM_PREFERENCES_PAGE_SECTION_WINDOW);
+			}
+			else
+			{
+				gtk_widget_hide(widget);
+				ccm_preferences_page_section_v(preferences, 
+					                           CCM_PREFERENCES_PAGE_SECTION_WINDOW);
+			}
+		}
+	}
+}
+
+static void
 ccm_decoration_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugin,
                                                      CCMPreferencesPage* preferences,
                                                      GtkWidget* windows_section)
@@ -584,7 +616,8 @@ ccm_decoration_preferences_page_init_windows_section(CCMPreferencesPagePlugin* p
 			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
 			gint cpt;
 			
-			gtk_container_add(GTK_CONTAINER(windows_section), widget);
+			gtk_box_pack_start(GTK_BOX(windows_section), widget, 
+			                   FALSE, TRUE, 0);
 
 			for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt)
 			{
@@ -603,6 +636,11 @@ ccm_decoration_preferences_page_init_windows_section(CCMPreferencesPagePlugin* p
 					                                                  self->priv->options[cpt]);
 				}
 			}
+			ccm_preferences_page_section_p(preferences, 
+			                               CCM_PREFERENCES_PAGE_SECTION_WINDOW);
+			g_signal_connect_swapped(preferences, "plugin-state-changed",
+			                         G_CALLBACK(ccm_decoration_preferences_page_on_plugin_changed),
+			                         self);
 		}
 	}
 	ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),

@@ -40,7 +40,7 @@
                 <child>
                   <object class="GtkLabel" id="label2">
                     <property name="visible">True</property>
-                    <property name="xalign">0</property>
+                    <property name="xalign">1</property>
                     <property name="label" translatable="yes">Gradiant:</property>
                   </object>
                   <packing>
@@ -51,7 +51,7 @@
                 <child>
                   <object class="GtkLabel" id="label6">
                     <property name="visible">True</property>
-                    <property name="xalign">0</property>
+                    <property name="xalign">1</property>
                     <property name="label" translatable="yes">Alpha:</property>
                   </object>
                   <packing>

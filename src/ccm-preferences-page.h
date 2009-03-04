@@ -50,10 +50,26 @@ struct _CCMPreferencesPage
     CCMPreferencesPagePrivate* priv;
 };
 
-GType ccm_preferences_page_get_type (void) G_GNUC_CONST;
-CCMPreferencesPage* ccm_preferences_page_new (CCMPreferences* preferences, gint screen_num);
-GtkWidget* ccm_preferences_page_get_widget(CCMPreferencesPage* self);
-int ccm_preferences_page_get_screen_num(CCMPreferencesPage* self);
+typedef enum
+{
+	CCM_PREFERENCES_PAGE_SECTION_GENERAL,
+	CCM_PREFERENCES_PAGE_SECTION_DESKTOP,
+	CCM_PREFERENCES_PAGE_SECTION_WINDOW,
+	CCM_PREFERENCES_PAGE_SECTION_EFFECTS,
+	CCM_PREFERENCES_PAGE_SECTION_ACCESSIBILTY,
+	CCM_PREFERENCES_PAGE_SECTION_UTILITIES,
+	CCM_PREFERENCES_PAGE_SECTION_N
+} CCMPreferencesPageSection;
+
+GType ccm_preferences_page_get_type			 (void) G_GNUC_CONST;
+CCMPreferencesPage* ccm_preferences_page_new (CCMPreferences* preferences, 
+                                              gint screen_num);
+GtkWidget* ccm_preferences_page_get_widget	 (CCMPreferencesPage* self);
+int ccm_preferences_page_get_screen_num		 (CCMPreferencesPage* self);
+void ccm_preferences_page_section_p			 (CCMPreferencesPage* self, 
+			                                  CCMPreferencesPageSection section);
+void ccm_preferences_page_section_v			 (CCMPreferencesPage* self, 
+			                                  CCMPreferencesPageSection section);
 G_END_DECLS
 
 #endif /* _CCM_PREFERENCES_PAGE_H_ */

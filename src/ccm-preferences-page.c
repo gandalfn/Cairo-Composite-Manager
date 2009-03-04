@@ -27,6 +27,7 @@
 #include "ccm-preferences-page-plugin.h"
 #include "ccm-preferences-page.h"
 #include "ccm-cell-renderer-extension.h"
+#include "ccm-marshallers.h"
 
 enum
 {
@@ -72,6 +73,14 @@ static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 	"background_y"
 };
 
+enum
+{
+	PLUGIN_STATE_CHANGED,
+	N_SIGNALS
+};
+
+static guint signals[N_SIGNALS] = { 0 };
+
 struct _CCMPreferencesPagePrivate
 {
 	CCMPreferences*				preferences;
@@ -82,7 +91,7 @@ struct _CCMPreferencesPagePrivate
 	
 	CCMExtensionLoader*			plugin_loader;
 	CCMPreferencesPagePlugin*   plugin;
-	
+
 	CCMConfig*					general_options[CCM_GENERAL_OPTION_N];
 	CCMConfig*					screen_options[CCM_SCREEN_OPTION_N];
 };
@@ -151,6 +160,12 @@ ccm_preferences_page_class_init (CCMPreferencesPageClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMPreferencesPagePrivate));
 
 	object_class->finalize = ccm_preferences_page_finalize;
+
+	signals[PLUGIN_STATE_CHANGED] = g_signal_new ("plugin-state-changed",
+									G_OBJECT_CLASS_TYPE (object_class),
+									G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+									ccm_cclosure_marshal_VOID__STRING_BOOLEAN,
+									G_TYPE_NONE, 2, G_TYPE_STRING, G_TYPE_BOOLEAN);
 }
 
 static void
@@ -361,6 +376,7 @@ ccm_preferences_page_on_plugins_modified(CCMPreferencesPage* self,
 				g_slist_foreach(new, (GFunc)g_free, NULL);
 				g_slist_free(new);
 			}
+			g_signal_emit(self, signals[PLUGIN_STATE_CHANGED], 0, name, active);
 			g_free(name);
 		}
 		g_slist_foreach(plugins, (GFunc)g_free, NULL);
@@ -443,6 +459,7 @@ ccm_preferences_page_init_plugins_list(CCMPreferencesPage* self)
 						   1, description ? description : "",
 						   2, version ? version : "",
 						   3, active, -1);
+		g_signal_emit(self, signals[PLUGIN_STATE_CHANGED], 0, name, active);
 	}
 	if (actives)
 	{
@@ -685,6 +702,8 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 					self);
 	
 	ccm_preferences_page_init_plugins_list(self);
+
+	ccm_preferences_page_section_p(self,CCM_PREFERENCES_PAGE_SECTION_GENERAL);
 }
 
 static void
@@ -811,12 +830,12 @@ ccm_preferences_page_new (CCMPreferences* preferences, gint screen_num)
 
 	ccm_preferences_page_load_config(self);
 	ccm_preferences_page_init_sections_list(self);
-	ccm_preferences_page_init_general_section(self);
 	ccm_preferences_page_init_desktop_section(self);
 	ccm_preferences_page_init_windows_section(self);
 	ccm_preferences_page_init_effects_section(self);
 	ccm_preferences_page_init_accessibility_section(self);
 	ccm_preferences_page_init_utilities_section(self);
+	ccm_preferences_page_init_general_section(self);
 	
 	return self;
 }
@@ -835,4 +854,70 @@ ccm_preferences_page_get_screen_num(CCMPreferencesPage* self)
 	g_return_val_if_fail(self != NULL, -1);
 
 	return self->priv->screen_num;
+}
+
+void
+ccm_preferences_page_section_p(CCMPreferencesPage* self,
+                               CCMPreferencesPageSection section)
+{
+	g_return_if_fail(self != NULL);
+
+	GtkTreeModel* sections_list;
+	GtkTreeIter iter;
+	
+	sections_list = GTK_TREE_MODEL(gtk_builder_get_object(self->priv->builder, 
+														  "sections_list"));
+	if (!sections_list) return;
+
+	if (gtk_tree_model_get_iter_first(sections_list, &iter))
+	{
+		do 
+		{
+			gint count, page;
+			gboolean active;
+
+			gtk_tree_model_get(sections_list, &iter, 0, &page, 
+			                   3, &active, 4, &count, -1);
+			if (section == page)
+			{
+				count++;
+				active = count > 0;
+				gtk_list_store_set(GTK_LIST_STORE(sections_list), &iter, 
+				                   3, active, 4, count, -1);
+			}
+		} while (gtk_tree_model_iter_next(sections_list, &iter));
+	}
+}
+
+void
+ccm_preferences_page_section_v(CCMPreferencesPage* self, 
+                               CCMPreferencesPageSection section)
+{
+	g_return_if_fail(self != NULL);
+
+	GtkTreeModel* sections_list;
+	GtkTreeIter iter;
+	
+	sections_list = GTK_TREE_MODEL(gtk_builder_get_object(self->priv->builder, 
+														  "sections_list"));
+	if (!sections_list) return;
+
+	if (gtk_tree_model_get_iter_first(sections_list, &iter))
+	{
+		do 
+		{
+			gint count, page;
+			gboolean active;
+
+			gtk_tree_model_get(sections_list, &iter, 0, &page, 
+			                   3, &active, 4, &count, -1);
+			if (section == page)
+			{
+				count = MAX(count - 1, 0);
+				active = count > 0;
+				gtk_list_store_set(GTK_LIST_STORE(sections_list), &iter, 
+				                   3, active, 4, count, -1);
+			}
+		} while (gtk_tree_model_iter_next(sections_list, &iter));
+	}
 }

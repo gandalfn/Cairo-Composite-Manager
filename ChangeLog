@@ -1,3 +1,36 @@
+2009-03-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* data/ccm-preferences.ui:
+	  - Fix widget name changed on last edit name.
+	* plugins/fade/ccm-fade.c (ccm_fade_finalize):
+	  - Disconnect display event on finalize fix a crash on multiple plugins
+	    activation/desactivation.
+	* src/ccm-cell-extension.c (ccm_cell_extension_init),
+	(ccm_cell_extension_on_enable_clicked), (ccm_cell_extension_new),
+	(ccm_cell_extension_set_active), (ccm_cell_extension_get_active):
+	  - Use a variable member instead button label to get/set active.
+	* src/ccm-marshallers.list:
+	* src/ccm-preferences-page.c (ccm_preferences_page_class_init),
+	(ccm_preferences_page_on_plugins_modified),
+	(ccm_preferences_page_init_plugins_list),
+	(impl_ccm_preferences_page_init_general_section),
+	(ccm_preferences_page_new), (ccm_preferences_page_section_p),
+	(ccm_preferences_page_section_v):
+	* src/ccm-preferences-page.h:
+	  - Add plugin state changed signal.
+	  - Add ccm_preferences_page_section_[p/v] to indicate if a plugin use or
+	    not a section, if a section is not used gray de section selection.
+	* plugins/decoration/ccm-decoration.ui:
+	* plugins/decoration/ccm-decoration.c (ccm_decoration_init),
+	(ccm_decoration_create_mask),
+	(ccm_decoration_preferences_page_on_plugin_changed),
+	(ccm_decoration_preferences_page_init_windows_section):
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_init),
+	(ccm_shadow_preferences_page_on_plugin_changed),
+	(ccm_shadow_preferences_page_init_windows_section):
+	* plugins/shadow/ccm-shadow.ui:
+	  - Hide settings if the plugin is not loaded.
+
 2009-03-03  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* plugins/decoration/ccm-decoration.ui:

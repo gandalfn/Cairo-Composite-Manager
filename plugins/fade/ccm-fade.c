@@ -45,6 +45,7 @@ static gchar* CCMFadeOptions[CCM_FADE_OPTION_N] = {
 
 static void ccm_fade_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_fade_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_fade_on_event(CCMFade* self, XEvent* event);
 static void	ccm_fade_on_error(CCMFade* self, CCMWindow* window);
 static void ccm_fade_on_property_changed(CCMFade* self, 
 										 CCMPropertyType changed,
@@ -98,6 +99,16 @@ ccm_fade_finalize (GObject *object)
 {
 	CCMFade* self = CCM_FADE(object);
 	gint cpt;
+
+	if (self->priv->screen)
+	{
+		CCMDisplay* display = ccm_screen_get_display(self->priv->screen);
+		
+		g_signal_handlers_disconnect_by_func(display, 
+											 ccm_fade_on_event, 
+											 self);	
+	}
+	self->priv->screen = NULL;
 	
 	if (self->priv->window)
 	{
@@ -359,7 +370,7 @@ ccm_fade_on_event(CCMFade* self, XEvent* event)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(event != NULL);
-	
+
 	switch (event->type)
 	{
 		case PropertyNotify:

@@ -22,6 +22,8 @@
 struct _CCMCellExtensionPrivate
 {
 	gchar*	     path;
+
+	gboolean	 active;
 	
 	GtkWidget*   name;
 	GtkWidget*   author;
@@ -45,6 +47,7 @@ ccm_cell_extension_init (CCMCellExtension *self)
 {
 	self->priv = CCM_CELL_EXTENSION_GET_PRIVATE(self);
 	self->priv->path = NULL;
+	self->priv->active = FALSE;
 	self->priv->name = NULL;
 	self->priv->author = NULL;
 	self->priv->enable = NULL;
@@ -80,9 +83,7 @@ ccm_cell_extension_iface_init(GtkCellEditableIface* iface)
 static void
 ccm_cell_extension_on_enable_clicked (CCMCellExtension* self)
 {
-	gboolean active = ccm_cell_extension_get_active(self);
-	
-	ccm_cell_extension_set_active(self, !active);
+	ccm_cell_extension_set_active(self, !self->priv->active);
 	
 	gtk_cell_editable_editing_done(GTK_CELL_EDITABLE(self));
 }
@@ -142,6 +143,7 @@ ccm_cell_extension_new (const gchar* path, int width)
 	gtk_container_add(GTK_CONTAINER(button), self->priv->enable);
 	gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 0);
 
+	gtk_event_box_set_above_child(GTK_EVENT_BOX(self), FALSE);
 	gtk_event_box_set_visible_window(GTK_EVENT_BOX(self), FALSE);
 	
 	return self;
@@ -151,9 +153,11 @@ void
 ccm_cell_extension_set_active(CCMCellExtension* self, gboolean enable)
 {
 	g_return_if_fail(self != NULL);
-	
+
+	self->priv->active = enable;
 	gtk_label_set_markup(GTK_LABEL(self->priv->enable), 
-					     !enable ? "<span size='small'>Enable</span>" :
+					     !self->priv->active ? 
+	                         "<span size='small'>Enable</span>" :
 							 "<span size='small'>Disable</span>");
 }
 
@@ -170,7 +174,5 @@ ccm_cell_extension_get_active(CCMCellExtension* self)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	
-	return 
-		!g_ascii_strcasecmp(gtk_label_get_text(GTK_LABEL(self->priv->enable)), 
-							"Disable");
+	return self->priv->active;
 }
