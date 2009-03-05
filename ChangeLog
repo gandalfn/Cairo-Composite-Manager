@@ -1,5 +1,10 @@
 2009-03-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+    * plugins/freeze/ccm-freeze.c (ccm_freeze_on_event):
+      - Check display validy on screen event avoid a crash on ccm unset.
+	
+2009-03-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/fade/Makefile.am:
 	* plugins/fade/ccm-fade.ui:
 	* plugins/fade/fade.svg:

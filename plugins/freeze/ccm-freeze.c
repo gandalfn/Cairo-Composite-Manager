@@ -47,7 +47,8 @@ static gchar* CCMFreezeOptions[CCM_FREEZE_OPTION_N] = {
 };
 
 static void ccm_freeze_window_iface_init(CCMWindowPluginClass* iface);
-static void ccm_freeze_on_event(CCMFreeze* self, XEvent* event);
+static void ccm_freeze_on_event(CCMFreeze* self, XEvent* event, 
+                                CCMDisplay* display);
 
 CCM_DEFINE_PLUGIN (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_freeze,
@@ -153,12 +154,12 @@ ccm_freeze_on_new_frame (CCMFreeze* self, guint num_frame,
 }
 
 static void
-ccm_freeze_on_event(CCMFreeze* self, XEvent* event)
+ccm_freeze_on_event(CCMFreeze* self, XEvent* event, CCMDisplay* display)
 {
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(event != NULL);
-	
-	if (!CCM_IS_FREEZE(self)) return;
+
+	if (!CCM_IS_FREEZE(self) || !CCM_IS_DISPLAY(display)) return;
 	
 	if (self->priv->window && event->type == ClientMessage)
 	{
