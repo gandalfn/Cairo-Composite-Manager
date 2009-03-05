@@ -1,5 +1,10 @@
 2009-03-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* src/ccm-screen.c (ccm_screen_check_stack), (ccm_screen_restack):
+	  - Never restack window below hint desktop window allow fade unmap works.
+
+2009-03-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
     * plugins/freeze/ccm-freeze.c (ccm_freeze_on_event):
       - Check display validy on screen event avoid a crash on ccm unset.
 	

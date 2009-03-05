@@ -1052,8 +1052,9 @@ ccm_screen_check_stack(CCMScreen* self)
 	g_return_if_fail(self != NULL);
 
 	guint cpt;
-	GList* stack = NULL, *item;
+	GList* stack = NULL, *item, *last = NULL;
 	GList* viewable = NULL, *new_viewable = NULL;
+	CCMWindow* desktop = NULL;
 	
 	ccm_debug("CHECK_STACK");
 	
@@ -1069,6 +1070,9 @@ ccm_screen_check_stack(CCMScreen* self)
 			stack = g_list_prepend(stack, window);
 			if (ccm_window_is_viewable (window))
 			{
+				if (ccm_window_get_hint_type(window) == CCM_WINDOW_TYPE_DESKTOP)
+					desktop = window;
+				
 				ccm_debug_window(window, "STACK IS VIEWABLE");
 				viewable = g_list_prepend(viewable, window);
 			}
@@ -1084,7 +1088,7 @@ ccm_screen_check_stack(CCMScreen* self)
 				    !ccm_window_is_input_only (window))
 				{
 					ccm_debug_window(window, "CHECK STACK NEW WINDOW MAP");
-					//ccm_window_map(window);
+					new_viewable = g_list_prepend(new_viewable, window);
 					viewable = g_list_prepend(viewable, window);
 				}
 				g_signal_connect_swapped(window, "damaged", 
@@ -1100,18 +1104,17 @@ ccm_screen_check_stack(CCMScreen* self)
 		}
 	}
 	stack = g_list_reverse(stack);
-	viewable = g_list_reverse(viewable);
 	
 	for (item = g_list_first(self->priv->windows); item && stack; item = item->next)
 	{
 		GList* link = g_list_find(stack, item->data);
-		
-		if (link && ccm_window_is_viewable (item->data))
+
+		if (link && ccm_window_is_viewable (item->data) &&
+		    !ccm_window_is_input_only (item->data))
 		{
-			ccm_debug_window(item->data, "CHECK STACK LAST");
-			new_viewable = g_list_append(new_viewable, item->data);
+			last = link;
 		}
-		else if (!link) 
+		else if (!link)
 		{
 			gboolean found = FALSE;
 			
@@ -1121,10 +1124,9 @@ ccm_screen_check_stack(CCMScreen* self)
 			{
 				GList* last_viewable = NULL;
 				
-				if (new_viewable && g_list_last (new_viewable))
+				if (last)
 				{
-					last_viewable = g_list_find(stack, 
-											    g_list_last (new_viewable)->data);
+					last_viewable = g_list_find(stack, last->data);
 					if (last_viewable)
 						stack = g_list_insert_before (stack, 
 													  last_viewable->next,
@@ -1140,16 +1142,23 @@ ccm_screen_check_stack(CCMScreen* self)
 				ccm_screen_destroy_window (self, item->data);
 		}
 	}
+
+	viewable = g_list_reverse(viewable);
+	if (desktop && viewable->data != desktop)
+	{
+		GList* desktop_link = g_list_find(stack, desktop);
+
+		stack = g_list_remove(stack, viewable->data);
+		stack = g_list_insert_before (stack, desktop_link->next, viewable->data);
+	}
 	
 	g_list_free(self->priv->windows);
+	g_list_free(viewable);
 	self->priv->windows = stack;
 	
-	for (item = g_list_first(new_viewable); item; item = item->next)
-	{
-		if (g_list_index (viewable, item->data) != g_list_index (new_viewable, item->data))
-			ccm_drawable_damage (item->data);
-	}
-	g_list_free(viewable);
+	for (item = new_viewable; item; item = item->next)
+		ccm_drawable_damage (item->data);
+
 	g_list_free(new_viewable);
 	
 #if 0
@@ -1170,7 +1179,10 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* sibling)
 	g_return_if_fail(sibling != NULL);
 	
 	GList* sibling_link = g_list_find(self->priv->windows, sibling);
-	
+
+	if (ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP)
+		return;
+
 	ccm_debug_window(window, "RESTACK AFTER 0x%x", CCM_WINDOW_XWINDOW(sibling));
 	
 	self->priv->windows = g_list_remove (self->priv->windows, window);
