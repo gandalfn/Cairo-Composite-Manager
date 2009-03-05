@@ -1,5 +1,5 @@
 PLUGIN = ccm-fade
-PLUGIN_UI = 
+PLUGIN_UI = ccm-fade.ui fade.svg
 PLUGIN_SCHEMA = ccm-fade.schema-key.in
 
 PLUGIN_SOURCES = ccm-fade.c ccm-fade.h

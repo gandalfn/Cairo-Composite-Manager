@@ -256,7 +256,7 @@ cairo_blur_path(cairo_path_t* path, cairo_path_t* clip, int border,
 	for (cpt = border; cpt > 0; cpt -= step)
 	{
 		double alpha;
-		double p = 1 - (cpt / (double)border);
+		double p = 1.f - (cpt / (double)border);
 		double x_scale = (double)((x2 - x1) + cpt) / (double)(x2 - x1);
 		double y_scale = (double)((y2 - y1) + cpt) / (double)(y2 - y1);
 		
@@ -270,8 +270,8 @@ cairo_blur_path(cairo_path_t* path, cairo_path_t* clip, int border,
 			alpha = 0.72;
 		
 		cairo_save(cr);
+		cairo_translate(cr, - cpt / 2.f, - cpt / 2.f);
 		cairo_scale(cr, x_scale, y_scale);
-		cairo_translate(cr, - cpt / (2 * x_scale), - cpt / (2 * y_scale));
 		cairo_set_source_rgba(cr, 0, 0, 0, alpha);
 		cairo_append_path(cr, path);
 		cairo_fill(cr);

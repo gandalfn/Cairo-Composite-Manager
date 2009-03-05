@@ -817,13 +817,20 @@ ccm_shadow_on_option_changed(CCMShadow* self, CCMConfig* config)
 	
 	if (!self->priv->id_check) 
 	{
+		if (self->priv->shadow_image) 
+			cairo_surface_destroy(self->priv->shadow_image);
+		self->priv->shadow_image = NULL;
+	
+		if (self->priv->shadow) 
+			g_object_unref(self->priv->shadow);
+		self->priv->shadow = NULL;
+
 		if (self->priv->geometry) 
 			ccm_region_destroy (self->priv->geometry);
 		self->priv->geometry = NULL;
 				
-		self->priv->id_check = g_timeout_add(500,
-		                                     (GSourceFunc)ccm_shadow_check_needed, 
-										     self);
+		self->priv->id_check = g_idle_add((GSourceFunc)ccm_shadow_check_needed, 
+		                                  self);
 	}
 }
 

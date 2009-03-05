@@ -1,3 +1,26 @@
+2009-03-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/fade/Makefile.am:
+	* plugins/fade/ccm-fade.ui:
+	* plugins/fade/fade.svg:
+	* plugins/fade/ccm-fade.c (ccm_fade_init), (ccm_fade_finalize),
+	(ccm_fade_preferences_page_on_duration_changed),
+	(ccm_fade_preferences_page_on_config_changed),
+	(ccm_fade_preferences_page_on_plugin_changed),
+	(ccm_fade_preferences_page_init_effects_section),
+	(ccm_fade_preferences_page_iface_init):
+	  - Add fade preferences section.
+	* lib/ccm-cairo-utils.c (cairo_blur_path):
+	  - Minor fixup.
+	* plugins/decoration/ccm-decoration.c (ccm_decoration_get_opacity),
+	(ccm_decoration_on_option_changed):
+	* plugins/decoration/ccm-decoration.ui:
+	  - Update decoration on gradiant change.
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_on_option_changed):
+	  - Fix up shadow refresh on setting change.
+	* src/ccm-window-glitz.c (ccm_window_glitz_create_gl_drawable):
+	  - Use the first drawable format available instead second.
+
 2009-03-04  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* data/ccm-preferences.ui:

@@ -124,7 +124,7 @@ ccm_window_glitz_create_gl_drawable(CCMWindowGlitz* self)
 		format = glitz_glx_find_window_format (
 						CCM_DISPLAY_XDISPLAY(display),
 						CCM_SCREEN_NUMBER(screen),
-						mask, &tmp, 1);
+						mask, &tmp, 0);
 		if (!format)
 		{
 			g_warning("Error on get glitz format drawable");
