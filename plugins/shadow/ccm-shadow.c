@@ -817,6 +817,70 @@ ccm_shadow_on_option_changed(CCMShadow* self, CCMConfig* config)
 	
 	if (!self->priv->id_check) 
 	{
+		GError* error = NULL;
+		
+		self->priv->real_blur = 
+			ccm_config_get_boolean(self->priv->options[CCM_SHADOW_REAL_BLUR], 
+			                       &error);
+		if (error)
+		{
+			g_warning("Error on get shadow realblur configuration value");
+			g_error_free(error);
+			error = NULL;
+			self->priv->real_blur = FALSE;
+		}
+		self->priv->offset = 
+			ccm_config_get_integer(self->priv->options[CCM_SHADOW_OFFSET], 
+			                       &error);
+		if (error)
+		{
+			g_warning("Error on get shadow offset configuration value");
+			g_error_free(error);
+			error = NULL;
+			self->priv->offset = 0;
+		}
+		self->priv->radius = 
+			ccm_config_get_integer(self->priv->options[CCM_SHADOW_RADIUS], 
+			                       &error);
+		if (error)
+		{
+			g_warning("Error on get shadow radius configuration value");
+			g_error_free(error);
+			error = NULL;
+			self->priv->radius = 14;
+		}
+		self->priv->sigma = 
+			ccm_config_get_float(self->priv->options[CCM_SHADOW_SIGMA], 
+			                     &error);
+		if (error)
+		{
+			g_warning("Error on get shadow radius configuration value");
+			g_error_free(error);
+			error = NULL;
+			self->priv->sigma = 7;
+		}
+		if (self->priv->color) g_free(self->priv->color);
+		self->priv->color = 
+			ccm_config_get_color(self->priv->options[CCM_SHADOW_COLOR], 
+			                     &error);
+		if (error)
+		{
+			g_warning("Error on get shadow color configuration value");
+			g_error_free(error);
+			error = NULL;
+			self->priv->color = g_new0(GdkColor, 1);
+		}
+		self->priv->alpha = 
+			ccm_config_get_float(self->priv->options[CCM_SHADOW_ALPHA], 
+			                     &error);
+		if (error)
+		{
+			g_warning("Error on get shadow alpha configuration value");
+			g_error_free(error);
+			error = NULL;
+			self->priv->alpha = 0.6;
+		}
+		
 		if (self->priv->shadow_image) 
 			cairo_surface_destroy(self->priv->shadow_image);
 		self->priv->shadow_image = NULL;

@@ -61,6 +61,7 @@ static void ccm_menu_animation_on_error (CCMMenuAnimation* self,
 static void ccm_menu_animation_on_property_changed (CCMMenuAnimation* self, 
 													CCMPropertyType changed,
 													CCMWindow* window);
+static void ccm_menu_animation_on_event(CCMMenuAnimation* self, XEvent* event);
 
 CCM_DEFINE_PLUGIN (CCMMenuAnimation, ccm_menu_animation, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_menu_animation,
@@ -113,6 +114,15 @@ ccm_menu_animation_finalize (GObject *object)
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(object);
 	gint cpt;
 	
+	if (self->priv->screen)
+	{
+		CCMDisplay* display = ccm_screen_get_display(self->priv->screen);
+		
+		g_signal_handlers_disconnect_by_func(display, 
+											 ccm_menu_animation_on_event, 
+											 self);	
+	}
+
 	if (self->priv->window)
 	{
 		g_signal_handlers_disconnect_by_func(self->priv->window, 

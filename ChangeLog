@@ -1,3 +1,21 @@
+2009-03-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
+	* plugins/menu-animation/ccm-menu-animation.c
+	(ccm_menu_animation_finalize):
+	  - Disconnect display event on finalize.
+	* plugins/shadow/ccm-shadow.c (ccm_shadow_on_option_changed):
+	  - Get new option value on change.
+	* src/ccm-display.c (ccm_display_finalize):
+	  - Initialize screen in finalize avoid warning on enable/disable 
+	    compositing.
+	* src/ccm-window.c (ccm_window_get_attribs),
+	(ccm_window_on_get_property_async), (ccm_window_unmap):
+	  - Emit an error when get geometry window fail.
+	  - Unmap also if window is not visible but viewable, this case happen
+	    when viewable is set on get window attribs. Avoid some dead window still
+	    on desktop
+	  - Remove unuseable log.
+
 2009-03-05  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
 	* src/ccm-screen.c (ccm_screen_check_stack), (ccm_screen_restack):

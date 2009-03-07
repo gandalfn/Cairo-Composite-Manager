@@ -220,6 +220,7 @@ ccm_display_finalize (GObject *object)
 			if (self->priv->screens[cpt])
 			{
 				g_object_unref(self->priv->screens[cpt]);
+				self->priv->screens[cpt] = NULL;
 			}
 		}
 		

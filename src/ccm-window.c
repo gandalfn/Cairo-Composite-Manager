@@ -922,8 +922,7 @@ ccm_window_get_attribs (CCMWindow* self)
 							   CCM_WINDOW_XWINDOW(self), &attribs) ||
 		ccm_display_pop_error (display))
 	{
-		self->priv->is_viewable = FALSE;
-		self->priv->visible = FALSE;
+		g_signal_emit(self, signals[ERROR], 0);
 		return FALSE;
 	}
 	
@@ -936,8 +935,9 @@ ccm_window_get_attribs (CCMWindow* self)
 	
 	g_object_set(self, "visual", attribs.visual, NULL);
 	g_object_set(self, "depth", attribs.depth, NULL);
-	
+
 	self->priv->is_viewable = attribs.map_state == IsViewable;
+
 	self->priv->is_input_only = attribs.class == InputOnly;
 	self->priv->override_redirect = attribs.override_redirect;
 	if (self->priv->override_redirect && self->priv->child)
@@ -1459,7 +1459,6 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 								 CCMPropertyASync* prop)
 {
 	Atom property = ccm_property_async_get_property (prop);
-	ccm_debug_atom(display, property, "PROPERTY RESPONSE");
 	
 	if (!CCM_IS_WINDOW(self)) 
 	{
@@ -2584,7 +2583,7 @@ ccm_window_unmap(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(CCM_WINDOW_GET_CLASS(self) != NULL);
 	
-	if (self->priv->visible)
+	if (self->priv->visible || self->priv->is_viewable)
 	{
 		ccm_debug("UNMAP");
 		self->priv->visible = FALSE;
