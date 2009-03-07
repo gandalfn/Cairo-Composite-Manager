@@ -31,6 +31,7 @@
 #include "ccm-screen.h"
 #include "ccm-menu-animation.h"
 #include "ccm-timeline.h"
+#include "ccm-preferences-page-plugin.h"
 #include "ccm.h"
 
 #define CCM_MENU_ANIMATION_DIV 7
@@ -56,6 +57,7 @@ static gchar* CCMMenuAnimationOptions[CCM_MENU_ANIMATION_OPTION_N] = {
 
 static void ccm_menu_animation_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_menu_animation_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_menu_animation_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
 static void ccm_menu_animation_on_error (CCMMenuAnimation* self, 
 										 CCMWindow* window);
 static void ccm_menu_animation_on_property_changed (CCMMenuAnimation* self, 
@@ -69,7 +71,10 @@ CCM_DEFINE_PLUGIN (CCMMenuAnimation, ccm_menu_animation, CCM_TYPE_PLUGIN,
 										   ccm_menu_animation_screen_iface_init);
 				   CCM_IMPLEMENT_INTERFACE(ccm_menu_animation,
 										   CCM_TYPE_WINDOW_PLUGIN,
-										   ccm_menu_animation_window_iface_init))
+										   ccm_menu_animation_window_iface_init);
+                   CCM_IMPLEMENT_INTERFACE(ccm_menu_animation,
+                                           CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                           ccm_menu_animation_preferences_page_iface_init))
 
 struct _CCMMenuAnimationPrivate
 {	
@@ -83,6 +88,11 @@ struct _CCMMenuAnimationPrivate
 	guint		   x_pos;
 	guint		   y_pos;
 	gboolean	   forced_animation;
+	
+	GtkBuilder*	   builder;
+	gboolean	   active;
+
+	guint		   handlers[CCM_MENU_ANIMATION_OPTION_N];
 	
 	CCMConfig*     options[CCM_MENU_ANIMATION_OPTION_N];
 };
@@ -103,9 +113,14 @@ ccm_menu_animation_init (CCMMenuAnimation *self)
 	self->priv->x_pos = CCM_MENU_ANIMATION_LEFT;
 	self->priv->y_pos = CCM_MENU_ANIMATION_TOP;
 	self->priv->forced_animation = FALSE;
+	self->priv->builder = NULL;
+	self->priv->active = TRUE;
 	
 	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; ++cpt) 
+	{
+		self->priv->handlers[cpt] = 0;
 		self->priv->options[cpt] = NULL;
+	}
 }
 
 static void
@@ -145,6 +160,8 @@ ccm_menu_animation_finalize (GObject *object)
 		g_object_unref (self->priv->timeline);
 		self->priv->timeline = NULL;
 	}
+	
+	if (self->priv->builder) g_object_unref(self->priv->builder);
 	
 	G_OBJECT_CLASS (ccm_menu_animation_parent_class)->finalize (object);
 }
@@ -707,6 +724,126 @@ ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
+ccm_menu_animation_preferences_page_on_duration_changed(GtkAdjustment* adjustment,
+                                                        CCMConfig* config)
+{
+	gdouble value = gtk_adjustment_get_value(adjustment);
+
+	ccm_config_set_float (config, (gfloat)value, NULL);
+}
+
+static void
+ccm_menu_animation_preferences_page_on_config_changed(CCMMenuAnimation* self,
+                                                      CCMConfig* config)
+{
+	gchar* key = NULL;
+
+	g_object_get(config, "key", &key, NULL);
+	if (key)
+	{
+		if (!g_ascii_strcasecmp(key, CCMMenuAnimationOptions[CCM_MENU_ANIMATION_DURATION]))
+		{
+			GtkAdjustment* duration_conf = 
+				GTK_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                      "duration_adjustment"));
+			gfloat duration = ccm_config_get_float (config, NULL);
+			if (duration) gtk_adjustment_set_value(duration_conf, duration);
+			if (!self->priv->handlers[CCM_MENU_ANIMATION_DURATION])
+			{
+				self->priv->handlers[CCM_MENU_ANIMATION_DURATION] = 
+					g_signal_connect(duration_conf, "value-changed",
+					                 G_CALLBACK(ccm_menu_animation_preferences_page_on_duration_changed),
+					                 config);
+			}
+		}
+		g_free(key);
+	}
+}
+
+static void
+ccm_menu_animation_preferences_page_on_plugin_changed(CCMMenuAnimation* self,
+                                                      gchar* name, gboolean active,
+                                                      CCMPreferencesPage* preferences)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(name != NULL);
+	g_return_if_fail(preferences != NULL);
+	
+	if (!g_ascii_strcasecmp(name, "menu-animation"))
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+			                                  "menu-animation"));
+		if (self->priv->active != active)
+		{
+			self->priv->active = active;
+			if (active)
+			{
+				gtk_widget_show(widget);
+				ccm_preferences_page_section_p(preferences, 
+					                           CCM_PREFERENCES_PAGE_SECTION_EFFECTS);
+			}
+			else
+			{
+				gtk_widget_hide(widget);
+				ccm_preferences_page_section_v(preferences, 
+					                           CCM_PREFERENCES_PAGE_SECTION_EFFECTS);
+			}
+		}
+	}
+}
+
+static void
+ccm_menu_animation_preferences_page_init_effects_section(CCMPreferencesPagePlugin* plugin,
+                                                         CCMPreferencesPage* preferences,
+                                                         GtkWidget* effects_section)
+{
+	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
+	
+	self->priv->builder = gtk_builder_new();
+
+	if (gtk_builder_add_from_file(self->priv->builder, 
+	                              UI_DIR "/ccm-menu-animation.ui", NULL))
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "menu-animation"));
+		if (widget)
+		{
+			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
+			gint cpt;
+			
+			gtk_box_pack_start(GTK_BOX(effects_section), widget, 
+			                   FALSE, TRUE, 0);
+
+			for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; ++cpt)
+			{
+				if (self->priv->options[cpt]) 
+					g_object_unref(self->priv->options[cpt]);
+				self->priv->options[cpt] = ccm_config_new(screen_num, 
+				                                          "menu-animation", 
+				                                          CCMMenuAnimationOptions[cpt]);
+				if (self->priv->options[cpt]) 
+				{
+					g_signal_connect_swapped(self->priv->options[cpt], 
+					                         "changed",
+					                         G_CALLBACK(ccm_menu_animation_preferences_page_on_config_changed),
+					                         self);
+					ccm_menu_animation_preferences_page_on_config_changed(self,
+					                                                      self->priv->options[cpt]);
+				}
+			}
+			ccm_preferences_page_section_p(preferences, 
+			                               CCM_PREFERENCES_PAGE_SECTION_EFFECTS);
+			g_signal_connect_swapped(preferences, "plugin-state-changed",
+			                         G_CALLBACK(ccm_menu_animation_preferences_page_on_plugin_changed),
+			                         self);
+		}
+	}
+	ccm_preferences_page_plugin_init_effects_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+													  preferences, effects_section);
+}
+
+static void
 ccm_menu_animation_window_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	 = ccm_menu_animation_window_load_options;
@@ -729,4 +866,15 @@ ccm_menu_animation_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->add_window		= NULL;
 	iface->remove_window	= NULL;
 	iface->damage			= NULL;
+}
+
+static void
+ccm_menu_animation_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
+{
+	iface->init_general_section       = NULL;
+    iface->init_desktop_section       = NULL;
+    iface->init_windows_section       = NULL;
+    iface->init_effects_section		  = ccm_menu_animation_preferences_page_init_effects_section;
+    iface->init_accessibility_section = NULL;
+    iface->init_utilities_section     = NULL;
 }

@@ -1,5 +1,5 @@
 PLUGIN = ccm-menu-animation
-PLUGIN_UI = 
+PLUGIN_UI = ccm-menu-animation.ui menu-animation.png
 PLUGIN_SCHEMA = ccm-menu-animation.schema-key.in
 
 PLUGIN_SOURCES = ccm-menu-animation.c ccm-menu-animation.h

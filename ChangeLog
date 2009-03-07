@@ -1,5 +1,12 @@
 2009-03-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
 
+	* plugins/menu-animation/ccm-menu-animation.ui:
+	* plugins/menu-animation/menu-animation.png:
+	* plugins/menu-animation/ccm-menu-animation.c:
+	  - Add menu-animation preferences settings.
+
+2009-03-07  Nicolas Bruguier  <gandalfn@club-internet.fr>
+
 	* plugins/menu-animation/ccm-menu-animation.c
 	(ccm_menu_animation_finalize):
 	  - Disconnect display event on finalize.
