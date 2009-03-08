@@ -9,14 +9,17 @@ plugins/automate/ccm-automate.schema-key.in
 plugins/automate/ccm-automate.ui
 plugins/decoration/ccm-decoration.plugin.desktop.in
 plugins/decoration/ccm-decoration.schema-key.in
+plugins/decoration/ccm-decoration.ui
 plugins/fade/ccm-fade.plugin.desktop.in
 plugins/fade/ccm-fade.schema-key.in
+plugins/fade/ccm-fade.ui
 plugins/freeze/ccm-freeze.plugin.desktop.in
 plugins/freeze/ccm-freeze.schema-key.in
 plugins/magnifier/ccm-magnifier.plugin.desktop.in
 plugins/magnifier/ccm-magnifier.schema-key.in
 plugins/menu-animation/ccm-menu-animation.plugin.desktop.in
 plugins/menu-animation/ccm-menu-animation.schema-key.in
+plugins/menu-animation/ccm-menu-animation.ui
 plugins/mosaic/ccm-mosaic.plugin.desktop.in
 plugins/mosaic/ccm-mosaic.schema-key.in
 plugins/opacity/ccm-opacity.plugin.desktop.in
@@ -25,6 +28,7 @@ plugins/perf/ccm-perf.plugin.desktop.in
 plugins/perf/ccm-perf.schema-key.in
 plugins/shadow/ccm-shadow.plugin.desktop.in
 plugins/shadow/ccm-shadow.schema-key.in
+plugins/shadow/ccm-shadow.ui
 plugins/snapshot/ccm-snapshot.plugin.desktop.in
 plugins/snapshot/ccm-snapshot.schema-key.in
 plugins/snapshot/ccm-snapshot.ui

@@ -1,7 +1,7 @@
-26% symbol docs coverage.
+25% symbol docs coverage.
 70 symbols documented.
 3 symbols incomplete.
-204 not documented.
+205 not documented.
 
 
 CCMDisplay
@@ -16,6 +16,7 @@ CCMKeybind::key-press
 CCMKeybind::key-release
 CCMPixmap
 CCMPreferencesPage
+CCMPreferencesPage::plugin-state-changed
 CCMPreferencesPagePlugin
 CCMRegion
 CCMScreen

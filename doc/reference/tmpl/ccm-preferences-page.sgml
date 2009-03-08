@@ -23,6 +23,15 @@ CCMPreferencesPage
 </para>
 
 
+<!-- ##### SIGNAL CCMPreferencesPage::plugin-state-changed ##### -->
+<para>
+
+</para>
+
+@ccmpreferencespage: the object which received the signal.
+@arg1: 
+@arg2: 
+
 <!-- ##### FUNCTION ccm_preferences_page_new ##### -->
 <para>
 
