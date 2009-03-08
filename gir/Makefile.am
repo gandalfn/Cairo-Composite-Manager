@@ -47,9 +47,9 @@ CCM-1.0.gir: Makefile xlib-2.0.gir $(GIR_DEPENDS)
     --pkg gtk+-2.0 \
     --pkg cairo \
     --pkg gconf-2.0 \
-    --output=$@ \
-    --program=${top_builddir}/src/cairo-compmgr \
-    --library=cairo_compmgr \
+    --output $@ \
+    --program ${top_builddir}/src/cairo-compmgr \
+    --library cairo_compmgr \
     $(GIR_DEPENDS)
 
 GIR_FILES += CCM-1.0.gir

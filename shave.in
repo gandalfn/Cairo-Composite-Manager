@@ -33,6 +33,18 @@ while test "$#" -gt 0; do
         lt_output="$1"
         preserved_args="$preserved_args $opt"
 	;;
+    --output)
+        lt_output="$1"
+        preserved_args="$preserved_args $opt"
+	;;
+    --inject)
+        lt_output="$2"
+        preserved_args="$preserved_args $opt"
+	;;
+    -C)
+        lt_output="$*"
+        preserved_args="$preserved_args $opt"
+	;;
     *)
         preserved_args="$preserved_args $opt"
         ;;
@@ -55,6 +67,15 @@ link,*)
     ;;
 *,f77)
     Q="  F77   "
+    ;;
+*,valac)
+    Q="  VALAC "
+    ;;
+*,g-ir-compiler)
+    Q="  GEN   "
+    ;;
+*,g-ir-scanner)
+    Q="  SCAN  "
     ;;
 *,*)
     # should not happen
