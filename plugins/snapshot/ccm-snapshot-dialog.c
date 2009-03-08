@@ -20,8 +20,10 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
+#include <X11/Xatom.h>
 #include <string.h>
 #include <gtk/gtk.h>
+#include <gdk/gdkx.h>
 
 #include "ccm-debug.h"
 #include "ccm-cairo-utils.h"
@@ -114,9 +116,16 @@ ccm_snapshot_dialog_on_realize (CCMSnapshotDialog* self, GtkWidget* widget)
 {
 	GtkWidget *snapshot, *table;
 	int width, height;
-	
+	GdkAtom atom_enable = gdk_atom_intern_static_string("_CCM_SHADOW_ENABLED");
+	gulong enable = 1;
+	GdkPixmap* pixmap;
+	cairo_t* ctx;
+	GtkWidget* title = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+														 "label_notebook"));
+
 	gdk_window_set_focus_on_map(widget->window, TRUE);
 	gdk_window_set_keep_above(widget->window, TRUE);
+	gdk_window_stick(widget->window);
 	
 	width = cairo_image_surface_get_width(self->priv->surface);
 	height = cairo_image_surface_get_height(self->priv->surface);
@@ -133,6 +142,37 @@ ccm_snapshot_dialog_on_realize (CCMSnapshotDialog* self, GtkWidget* widget)
 		gtk_widget_set_size_request(snapshot, 
 									table->allocation.width * width / height, 
 									table->allocation.width);
+
+	gdk_property_change(widget->window, atom_enable, 
+                        gdk_x11_xatom_to_atom(XA_CARDINAL), 32, 
+                        GDK_PROP_MODE_REPLACE, (guchar *)&enable, 1);
+
+	gtk_window_get_size(GTK_WINDOW(widget), &width, &height);
+
+	pixmap = gdk_pixmap_new(NULL, width, height, 1);
+	ctx = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+
+	cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(ctx, 0, 0, 0, 0);
+    cairo_paint(ctx);
+    
+    cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
+	cairo_set_source_rgba(ctx, 1, 1, 1, 1);
+	
+    cairo_save(ctx);
+	cairo_notebook_page_round(ctx, 0, 0, width, height, 
+							  title->allocation.x, 
+							  title->allocation.width,
+							  title->allocation.height, 6);
+	cairo_fill(ctx);
+	cairo_restore(ctx);
+	cairo_destroy(ctx);
+	
+    gdk_window_shape_combine_mask(widget->window, (GdkBitmap*)0, 0, 0);
+    gdk_window_input_shape_combine_mask(widget->window, (GdkBitmap*)0, 0, 0);
+    gdk_window_shape_combine_mask(widget->window, (GdkBitmap*)pixmap, 0, 0);
+    gdk_window_input_shape_combine_mask(widget->window, (GdkBitmap*)pixmap, 0, 0);
+	g_object_unref(pixmap);
 }
 
 static void
