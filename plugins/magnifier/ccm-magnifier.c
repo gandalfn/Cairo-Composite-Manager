@@ -105,7 +105,6 @@ struct _CCMMagnifierPrivate
 	int 				 y_hot;
 	int					 mouse_width;
 	int 				 mouse_height;
-	guchar*				 image_mouse;
 	cairo_surface_t*     surface_mouse;
 	int					 x_offset;
 	int 				 y_offset;
@@ -116,6 +115,8 @@ struct _CCMMagnifierPrivate
 	cairo_filter_t		 quality;
 	CCMRegion*			 damaged;
 	CCMKeybind*			 keybind;
+
+	GHashTable*			 mouse_images;
 	
 	cairo_surface_t*     surface_window_info;
 	CCMTimeline*		 timeline;
@@ -143,7 +144,6 @@ ccm_magnifier_init (CCMMagnifier *self)
 	self->priv->y_hot = 0;
 	self->priv->mouse_width = 0;
 	self->priv->mouse_height = 0;	
-	self->priv->image_mouse = NULL;
 	self->priv->surface_mouse = NULL;
 	self->priv->x_offset = 0;
 	self->priv->y_offset = 0;
@@ -151,6 +151,9 @@ ccm_magnifier_init (CCMMagnifier *self)
 	self->priv->surface = NULL;
 	self->priv->damaged = NULL;
 	self->priv->keybind = NULL;
+	self->priv->mouse_images = g_hash_table_new_full(g_str_hash, g_str_equal,
+	                                                 (GDestroyNotify)g_free, 
+	                                                 (GDestroyNotify)cairo_surface_destroy);
 	self->priv->surface_window_info = NULL;
 	self->priv->timeline = ccm_timeline_new_for_duration(3500);
 	g_object_set(G_OBJECT(self->priv->timeline), "fps", 30, NULL);
@@ -187,9 +190,6 @@ ccm_magnifier_finalize (GObject *object)
 	if (self->priv->surface) 
 		cairo_surface_destroy (self->priv->surface);
 	self->priv->surface = NULL;
-	if (self->priv->image_mouse) 
-		g_free (self->priv->image_mouse);
-	self->priv->image_mouse = NULL;
 	if (self->priv->surface_mouse) 
 		cairo_surface_destroy (self->priv->surface_mouse);
 	self->priv->surface_mouse = NULL;
@@ -205,6 +205,9 @@ ccm_magnifier_finalize (GObject *object)
 	if (self->priv->timeline)
 		g_object_unref(self->priv->timeline);
 	self->priv->timeline = NULL;
+	if (self->priv->mouse_images)
+		g_hash_table_destroy (self->priv->mouse_images);
+	self->priv->mouse_images = NULL;
 	
 	G_OBJECT_CLASS (ccm_magnifier_parent_class)->finalize (object);
 }
@@ -289,11 +292,7 @@ ccm_magnifier_get_enable(CCMMagnifier *self)
 		if (self->priv->surface) 
 			cairo_surface_destroy (self->priv->surface);
 		self->priv->surface = NULL;
-		if (self->priv->image_mouse) 
-			g_free (self->priv->image_mouse);
-		self->priv->image_mouse = NULL;
-		if (self->priv->surface_mouse) 
-			cairo_surface_destroy (self->priv->surface_mouse);
+		g_hash_table_remove_all(self->priv->mouse_images);
 		self->priv->surface_mouse = NULL;
 		ccm_timeline_stop(self->priv->timeline);
 	}
@@ -794,34 +793,41 @@ ccm_magnifier_cursor_get_surface(CCMMagnifier* self)
 	gint cpt;
 	
 	cursor_image = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(display));
-	
-	if (cursor_image->width > 1 && cursor_image->height > 1)
+
+	self->priv->surface_mouse = g_hash_table_lookup(self->priv->mouse_images, 
+	                                              cursor_image->name);
+		
+	if (!self->priv->surface_mouse && 
+	    cursor_image->width > 1 && cursor_image->height > 1)
 	{
-		if (self->priv->image_mouse)
-			g_free (self->priv->image_mouse);
-		if (self->priv->surface_mouse)
-			cairo_surface_destroy (self->priv->surface_mouse);
-	
+		static cairo_user_data_key_t data_key;
+		guchar* image_mouse = NULL;
+		
 		ccm_magnifier_cursor_convert_to_rgba (self, cursor_image);
 	
-		self->priv->image_mouse = g_new0(guchar, cursor_image->width * cursor_image->height * 4);
+		image_mouse = g_new0(guchar, cursor_image->width * cursor_image->height * 4);
 		for (cpt = 0; cpt < cursor_image->width * cursor_image->height; ++cpt)
 		{
-			self->priv->image_mouse[(cpt * 4) + 3] = (guchar)(cursor_image->pixels[cpt] >> 24);
-			self->priv->image_mouse[(cpt * 4) + 2] = (guchar)((cursor_image->pixels[cpt] >> 16) & 0xff);
-			self->priv->image_mouse[(cpt * 4) + 1] = (guchar)((cursor_image->pixels[cpt] >> 8) & 0xff);
-			self->priv->image_mouse[(cpt * 4) + 0] = (guchar)(cursor_image->pixels[cpt] & 0xff);
+			image_mouse[(cpt * 4) + 3] = (guchar)(cursor_image->pixels[cpt] >> 24);
+			image_mouse[(cpt * 4) + 2] = (guchar)((cursor_image->pixels[cpt] >> 16) & 0xff);
+			image_mouse[(cpt * 4) + 1] = (guchar)((cursor_image->pixels[cpt] >> 8) & 0xff);
+			image_mouse[(cpt * 4) + 0] = (guchar)(cursor_image->pixels[cpt] & 0xff);
 		}
 		self->priv->surface_mouse = cairo_image_surface_create_for_data (
-													self->priv->image_mouse, 
+													image_mouse, 
 													CAIRO_FORMAT_ARGB32,
 													cursor_image->width, 
 													cursor_image->height,
 													cursor_image->width * 4);
-		self->priv->mouse_width = cursor_image->width;
-		self->priv->mouse_height = cursor_image->height;
+		cairo_surface_set_user_data (self->priv->surface_mouse, &data_key, 
+		                             image_mouse, g_free);
+		g_hash_table_insert(self->priv->mouse_images, 
+		                    g_strdup(cursor_image->name),
+		                    self->priv->surface_mouse);
 	}
-	
+
+	self->priv->mouse_width = cursor_image->width;
+	self->priv->mouse_height = cursor_image->height;
 	self->priv->x_mouse = cursor_image->x;
 	self->priv->y_mouse = cursor_image->y;
 	self->priv->x_hot = cursor_image->xhot;
