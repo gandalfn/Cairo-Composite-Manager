@@ -88,10 +88,37 @@ namespace CCM
 		on_realize(Gtk.Widget widget)
 		{
 			int width, height;
+			Gdk.Atom atom_enable = Gdk.Atom.intern_static_string("_CCM_SHADOW_ENABLED");
+			uchar[] enable = { 1 };
+
+			Gdk.property_change(main.window, atom_enable, 
+			                    Gdk.x11_xatom_to_atom(Gdk.x11_get_xatom_by_name("CARDINAL")), 
+			                    32, Gdk.PropMode.REPLACE, enable);
 			
 			main.window.get_size(out width, out height);
 			main.window.set_override_redirect(true);
 			main.move((screen.get_xscreen().width / 2) - (width / 2), 0);
+
+			Gdk.Pixmap pixmap = new Gdk.Pixmap(null, width, height, 1);
+			Cairo.Context ctx = Gdk.cairo_create(pixmap);
+			ctx.set_operator(Cairo.Operator.SOURCE);
+			ctx.set_source_rgba(0, 0, 0, 0);
+			ctx.paint();
+			
+			ctx.set_operator(Cairo.Operator.OVER);
+			ctx.translate(width / 2, height / 2);
+			ctx.rotate(-M_PI);
+			ctx.translate(-width / 2, -height / 2);
+			ctx.set_source_rgba(1, 1, 1, 1);
+			((Cairo.CCMContext)ctx).notebook_page_round(0, 0, width, height, 
+			                                            0, close.allocation.width, 
+			                                            close.allocation.height, 6);
+			ctx.fill();
+			ctx.get_target().finish();
+			widget.window.shape_combine_mask((Gdk.Bitmap)null, 0, 0);
+			widget.window.input_shape_combine_mask((Gdk.Bitmap)null, 0, 0);
+			widget.window.shape_combine_mask((Gdk.Bitmap)pixmap, 0, 0);
+			widget.window.input_shape_combine_mask((Gdk.Bitmap)pixmap, 0, 0);
 		}
 				
 		private bool
@@ -123,9 +150,9 @@ namespace CCM
 								(double)widget.style.bg[Gtk.StateType.SELECTED].green / 65535,
 								(double)widget.style.bg[Gtk.StateType.SELECTED].blue / 65535,
 								1);
-			((Cairo.CCMContext)ctx).notebook_page_round(0, 0, width, height, 
-									0, close.allocation.width, 
-									close.allocation.height, 6);
+			((Cairo.CCMContext)ctx).notebook_page_round(0, 0, width, height,
+			                                            0, close.allocation.width, 
+			                                            close.allocation.height, 6);
 			ctx.stroke();
 			
 			Gtk.Widget child = ((Gtk.Window)widget).get_child();
