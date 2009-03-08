@@ -47,6 +47,7 @@ EXTRA_DIST = $(cairo_compmgrdoc_DATA)\
 			 shave.m4 \
 			 shave.in \
 			 shave-libtool.in \
+			 gitlog-to-changelog \
              debian/changelog \
              debian/compat \
              debian/control \
@@ -70,11 +71,17 @@ DISTCLEANFILES = intltool-extract \
 
 DISTCHECK_CONFIGURE_FLAGS = --enable-perf-plugin --enable-glitz --enable-gobject-introspection --enable-gtk-doc
 
-# Copy all the spec files. Of cource, only one is actually used.
-dist-hook:
+dist-hook: gen-ChangeLog
 	for specfile in *.spec; do \
 		if test -f $$specfile; then \
 			cp -p $$specfile $(distdir); \
 		fi \
 	done
 
+.PHONY: gen-ChangeLog
+gen-ChangeLog:
+	if test -d .git; then						           \
+	  $(top_srcdir)/gitlog-to-changelog > $(distdir)/cl-t; \
+	  rm -f $(distdir)/ChangeLog;					       \
+	  mv $(distdir)/cl-t $(distdir)/ChangeLog;		       \
+	fi
