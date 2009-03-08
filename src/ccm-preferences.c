@@ -389,10 +389,16 @@ ccm_preferences_show(CCMPreferences* self)
 {
 	g_return_if_fail(self != NULL);
 	
+	gint cpt;
 	GtkWidget* widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder,
 														  "shell"));
 	
 	gtk_widget_show(widget);
+	for (cpt = 0; cpt < self->priv->nb_screens; cpt++)
+	{
+		ccm_preferences_page_set_current_section(self->priv->screen_pages[cpt],
+		                                         CCM_PREFERENCES_PAGE_SECTION_GENERAL);
+	}
 }
 
 void

@@ -66,6 +66,8 @@ CCMPreferencesPage* ccm_preferences_page_new (CCMPreferences* preferences,
                                               gint screen_num);
 GtkWidget* ccm_preferences_page_get_widget	 (CCMPreferencesPage* self);
 int ccm_preferences_page_get_screen_num		 (CCMPreferencesPage* self);
+void ccm_preferences_page_set_current_section(CCMPreferencesPage* self,
+                                              CCMPreferencesPageSection section);
 void ccm_preferences_page_section_p			 (CCMPreferencesPage* self, 
 			                                  CCMPreferencesPageSection section);
 void ccm_preferences_page_section_v			 (CCMPreferencesPage* self, 

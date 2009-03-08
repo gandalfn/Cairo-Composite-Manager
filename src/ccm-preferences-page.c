@@ -857,6 +857,41 @@ ccm_preferences_page_get_screen_num(CCMPreferencesPage* self)
 }
 
 void
+ccm_preferences_page_set_current_section(CCMPreferencesPage* self,
+										 CCMPreferencesPageSection section)
+{
+	GtkTreeModel* sections_list;
+	GtkTreeView* sections_view;
+	GtkTreeSelection* selection;
+	GtkTreeIter iter;
+	
+	sections_list = GTK_TREE_MODEL(gtk_builder_get_object(self->priv->builder, 
+														  "sections_list"));
+	if (!sections_list) return;
+	
+	sections_view = GTK_TREE_VIEW(gtk_builder_get_object(self->priv->builder, 
+														 "sections_view"));
+	if (!sections_view) return;
+	
+	selection = gtk_tree_view_get_selection(sections_view);
+
+	if (gtk_tree_model_get_iter_first(sections_list, &iter))
+	{
+		do 
+		{
+			gint page;
+
+			gtk_tree_model_get(sections_list, &iter, 0, &page, -1);
+			if (section == page)
+			{
+				gtk_tree_selection_select_iter(selection, &iter);
+				break;
+			}
+		} while (gtk_tree_model_iter_next(sections_list, &iter));
+	}
+}
+
+void
 ccm_preferences_page_section_p(CCMPreferencesPage* self,
                                CCMPreferencesPageSection section)
 {
