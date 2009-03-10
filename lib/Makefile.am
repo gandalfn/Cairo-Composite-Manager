@@ -33,7 +33,9 @@ libcairo_compmgr_la_SOURCES =  \
 	ccm-config-key.h \
 	ccm-config-key.c \
 	ccm-config-schema.h \
-	ccm-config-schema.c
+	ccm-config-schema.c \
+	ccm-config-check-button.h \
+	ccm-config-check-button.c
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
 
@@ -47,7 +49,20 @@ libcairo_compmgr_la_SOURCES += 	\
 libcairo_compmgr_la_LIBADD += $(CCM_GCONF_LIBS)
 endif
 
-noinst_PROGRAMS = test-boxed-blur test-config
+if ENABLE_GLADE
+glademodule_LTLIBRARIES = libgladeccm.la
+
+libgladeccm_la_CFLAGS = $(CCM_GLADE_CFLAGS)
+
+libgladeccm_la_SOURCES =  \
+	glade-ccm.c
+
+libgladeccm_la_LDFLAGS = -module -avoid-version -no-undefined
+
+libgladeccm_la_LIBADD = $(CCM_GLADE_LIBS) libcairo_compmgr.la
+endif
+
+noinst_PROGRAMS = test-boxed-blur test-config test-config-widget
 
 test_boxed_blur_SOURCES = test-boxed-blur.c
 
@@ -56,3 +71,7 @@ test_boxed_blur_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
 test_config_SOURCES = test-config.c
 
 test_config_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
+
+test_config_widget_SOURCES = test-config-widget.c
+
+test_config_widget_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la

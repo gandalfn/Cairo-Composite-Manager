@@ -22,6 +22,7 @@ GLITZ_GLX_REQUIRED=0.5.7
 GL_PROTO_REQUIRED=1.4.9
 VALA_REQUIRED=0.5.6
 GOBJECT_INTROSPECTION_REQUIRED=0.6.2
+GLADEUI_REQUIRED=3.5.7
 
 dnl ****************************************************************************
 dnl Check for debug flags
@@ -150,6 +151,26 @@ if [ test x$gir = xyes ]; then
 fi
 
 AM_CONDITIONAL(ENABLE_GOBJECT_INTROSPECTION, [test x$gir = xyes])
+
+dnl ****************************************************************************
+dnl Check glade3 
+dnl ****************************************************************************
+PKG_CHECK_MODULES(CCM_GLADE, 
+           [gladeui-1.0 >= $GLADEUI_REQUIRED],
+           [gladeui="yes"],
+           [gladeui="no"])
+
+if [ test x$gladeui = xyes ]; then
+    glademoduledir=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=moduledir gladeui-1.0`
+    gladecatalogdir=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=catalogdir gladeui-1.0`
+    
+    AC_SUBST(glademoduledir)
+    AC_SUBST(gladecatalogdir)
+	AC_SUBST(CCM_GLADE_CFLAGS)
+    AC_SUBST(CCM_GLADE_LIBS)
+fi
+
+AM_CONDITIONAL(ENABLE_GLADE, [test x$gladeui = xyes])
 
 dnl ****************************************************************************
 dnl Check for build perf plugin
