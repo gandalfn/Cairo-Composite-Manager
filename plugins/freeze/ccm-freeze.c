@@ -228,6 +228,8 @@ ccm_freeze_get_pid(CCMFreeze* self)
 static gboolean
 ccm_freeze_ping(CCMFreeze* self)
 {
+	g_return_val_if_fail(CCM_IS_FREEZE(self), FALSE);
+	
 	if (self->priv->window && ccm_window_is_viewable (self->priv->window))
 	{
 		CCMWindowType type = ccm_window_get_hint_type (self->priv->window);
