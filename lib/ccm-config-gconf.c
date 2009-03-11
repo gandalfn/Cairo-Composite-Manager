@@ -24,6 +24,9 @@
 static gboolean ccm_config_gconf_initialize (CCMConfig* config, int screen, 
 											 gchar* extension, gchar* key);
 
+static CCMConfigValueType ccm_config_gconf_get_value_type(CCMConfig* config, 
+                                                          GError** error);
+
 static gboolean ccm_config_gconf_get_boolean(CCMConfig* config, GError** error);
 static void ccm_config_gconf_set_boolean(CCMConfig* config, gboolean value, 
 										 GError** error);
@@ -96,6 +99,7 @@ ccm_config_gconf_class_init (CCMConfigGConfClass *klass)
 						  GCONF_CLIENT_PRELOAD_RECURSIVE, NULL);
 	
 	CCM_CONFIG_CLASS(klass)->initialize = ccm_config_gconf_initialize;
+	CCM_CONFIG_CLASS(klass)->get_value_type = ccm_config_gconf_get_value_type;
 	CCM_CONFIG_CLASS(klass)->get_boolean = ccm_config_gconf_get_boolean;
 	CCM_CONFIG_CLASS(klass)->set_boolean = ccm_config_gconf_set_boolean;
 	CCM_CONFIG_CLASS(klass)->get_integer = ccm_config_gconf_get_integer;
@@ -215,6 +219,60 @@ ccm_config_gconf_initialize (CCMConfig* config, int screen,
 									self, NULL, NULL);
 
 	return TRUE;
+}
+
+static CCMConfigValueType
+ccm_config_gconf_get_value_type(CCMConfig* config, GError** error)
+{
+	CCMConfigGConf* self = CCM_CONFIG_GCONF(config);
+	CCMConfigValueType ret = CCM_CONFIG_VALUE_INVALID;
+	GConfValue* value;
+	
+	value = gconf_client_get(CCM_CONFIG_GCONF_GET_CLASS(self)->client, 
+	                         self->priv->key, error);
+	if (value)
+	{
+		GConfSchema* schema = gconf_value_get_schema (value);
+		switch (gconf_schema_get_type (schema))
+		{
+			case GCONF_VALUE_BOOL:
+				ret = CCM_CONFIG_VALUE_BOOLEAN;
+				break;
+			case GCONF_VALUE_INT:
+				ret = CCM_CONFIG_VALUE_INTEGER;
+				break;
+			case GCONF_VALUE_STRING:
+				ret = CCM_CONFIG_VALUE_STRING;
+				break;
+			case GCONF_VALUE_FLOAT:
+				ret = CCM_CONFIG_VALUE_FLOAT;
+				break;
+			case GCONF_VALUE_LIST:
+				ret = CCM_CONFIG_VALUE_LIST;
+				switch (gconf_schema_get_list_type(schema))
+				{
+					case GCONF_VALUE_BOOL:
+						ret = CCM_CONFIG_VALUE_LIST_BOOLEAN;
+						break;
+					case GCONF_VALUE_INT:
+						ret = CCM_CONFIG_VALUE_LIST_INTEGER;
+						break;
+					case GCONF_VALUE_STRING:
+						ret = CCM_CONFIG_VALUE_LIST_STRING;
+						break;
+					case GCONF_VALUE_FLOAT:
+						ret = CCM_CONFIG_VALUE_LIST_FLOAT;
+						break;
+					default:
+						break;
+				}        
+				break;
+			default:
+				break;
+		}
+	}
+	
+	return ret;
 }
 
 static gboolean

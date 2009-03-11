@@ -24,6 +24,9 @@
 static gboolean ccm_config_key_initialize (CCMConfig* config, int screen, 
 										   gchar* extension, gchar* key);
 
+static CCMConfigValueType ccm_config_key_get_value_type(CCMConfig* config, 
+                                                        GError** error);
+
 static gboolean ccm_config_key_get_boolean(CCMConfig* config, GError** error);
 static void ccm_config_key_set_boolean(CCMConfig* config, gboolean value,
                                        GError** error);
@@ -240,7 +243,8 @@ ccm_config_key_class_init (CCMConfigKeyClass *klass)
 	                                        (GDestroyNotify)ccm_config_key_monitor_free);
 	
 	CCM_CONFIG_CLASS(klass)->initialize = ccm_config_key_initialize;
-	
+
+	CCM_CONFIG_CLASS(klass)->get_value_type = ccm_config_key_get_value_type;
 	CCM_CONFIG_CLASS(klass)->get_boolean = ccm_config_key_get_boolean;
 	CCM_CONFIG_CLASS(klass)->set_boolean = ccm_config_key_set_boolean;
 	CCM_CONFIG_CLASS(klass)->get_integer = ccm_config_key_get_integer;
@@ -337,6 +341,15 @@ ccm_config_key_initialize (CCMConfig* config, int screen,
 	}
 	
 	return TRUE;
+}
+
+static CCMConfigValueType
+ccm_config_key_get_value_type(CCMConfig* config, GError** error)
+{
+	CCMConfigKey* self = CCM_CONFIG_KEY(config);
+	
+	return ccm_config_schema_get_value_type (self->priv->schema,
+	                                         self->priv->key);
 }
 
 static gboolean

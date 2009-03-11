@@ -207,6 +207,32 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 	return self;
 }
 
+CCMConfigValueType
+ccm_config_get_value_type(CCMConfig* self, GError** error)
+{
+	if (self == NULL)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_IS_NULL,
+								 "Invalid object");
+		
+		return CCM_CONFIG_VALUE_INVALID;
+	}
+	
+	if (!CCM_CONFIG_GET_CLASS(self)->get_value_type)
+	{
+		if (error)
+			*error = g_error_new(CCM_CONFIG_ERROR_QUARK, 
+								 CCM_CONFIG_ERROR_NOT_SUPPORTED,
+								 "Not supported");
+		
+		return CCM_CONFIG_VALUE_INVALID;
+	}
+	
+	return CCM_CONFIG_GET_CLASS(self)->get_value_type(self, error);
+}
+
 gboolean
 ccm_config_get_boolean(CCMConfig* self, GError** error)
 {

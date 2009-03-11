@@ -22,6 +22,8 @@
 
 #include <glib-object.h>
 
+#include "ccm-config.h"
+
 G_BEGIN_DECLS
 
 #define CCM_TYPE_CONFIG_SCHEMA             (ccm_config_schema_get_type ())
@@ -46,20 +48,6 @@ struct _CCMConfigSchema
 	
 	CCMConfigSchemaPrivate* priv;
 };
-
-typedef enum 
-{
-    CCM_CONFIG_VALUE_INVALID,
-    CCM_CONFIG_VALUE_BOOLEAN,
-    CCM_CONFIG_VALUE_INTEGER,
-    CCM_CONFIG_VALUE_STRING,
-    CCM_CONFIG_VALUE_FLOAT,
-    CCM_CONFIG_VALUE_LIST,
-    CCM_CONFIG_VALUE_LIST_BOOLEAN,
-    CCM_CONFIG_VALUE_LIST_INTEGER,
-    CCM_CONFIG_VALUE_LIST_STRING,
-    CCM_CONFIG_VALUE_LIST_FLOAT
-} CCMConfigValueType;
 
 GType               ccm_config_schema_get_type       (void) G_GNUC_CONST;
 
