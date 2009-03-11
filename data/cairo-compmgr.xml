@@ -1,8 +1,29 @@
 <glade-catalog name="ccm" library="gladeccm" depends="gtk+">
     <init-function>glade_ccm_init</init-function>
     <glade-widget-classes>
-        <glade-widget-class get-type-function="ccm_config_check_button_get_type" name="CCMConfigCheckButton" generic-name="configcheckbutton" title="CCM Config CheckButton">
+        <glade-widget-class get-type-function="ccm_config_check_button_get_type" 
+                            name="CCMConfigCheckButton" 
+                            generic-name="config-checkbutton" 
+                            title="CCM Config CheckButton"
+                            icon-name="widget-gtk-checkbutton">
             <set-property-function>glade_ccm_config_check_button_set_property</set-property-function>
+            <properties>
+                <property id="key" default="">
+                </property>
+                <property optional="True" id="plugin">
+                </property>
+                <property optional="True" id="screen" default="-1">
+	                <parameter-spec>
+	                    <type>GParamInt</type>
+	                </parameter-spec>
+                </property>
+            </properties>
+        </glade-widget-class>
+        <glade-widget-class get-type-function="ccm_config_adjustment_get_type" 
+                            name="CCMConfigAdjustment" 
+                            generic-name="config-adjustment" 
+                            title="CCM Config Adjustment">
+            <set-property-function>glade_ccm_config_adjustment_set_property</set-property-function>
             <properties>
                 <property id="key" default="">
                 </property>
@@ -19,5 +40,6 @@
     
     <glade-widget-group name="ccm-objects" title="CCM Widgets">
         <glade-widget-class-ref name="CCMConfigCheckButton"/>
+        <glade-widget-class-ref name="CCMConfigAdjustment"/>
     </glade-widget-group>
 </glade-catalog>

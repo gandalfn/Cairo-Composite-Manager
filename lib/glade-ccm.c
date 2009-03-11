@@ -52,3 +52,20 @@ glade_ccm_config_check_button_set_property (GladeWidgetAdaptor *adaptor,
         GWA_GET_CLASS (GTK_TYPE_CHECK_BUTTON)->set_property (adaptor, object, 
                                                              id, value);
 }
+
+void
+glade_ccm_config_adjustment_set_property (GladeWidgetAdaptor *adaptor,
+                                          GObject            *object, 
+                                          const gchar        *id,
+                                          const GValue       *value)
+{
+    if (!strcmp (id, "key"))
+        g_object_set(object, "key", g_value_get_string(value), NULL);
+    else if (!strcmp (id, "plugin"))
+        g_object_set(object, "plugin", g_value_get_string(value), NULL);
+    else if (!strcmp (id, "screen"))
+        g_object_set(object, "screen", g_value_get_int(value), NULL);
+    else
+        GWA_GET_CLASS (GTK_TYPE_ADJUSTMENT)->set_property (adaptor, object,
+                                                           id, value);
+}
