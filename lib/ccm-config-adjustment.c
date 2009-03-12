@@ -189,6 +189,9 @@ ccm_config_adjustment_value_changed (GtkAdjustment* adjustment)
 
 	CCMConfigAdjustment* self = CCM_CONFIG_ADJUSTMENT(adjustment);
 
+	if (GTK_ADJUSTMENT_CLASS(ccm_config_adjustment_parent_class)->value_changed)
+		GTK_ADJUSTMENT_CLASS(ccm_config_adjustment_parent_class)->value_changed(adjustment);
+	
 	if (self->priv->config)
 	{
 		if (ccm_config_get_value_type(self->priv->config, NULL) == CCM_CONFIG_VALUE_INTEGER)

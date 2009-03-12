@@ -49,7 +49,7 @@ static void ccm_config_color_button_on_changed (CCMConfigColorButton* self,
 static void ccm_config_color_button_on_alpha_changed (CCMConfigColorButton* self, 
                                                       CCMConfig* config);
 static void ccm_config_color_button_color_set (GtkColorButton* button);
-
+static void ccm_config_color_button_realize (GtkWidget* widget);
 
 static void
 ccm_config_color_button_init (CCMConfigColorButton *self)
@@ -115,7 +115,6 @@ ccm_config_color_button_set_property (GObject *object, guint prop_id, const GVal
 		g_signal_connect_swapped(self->priv->config, "changed",
 		                         G_CALLBACK(ccm_config_color_button_on_changed),
 		                         self);
-		ccm_config_color_button_on_changed(self, self->priv->config);
 	}
 	if (self->priv->key_alpha)
 	{
@@ -126,8 +125,6 @@ ccm_config_color_button_set_property (GObject *object, guint prop_id, const GVal
 		g_signal_connect_swapped(self->priv->config_alpha, "changed",
 		                         G_CALLBACK(ccm_config_color_button_on_alpha_changed),
 		                         self);
-		ccm_config_color_button_on_alpha_changed(self, 
-		                                         self->priv->config_alpha);
 	}
 }
 
@@ -170,6 +167,7 @@ ccm_config_color_button_class_init (CCMConfigColorButtonClass *klass)
 	object_class->get_property = ccm_config_color_button_get_property;
 
 	GTK_COLOR_BUTTON_CLASS (klass)->color_set = ccm_config_color_button_color_set;
+	GTK_WIDGET_CLASS (klass)->realize = ccm_config_color_button_realize;
 	
 	g_object_class_install_property (object_class, PROP_KEY,
 		g_param_spec_string ("key",
@@ -227,6 +225,9 @@ ccm_config_color_button_color_set (GtkColorButton* button)
 	CCMConfigColorButton* self = CCM_CONFIG_COLOR_BUTTON(button);
 	GdkColor color;
 
+	if (GTK_COLOR_BUTTON_CLASS(ccm_config_color_button_parent_class)->color_set)
+		GTK_COLOR_BUTTON_CLASS(ccm_config_color_button_parent_class)->color_set(button);
+	
 	if (self->priv->config)
 	{
 		gtk_color_button_get_color(button, &color);
@@ -239,6 +240,21 @@ ccm_config_color_button_color_set (GtkColorButton* button)
 		ccm_config_set_float(self->priv->config_alpha, 
 		                     (gfloat)alpha / 65535.f, NULL);
 	}
+}
+
+static void 
+ccm_config_color_button_realize (GtkWidget* widget)
+{
+	CCMConfigColorButton* self = CCM_CONFIG_COLOR_BUTTON(widget);
+
+	if (GTK_WIDGET_CLASS(ccm_config_color_button_parent_class)->realize)
+		GTK_WIDGET_CLASS(ccm_config_color_button_parent_class)->realize(widget);
+
+	if (self->priv->config)
+		ccm_config_color_button_on_changed (self, self->priv->config);
+	if (self->priv->config_alpha)
+		ccm_config_color_button_on_alpha_changed (self, 
+		                                          self->priv->config_alpha);
 }
 
 GtkWidget*

@@ -180,6 +180,9 @@ ccm_config_check_button_toggled (GtkToggleButton* button)
 
 	CCMConfigCheckButton* self = CCM_CONFIG_CHECK_BUTTON(button);
 
+	if (GTK_TOGGLE_BUTTON_CLASS(ccm_config_check_button_parent_class)->toggled)
+		GTK_TOGGLE_BUTTON_CLASS(ccm_config_check_button_parent_class)->toggled(button);
+	
 	if (self->priv->config)
 	{
 		gboolean active = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(self));
