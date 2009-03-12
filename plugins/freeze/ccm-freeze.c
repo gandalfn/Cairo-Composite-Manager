@@ -30,6 +30,9 @@
 #include "ccm-freeze.h"
 #include "ccm-config.h"
 #include "ccm-debug.h"
+#include "ccm-preferences-page-plugin.h"
+#include "ccm-config-adjustment.h"
+#include "ccm-config-color-button.h"
 #include "ccm.h"
 
 enum
@@ -47,13 +50,17 @@ static gchar* CCMFreezeOptions[CCM_FREEZE_OPTION_N] = {
 };
 
 static void ccm_freeze_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_freeze_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
 static void ccm_freeze_on_event(CCMFreeze* self, XEvent* event, 
                                 CCMDisplay* display);
 
 CCM_DEFINE_PLUGIN (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_freeze,
 										   CCM_TYPE_WINDOW_PLUGIN,
-										   ccm_freeze_window_iface_init))
+										   ccm_freeze_window_iface_init);
+                   CCM_IMPLEMENT_INTERFACE(ccm_freeze,
+                                           CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                           ccm_freeze_preferences_page_iface_init))
 
 struct _CCMFreezePrivate
 {	
@@ -71,6 +78,7 @@ struct _CCMFreezePrivate
 	glong	    pid;
 	
 	CCMTimeline* timeline;
+	GtkBuilder*  builder;
 	CCMConfig* options[CCM_FREEZE_OPTION_N];
 };
 
@@ -94,6 +102,7 @@ ccm_freeze_init (CCMFreeze *self)
 	self->priv->last_ping = 0;
 	self->priv->pid = 0;
 	self->priv->timeline = NULL;
+	self->priv->builder = NULL;
 	for (cpt = 0; cpt < CCM_FREEZE_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
@@ -123,6 +132,8 @@ ccm_freeze_finalize (GObject *object)
 	self->priv->last_ping = 0;
 	if (self->priv->timeline) 
 		g_object_unref (self->priv->timeline);
+	if (self->priv->builder)
+		g_object_unref (self->priv->builder);
 	
 	G_OBJECT_CLASS (ccm_freeze_parent_class)->finalize (object);
 }
@@ -420,6 +431,51 @@ ccm_freeze_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
+ccm_freeze_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugin,
+                                                 CCMPreferencesPage* preferences,
+                                                 GtkWidget* windows_section)
+{
+	CCMFreeze* self = CCM_FREEZE(plugin);
+	
+	self->priv->builder = gtk_builder_new();
+
+	if (gtk_builder_add_from_file(self->priv->builder, 
+	                              UI_DIR "/ccm-freeze.ui", NULL))
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "freeze"));
+		if (widget)
+		{
+			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
+			
+			gtk_box_pack_start(GTK_BOX(windows_section), widget, 
+			                   FALSE, TRUE, 0);
+			
+			CCMConfigColorButton* color = 
+				CCM_CONFIG_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
+				                                               "color"));
+			g_object_set(color, "screen", screen_num, NULL);
+
+			CCMConfigAdjustment* delay = 
+				CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                             "delay-adjustment"));
+			g_object_set(delay, "screen", screen_num, NULL);
+			
+			CCMConfigAdjustment* duration = 
+				CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                             "duration-adjustment"));
+			g_object_set(duration, "screen", screen_num, NULL);
+
+			ccm_preferences_page_section_register_widget (preferences,
+			                                              CCM_PREFERENCES_PAGE_SECTION_WINDOW,
+			                                              widget, "freeze");
+		}
+	}
+	ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+													  preferences, windows_section);
+}
+
+static void
 ccm_freeze_window_iface_init(CCMWindowPluginClass* iface)
 {
 	iface->load_options 	 = ccm_freeze_load_options;
@@ -432,4 +488,15 @@ ccm_freeze_window_iface_init(CCMWindowPluginClass* iface)
 	iface->resize			 = NULL;
 	iface->set_opaque_region = NULL;
 	iface->get_origin		 = NULL;
+}
+
+static void
+ccm_freeze_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
+{
+	iface->init_general_section       = NULL;
+    iface->init_desktop_section       = NULL;
+    iface->init_windows_section       = ccm_freeze_preferences_page_init_windows_section;
+    iface->init_effects_section		  = NULL;
+    iface->init_accessibility_section = NULL;
+    iface->init_utilities_section     = NULL;
 }

@@ -1,5 +1,5 @@
 PLUGIN = ccm-freeze
-PLUGIN_UI = 
+PLUGIN_UI = ccm-freeze.ui freeze.svg
 PLUGIN_SCHEMA = ccm-freeze.schema-key.in
 
 PLUGIN_SOURCES = ccm-freeze.c ccm-freeze.h
