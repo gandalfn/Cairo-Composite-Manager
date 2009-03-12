@@ -34,6 +34,8 @@
 #include "ccm-cairo-utils.h"
 #include "ccm-debug.h"
 #include "ccm-preferences-page-plugin.h"
+#include "ccm-config-adjustment.h"
+#include "ccm-config-color-button.h"
 #include "ccm.h"
 
 enum
@@ -108,9 +110,6 @@ struct _CCMShadowPrivate
 	CCMRegion* 			geometry;
 
 	GtkBuilder*			builder;
-	gboolean			active;
-	
-	guint				handlers[CCM_SHADOW_OPTION_N];
 	
 	CCMConfig* 			options[CCM_SHADOW_OPTION_N];
 };
@@ -140,12 +139,8 @@ ccm_shadow_init (CCMShadow *self)
 	self->priv->shadow_image = NULL;
 	self->priv->geometry = NULL;
 	self->priv->builder = NULL;
-	self->priv->active = TRUE;
 	for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; ++cpt) 
-	{
-		self->priv->handlers[cpt] = 0;
 		self->priv->options[cpt] = NULL;
-	}
 }
 
 static void
@@ -1165,155 +1160,6 @@ ccm_shadow_window_get_pixmap(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
-ccm_shadow_preferences_page_on_color_changed(GtkColorButton* button,
-                                             CCMConfig* config)
-{
-	GdkColor color;
-
-	gtk_color_button_get_color(button, &color);
-	ccm_config_set_color(config, &color, NULL);
-}
-
-static void
-ccm_shadow_preferences_page_on_alpha_changed(GtkColorButton* button,
-                                             CCMConfig* config)
-{
-	gint alpha = gtk_color_button_get_alpha(button);
-
-	ccm_config_set_float(config, (gfloat)alpha / 65535.f, NULL);
-}
-
-static void
-ccm_shadow_preferences_page_on_radius_changed(GtkAdjustment* adjustment,
-                                              CCMConfig* config)
-{
-	gdouble value = gtk_adjustment_get_value(adjustment);
-
-	ccm_config_set_integer (config, (gint)value, NULL);
-}
-
-static void
-ccm_shadow_preferences_page_on_sigma_changed(GtkAdjustment* adjustment,
-                                             CCMConfig* config)
-{
-	gdouble value = gtk_adjustment_get_value(adjustment);
-
-	ccm_config_set_float (config, (gfloat)value, NULL);
-}
-
-static void
-ccm_shadow_preferences_page_on_config_changed(CCMShadow* self,
-                                              CCMConfig* config)
-{
-	gchar* key = NULL;
-
-	g_object_get(config, "key", &key, NULL);
-	if (key)
-	{
-		if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_COLOR]))
-		{
-			GtkColorButton* color_conf = 
-				GTK_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
-						                                "color"));
-			GdkColor* color = ccm_config_get_color (config, NULL);
-			if (color)
-			{
-				gtk_color_button_set_color(color_conf, color);
-				g_free(color);
-			}
-			if (!self->priv->handlers[CCM_SHADOW_COLOR])
-			{
-				self->priv->handlers[CCM_SHADOW_COLOR] = 
-					g_signal_connect(color_conf, "color-set",
-					                 G_CALLBACK(ccm_shadow_preferences_page_on_color_changed),
-					                 config);
-			}
-		}
-		else if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_ALPHA]))
-		{
-			GtkColorButton* color_conf = 
-				GTK_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
-				                                        "color"));
-			gfloat alpha = ccm_config_get_float (config, NULL);
-			if (alpha)
-				gtk_color_button_set_alpha(color_conf, 
-				                           (int)((gfloat)65535 * alpha));
-			if (!self->priv->handlers[CCM_SHADOW_ALPHA])
-			{
-				self->priv->handlers[CCM_SHADOW_ALPHA] = 
-					g_signal_connect(color_conf, "color-set",
-					                 G_CALLBACK(ccm_shadow_preferences_page_on_alpha_changed),
-					                 config);
-			}
-		}
-		else if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_RADIUS]))
-		{
-			GtkAdjustment* radius_conf = 
-				GTK_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
-				                                      "radius_adjustment"));
-			gfloat radius = ccm_config_get_float (config, NULL);
-			if (radius)	gtk_adjustment_set_value(radius_conf, radius);
-			if (!self->priv->handlers[CCM_SHADOW_RADIUS])
-			{
-				self->priv->handlers[CCM_SHADOW_RADIUS] = 
-					g_signal_connect(radius_conf, "value-changed",
-					                 G_CALLBACK(ccm_shadow_preferences_page_on_radius_changed),
-					                 config);
-			}
-		}
-		else if (!g_ascii_strcasecmp(key, CCMShadowOptions[CCM_SHADOW_SIGMA]))
-		{
-			GtkAdjustment* sigma_conf = 
-				GTK_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
-				                                      "sigma_adjustment"));
-			gfloat sigma = ccm_config_get_float (config, NULL);
-			if (sigma) gtk_adjustment_set_value(sigma_conf, sigma);
-			if (!self->priv->handlers[CCM_SHADOW_SIGMA])
-			{
-				self->priv->handlers[CCM_SHADOW_SIGMA] = 
-					g_signal_connect(sigma_conf, "value-changed",
-					                 G_CALLBACK(ccm_shadow_preferences_page_on_sigma_changed),
-					                 config);
-			}
-		}
-		g_free(key);
-	}
-}
-
-static void
-ccm_shadow_preferences_page_on_plugin_changed(CCMShadow* self,
-                                              gchar* name, gboolean active,
-                                              CCMPreferencesPage* preferences)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(name != NULL);
-	g_return_if_fail(preferences != NULL);
-
-	if (!g_ascii_strcasecmp(name, "shadow"))
-	{
-		GtkWidget* widget = 
-			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
-			                                  "shadow"));
-		if (self->priv->active != active)
-		{
-			self->priv->active = active;
-			if (active)
-			{
-				gtk_widget_show(widget);
-				ccm_preferences_page_section_p(preferences, 
-					                           CCM_PREFERENCES_PAGE_SECTION_WINDOW);
-			}
-			else
-			{
-				gtk_widget_hide(widget);
-				ccm_preferences_page_section_v(preferences, 
-					                           CCM_PREFERENCES_PAGE_SECTION_WINDOW);
-			}
-		}
-	}
-}
-
-static void
 ccm_shadow_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugin,
                                                  CCMPreferencesPage* preferences,
                                                  GtkWidget* windows_section)
@@ -1330,33 +1176,28 @@ ccm_shadow_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugi
 		if (widget)
 		{
 			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
-			gint cpt;
 			
 			gtk_box_pack_start(GTK_BOX(windows_section), widget, 
 			                   FALSE, TRUE, 0);
+			
+			CCMConfigColorButton* color = 
+				CCM_CONFIG_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
+				                                               "color"));
+			g_object_set(color, "screen", screen_num, NULL);
 
-			for (cpt = 0; cpt < CCM_SHADOW_OPTION_N; ++cpt)
-			{
-				if (self->priv->options[cpt]) 
-					g_object_unref(self->priv->options[cpt]);
-				self->priv->options[cpt] = ccm_config_new(screen_num, 
-				                                          "shadow", 
-				                                          CCMShadowOptions[cpt]);
-				if (self->priv->options[cpt]) 
-				{
-					g_signal_connect_swapped(self->priv->options[cpt], 
-					                         "changed",
-					                         G_CALLBACK(ccm_shadow_preferences_page_on_config_changed),
-					                         self);
-					ccm_shadow_preferences_page_on_config_changed(self,
-					                                              self->priv->options[cpt]);
-				}
-			}
-			ccm_preferences_page_section_p(preferences, 
-			                               CCM_PREFERENCES_PAGE_SECTION_WINDOW);
-			g_signal_connect_swapped(preferences, "plugin-state-changed",
-			                         G_CALLBACK(ccm_shadow_preferences_page_on_plugin_changed),
-			                         self);
+			CCMConfigAdjustment* radius = 
+				CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                             "radius-adjustment"));
+			g_object_set(radius, "screen", screen_num, NULL);
+			
+			CCMConfigAdjustment* sigma = 
+				CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                             "sigma-adjustment"));
+			g_object_set(sigma, "screen", screen_num, NULL);
+
+			ccm_preferences_page_section_register_widget (preferences,
+			                                              CCM_PREFERENCES_PAGE_SECTION_WINDOW,
+			                                              widget, "shadow");
 		}
 	}
 	ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
