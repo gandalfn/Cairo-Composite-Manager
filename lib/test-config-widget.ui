@@ -43,7 +43,21 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="CCMConfigColorButton" id="config-color-button1">
+                <property name="label" translatable="yes">button</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_alpha">True</property>
+                <property name="color">#000000000000</property>
+                <property name="key">color</property>
+                <property name="key_alpha">alpha</property>
+                <property name="plugin">shadow</property>
+                <property name="screen">0</property>
+              </object>
+              <packing>
+                <property name="position">2</property>
+              </packing>
             </child>
           </object>
           <packing>

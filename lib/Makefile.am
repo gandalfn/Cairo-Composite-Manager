@@ -37,7 +37,9 @@ libcairo_compmgr_la_SOURCES =  \
 	ccm-config-check-button.h \
 	ccm-config-check-button.c \
 	ccm-config-adjustment.h \
-	ccm-config-adjustment.c
+	ccm-config-adjustment.c \
+	ccm-config-color-button.h \
+	ccm-config-color-button.c
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
 

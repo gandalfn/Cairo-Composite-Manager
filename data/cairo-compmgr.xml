@@ -36,10 +36,31 @@
                 </property>
             </properties>
         </glade-widget-class>
+        <glade-widget-class get-type-function="ccm_config_color_button_get_type" 
+                            name="CCMConfigColorButton" 
+                            generic-name="config-color-button" 
+                            title="CCM Config Color Button"
+                            icon-name="widget-gtk-colorbutton">
+            <set-property-function>glade_ccm_config_color_button_set_property</set-property-function>
+            <properties>
+                <property id="key" default="">
+                </property>
+                <property optional-default="False" id="key-alpha" default="">
+                </property>
+                <property optional="True" id="plugin">
+                </property>
+                <property optional="True" id="screen" default="-1">
+	                <parameter-spec>
+	                    <type>GParamInt</type>
+	                </parameter-spec>
+                </property>
+            </properties>
+        </glade-widget-class>
     </glade-widget-classes>
     
     <glade-widget-group name="ccm-objects" title="CCM Widgets">
         <glade-widget-class-ref name="CCMConfigCheckButton"/>
         <glade-widget-class-ref name="CCMConfigAdjustment"/>
+        <glade-widget-class-ref name="CCMConfigColorButton"/>
     </glade-widget-group>
 </glade-catalog>
