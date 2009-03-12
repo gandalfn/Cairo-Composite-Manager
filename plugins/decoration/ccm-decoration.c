@@ -83,8 +83,7 @@ struct _CCMDecorationPrivate
 	int				id_check;
 
 	GtkBuilder*		builder;
-	gboolean		active;
-
+	
 	CCMConfig       *options[CCM_DECORATION_OPTION_N];
 };
 
@@ -108,7 +107,6 @@ ccm_decoration_init (CCMDecoration *self)
 	self->priv->opaque = NULL;
 	self->priv->id_check = 0;
 	self->priv->builder = NULL;
-	self->priv->active = TRUE;
 	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
@@ -504,39 +502,6 @@ ccm_decoration_window_resize(CCMWindowPlugin* plugin, CCMWindow* window,
 }
 
 static void
-ccm_decoration_preferences_page_on_plugin_changed(CCMDecoration* self,
-                                                  gchar* name, gboolean active,
-                                                  CCMPreferencesPage* preferences)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(name != NULL);
-	g_return_if_fail(preferences != NULL);
-	
-	if (!g_ascii_strcasecmp(name, "decoration"))
-	{
-		GtkWidget* widget = 
-			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
-			                                  "decoration"));
-		if (self->priv->active != active)
-		{
-			self->priv->active = active;
-			if (active)
-			{
-				gtk_widget_show(widget);
-				ccm_preferences_page_section_p(preferences, 
-					                           CCM_PREFERENCES_PAGE_SECTION_WINDOW);
-			}
-			else
-			{
-				gtk_widget_hide(widget);
-				ccm_preferences_page_section_v(preferences, 
-					                           CCM_PREFERENCES_PAGE_SECTION_WINDOW);
-			}
-		}
-	}
-}
-
-static void
 ccm_decoration_preferences_page_init_windows_section(CCMPreferencesPagePlugin* plugin,
                                                      CCMPreferencesPage* preferences,
                                                      GtkWidget* windows_section)
@@ -567,11 +532,9 @@ ccm_decoration_preferences_page_init_windows_section(CCMPreferencesPagePlugin* p
 				                                             "alpha-adjustment"));
 			g_object_set(opacity, "screen", screen_num, NULL);
 			
-			ccm_preferences_page_section_p(preferences, 
-			                               CCM_PREFERENCES_PAGE_SECTION_WINDOW);
-			g_signal_connect_swapped(preferences, "plugin-state-changed",
-			                         G_CALLBACK(ccm_decoration_preferences_page_on_plugin_changed),
-			                         self);
+			ccm_preferences_page_section_register_widget (preferences,
+			                                              CCM_PREFERENCES_PAGE_SECTION_WINDOW,
+			                                              widget, "decoration");
 		}
 	}
 	ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
