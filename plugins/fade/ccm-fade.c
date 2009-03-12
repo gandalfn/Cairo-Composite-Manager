@@ -32,6 +32,7 @@
 #include "ccm-timeline.h"
 #include "ccm-fade.h"
 #include "ccm-preferences-page-plugin.h"
+#include "ccm-config-adjustment.h"
 #include "ccm.h"
 
 enum
@@ -78,10 +79,7 @@ struct _CCMFadePrivate
 	gboolean		force_disable;
 
 	GtkBuilder*		builder;
-	gboolean		active;
 
-	guint			handlers[CCM_FADE_OPTION_N];
-	
 	CCMConfig*		options[CCM_FADE_OPTION_N];
 };
 
@@ -101,12 +99,8 @@ ccm_fade_init (CCMFade *self)
 	self->priv->timeline = NULL;
 	self->priv->force_disable = FALSE;
 	self->priv->builder = NULL;
-	self->priv->active = TRUE;
 	for (cpt = 0; cpt < CCM_FADE_OPTION_N; ++cpt)
-	{
-		self->priv->handlers[cpt] = 0;
 		self->priv->options[cpt] = NULL;
-	}
 }
 
 static void
@@ -552,76 +546,6 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
-ccm_fade_preferences_page_on_duration_changed(GtkAdjustment* adjustment,
-                                              CCMConfig* config)
-{
-	gdouble value = gtk_adjustment_get_value(adjustment);
-
-	ccm_config_set_float (config, (gfloat)value, NULL);
-}
-
-static void
-ccm_fade_preferences_page_on_config_changed(CCMFade* self,
-                                            CCMConfig* config)
-{
-	gchar* key = NULL;
-
-	g_object_get(config, "key", &key, NULL);
-	if (key)
-	{
-		if (!g_ascii_strcasecmp(key, CCMFadeOptions[CCM_FADE_DURATION]))
-		{
-			GtkAdjustment* duration_conf = 
-				GTK_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
-				                                      "duration_adjustment"));
-			gfloat duration = ccm_config_get_float (config, NULL);
-			if (duration) gtk_adjustment_set_value(duration_conf, duration);
-			if (!self->priv->handlers[CCM_FADE_DURATION])
-			{
-				self->priv->handlers[CCM_FADE_DURATION] = 
-					g_signal_connect(duration_conf, "value-changed",
-					                 G_CALLBACK(ccm_fade_preferences_page_on_duration_changed),
-					                 config);
-			}
-		}
-		g_free(key);
-	}
-}
-
-static void
-ccm_fade_preferences_page_on_plugin_changed(CCMFade* self,
-                                            gchar* name, gboolean active,
-                                            CCMPreferencesPage* preferences)
-{
-	g_return_if_fail(self != NULL);
-	g_return_if_fail(name != NULL);
-	g_return_if_fail(preferences != NULL);
-	
-	if (!g_ascii_strcasecmp(name, "fade"))
-	{
-		GtkWidget* widget = 
-			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
-			                                  "fade"));
-		if (self->priv->active != active)
-		{
-			self->priv->active = active;
-			if (active)
-			{
-				gtk_widget_show(widget);
-				ccm_preferences_page_section_p(preferences, 
-					                           CCM_PREFERENCES_PAGE_SECTION_EFFECTS);
-			}
-			else
-			{
-				gtk_widget_hide(widget);
-				ccm_preferences_page_section_v(preferences, 
-					                           CCM_PREFERENCES_PAGE_SECTION_EFFECTS);
-			}
-		}
-	}
-}
-
-static void
 ccm_fade_preferences_page_init_effects_section(CCMPreferencesPagePlugin* plugin,
                                                CCMPreferencesPage* preferences,
                                                GtkWidget* effects_section)
@@ -638,33 +562,18 @@ ccm_fade_preferences_page_init_effects_section(CCMPreferencesPagePlugin* plugin,
 		if (widget)
 		{
 			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
-			gint cpt;
 			
 			gtk_box_pack_start(GTK_BOX(effects_section), widget, 
 			                   FALSE, TRUE, 0);
 
-			for (cpt = 0; cpt < CCM_FADE_OPTION_N; ++cpt)
-			{
-				if (self->priv->options[cpt]) 
-					g_object_unref(self->priv->options[cpt]);
-				self->priv->options[cpt] = ccm_config_new(screen_num, 
-				                                          "fade", 
-				                                          CCMFadeOptions[cpt]);
-				if (self->priv->options[cpt]) 
-				{
-					g_signal_connect_swapped(self->priv->options[cpt], 
-					                         "changed",
-					                         G_CALLBACK(ccm_fade_preferences_page_on_config_changed),
-					                         self);
-					ccm_fade_preferences_page_on_config_changed(self,
-					                                            self->priv->options[cpt]);
-				}
-			}
-			ccm_preferences_page_section_p(preferences, 
-			                               CCM_PREFERENCES_PAGE_SECTION_EFFECTS);
-			g_signal_connect_swapped(preferences, "plugin-state-changed",
-			                         G_CALLBACK(ccm_fade_preferences_page_on_plugin_changed),
-			                         self);
+			CCMConfigAdjustment* duration = 
+				CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                             "duration-adjustment"));
+			g_object_set(duration, "screen", screen_num, NULL);
+			
+			ccm_preferences_page_section_register_widget (preferences,
+			                                              CCM_PREFERENCES_PAGE_SECTION_EFFECTS,
+			                                              widget, "fade");
 		}
 	}
 	ccm_preferences_page_plugin_init_effects_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
