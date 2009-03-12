@@ -73,6 +73,10 @@ static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 	"background_y"
 };
 
+#define CCM_WIDGET_PLUGIN_NAME g_quark_from_static_string("CCMWidgetPluginName")
+#define CCM_WIDGET_PLUGIN_ACTIVE g_quark_from_static_string("CCMWidgetPluginActive")
+#define CCM_WIDGET_SECTION g_quark_from_static_string("CCMWidgetSection")
+
 enum
 {
 	PLUGIN_STATE_CHANGED,
@@ -955,4 +959,65 @@ ccm_preferences_page_section_v(CCMPreferencesPage* self,
 			}
 		} while (gtk_tree_model_iter_next(sections_list, &iter));
 	}
+}
+
+static void
+ccm_preferences_page_section_on_plugin_changed(CCMPreferencesPage* self, 
+                                               gchar* name, gboolean active,
+                                               GtkWidget* widget)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(name != NULL);
+	g_return_if_fail(widget != NULL);
+
+	gchar* plugin = (gchar*)g_object_get_qdata(G_OBJECT(widget), 
+	                                           CCM_WIDGET_PLUGIN_NAME);
+	gboolean wactive = (gboolean)
+		GPOINTER_TO_INT(g_object_get_qdata(G_OBJECT(widget), 
+		                                   CCM_WIDGET_PLUGIN_ACTIVE));
+	CCMPreferencesPageSection section = (CCMPreferencesPageSection)
+		GPOINTER_TO_INT(g_object_get_qdata(G_OBJECT(widget), 
+		                                   CCM_WIDGET_SECTION));
+	
+	if (plugin && !g_ascii_strcasecmp(name, plugin))
+	{
+		if (wactive != active)
+		{
+			if (active)
+			{
+				gtk_widget_show(widget);
+				ccm_preferences_page_section_p(self, section);
+			}
+			else
+			{
+				gtk_widget_hide(widget);
+				ccm_preferences_page_section_v(self, section);
+			}
+			g_object_set_qdata(G_OBJECT(widget), CCM_WIDGET_PLUGIN_ACTIVE, 
+			                   GINT_TO_POINTER(active));
+		}
+	}
+}
+
+void
+ccm_preferences_page_section_register_widget(CCMPreferencesPage* self,
+                                             CCMPreferencesPageSection section,
+                                             GtkWidget* widget,
+                                             gchar* plugin)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(widget != NULL);
+	g_return_if_fail(plugin != NULL);
+
+	g_object_set_qdata_full(G_OBJECT(widget), CCM_WIDGET_PLUGIN_NAME, 
+	                        g_strdup(plugin), g_free);
+	g_object_set_qdata(G_OBJECT(widget), CCM_WIDGET_PLUGIN_ACTIVE, 
+	                   GINT_TO_POINTER(TRUE));
+	g_object_set_qdata(G_OBJECT(widget), CCM_WIDGET_SECTION, 
+	                   GINT_TO_POINTER(section));
+	
+	ccm_preferences_page_section_p(self, section);
+	g_signal_connect(G_OBJECT(self), "plugin-state-changed",
+	                 G_CALLBACK(ccm_preferences_page_section_on_plugin_changed),
+	                 widget);
 }

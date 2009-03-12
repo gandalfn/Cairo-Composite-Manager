@@ -72,6 +72,10 @@ void ccm_preferences_page_section_p			 (CCMPreferencesPage* self,
 			                                  CCMPreferencesPageSection section);
 void ccm_preferences_page_section_v			 (CCMPreferencesPage* self, 
 			                                  CCMPreferencesPageSection section);
+void ccm_preferences_page_section_register_widget(CCMPreferencesPage* self,
+                                                  CCMPreferencesPageSection section,
+                                                  GtkWidget* widget,
+                                                  gchar* plugin);
 G_END_DECLS
 
 #endif /* _CCM_PREFERENCES_PAGE_H_ */
