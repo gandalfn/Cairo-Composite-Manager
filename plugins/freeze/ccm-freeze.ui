@@ -159,7 +159,7 @@
                 <child>
                   <object class="GtkLabel" id="label5">
                     <property name="visible">True</property>
-                    <property name="label" translatable="yes">ms</property>
+                    <property name="label" translatable="yes">s</property>
                   </object>
                   <packing>
                     <property name="left_attach">2</property>
