@@ -428,7 +428,10 @@ egg_virtual_accelerator_name (guint                  accelerator_key,
 
   if (!accelerator_key)
     {
-      keyval_name = g_strdup_printf ("0x%02x", keycode);
+        if (keycode)
+          keyval_name = g_strdup_printf ("0x%02x", keycode);
+        else
+          keyval_name = "";
     }
   else
     {

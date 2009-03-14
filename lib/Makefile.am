@@ -39,7 +39,9 @@ libcairo_compmgr_la_SOURCES =  \
 	ccm-config-adjustment.h \
 	ccm-config-adjustment.c \
 	ccm-config-color-button.h \
-	ccm-config-color-button.c
+	ccm-config-color-button.c \
+	ccm-config-entry-shortcut.h \
+	ccm-config-entry-shortcut.c
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
 

@@ -23,6 +23,7 @@
 #include "ccm-config-check-button.h"
 #include "ccm-config-adjustment.h"
 #include "ccm-config-color-button.h"
+#include "ccm-config-entry-shortcut.h"
 
 /* This function does absolutely nothing
  * (and is for use in overriding post_create functions).
@@ -97,4 +98,23 @@ glade_ccm_config_color_button_set_property (GladeWidgetAdaptor *adaptor,
         GWA_GET_CLASS (GTK_TYPE_COLOR_BUTTON)->set_property (adaptor, object,
                                                              id, value);
     }
+}
+
+void
+glade_ccm_config_entry_shortcut_set_property (GladeWidgetAdaptor *adaptor,
+                                              GObject            *object, 
+                                              const gchar        *id,
+                                              const GValue       *value)
+{
+    if (!strcmp (id, "mouse"))
+        g_object_set(object, "mouse", g_value_get_boolean(value), NULL);
+    else if (!strcmp (id, "key"))
+        g_object_set(object, "key", g_value_get_string(value), NULL);
+    else if (!strcmp (id, "plugin"))
+        g_object_set(object, "plugin", g_value_get_string(value), NULL);
+    else if (!strcmp (id, "screen"))
+        g_object_set(object, "screen", g_value_get_int(value), NULL);
+    else
+        GWA_GET_CLASS (GTK_TYPE_ENTRY)->set_property (adaptor, object,
+                                                      id, value);
 }
