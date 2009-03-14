@@ -372,16 +372,9 @@ ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	
 	if (ccm_window_is_viewable (window) && !self->priv->alive)
 	{
-		const CCMRegion* geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(window));
-		const cairo_rectangle_t* area = ccm_window_get_area(window);
-		cairo_rectangle_t clipbox;
-		CCMRegion* tmp = ccm_region_copy((CCMRegion*)geometry);
+		CCMRegion* tmp = ccm_window_get_area_geometry (window);
 		int cpt, nb_rects;
 		cairo_rectangle_t* rects;
-		
-		ccm_region_get_clipbox (tmp, &clipbox);
-		ccm_region_offset(tmp, area->x - clipbox.x, area->y - clipbox.y);
-		ccm_region_resize(tmp, area->width, area->height);
 		cairo_save(context);
 		
 		ccm_region_get_rectangles(tmp, &rects, &nb_rects);
