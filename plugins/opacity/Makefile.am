@@ -1,5 +1,5 @@
 PLUGIN = ccm-opacity
-PLUGIN_UI = 
+PLUGIN_UI = ccm-opacity.ui opacity.png menu-opacity.png
 PLUGIN_SCHEMA = ccm-opacity.schema-key.in
 
 PLUGIN_SOURCES = ccm-opacity.c ccm-opacity.h

@@ -29,6 +29,9 @@
 #include "ccm-window.h"
 #include "ccm-opacity.h"
 #include "ccm-keybind.h"
+#include "ccm-preferences-page-plugin.h"
+#include "ccm-config-adjustment.h"
+#include "ccm-config-entry-shortcut.h"
 #include "ccm.h"
 
 enum
@@ -49,6 +52,7 @@ static gchar* CCMOpacityOptions[CCM_OPACITY_OPTION_N] = {
 
 static void ccm_opacity_screen_iface_init  (CCMScreenPluginClass* iface);
 static void ccm_opacity_window_iface_init  (CCMWindowPluginClass* iface);
+static void ccm_opacity_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
 static void ccm_opacity_on_property_changed(CCMOpacity* self, 
 											CCMPropertyType changed,
 											CCMWindow* window);
@@ -59,7 +63,10 @@ CCM_DEFINE_PLUGIN (CCMOpacity, ccm_opacity, CCM_TYPE_PLUGIN,
 										   ccm_opacity_screen_iface_init);
 				   CCM_IMPLEMENT_INTERFACE(ccm_opacity,
 										   CCM_TYPE_WINDOW_PLUGIN,
-										   ccm_opacity_window_iface_init))
+										   ccm_opacity_window_iface_init);
+                   CCM_IMPLEMENT_INTERFACE(ccm_opacity,
+                                           CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                           ccm_opacity_preferences_page_iface_init))
 
 struct _CCMOpacityPrivate
 {	
@@ -68,9 +75,10 @@ struct _CCMOpacityPrivate
 	CCMKeybind*	decrease;
 	gfloat step;
 	
-	
 	CCMWindow*	window;
-	gfloat opacity;
+	gfloat		opacity;
+
+	GtkBuilder* builder;
 	
 	CCMConfig* 	options[CCM_OPACITY_OPTION_N];
 };
@@ -90,6 +98,7 @@ ccm_opacity_init (CCMOpacity *self)
 	self->priv->step = 0.1f;
 	self->priv->window = NULL;
 	self->priv->opacity = 1.0;
+	self->priv->builder = NULL;
 	for (cpt = 0; cpt < CCM_OPACITY_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
@@ -117,6 +126,9 @@ ccm_opacity_finalize (GObject *object)
 
 	if (self->priv->decrease) g_object_unref(self->priv->decrease);
 	self->priv->decrease = NULL;
+
+	if (self->priv->builder) g_object_unref(self->priv->builder);
+	self->priv->builder = NULL;
 	
 	G_OBJECT_CLASS (ccm_opacity_parent_class)->finalize (object);
 }
@@ -395,6 +407,102 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
+ccm_opacity_preferences_page_init_effects_section(CCMPreferencesPagePlugin* plugin,
+                                                  CCMPreferencesPage* preferences,
+                                                  GtkWidget* effects_section)
+{
+	CCMOpacity* self = CCM_OPACITY(plugin);
+	
+	if (!self->priv->builder)
+	{
+		self->priv->builder = gtk_builder_new();
+		if (!gtk_builder_add_from_file(self->priv->builder, 
+		                               UI_DIR "/ccm-opacity.ui", NULL))
+		{
+			g_object_unref(self->priv->builder);
+			self->priv->builder = NULL;
+		}
+	}
+
+	if (self->priv->builder)
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "menu-opacity"));
+		if (widget)
+		{
+			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
+			
+			gtk_box_pack_start(GTK_BOX(effects_section), widget, 
+			                   FALSE, TRUE, 0);
+
+			CCMConfigAdjustment* opacity = 
+				CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                             "opacity-adjustment"));
+			g_object_set(opacity, "screen", screen_num, NULL);
+			
+			ccm_preferences_page_section_register_widget (preferences,
+			                                              CCM_PREFERENCES_PAGE_SECTION_EFFECTS,
+			                                              widget, "opacity");
+		}
+	}
+	ccm_preferences_page_plugin_init_effects_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+													  preferences, effects_section);
+}
+
+static void
+ccm_opacity_preferences_page_init_utilities_section(CCMPreferencesPagePlugin* plugin,
+                                                    CCMPreferencesPage* preferences,
+                                                    GtkWidget* utilities_section)
+{
+	CCMOpacity* self = CCM_OPACITY(plugin);
+
+	if (!self->priv->builder)
+	{
+		self->priv->builder = gtk_builder_new();
+		if (!gtk_builder_add_from_file(self->priv->builder, 
+		                               UI_DIR "/ccm-opacity.ui", NULL))
+		{
+			g_object_unref(self->priv->builder);
+			self->priv->builder = NULL;
+		}
+	}
+
+	if (self->priv->builder)
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "opacity"));
+		if (widget)
+		{
+			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
+			
+			gtk_box_pack_start(GTK_BOX(utilities_section), widget, 
+			                   FALSE, TRUE, 0);
+
+			CCMConfigEntryShortcut* increase = 
+				CCM_CONFIG_ENTRY_SHORTCUT(gtk_builder_get_object(self->priv->builder, 
+				                                                 "increase"));
+			g_object_set(increase, "screen", screen_num, NULL);
+			
+			CCMConfigEntryShortcut* decrease = 
+				CCM_CONFIG_ENTRY_SHORTCUT(gtk_builder_get_object(self->priv->builder, 
+				                                                 "decrease"));
+			g_object_set(decrease, "screen", screen_num, NULL);
+
+			CCMConfigAdjustment* step = 
+				CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                             "step-adjustment"));
+			g_object_set(step, "screen", screen_num, NULL);
+			
+			ccm_preferences_page_section_register_widget (preferences,
+			                                              CCM_PREFERENCES_PAGE_SECTION_UTILITIES,
+			                                              widget, "opacity");
+		}
+	}
+	ccm_preferences_page_plugin_init_utilities_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+	                                                    preferences, utilities_section);
+}
+
+static void
 ccm_opacity_screen_iface_init(CCMScreenPluginClass* iface)
 {
 	iface->load_options 	= ccm_opacity_screen_load_options;
@@ -417,5 +525,16 @@ ccm_opacity_window_iface_init(CCMWindowPluginClass* iface)
 	iface->resize			 = NULL;
 	iface->set_opaque_region = NULL;
 	iface->get_origin		 = NULL;
+}
+
+static void
+ccm_opacity_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
+{
+	iface->init_general_section       = NULL;
+    iface->init_desktop_section       = NULL;
+    iface->init_windows_section       = NULL;
+    iface->init_effects_section		  = ccm_opacity_preferences_page_init_effects_section;
+    iface->init_accessibility_section = NULL;
+    iface->init_utilities_section     = ccm_opacity_preferences_page_init_utilities_section;
 }
 
