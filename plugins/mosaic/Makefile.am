@@ -1,5 +1,5 @@
 PLUGIN = ccm-mosaic
-PLUGIN_UI = 
+PLUGIN_UI = ccm-mosaic.ui mosaic.svg
 PLUGIN_SCHEMA = ccm-mosaic.schema-key.in
 
 PLUGIN_SOURCES = ccm-mosaic.c ccm-mosaic.h

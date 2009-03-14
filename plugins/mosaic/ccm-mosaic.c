@@ -32,6 +32,9 @@
 #include "ccm-screen.h"
 #include "ccm-mosaic.h"
 #include "ccm-keybind.h"
+#include "ccm-preferences-page-plugin.h"
+#include "ccm-config-entry-shortcut.h"
+#include "ccm-config-adjustment.h"
 #include "ccm.h"
 
 enum
@@ -47,12 +50,20 @@ static gchar* CCMMosaicOptions[CCM_MOSAIC_OPTION_N] = {
 };
 
 static void ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface);
-
+static void ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_mosaic_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
+static void ccm_mosaic_check_windows(CCMMosaic* self);
 
 CCM_DEFINE_PLUGIN (CCMMosaic, ccm_mosaic, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_mosaic,
 										   CCM_TYPE_SCREEN_PLUGIN,
-										   ccm_mosaic_screen_iface_init))
+										   ccm_mosaic_screen_iface_init);
+                   CCM_IMPLEMENT_INTERFACE(ccm_mosaic,
+										   CCM_TYPE_WINDOW_PLUGIN,
+										   ccm_mosaic_window_iface_init);
+                   CCM_IMPLEMENT_INTERFACE(ccm_mosaic,
+                                           CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                           ccm_mosaic_preferences_page_iface_init))
 
 typedef struct {
 	cairo_rectangle_t   geometry;
@@ -68,6 +79,10 @@ struct _CCMMosaicPrivate
 	gint				 nb_areas;
 	
 	CCMKeybind*			 keybind;
+
+	gboolean			 mouse_over;
+
+	GtkBuilder*			 builder;
 	
 	CCMConfig*           options[CCM_MOSAIC_OPTION_N];
 };
@@ -86,6 +101,8 @@ ccm_mosaic_init (CCMMosaic *self)
 	self->priv->areas = NULL;
 	self->priv->nb_areas = 0;
 	self->priv->keybind = NULL;
+	self->priv->mouse_over = FALSE;
+	self->priv->builder = NULL;
 	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
 }
@@ -105,6 +122,8 @@ ccm_mosaic_finalize (GObject *object)
 	self->priv->keybind = NULL;
 	if (self->priv->areas) g_free(self->priv->areas);
 	self->priv->areas = NULL;
+	if (self->priv->builder) g_object_unref(self->priv->builder);
+	self->priv->builder = NULL;
 	
 	G_OBJECT_CLASS (ccm_mosaic_parent_class)->finalize (object);
 }
@@ -189,12 +208,55 @@ ccm_mosaic_find_area(CCMMosaic* self, CCMWindow* window)
 }
 
 static void
+ccm_mosaic_on_window_enter_notify(CCMMosaic* self, CCMWindow* window, 
+                                  CCMScreen* screen)
+{
+	CCMMosaic* plugin = CCM_MOSAIC(_ccm_window_get_plugin(window,
+	                                                      CCM_TYPE_MOSAIC));
+	if (plugin)
+	{
+		plugin->priv->mouse_over = TRUE;
+		ccm_drawable_damage (CCM_DRAWABLE(window));
+	}
+}
+
+static void
+ccm_mosaic_on_window_leave_notify(CCMMosaic* self, CCMWindow* window, 
+                                  CCMScreen* screen)
+{
+	CCMMosaic* plugin = CCM_MOSAIC(_ccm_window_get_plugin(window,
+	                                                      CCM_TYPE_MOSAIC));
+	if (plugin && plugin->priv->enabled)
+	{
+		plugin->priv->mouse_over = FALSE;
+		ccm_drawable_damage (CCM_DRAWABLE(window));
+	}
+}
+
+static void
+ccm_mosaic_on_window_activate_notify(CCMMosaic* self, CCMWindow* window, 
+                                     CCMScreen* screen)
+{
+	CCMMosaic* plugin = CCM_MOSAIC(_ccm_window_get_plugin(window,
+	                                                      CCM_TYPE_MOSAIC));
+	if (plugin && plugin->priv->enabled)
+	{
+		plugin->priv->mouse_over = FALSE;
+		self->priv->enabled = FALSE;
+		ccm_mosaic_check_windows(self);
+	}
+}
+
+static void
 ccm_mosaic_set_window_transform(CCMMosaic* self)
 {
 	g_return_if_fail(self != NULL);
 
-	gint cpt;
+	gint cpt, x, y;
 	GList* item = ccm_screen_get_windows(self->priv->screen);
+	CCMWindow* mouse = NULL;
+
+	ccm_screen_query_pointer (self->priv->screen, &mouse, &x, &y);
 
 	for (;item; item = item->next)
 	{
@@ -213,6 +275,13 @@ ccm_mosaic_set_window_transform(CCMMosaic* self)
 		cairo_matrix_t transform;
 		gfloat scale;
 		cairo_rectangle_t win_area;
+		CCMMosaic* plugin = CCM_MOSAIC(_ccm_window_get_plugin(self->priv->areas[cpt].window,
+                                                  CCM_TYPE_MOSAIC));
+		if (plugin) 
+		{
+			plugin->priv->enabled = TRUE;
+			plugin->priv->mouse_over = FALSE;
+		}
 		
 		ccm_drawable_get_geometry_clipbox(CCM_DRAWABLE(self->priv->areas[cpt].window),
 										  &win_area);
@@ -231,6 +300,16 @@ ccm_mosaic_set_window_transform(CCMMosaic* self)
 		ccm_drawable_push_matrix(CCM_DRAWABLE(self->priv->areas[cpt].window),
 								 "CCMMosaic", &transform);
 		ccm_mosaic_switch_keep_above(self, self->priv->areas[cpt].window, TRUE);
+		g_object_set(G_OBJECT(self->priv->areas[cpt].window), 
+		             "block_mouse_redirect_event", TRUE, NULL);
+	}
+
+	for (cpt = 0; cpt < self->priv->nb_areas; ++cpt)
+	{
+		CCMMosaic* plugin = CCM_MOSAIC(_ccm_window_get_plugin(self->priv->areas[cpt].window,
+                                                  CCM_TYPE_MOSAIC));
+		if (plugin) 
+			plugin->priv->mouse_over = mouse == self->priv->areas[cpt].window;
 	}
 }
 
@@ -327,12 +406,26 @@ ccm_mosaic_check_windows(CCMMosaic* self)
 	if (self->priv->areas)
 	{
 		gint cpt;
+
 		for (cpt = 0; cpt < self->priv->nb_areas; ++cpt)
 		{
-			ccm_drawable_pop_matrix(CCM_DRAWABLE(self->priv->areas[cpt].window),
-									"CCMMosaic");
-			ccm_mosaic_switch_keep_above(self, self->priv->areas[cpt].window,
-										 FALSE);
+			if (CCM_IS_WINDOW(self->priv->areas[cpt].window))
+			{
+				CCMMosaic* plugin = CCM_MOSAIC(_ccm_window_get_plugin(self->priv->areas[cpt].window,
+	                                                      CCM_TYPE_MOSAIC));
+				if (plugin) 
+				{
+					plugin->priv->enabled = FALSE;
+					plugin->priv->mouse_over = FALSE;
+				}
+
+				ccm_drawable_pop_matrix(CCM_DRAWABLE(self->priv->areas[cpt].window),
+										"CCMMosaic");
+				ccm_mosaic_switch_keep_above(self, self->priv->areas[cpt].window,
+											 FALSE);
+				g_object_set(G_OBJECT(self->priv->areas[cpt].window), 
+				             "block_mouse_redirect_event", FALSE, NULL);
+			}
 		}
 		g_free(self->priv->areas);
 		self->priv->areas = NULL;
@@ -384,10 +477,89 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	self->priv->keybind = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
 	g_free(shortcut);
 	
-	/*g_signal_connect_swapped(self->priv->screen, "window-destroyed", 
-							 G_CALLBACK(ccm_mosaic_check_area), self);*/
+	g_signal_connect_swapped(self->priv->screen, "enter-window-notify",
+	                         G_CALLBACK(ccm_mosaic_on_window_enter_notify),
+	                         self);
+	g_signal_connect_swapped(self->priv->screen, "leave-window-notify",
+	                         G_CALLBACK(ccm_mosaic_on_window_leave_notify),
+	                         self);
+	g_signal_connect_swapped(self->priv->screen, "activate-window-notify",
+	                         G_CALLBACK(ccm_mosaic_on_window_activate_notify),
+	                         self);
 	g_signal_connect_swapped(self->priv->keybind, "key_press", 
 							 G_CALLBACK(ccm_mosaic_on_key_press), self);
+}
+
+static gboolean 
+ccm_mosaic_window_paint(CCMWindowPlugin* plugin, CCMWindow* window, 
+                        cairo_t* context, cairo_surface_t* surface,
+                        gboolean y_invert)
+{
+	CCMMosaic* self = CCM_MOSAIC(plugin);
+	gboolean ret;
+	
+	ret = ccm_window_plugin_paint(CCM_WINDOW_PLUGIN_PARENT(plugin), window, 
+								  context, surface, y_invert);
+	
+	if (self->priv->enabled && !self->priv->mouse_over)
+	{
+		CCMRegion* tmp = ccm_window_get_area_geometry (window);
+		int cpt, nb_rects;
+		cairo_rectangle_t* rects;
+
+		cairo_save(context);
+		cairo_set_source_rgba(context, 0, 0, 0, 0.5);
+		ccm_region_get_rectangles(tmp, &rects, &nb_rects);
+		for (cpt = 0; cpt < nb_rects; ++cpt)
+			cairo_rectangle(context, rects[cpt].x, rects[cpt].y, 
+							rects[cpt].width, rects[cpt].height);
+		cairo_fill(context);
+		g_free(rects);
+		ccm_region_destroy(tmp);
+		cairo_restore(context);
+	}
+	
+	return ret;
+}
+
+static void
+ccm_mosaic_preferences_page_init_desktop_section(CCMPreferencesPagePlugin* plugin,
+                                                 CCMPreferencesPage* preferences,
+                                                 GtkWidget* desktop_section)
+{
+	CCMMosaic* self = CCM_MOSAIC(plugin);
+	
+	self->priv->builder = gtk_builder_new();
+
+	if (gtk_builder_add_from_file(self->priv->builder, 
+	                              UI_DIR "/ccm-mosaic.ui", NULL))
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "mosaic"));
+		if (widget)
+		{
+			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
+			
+			gtk_box_pack_start(GTK_BOX(desktop_section), widget, 
+			                   FALSE, TRUE, 0);
+
+			CCMConfigAdjustment* spacing = 
+				CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+				                                             "spacing-adjustment"));
+			g_object_set(spacing, "screen", screen_num, NULL);
+			
+			CCMConfigEntryShortcut* shortcut = 
+				CCM_CONFIG_ENTRY_SHORTCUT(gtk_builder_get_object(self->priv->builder,
+				                                                 "shortcut"));
+			g_object_set(shortcut, "screen", screen_num, NULL);
+
+			ccm_preferences_page_section_register_widget (preferences,
+			                                              CCM_PREFERENCES_PAGE_SECTION_DESKTOP,
+			                                              widget, "mosaic");
+		}
+	}
+	ccm_preferences_page_plugin_init_desktop_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+													  preferences, desktop_section);
 }
 
 static void
@@ -398,4 +570,30 @@ ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->add_window 		= NULL;
 	iface->remove_window 	= NULL;
 	iface->damage			= NULL;
+}
+
+static void
+ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface)
+{
+	iface->load_options 	 = NULL;
+	iface->query_geometry 	 = NULL;
+	iface->paint 			 = ccm_mosaic_window_paint;
+	iface->map				 = NULL;
+	iface->unmap			 = NULL;
+	iface->query_opacity  	 = NULL;
+	iface->move				 = NULL;
+	iface->resize			 = NULL;
+	iface->set_opaque_region = NULL;
+	iface->get_origin		 = NULL;
+}
+
+static void
+ccm_mosaic_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
+{
+	iface->init_general_section       = NULL;
+    iface->init_desktop_section       = ccm_mosaic_preferences_page_init_desktop_section;
+    iface->init_windows_section       = NULL;
+    iface->init_effects_section		  = NULL;
+    iface->init_accessibility_section = NULL;
+    iface->init_utilities_section     = NULL;
 }
