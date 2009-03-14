@@ -107,6 +107,7 @@ enum
 	PROP_CHILD,
 	PROP_INPUT,
 	PROP_REDIRECT,
+	PROP_BLOCK_MOUSE_REDIRECT_EVENT,
 	PROP_IMAGE,
 	PROP_MASK,
 	PROP_MASK_WIDTH,
@@ -166,6 +167,7 @@ struct _CCMWindowPrivate
 	CCMPixmap*			pixmap;
 	gboolean			use_pixmap_image;
 	gboolean			redirect;
+	gboolean			block_mouse_redirect_event;
 	
 	CCMWindowPlugin*	plugin;
 	
@@ -212,6 +214,11 @@ ccm_window_set_gobject_property(GObject *object,
 			priv->redirect = g_value_get_boolean (value);
 			if (!priv->redirect)
 				ccm_window_unredirect_input(CCM_WINDOW(object));
+			break;
+		}
+		case PROP_BLOCK_MOUSE_REDIRECT_EVENT:
+		{
+			priv->block_mouse_redirect_event = g_value_get_boolean (value);
 			break;
 		}
     	case PROP_MASK:
@@ -300,6 +307,7 @@ ccm_window_init (CCMWindow *self)
 	self->priv->pixmap = NULL;
 	self->priv->use_pixmap_image = FALSE;
 	self->priv->redirect = TRUE;
+	self->priv->block_mouse_redirect_event = FALSE;
 	self->priv->plugin = NULL;
 	self->priv->mask = NULL;
 	self->priv->mask_width = 0;
@@ -420,6 +428,18 @@ ccm_window_class_init (CCMWindowClass *klass)
 		 					  "Redirect",
 			     			  "Unlock/Lock redirect input",
 							  TRUE,
+		     				  G_PARAM_WRITABLE));
+
+	/**
+	 * CCMWindow:block_mouse_redirect_event:
+	 *
+	 * If is set block pointer redirect event when window is transformed.
+	 */
+	g_object_class_install_property(object_class, PROP_BLOCK_MOUSE_REDIRECT_EVENT,
+		g_param_spec_boolean ("block_mouse_redirect_event",
+		 					  "Block Mouse Redirect Event",
+			     			  "Unblock/Block redirected pointer event when window is transformed",
+							  FALSE,
 		     				  G_PARAM_WRITABLE));
 
 	/**
@@ -2284,8 +2304,8 @@ ccm_window_keep_below(CCMWindow* self)
 	return self->priv->keep_below;
 }
 
-gboolean
-ccm_window_is_child(CCMWindow* self, Window window)
+static gboolean
+ccm_window_traverse_child(CCMWindow* self, Window parent, Window window)
 {
 	g_return_val_if_fail(self != NULL, FALSE);
 	g_return_val_if_fail(self != None, FALSE);
@@ -2296,21 +2316,26 @@ ccm_window_is_child(CCMWindow* self, Window window)
 	gboolean ret  = FALSE;
 	
 	if (XQueryTree(CCM_DISPLAY_XDISPLAY(display), 
-			   CCM_WINDOW_XWINDOW(self), &w, &p, 
-			   &windows, &n_windows) && windows)
+				   parent ? parent : CCM_WINDOW_XWINDOW(self), &w, &p, 
+				   &windows, &n_windows) && windows)
 	{
-		for (cpt = 0; cpt < n_windows; ++cpt)
+		for (cpt = 0; cpt < n_windows && !ret; ++cpt)
 		{
 			if (windows[cpt] == window) 
-			{
 				ret = TRUE;
-				break;
-			}
+			else
+				ret = ccm_window_traverse_child(self, windows[cpt], window);
 		}
 		XFree(windows);
 	}
 	
 	return ret;
+}
+
+gboolean
+ccm_window_is_child(CCMWindow* self, Window window)
+{
+	return ccm_window_traverse_child (self, None, window);
 }
 
 CCMWindow*
@@ -2771,6 +2796,33 @@ ccm_window_get_area(CCMWindow* self)
 		   NULL : &self->priv->area;
 }
 
+CCMRegion*
+ccm_window_get_area_geometry(CCMWindow* self)
+{
+	g_return_val_if_fail(self, NULL);
+
+	CCMRegion* ret = NULL;
+	const CCMRegion* geometry = ccm_drawable_get_device_geometry(CCM_DRAWABLE(self));
+	
+	if (geometry)
+	{
+		cairo_rectangle_t clipbox;
+		ret = ccm_region_copy((CCMRegion*)geometry);
+		double xoffset, yoffset;
+		cairo_matrix_t transform = ccm_drawable_get_transform (CCM_DRAWABLE(self));
+		
+		ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE(self), &clipbox);
+		ccm_region_resize(ret, self->priv->area.width, self->priv->area.height);
+		ccm_region_device_transform (ret, &transform);
+		xoffset = self->priv->area.x - clipbox.x;
+		yoffset = self->priv->area.y - clipbox.y;
+		cairo_matrix_transform_distance(&transform, &xoffset, &yoffset);
+		ccm_region_offset(ret, xoffset, yoffset);
+	}
+
+	return ret;
+}
+
 void
 ccm_window_query_frame_extends(CCMWindow* self)
 {
@@ -3130,8 +3182,10 @@ ccm_window_redirect_event(CCMWindow* self, XEvent* event, Window over)
 						leave->xbutton.y_root = y + y_real;
 						leave->xbutton.x = x_real - x_offset;
 						leave->xbutton.y = y_real - y_offset;
-						ccm_window_send_enter_leave_event(last, over, leave, 
-														  FALSE);
+						if (!self->priv->block_mouse_redirect_event)
+							ccm_window_send_enter_leave_event(last, over, leave, 
+															  FALSE);
+						
 						ccm_debug("LEAVE 0x%x", over);
 						
 						ccm_debug("LEAVE  %i,%i %i,%i", 
@@ -3141,16 +3195,18 @@ ccm_window_redirect_event(CCMWindow* self, XEvent* event, Window over)
 						++event->xbutton.time;
 					}
 				}
-				ccm_window_send_enter_leave_event(self, event->xbutton.window, 
-												  event, TRUE);
+				if (!self->priv->block_mouse_redirect_event)
+					ccm_window_send_enter_leave_event(self, event->xbutton.window, 
+													  event, TRUE);
 			}
 			ccm_debug("WINDOW %s, 0x%x", ccm_window_get_name(self), event->xbutton.window);
 			ccm_debug("REDIRECT %i,%i %i,%i", 
 					  event->xbutton.x_root, event->xbutton.y_root,
 					  event->xbutton.x, event->xbutton.y);
 			++event->xbutton.time;
-			XSendEvent(event->xany.display, event->xbutton.window, False,
-					   NoEventMask, event);
+			if (!self->priv->block_mouse_redirect_event)
+				XSendEvent(event->xany.display, event->xbutton.window, False,
+						   NoEventMask, event);
 		}
 		break;
 		case MotionNotify:
@@ -3206,8 +3262,9 @@ ccm_window_redirect_event(CCMWindow* self, XEvent* event, Window over)
 						leave->xbutton.y_root = y + y_real;
 						leave->xbutton.x = x_real - x_offset;
 						leave->xbutton.y = y_real - y_offset;
-						ccm_window_send_enter_leave_event(last, over, leave, 
-														  FALSE);
+						if (!self->priv->block_mouse_redirect_event)
+							ccm_window_send_enter_leave_event(last, over, leave, 
+															  FALSE);
 						ccm_debug("LEAVE 0x%x", over);
 						
 						ccm_debug("LEAVE  %i,%i %i,%i", 
@@ -3217,16 +3274,18 @@ ccm_window_redirect_event(CCMWindow* self, XEvent* event, Window over)
 						++event->xmotion.time;
 					}
 				}
-				ccm_window_send_enter_leave_event(self, event->xbutton.window, 
-												  event, TRUE);
+				if (!self->priv->block_mouse_redirect_event)
+					ccm_window_send_enter_leave_event(self, event->xbutton.window, 
+													  event, TRUE);
 			}
 			ccm_debug("WINDOW %s, 0x%x", ccm_window_get_name(self), event->xmotion.window);
 			ccm_debug("REDIRECT %i,%i %i,%i", 
 					  event->xmotion.x_root, event->xmotion.y_root,
 					  event->xmotion.x, event->xmotion.y);
 			++event->xmotion.time;
-			XSendEvent(event->xany.display, event->xmotion.window, False,
-					   NoEventMask, event);
+			if (!self->priv->block_mouse_redirect_event)
+				XSendEvent(event->xany.display, event->xmotion.window, False,
+						   NoEventMask, event);
 		}
 		break;
 		default:
