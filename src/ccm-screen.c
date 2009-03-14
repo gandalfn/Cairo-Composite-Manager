@@ -63,6 +63,9 @@ enum
 	PLUGINS_CHANGED,
 	REFRESH_RATE_CHANGED,
 	WINDOW_DESTROYED,
+	ENTER_WINDOW_NOTIFY,
+	LEAVE_WINDOW_NOTIFY,
+	ACTIVATE_WINDOW_NOTIFY,
     N_SIGNALS
 };
 
@@ -126,6 +129,7 @@ struct _CCMScreenPrivate
 	Window				selection_owner;
 	CCMWindow*          fullscreen;
 	CCMWindow*			active;
+	CCMWindow*			sibling_mouse;
 	Window				over_mouse;
 	
 	CCMRegion*			damaged;
@@ -323,6 +327,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->selection_owner = None;
 	self->priv->fullscreen = NULL;
 	self->priv->active = NULL;
+	self->priv->sibling_mouse = NULL;
 	self->priv->over_mouse = None;
 	self->priv->damaged = NULL;
 	self->priv->root_damage = NULL;
@@ -502,6 +507,24 @@ ccm_screen_class_init (CCMScreenClass *klass)
 											 G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 											 g_cclosure_marshal_VOID__VOID,
 											 G_TYPE_NONE, 0, G_TYPE_NONE);
+
+	signals[ENTER_WINDOW_NOTIFY] = g_signal_new ("enter-window-notify",
+	                                             G_OBJECT_CLASS_TYPE (object_class),
+	                                             G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+	                                             g_cclosure_marshal_VOID__POINTER,
+	                                             G_TYPE_NONE, 1, G_TYPE_POINTER);
+
+	signals[LEAVE_WINDOW_NOTIFY] = g_signal_new ("leave-window-notify",
+	                                             G_OBJECT_CLASS_TYPE (object_class),
+	                                             G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+	                                             g_cclosure_marshal_VOID__POINTER,
+	                                             G_TYPE_NONE, 1, G_TYPE_POINTER);
+
+	signals[ACTIVATE_WINDOW_NOTIFY] = g_signal_new ("activate-window-notify",
+	                                                G_OBJECT_CLASS_TYPE (object_class),
+	                                                G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+	                                                g_cclosure_marshal_VOID__POINTER,
+	                                                G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
 
 static void
@@ -820,7 +843,7 @@ ccm_screen_destroy_window (CCMScreen* self, CCMWindow* window)
 	{
 		self->priv->fullscreen = NULL;
 		ccm_screen_damage (self);
-	}		
+	}
 	else if (CCM_IS_WINDOW(window) && 
 			 ccm_window_is_viewable(window) &&
 			 !ccm_window_is_input_only(window))
@@ -831,6 +854,9 @@ ccm_screen_destroy_window (CCMScreen* self, CCMWindow* window)
 		else
 			ccm_screen_damage (self);
 	}
+	if (self->priv->sibling_mouse == window)
+		self->priv->sibling_mouse = NULL;
+	
 	if (G_IS_OBJECT(window)) g_object_unref(window);
 	
 	g_signal_emit (self, signals[WINDOW_DESTROYED], 0);
@@ -873,7 +899,6 @@ ccm_screen_find_window_or_child(CCMScreen* self, Window xwindow)
 			if (xchild == xwindow) child = CCM_WINDOW(item->data);
 		}
 	}
-	if (child) ccm_debug_window(child, "PARENT OF 0x%lx", xwindow);
 	
 	return child;
 }
@@ -1722,6 +1747,8 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 						ccm_window_redirect_event(window, event, 
 												  self->priv->over_mouse);
 			}
+			else
+				self->priv->over_mouse = None;
 		}
 		break;
 		case MotionNotify:
@@ -1744,7 +1771,19 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 						ccm_window_redirect_event(window, event, 
 												  self->priv->over_mouse);
 				}
-			}
+				else
+					self->priv->over_mouse = None;	
+
+				if (window != self->priv->sibling_mouse)
+				{
+					if (self->priv->sibling_mouse)
+						g_signal_emit(self, signals[LEAVE_WINDOW_NOTIFY], 0, 
+							          self->priv->sibling_mouse);
+					self->priv->sibling_mouse = window;
+					g_signal_emit(self, signals[ENTER_WINDOW_NOTIFY], 0, 
+					              self->priv->sibling_mouse);
+				}
+			}		
 		}
 		break;
 		case CreateNotify:
@@ -1938,6 +1977,9 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 					else
 						self->priv->active = NULL;
 					g_free(data);
+					if (self->priv->active)
+						g_signal_emit(self, signals[ACTIVATE_WINDOW_NOTIFY], 0, 
+							          self->priv->active);
 				}
 			}
 			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom ||
