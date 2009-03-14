@@ -332,6 +332,14 @@ ccm_preferences_on_realize (CCMPreferences* self, GtkWidget* widget)
 	g_object_unref(pixmap);
 }
 
+static void
+ccm_preferences_on_response(CCMPreferences* self, gint response, 
+                            GtkWidget* widget)
+{
+	if (response != GTK_RESPONSE_DELETE_EVENT)
+		ccm_preferences_hide(self);
+}
+
 CCMPreferences*
 ccm_preferences_new (void)
 {
@@ -371,10 +379,10 @@ ccm_preferences_new (void)
 	gtk_window_set_keep_above(GTK_WINDOW(shell), TRUE);
 	gtk_window_set_focus_on_map(GTK_WINDOW(shell), TRUE);
 	
-	g_signal_connect_swapped(shell, "close", 
-							 G_CALLBACK(ccm_preferences_hide), self);
+	g_signal_connect_swapped(shell, "delete-event", 
+							 G_CALLBACK(gtk_true), self);
 	g_signal_connect_swapped(shell, "response", 
-							 G_CALLBACK(ccm_preferences_hide), self);
+							 G_CALLBACK(ccm_preferences_on_response), self);
 	g_signal_connect_swapped(shell, "realize", 
 							 G_CALLBACK(ccm_preferences_on_realize), self);
 	g_signal_connect_swapped(shell, "expose-event", 
