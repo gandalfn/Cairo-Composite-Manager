@@ -32,6 +32,9 @@
 #include "ccm-keybind.h"
 #include "ccm-debug.h"
 #include "ccm-marshallers.h"
+#include "ccm-preferences-page-plugin.h"
+#include "ccm-config-color-button.h"
+#include "ccm-config-entry-shortcut.h"
 #include "ccm.h"
 
 enum
@@ -57,11 +60,15 @@ static gchar* CCMSnapshotOptions[CCM_SNAPSHOT_OPTION_N] = {
 };
 
 static void ccm_snapshot_screen_iface_init  (CCMScreenPluginClass* iface);
+static void ccm_snapshot_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
 
 CCM_DEFINE_PLUGIN (CCMSnapshot, ccm_snapshot, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_snapshot,
 										   CCM_TYPE_SCREEN_PLUGIN,
-										   ccm_snapshot_screen_iface_init))
+										   ccm_snapshot_screen_iface_init);
+                   CCM_IMPLEMENT_INTERFACE(ccm_snapshot,
+                                           CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                           ccm_snapshot_preferences_page_iface_init))
 
 struct _CCMSnapshotPrivate
 {	
@@ -72,6 +79,8 @@ struct _CCMSnapshotPrivate
 	
 	cairo_rectangle_t   area;
 	CCMWindow*			selected;
+
+	GtkBuilder*			builder;
 	
 	CCMConfig* 	options[CCM_SNAPSHOT_OPTION_N];
 };
@@ -94,6 +103,7 @@ ccm_snapshot_init (CCMSnapshot *self)
 	self->priv->area.width = 0;
 	self->priv->area.height = 0;
 	self->priv->selected = NULL;
+	self->priv->builder = NULL;
 	
 	for (cpt = 0; cpt < CCM_SNAPSHOT_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
@@ -122,6 +132,10 @@ ccm_snapshot_finalize (GObject *object)
 	if (self->priv->window_keybind) 
 		g_object_unref(self->priv->window_keybind);
 	self->priv->window_keybind = NULL;
+
+	if (self->priv->builder)
+		g_object_unref(self->priv->builder);
+	self->priv->builder = NULL;
 	
 	G_OBJECT_CLASS (ccm_snapshot_parent_class)->finalize (object);
 }
@@ -489,6 +503,59 @@ ccm_snapshot_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 }
 
 static void
+ccm_snapshot_preferences_page_init_utilities_section(CCMPreferencesPagePlugin* plugin,
+                                                     CCMPreferencesPage* preferences,
+                                                     GtkWidget* utilities_section)
+{
+	CCMSnapshot* self = CCM_SNAPSHOT(plugin);
+
+	if (!self->priv->builder)
+	{
+		self->priv->builder = gtk_builder_new();
+		if (!gtk_builder_add_from_file(self->priv->builder, 
+		                               UI_DIR "/ccm-snapshot.ui", NULL))
+		{
+			g_object_unref(self->priv->builder);
+			self->priv->builder = NULL;
+		}
+	}
+
+	if (self->priv->builder)
+	{
+		GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "snapshot"));
+		if (widget)
+		{
+			gint screen_num = ccm_preferences_page_get_screen_num (preferences);
+			
+			gtk_box_pack_start(GTK_BOX(utilities_section), widget, 
+			                   FALSE, TRUE, 0);
+
+			CCMConfigEntryShortcut* area = 
+				CCM_CONFIG_ENTRY_SHORTCUT(gtk_builder_get_object(self->priv->builder, 
+				                                                 "area"));
+			g_object_set(area, "screen", screen_num, NULL);
+			
+			CCMConfigEntryShortcut* window = 
+				CCM_CONFIG_ENTRY_SHORTCUT(gtk_builder_get_object(self->priv->builder, 
+				                                                 "window"));
+			g_object_set(window, "screen", screen_num, NULL);
+
+			CCMConfigColorButton* color = 
+				CCM_CONFIG_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
+				                                               "color"));
+			g_object_set(color, "screen", screen_num, NULL);
+			
+			ccm_preferences_page_section_register_widget (preferences,
+			                                              CCM_PREFERENCES_PAGE_SECTION_UTILITIES,
+			                                              widget, "snapshot");
+		}
+	}
+	ccm_preferences_page_plugin_init_utilities_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+	                                                    preferences, utilities_section);
+}
+
+static void
 ccm_snapshot_screen_iface_init(CCMScreenPluginClass* iface)
 {
 	iface->load_options 	= ccm_snapshot_screen_load_options;
@@ -496,4 +563,15 @@ ccm_snapshot_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->add_window 		= NULL;
 	iface->remove_window 	= NULL;
 	iface->damage			= NULL;
+}
+
+static void
+ccm_snapshot_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
+{
+	iface->init_general_section       = NULL;
+    iface->init_desktop_section       = NULL;
+    iface->init_windows_section       = NULL;
+    iface->init_effects_section		  = NULL;
+    iface->init_accessibility_section = NULL;
+    iface->init_utilities_section     = ccm_snapshot_preferences_page_init_utilities_section;
 }
