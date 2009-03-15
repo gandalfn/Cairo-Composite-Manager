@@ -131,7 +131,7 @@ ccm_snapshot_dialog_on_realize (CCMSnapshotDialog* self, GtkWidget* widget)
 	height = cairo_image_surface_get_height(self->priv->surface);
 	
 	snapshot = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
-												 "snapshot"));
+												 "snapshot_image"));
 	table = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
 											  "table"));
 	
@@ -185,7 +185,7 @@ ccm_snapshot_dialog_paint_snapshot (CCMSnapshotDialog* self, cairo_t* ctx)
 	height = cairo_image_surface_get_height(self->priv->surface);
 	
 	snapshot = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
-												 "snapshot"));
+												 "snapshot_image"));
 	cairo_save(ctx);
 	cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
     cairo_translate(ctx, snapshot->allocation.x, snapshot->allocation.y);
