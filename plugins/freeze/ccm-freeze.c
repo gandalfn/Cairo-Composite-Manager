@@ -267,6 +267,8 @@ ccm_freeze_ping(CCMFreeze* self)
 		CCMDisplay* display = 
 			ccm_drawable_get_display (CCM_DRAWABLE(self->priv->window));
 		Window window = None;
+
+		g_return_val_if_fail(CCM_IS_DISPLAY(display), FALSE);
 		
 		g_object_get (G_OBJECT(self->priv->window), "child", &window, NULL);
 		
