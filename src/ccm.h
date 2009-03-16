@@ -34,6 +34,11 @@
 
 G_BEGIN_DECLS
 
+/********************************** Cursor ************************************/
+typedef struct _CCMCursorClass CCMCursorClass;
+typedef struct _CCMCursor CCMCursor;
+/******************************************************************************/
+
 /********************************** Display ***********************************/
 typedef struct _CCMDisplayClass  CCMDisplayClass;
 typedef struct _CCMDisplay       CCMDisplay;
@@ -146,6 +151,12 @@ gboolean        ccm_region_point_in         (CCMRegion* self, int x, int y);
 gboolean        ccm_region_is_shaped        (CCMRegion* self);
 /******************************************************************************/
 
+/********************************** Cursor ************************************/
+CCMCursor*      ccm_cursor_new              (CCMDisplay* diplay, gchar* name);
+void            ccm_cursor_paint            (CCMCursor* self, cairo_t* ctx, 
+                                             double x, double y);
+/******************************************************************************/
+
 /********************************** Display ***********************************/
 CCMDisplay* 	ccm_display_new        			          (gchar* display);
 Display*        ccm_display_get_xdisplay		          (CCMDisplay* self);
@@ -160,6 +171,7 @@ gint		    ccm_display_pop_error			          (CCMDisplay* self);
 gboolean        ccm_display_report_device_event           (CCMDisplay* self, 
                                                            CCMScreen* screen,
                                                            gboolean report);
+const CCMCursor* ccm_display_get_current_cursor           (CCMDisplay* self);
 /******************************************************************************/
 
 /********************************** Screen ************************************/
@@ -194,6 +206,8 @@ CCMWindow*      ccm_screen_find_window_at_pos       (CCMScreen* self,
 gboolean        ccm_screen_query_pointer            (CCMScreen* self, 
                                                      CCMWindow** below, 
                                                      gint *x, gint *y);
+void            ccm_screen_manage_cursors           (CCMScreen* self);
+void            ccm_screen_unmanage_cursors         (CCMScreen* self);
 /******************************************************************************/
 
 /****************************** Drawable **************************************/

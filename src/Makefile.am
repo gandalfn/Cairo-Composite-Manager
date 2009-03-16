@@ -129,7 +129,9 @@ cairo_compmgr_SOURCES = \
     ccm-cell-renderer-extension.h \
     ccm-cell-renderer-extension.c \
     ccm-preferences-page.h \
-    ccm-preferences-page.c
+    ccm-preferences-page.c \
+    ccm-cursor.h \
+    ccm-cursor.c
 	
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

@@ -2434,3 +2434,23 @@ ccm_screen_query_pointer(CCMScreen* self, CCMWindow** below,
 	
 	return ret;
 }
+
+void
+ccm_screen_manage_cursors(CCMScreen* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+							CCM_WINDOW_XWINDOW(self->priv->root), 
+	                        XFixesDisplayCursorNotifyMask);
+}
+
+void
+ccm_screen_unmanage_cursors(CCMScreen* self)
+{
+	g_return_if_fail(self != NULL);
+	
+	XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+							CCM_WINDOW_XWINDOW(self->priv->root), 
+	                        0);
+}

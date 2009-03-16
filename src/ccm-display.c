@@ -28,10 +28,12 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/shape.h>
+#include <X11/Xcursor/Xcursor.h>
 #include <gtk/gtk.h>
 
 #include "ccm-debug.h"
 #include "ccm-display.h"
+#include "ccm-cursor.h"
 #include "ccm-screen.h"
 #include "ccm-watch.h"
 #include "ccm-config.h"
@@ -64,6 +66,7 @@ enum
 	EVENT,
 	DAMAGE_EVENT,
 	XFIXES_CURSOR_EVENT,
+	CURSOR_CHANGED,
 	N_SIGNALS
 };
 
@@ -103,6 +106,11 @@ struct _CCMDisplayPrivate
 	int					type_button_release;
 	int					type_motion_notify;
 	CCMPointerEvents	last_events;
+
+	gchar*				cursors_theme;
+	gint				cursors_size;
+	CCMCursor*			cursor_current;
+	GHashTable*			cursors;
 	
 	gboolean 			use_shm;
 	
@@ -195,6 +203,11 @@ ccm_display_init (CCMDisplay *self)
 	self->priv->last_events.press = 0;
 	self->priv->last_events.release = 0;
 	self->priv->last_events.motion = 0;
+	self->priv->cursors_theme = NULL;
+	self->priv->cursors_size = 0;
+	self->priv->cursors = g_hash_table_new_full (g_str_hash, g_str_equal,
+	                                             g_free, g_object_unref);
+	self->priv->cursor_current = NULL;
 }
 
 static void
@@ -204,6 +217,13 @@ ccm_display_finalize (GObject *object)
 	gint cpt;
 	
 	ccm_debug("DISPLAY FINALIZE");
+
+	if (self->priv->cursors_theme)
+		g_free (self->priv->cursors_theme);
+
+	if (self->priv->cursors)
+		g_hash_table_destroy (self->priv->cursors);
+	
 	if (self->priv->pointers)
 	{
 		GSList* item;
@@ -284,6 +304,12 @@ ccm_display_class_init (CCMDisplayClass *klass)
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__POINTER,
 								   G_TYPE_NONE, 1, G_TYPE_POINTER);
+
+	signals[CURSOR_CHANGED] = g_signal_new ("cursor-changed",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__POINTER,
+								   G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
 
 static void
@@ -301,6 +327,64 @@ ccm_display_load_config(CCMDisplay* self)
 	self->priv->use_shm = 
 		ccm_config_get_boolean(self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM],
 							   NULL) &&	self->priv->shm.available;
+}
+
+static void
+ccm_display_check_cursors_theme (CCMDisplay* self)
+{
+	g_return_if_fail(self != NULL);
+
+	gchar* theme = XcursorGetTheme (CCM_DISPLAY_XDISPLAY (self));
+	int size = XcursorGetDefaultSize (CCM_DISPLAY_XDISPLAY (self));
+
+	if (size != self->priv->cursors_size ||
+	    (self->priv->cursors_theme && strcmp(theme, self->priv->cursors_theme)))
+	{
+		self->priv->cursors_theme = g_strdup(theme);
+		self->priv->cursors_size = size;
+		g_hash_table_remove_all(self->priv->cursors);
+	}
+}
+
+static void
+ccm_display_check_cursor (CCMDisplay* self, gboolean emit_event)
+{
+	g_return_if_fail(self != NULL);
+
+	XFixesCursorImage *cursor;
+
+	ccm_display_check_cursors_theme (self);
+
+	cursor = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(self));
+	ccm_debug("CHECK CURSOR");
+	if (cursor)
+	{
+		CCMCursor* current = g_hash_table_lookup(self->priv->cursors,
+		                                         cursor->name);
+
+		if (!current)
+		{
+			current = ccm_cursor_new(self, (gchar*)cursor->name);
+			if (!current)
+			{
+				XFree (cursor);
+				ccm_log ("ERROR %s cursor not found !!", cursor->name);
+				return;
+			}
+			g_hash_table_insert(self->priv->cursors, g_strdup(cursor->name),
+			                    current);
+		}
+
+		if (self->priv->cursor_current != current)
+		{
+			self->priv->cursor_current = current;
+			if (emit_event)
+				g_signal_emit(self, signals[CURSOR_CHANGED], 0, 
+					          self->priv->cursor_current);
+		}
+		
+		XFree (cursor);
+	}
 }
 
 static void
@@ -466,9 +550,12 @@ ccm_display_process_events(CCMDisplay* self)
 			
 			g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage);
 		}
-		else if (xevent.type == self->priv->damage.event_base + XFixesCursorNotify)
+		else if (xevent.type == self->priv->fixes.event_base + XFixesCursorNotify)
 		{
 			XFixesCursorNotifyEvent* event_cursor = (XFixesCursorNotifyEvent*)&xevent;
+
+			ccm_debug("CURSOR NOTIFY");
+			ccm_display_check_cursor (self, TRUE);
 			
 			g_signal_emit (self, signals[XFIXES_CURSOR_EVENT], 0, event_cursor);
 		}
@@ -799,8 +886,19 @@ ccm_display_trap_error(CCMDisplay* self)
 gint
 ccm_display_pop_error(CCMDisplay* self)
 {
+	g_return_val_if_fail(self != NULL, 0);
+
 	ccm_display_sync(self);
 	
 	return CCMLastXError;
 }
 
+const CCMCursor*
+ccm_display_get_current_cursor (CCMDisplay* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	ccm_display_check_cursor (self, FALSE);
+
+	return (const CCMCursor*)self->priv->cursor_current;
+}
