@@ -81,6 +81,9 @@ static void 	ccm_screen_on_window_error		(CCMScreen* self,
 static void 	ccm_screen_on_window_property_changed(CCMScreen* self, 
 												  	  CCMPropertyType changed,
 												      CCMWindow* window);
+static void 	ccm_screen_on_window_redirect_input(CCMScreen* self, 
+	                                                gboolean redirected,
+	                                                CCMWindow* window);
 CCMWindow*		ccm_screen_find_window_from_input(CCMScreen* self, 
 												  Window xwindow);
 
@@ -140,6 +143,7 @@ struct _CCMScreenPrivate
 	GList*				windows;
 	GList*				removed;
 	gboolean			buffered;
+	gint				nb_redirect_input;
 	
 	guint 				refresh_rate;
 	CCMTimeline*		paint;
@@ -336,6 +340,7 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->windows = NULL;
 	self->priv->removed = NULL;
 	self->priv->buffered = FALSE;
+	self->priv->nb_redirect_input = 0;
 	self->priv->refresh_rate = 0;
 	self->priv->paint = NULL;
 	self->priv->id_pendings = 0;
@@ -739,6 +744,9 @@ ccm_screen_create_overlay_window(CCMScreen* self)
 	
 	Window window;
 	CCMWindow* root = ccm_screen_get_root_window(self);
+
+	g_return_val_if_fail(root != NULL, FALSE);
+	g_return_val_if_fail(self->priv->display != NULL, FALSE);
 	
 	window = XCompositeGetOverlayWindow (CCM_DISPLAY_XDISPLAY(self->priv->display), 
 										 CCM_WINDOW_XWINDOW(root));
@@ -838,6 +846,9 @@ ccm_screen_destroy_window (CCMScreen* self, CCMWindow* window)
 		g_signal_handlers_disconnect_by_func(window, 
 											 ccm_screen_on_window_property_changed, 
 											 self);
+		g_signal_handlers_disconnect_by_func(window, 
+		                                     ccm_screen_on_window_redirect_input,
+		                                     self);
 	}
 	if (self->priv->fullscreen == window)
 	{
@@ -1122,6 +1133,8 @@ ccm_screen_check_stack(CCMScreen* self)
 					 G_CALLBACK(ccm_screen_on_window_error), self);
 				g_signal_connect_swapped(window, "property-changed", 
 					 G_CALLBACK(ccm_screen_on_window_property_changed), self);
+				g_signal_connect_swapped(window, "redirect-input", 
+					 G_CALLBACK(ccm_screen_on_window_redirect_input), self);
 				stack = g_list_prepend(stack, window);
 			}
 			else if (window)
@@ -1313,6 +1326,18 @@ ccm_screen_on_window_error(CCMScreen* self, CCMWindow* window)
 }
 
 static void
+ccm_screen_on_window_redirect_input(CCMScreen* self, gboolean redirected,
+                                    CCMWindow* window)
+{
+	g_return_if_fail(self != NULL);
+	
+	if (redirected)
+		self->priv->nb_redirect_input++;
+	else
+		self->priv->nb_redirect_input = MAX(self->priv->nb_redirect_input - 1, 0);
+}
+
+static void
 ccm_screen_on_window_property_changed(CCMScreen* self, CCMPropertyType changed,
 									  CCMWindow* window)
 {
@@ -1366,7 +1391,8 @@ impl_ccm_screen_add_window(CCMScreenPlugin* plugin, CCMScreen* self,
 							 G_CALLBACK(ccm_screen_on_window_error), self);
 	g_signal_connect_swapped(window, "property-changed", 
 							 G_CALLBACK(ccm_screen_on_window_property_changed), self);
-	
+	g_signal_connect_swapped(window, "redirect-input", 
+							 G_CALLBACK(ccm_screen_on_window_redirect_input), self);
 	return TRUE;
 }
 
@@ -1711,7 +1737,8 @@ ccm_screen_on_window_damaged(CCMScreen* self, CCMRegion* area, CCMWindow* window
 	if (!self->priv->cow)
 		ccm_screen_create_overlay_window(self);
 	
-	if (CCM_WINDOW_XWINDOW(self->priv->cow) != CCM_WINDOW_XWINDOW(window))
+	if (self->priv->cow &&
+	    CCM_WINDOW_XWINDOW(self->priv->cow) != CCM_WINDOW_XWINDOW(window))
 	{
 		ccm_screen_plugin_damage(self->priv->plugin, self, area, window);
 	}
@@ -1733,19 +1760,24 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			
 			if (button_event->root != CCM_WINDOW_XWINDOW(self->priv->root))
 				return;
-			
-			CCMWindow* input = 
-				ccm_screen_find_window_from_input(self, button_event->window);
-			
-			if (input)
-			{
-				CCMWindow* window = ccm_screen_find_window_at_pos(self,
-													button_event->x_root,
-													button_event->y_root);
 
-				self->priv->over_mouse = 
-						ccm_window_redirect_event(window, event, 
-												  self->priv->over_mouse);
+			if (self->priv->nb_redirect_input)
+			{
+				CCMWindow* input = 
+					ccm_screen_find_window_from_input(self, button_event->window);
+			
+				if (input)
+				{
+					CCMWindow* window = ccm_screen_find_window_at_pos(self,
+														button_event->x_root,
+														button_event->y_root);
+
+					self->priv->over_mouse = 
+							ccm_window_redirect_event(window, event, 
+													  self->priv->over_mouse);
+				}
+				else
+					self->priv->over_mouse = None;
 			}
 			else
 				self->priv->over_mouse = None;
@@ -1757,33 +1789,37 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			
 			if (motion_event->root != CCM_WINDOW_XWINDOW(self->priv->root))
 				return;
-			
-			CCMWindow* window = ccm_screen_find_window_at_pos(self,
-												motion_event->x_root,
-												motion_event->y_root);
-			if (window)
-			{
-				Window input = None;
-				g_object_get(G_OBJECT(window), "input", &input, NULL);
-				if (input)
-				{
-					self->priv->over_mouse = 
-						ccm_window_redirect_event(window, event, 
-												  self->priv->over_mouse);
-				}
-				else
-					self->priv->over_mouse = None;	
 
-				if (window != self->priv->sibling_mouse)
+			if (self->priv->nb_redirect_input)
+			{
+				ccm_log ("MOTION %i %i", motion_event->x_root, motion_event->y_root);
+				CCMWindow* window = ccm_screen_find_window_at_pos(self,
+													motion_event->x_root,
+													motion_event->y_root);
+				if (window)
 				{
-					if (self->priv->sibling_mouse)
-						g_signal_emit(self, signals[LEAVE_WINDOW_NOTIFY], 0, 
+					Window input = None;
+					g_object_get(G_OBJECT(window), "input", &input, NULL);
+					if (input)
+					{
+						self->priv->over_mouse = 
+							ccm_window_redirect_event(window, event, 
+													  self->priv->over_mouse);
+					}
+					else
+						self->priv->over_mouse = None;	
+
+					if (window != self->priv->sibling_mouse)
+					{
+						if (self->priv->sibling_mouse)
+							g_signal_emit(self, signals[LEAVE_WINDOW_NOTIFY], 0, 
+									      self->priv->sibling_mouse);
+						self->priv->sibling_mouse = window;
+						g_signal_emit(self, signals[ENTER_WINDOW_NOTIFY], 0, 
 							          self->priv->sibling_mouse);
-					self->priv->sibling_mouse = window;
-					g_signal_emit(self, signals[ENTER_WINDOW_NOTIFY], 0, 
-					              self->priv->sibling_mouse);
+					}
 				}
-			}		
+			}
 		}
 		break;
 		case CreateNotify:

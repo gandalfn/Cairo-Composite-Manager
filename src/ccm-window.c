@@ -118,6 +118,7 @@ enum
 {
 	PROPERTY_CHANGED,
 	OPACITY_CHANGED,
+	REDIRECT_INPUT,
 	ERROR,
     N_SIGNALS
 };
@@ -511,6 +512,17 @@ ccm_window_class_init (CCMWindowClass *klass)
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 								   g_cclosure_marshal_VOID__VOID,
 								   G_TYPE_NONE, 0);
+
+	/**
+	 * CCMWindow::redirect-input:
+	 *
+	 * Emitted when the window redirect input changed.
+	 */ 
+	signals[REDIRECT_INPUT] = g_signal_new ("redirect-input",
+								   G_OBJECT_CLASS_TYPE (object_class),
+								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+								   g_cclosure_marshal_VOID__BOOLEAN,
+								   G_TYPE_NONE, 1, G_TYPE_BOOLEAN);
 	
 	/**
 	 * CCMWindow::error:
@@ -3057,6 +3069,8 @@ ccm_window_redirect_input(CCMWindow* self)
 								 CCM_WINDOW_XWINDOW(self);
 				XConfigureWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->input, 
 								  CWSibling | CWStackMode, &xwc);
+
+				g_signal_emit(self, signals[REDIRECT_INPUT], 0, TRUE);
 			}
 		}
 	}
@@ -3072,6 +3086,7 @@ ccm_window_unredirect_input(CCMWindow* self)
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 		XDestroyWindow (CCM_DISPLAY_XDISPLAY(display), self->priv->input);
 		self->priv->input = None;	
+		g_signal_emit(self, signals[REDIRECT_INPUT], 0, FALSE);
 	}
 }
 
