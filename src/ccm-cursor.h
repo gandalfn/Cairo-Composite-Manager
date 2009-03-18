@@ -48,6 +48,7 @@ struct _CCMCursor
 };
 
 GType ccm_cursor_get_type (void) G_GNUC_CONST;
+CCMCursor* ccm_cursor_new (CCMDisplay* diplay, XFixesCursorImage* cursor);
 
 G_END_DECLS
 

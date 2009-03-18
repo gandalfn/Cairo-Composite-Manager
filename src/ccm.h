@@ -152,7 +152,6 @@ gboolean        ccm_region_is_shaped        (CCMRegion* self);
 /******************************************************************************/
 
 /********************************** Cursor ************************************/
-CCMCursor*      ccm_cursor_new              (CCMDisplay* diplay, gchar* name);
 void            ccm_cursor_paint            (CCMCursor* self, cairo_t* ctx, 
                                              double x, double y);
 /******************************************************************************/
