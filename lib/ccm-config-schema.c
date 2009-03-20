@@ -236,7 +236,11 @@ ccm_config_schema_get_value_type(CCMConfigSchema* self, gchar* key)
 		                                         CCM_CONFIG_SCHEMA_ENTRY_LIST_TYPE, 
 		                                         NULL);
 	
-		if (!list_type) return ret;
+		if (!list_type) 
+		{
+			g_free(type);
+			return ret;
+		}
 		
 		if (!g_ascii_strcasecmp(CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_STRING],
 		                        list_type))
@@ -250,8 +254,11 @@ ccm_config_schema_get_value_type(CCMConfigSchema* self, gchar* key)
 		else if (!g_ascii_strcasecmp(CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_FLOAT],
 		                    		 list_type))
 			ret = CCM_CONFIG_VALUE_LIST_FLOAT;
+
+		g_free(list_type);
 	}
-	
+	g_free(type);
+			
 	return ret;
 }
 
