@@ -3023,7 +3023,7 @@ ccm_window_redirect_input(CCMWindow* self)
 		
 		device = ccm_drawable_get_device_geometry(CCM_DRAWABLE(self));
 		geometry = ccm_drawable_get_geometry(CCM_DRAWABLE(self));
-		if (device && geometry)
+		if (device && geometry && !ccm_region_empty ((CCMRegion*)device))
 		{
 			area = ccm_region_copy((CCMRegion*)device);
 			ccm_region_union(area, (CCMRegion*)geometry);
