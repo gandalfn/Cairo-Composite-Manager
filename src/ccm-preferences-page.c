@@ -681,14 +681,13 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 			{
 				gchar* name;
 				gtk_tree_model_get(backends, &iter, 0, &name, -1);
-				if (!g_ascii_strcasecmp(name, backend))
+				if (name && !g_ascii_strcasecmp(name, backend))
 				{
-					if (!g_ascii_strcasecmp(name, backend))
-					{
-						gtk_combo_box_set_active_iter(combo, &iter);
-						break;
-					}
+					gtk_combo_box_set_active_iter(combo, &iter);
+					g_free (name);
+					break;
 				}
+				if (name) g_free (name);
 			} while (gtk_tree_model_iter_next(backends, &iter));
 		}
 		g_free(backend);

@@ -1792,7 +1792,6 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 
 			if (self->priv->nb_redirect_input)
 			{
-				ccm_log ("MOTION %i %i", motion_event->x_root, motion_event->y_root);
 				CCMWindow* window = ccm_screen_find_window_at_pos(self,
 													motion_event->x_root,
 													motion_event->y_root);
