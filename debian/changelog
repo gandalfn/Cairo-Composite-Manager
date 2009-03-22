@@ -1,3 +1,9 @@
+cairo-compmgr (0.2.92-0ubuntu1~ppa2) intrepid; urgency=low
+
+  * Fix debian/control
+
+ -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Sun, 22 Mar 2009 15:28:52 +0100
+
 cairo-compmgr (0.2.92-0ubuntu1~ppa1) intrepid; urgency=low
 
   * New upstream release.

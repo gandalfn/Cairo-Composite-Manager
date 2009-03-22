@@ -29,7 +29,7 @@ Description: Cairo Composite Manager Plugins
 Package: libcairo-compmgr0
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: cairo-compmgr <= 0.2.90
+Conflicts: cairo-compmgr (<= 0.2.90)
 Description: Cairo Composite Manager Library
  Cairo Composite Manager is a versatile and extensible composite manager which 
  use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
@@ -39,7 +39,7 @@ Package: cairo-compmgr-dev
 Architecture: any
 Section: devel
 Depends: ${misc:Depends}, libcairo-compmgr-dev
-Conflicts: cairo-compmgr-dev <= 0.2.90
+Conflicts: cairo-compmgr-dev (<= 0.2.90)
 Description: Cairo Composite Manager Developpement Files
  Cairo Composite Manager is a versatile and extensible composite manager which 
  use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
