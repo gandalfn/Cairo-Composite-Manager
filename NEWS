@@ -1,3 +1,8 @@
+Overview of Changes in Cairo Composite Manager 0.2.93
+====================================
+
+* Fix opacity when set with transset on framed window.
+
 Overview of Changes in Cairo Composite Manager 0.2.92
 ====================================
 
