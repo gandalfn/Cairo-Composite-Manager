@@ -154,6 +154,8 @@ gboolean        ccm_region_is_shaped        (CCMRegion* self);
 /********************************** Cursor ************************************/
 void            ccm_cursor_paint            (CCMCursor* self, cairo_t* ctx, 
                                              double x, double y);
+double          ccm_cursor_get_width        (CCMCursor* self);
+double          ccm_cursor_get_height       (CCMCursor* self);
 /******************************************************************************/
 
 /********************************** Display ***********************************/
@@ -170,7 +172,8 @@ gint		    ccm_display_pop_error			          (CCMDisplay* self);
 gboolean        ccm_display_report_device_event           (CCMDisplay* self, 
                                                            CCMScreen* screen,
                                                            gboolean report);
-const CCMCursor* ccm_display_get_current_cursor           (CCMDisplay* self);
+const CCMCursor* ccm_display_get_current_cursor           (CCMDisplay* self,
+                                                           gboolean initiate);
 /******************************************************************************/
 
 /********************************** Screen ************************************/

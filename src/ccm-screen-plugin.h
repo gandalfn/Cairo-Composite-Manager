@@ -73,6 +73,10 @@ struct _CCMScreenPluginClass
 								 CCMWindow* window);
     void	 (*damage) 	        (CCMScreenPlugin* self, CCMScreen* screen,
 								 CCMRegion* area, CCMWindow* window);
+	void     (*on_cursor_move)  (CCMScreenPlugin* self, CCMScreen* screen, 
+	                             int x, int y);
+	void     (*paint_cursor)    (CCMScreenPlugin* self, CCMScreen* screen, 
+	                             cairo_t* ctx, int x, int y);
 };
 
 GType 		ccm_screen_plugin_get_type 		(void) G_GNUC_CONST;
@@ -92,6 +96,13 @@ void	 	ccm_screen_plugin_damage        (CCMScreenPlugin* self,
 											 CCMScreen* screen,
                                              CCMRegion* area,
 											 CCMWindow* window);
+void		ccm_screen_plugin_on_cursor_move(CCMScreenPlugin* self, 
+		                                     CCMScreen* screen,
+                                             int x, int y);
+void		ccm_screen_plugin_paint_cursor  (CCMScreenPlugin* self, 
+		                                     CCMScreen* screen,
+                                             cairo_t* ctx,
+		                                     int x, int y);
 
 G_END_DECLS
 

@@ -179,12 +179,30 @@ ccm_cursor_new (CCMDisplay* display, XFixesCursorImage* cursor)
 	return self;
 }
 
+double
+ccm_cursor_get_width (CCMCursor* self)
+{
+	g_return_val_if_fail (self != NULL, 0);
+
+	return self->priv->surface ? 
+		   cairo_image_surface_get_width(self->priv->surface) : 0;
+}
+
+double
+ccm_cursor_get_height (CCMCursor* self)
+{
+	g_return_val_if_fail (self != NULL, 0);
+
+	return self->priv->surface ? 
+		   cairo_image_surface_get_height(self->priv->surface) : 0;
+}
+
 void
 ccm_cursor_paint (CCMCursor* self, cairo_t* ctx, double x, double y)
 {
 	g_return_if_fail (self != NULL);
 	g_return_if_fail (ctx != NULL);
-	
+
 	cairo_set_source_surface (ctx, self->priv->surface, 
 	                          x - self->priv->x_hot, y - self->priv->y_hot);
 	cairo_paint (ctx);

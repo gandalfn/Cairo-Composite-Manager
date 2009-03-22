@@ -209,3 +209,57 @@ ccm_screen_plugin_damage (CCMScreenPlugin* self, CCMScreen* screen,
 															 window);
 	}
 }
+
+void
+ccm_screen_plugin_on_cursor_move (CCMScreenPlugin* self, CCMScreen* screen,
+                                  int x, int y)
+{
+	g_return_if_fail (CCM_IS_SCREEN_PLUGIN (self));
+	g_return_if_fail (screen != NULL);
+	
+  	CCMScreenPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->on_cursor_move)
+			break;
+	}
+    
+	if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->on_cursor_move)
+	{
+		if (!_ccm_plugin_method_locked ((GObject*)plugin, 
+					CCM_SCREEN_PLUGIN_GET_INTERFACE  (plugin)->on_cursor_move))
+  			CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->on_cursor_move(plugin, 
+			                                                         screen,
+			                                                         x, y);
+	}
+}
+
+void
+ccm_screen_plugin_paint_cursor (CCMScreenPlugin* self, CCMScreen* screen,
+                                cairo_t* ctx, int x, int y)
+{
+	g_return_if_fail (CCM_IS_SCREEN_PLUGIN (self));
+	g_return_if_fail (screen != NULL);
+	
+  	CCMScreenPlugin* plugin;
+	
+	for (plugin = self; 
+		 CCM_IS_PLUGIN(plugin); 
+		 plugin = CCM_SCREEN_PLUGIN_PARENT(plugin))
+	{
+		if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint_cursor)
+			break;
+	}
+    
+	if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint_cursor)
+	{
+		if (!_ccm_plugin_method_locked ((GObject*)plugin, 
+					CCM_SCREEN_PLUGIN_GET_INTERFACE  (plugin)->paint_cursor))
+  			CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint_cursor(plugin, 
+			                                                       screen,
+			                                                       ctx, x, y);
+	}
+}

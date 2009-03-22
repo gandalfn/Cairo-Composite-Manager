@@ -64,7 +64,6 @@ enum
 {
 	EVENT,
 	DAMAGE_EVENT,
-	XFIXES_CURSOR_EVENT,
 	CURSOR_CHANGED,
 	N_SIGNALS
 };
@@ -293,12 +292,6 @@ ccm_display_class_init (CCMDisplayClass *klass)
 								   g_cclosure_marshal_VOID__POINTER,
 								   G_TYPE_NONE, 1, G_TYPE_POINTER);
 	
-	signals[XFIXES_CURSOR_EVENT] = g_signal_new ("xfixes-cursor-event",
-								   G_OBJECT_CLASS_TYPE (object_class),
-								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-								   g_cclosure_marshal_VOID__POINTER,
-								   G_TYPE_NONE, 1, G_TYPE_POINTER);
-
 	signals[CURSOR_CHANGED] = g_signal_new ("cursor-changed",
 								   G_OBJECT_CLASS_TYPE (object_class),
 								   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -340,7 +333,7 @@ ccm_display_check_cursor (CCMDisplay* self, Atom cursor_name,
 			XFixesCursorImage *cursor;
 
 			cursor = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(self));
-			ccm_log("CHECK CURSOR %li", cursor_name);
+			ccm_debug("CHECK CURSOR %li", cursor_name);
 
 			current = ccm_cursor_new(self, cursor);
 			XFree (cursor);
@@ -548,8 +541,6 @@ ccm_display_process_events(CCMDisplay* self)
 
 			ccm_debug("CURSOR NOTIFY %li", event_cursor->cursor_name);
 			ccm_display_check_cursor (self, event_cursor->cursor_name, TRUE);
-			
-			g_signal_emit (self, signals[XFIXES_CURSOR_EVENT], 0, event_cursor);
 		}
 		else
 		{
@@ -886,11 +877,18 @@ ccm_display_pop_error(CCMDisplay* self)
 }
 
 const CCMCursor*
-ccm_display_get_current_cursor (CCMDisplay* self)
+ccm_display_get_current_cursor (CCMDisplay* self, gboolean initiate)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 
-	//ccm_display_check_cursor (self, 0, FALSE);
+	if (initiate || !self->priv->cursor_current)
+	{
+		XFixesCursorImage *cursor;
 
+		cursor = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(self));
+		ccm_display_check_cursor (self, cursor->atom, FALSE);
+		XFree(cursor);
+	}
+	
 	return (const CCMCursor*)self->priv->cursor_current;
 }
