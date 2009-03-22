@@ -99,13 +99,6 @@ struct _CCMMagnifierPrivate
 	gfloat				 new_scale;
 	gboolean 			 shade;
 	
-	int					 x_mouse;
-	int 				 y_mouse;
-	int					 x_hot;
-	int 				 y_hot;
-	int					 mouse_width;
-	int 				 mouse_height;
-	cairo_surface_t*     surface_mouse;
 	int					 x_offset;
 	int 				 y_offset;
 	int 				 border;
@@ -116,8 +109,6 @@ struct _CCMMagnifierPrivate
 	CCMRegion*			 damaged;
 	CCMKeybind*			 keybind;
 
-	GHashTable*			 mouse_images;
-	
 	cairo_surface_t*     surface_window_info;
 	CCMTimeline*		 timeline;
 	
@@ -138,22 +129,13 @@ ccm_magnifier_init (CCMMagnifier *self)
 	self->priv->shade = TRUE;
 	self->priv->scale = 1.0f;
 	self->priv->new_scale = 1.0f;
-	self->priv->x_mouse = 0;
-	self->priv->y_mouse = 0;
-	self->priv->x_hot = 0;
-	self->priv->y_hot = 0;
-	self->priv->mouse_width = 0;
-	self->priv->mouse_height = 0;	
-	self->priv->surface_mouse = NULL;
 	self->priv->x_offset = 0;
 	self->priv->y_offset = 0;
 	self->priv->border = 0;
 	self->priv->surface = NULL;
 	self->priv->damaged = NULL;
 	self->priv->keybind = NULL;
-	self->priv->mouse_images = g_hash_table_new_full(g_str_hash, g_str_equal,
-	                                                 (GDestroyNotify)g_free, 
-	                                                 (GDestroyNotify)cairo_surface_destroy);
+	
 	self->priv->surface_window_info = NULL;
 	self->priv->timeline = ccm_timeline_new_for_duration(3500);
 	g_object_set(G_OBJECT(self->priv->timeline), "fps", 30, NULL);
@@ -171,16 +153,6 @@ ccm_magnifier_finalize (GObject *object)
 	CCMMagnifier* self = CCM_MAGNIFIER(object);
 	gint cpt;
 	
-	if (self->priv->screen && self->priv->enabled)
-	{
-		CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-		CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
-		
-		XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(display), 
-								CCM_WINDOW_XWINDOW(root), 
-								0);
-		XFixesShowCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
-	}
 	for (cpt = 0; cpt < CCM_MAGNIFIER_OPTION_N;++cpt)
 	{
 		if (self->priv->options[cpt]) 
@@ -190,9 +162,6 @@ ccm_magnifier_finalize (GObject *object)
 	if (self->priv->surface) 
 		cairo_surface_destroy (self->priv->surface);
 	self->priv->surface = NULL;
-	if (self->priv->surface_mouse) 
-		cairo_surface_destroy (self->priv->surface_mouse);
-	self->priv->surface_mouse = NULL;
 	if (self->priv->damaged) 
 		ccm_region_destroy (self->priv->damaged);
 	self->priv->damaged = NULL;
@@ -205,9 +174,6 @@ ccm_magnifier_finalize (GObject *object)
 	if (self->priv->timeline)
 		g_object_unref(self->priv->timeline);
 	self->priv->timeline = NULL;
-	if (self->priv->mouse_images)
-		g_hash_table_destroy (self->priv->mouse_images);
-	self->priv->mouse_images = NULL;
 	
 	G_OBJECT_CLASS (ccm_magnifier_parent_class)->finalize (object);
 }
@@ -266,9 +232,6 @@ ccm_magnifier_on_new_frame (CCMMagnifier* self, int num_frame,
 static void
 ccm_magnifier_get_enable(CCMMagnifier *self)
 {
-	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
-	
 	ccm_screen_damage(self->priv->screen);
 	self->priv->enabled = 
 		ccm_config_get_boolean(self->priv->options [CCM_MAGNIFIER_ENABLE], 
@@ -276,24 +239,16 @@ ccm_magnifier_get_enable(CCMMagnifier *self)
 	
 	if (self->priv->enabled)
 	{
-		XFixesHideCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
-		XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(display), 
-								CCM_WINDOW_XWINDOW(root), 
-								XFixesDisplayCursorNotifyMask);
+		ccm_screen_manage_cursors (self->priv->screen);
 		ccm_timeline_rewind(self->priv->timeline);
 		ccm_timeline_start(self->priv->timeline);
 	}
 	else
 	{
-		XFixesSelectCursorInput(CCM_DISPLAY_XDISPLAY(display), 
-								CCM_WINDOW_XWINDOW(root), 
-								0);
-		XFixesShowCursor(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(root));
+		ccm_screen_unmanage_cursors (self->priv->screen);
 		if (self->priv->surface) 
 			cairo_surface_destroy (self->priv->surface);
 		self->priv->surface = NULL;
-		g_hash_table_remove_all(self->priv->mouse_images);
-		self->priv->surface_mouse = NULL;
 		ccm_timeline_stop(self->priv->timeline);
 	}
 }
@@ -773,163 +728,6 @@ ccm_magnifier_paint_window_info(CCMMagnifier *self, cairo_t* context)
 }
 
 static void
-ccm_magnifier_cursor_convert_to_rgba (CCMMagnifier *self, 
-									  XFixesCursorImage *cursor_image)
-{
-	int i, count = cursor_image->width * cursor_image->height;
-	
-	for (i = 0; i < count; ++i) 
-	{
-		guint32 pixval = GUINT32_TO_LE (cursor_image->pixels[i]);
-		cursor_image->pixels[i] = pixval;
-	}
-}
-
-static void
-ccm_magnifier_cursor_get_surface(CCMMagnifier* self)
-{
-	CCMDisplay* display = ccm_screen_get_display (self->priv->screen);
-	XFixesCursorImage *cursor_image;
-	gint cpt;
-	
-	cursor_image = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY(display));
-
-	self->priv->surface_mouse = g_hash_table_lookup(self->priv->mouse_images, 
-	                                              cursor_image->name);
-		
-	if (!self->priv->surface_mouse && 
-	    cursor_image->width > 1 && cursor_image->height > 1)
-	{
-		static cairo_user_data_key_t data_key;
-		guchar* image_mouse = NULL;
-		
-		ccm_magnifier_cursor_convert_to_rgba (self, cursor_image);
-	
-		image_mouse = g_new0(guchar, cursor_image->width * cursor_image->height * 4);
-		for (cpt = 0; cpt < cursor_image->width * cursor_image->height; ++cpt)
-		{
-			image_mouse[(cpt * 4) + 3] = (guchar)(cursor_image->pixels[cpt] >> 24);
-			image_mouse[(cpt * 4) + 2] = (guchar)((cursor_image->pixels[cpt] >> 16) & 0xff);
-			image_mouse[(cpt * 4) + 1] = (guchar)((cursor_image->pixels[cpt] >> 8) & 0xff);
-			image_mouse[(cpt * 4) + 0] = (guchar)(cursor_image->pixels[cpt] & 0xff);
-		}
-		self->priv->surface_mouse = cairo_image_surface_create_for_data (
-													image_mouse, 
-													CAIRO_FORMAT_ARGB32,
-													cursor_image->width, 
-													cursor_image->height,
-													cursor_image->width * 4);
-		cairo_surface_set_user_data (self->priv->surface_mouse, &data_key, 
-		                             image_mouse, g_free);
-		g_hash_table_insert(self->priv->mouse_images, 
-		                    g_strdup(cursor_image->name),
-		                    self->priv->surface_mouse);
-	}
-
-	self->priv->mouse_width = cursor_image->width;
-	self->priv->mouse_height = cursor_image->height;
-	self->priv->x_mouse = cursor_image->x;
-	self->priv->y_mouse = cursor_image->y;
-	self->priv->x_hot = cursor_image->xhot;
-	self->priv->y_hot = cursor_image->yhot;
-	
-	XFree(cursor_image);
-}
-
-static void
-ccm_magnifier_cursor_get_position(CCMMagnifier*self)
-{
-	gboolean damaged = FALSE;
-	gint old_x = self->priv->x_mouse, 
-	     old_y = self->priv->y_mouse,
-		 old_xhot = self->priv->x_hot,
-		 old_yhot = self->priv->y_hot;
-	
-	ccm_magnifier_cursor_get_surface (self);
-	
-	if (self->priv->x_offset > self->priv->x_mouse - self->priv->border)
-	{
-		self->priv->x_offset = MAX(self->priv->restrict_area.x, self->priv->x_mouse - self->priv->border);
-		damaged = TRUE;
-	}
-	if (self->priv->y_offset > self->priv->y_mouse  - self->priv->border)
-	{
-		self->priv->y_offset = MAX(self->priv->restrict_area.y, self->priv->y_mouse - self->priv->border);
-		damaged = TRUE;
-	}
-	if (self->priv->x_offset + (self->priv->area.width / self->priv->scale) < 
-		self->priv->x_mouse + self->priv->border)
-	{
-		self->priv->x_offset = self->priv->x_mouse + self->priv->border + 
-							   self->priv->mouse_width - 
-							   (self->priv->area.width / self->priv->scale);
-		if (self->priv->x_offset + 
-			(self->priv->area.width / self->priv->scale) > 
-			self->priv->restrict_area.width)
-			self->priv->x_offset = self->priv->restrict_area.width - 
-								   (self->priv->area.width / self->priv->scale);
-		damaged = TRUE;
-	}
-	if (self->priv->y_offset + (self->priv->area.height / self->priv->scale) < 
-		self->priv->y_mouse + self->priv->border)
-	{
-		self->priv->y_offset = self->priv->y_mouse + self->priv->border + 
-							   self->priv->mouse_height - 
-							   (self->priv->area.height / self->priv->scale) ;
-		if (self->priv->y_offset + 
-			(self->priv->area.height / self->priv->scale) > 
-			self->priv->restrict_area.height)
-			self->priv->y_offset = self->priv->restrict_area.height - 
-								  (self->priv->area.height / self->priv->scale);
-		damaged = TRUE;
-	}
-	
-	if (old_x - old_xhot != self->priv->x_mouse - self->priv->x_hot || 
-	    old_y - old_yhot != self->priv->y_mouse - self->priv->y_hot)
-	{
-		if (damaged)
-		{
-			CCMRegion* damage;
-			cairo_rectangle_t area;
-		
-			area.x = self->priv->x_offset;
-			area.y = self->priv->y_offset;
-			area.width = self->priv->area.width / self->priv->scale;
-			area.height = self->priv->area.height / self->priv->scale;
-			damage = ccm_region_rectangle (&area);
-			ccm_debug("MAGNIFIER POSITION CHANGED");
-			ccm_screen_damage_region (self->priv->screen, damage);
-			ccm_region_destroy (damage);
-		}
-		else
-		{
-			CCMRegion* damage;
-			cairo_rectangle_t area;
-		
-			area.x = old_x - old_xhot;
-			area.y = old_y - old_yhot;
-			area.width = self->priv->mouse_width;
-			area.height = self->priv->mouse_height;
-			damage = ccm_region_rectangle (&area);
-			area.x = self->priv->x_mouse - self->priv->x_hot;
-			area.y = self->priv->y_mouse - self->priv->y_hot;
-			ccm_region_union_with_rect(damage, &area);
-			ccm_screen_damage_region (self->priv->screen, damage);
-			ccm_region_destroy (damage);
-		}
-	}
-}
-
-static void
-ccm_magnifier_on_cursor_notify_event(CCMMagnifier* self, 
-									 XFixesCursorNotifyEvent* event,
-									 CCMDisplay* display)
-{
-	if (self->priv->enabled)
-		ccm_magnifier_cursor_get_position (self);
-}
-
-static void
 ccm_magnifier_on_option_changed(CCMMagnifier* self, CCMConfig* config)
 {
 	if (config == self->priv->options[CCM_MAGNIFIER_ENABLE])
@@ -943,7 +741,6 @@ ccm_magnifier_on_option_changed(CCMMagnifier* self, CCMConfig* config)
 	else if (config == self->priv->options[CCM_MAGNIFIER_ZOOM_QUALITY] &&
 			 ccm_magnifier_get_zoom_quality (self))
 	{
-		ccm_magnifier_cursor_get_surface(self);
 		ccm_screen_damage (self->priv->screen);
 	}
 	else if (config == self->priv->options[CCM_MAGNIFIER_SHORTCUT])
@@ -982,7 +779,6 @@ static void
 ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMMagnifier* self = CCM_MAGNIFIER(plugin);
-	CCMDisplay* display = ccm_screen_get_display (screen);
 	gint cpt;
 	
 	for (cpt = 0; cpt < CCM_MAGNIFIER_OPTION_N; ++cpt)
@@ -1007,9 +803,6 @@ ccm_magnifier_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	ccm_magnifier_get_size(self);
 	ccm_magnifier_get_border(self);
 	ccm_magnifier_get_keybind(self);
-	g_signal_connect_swapped(display, "xfixes-cursor-event", 
-							 G_CALLBACK(ccm_magnifier_on_cursor_notify_event), 
-							 self);
 }
 
 static gboolean
@@ -1060,8 +853,6 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		g_free(rects);
 		ccm_region_destroy (area);
 		ccm_region_destroy (geometry);
-		
-		ccm_magnifier_cursor_get_position (self);
 		
 		g_object_set(G_OBJECT(self->priv->screen), "buffered_pixmap", 
 					 FALSE, NULL);
@@ -1137,18 +928,6 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			gint cpt, nb_rects;
 			cairo_rectangle_t* rects;
 			cairo_pattern_t* pattern;
-			cairo_t* ctx = cairo_create(self->priv->surface);
-			
-			ccm_debug("MAGNIFIER PAINT SCREEN FILL PAINT MOUSE");
-			cairo_set_source_surface (ctx, self->priv->surface_mouse, 
-									  self->priv->x_mouse - 
-									  self->priv->x_offset - 
-									  self->priv->x_hot, 
-									  self->priv->y_mouse - 
-									  self->priv->y_offset -
-									  self->priv->y_hot);
-			cairo_paint(ctx);
-			cairo_destroy (ctx);
 			
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL CONTENT");
 	
@@ -1163,6 +942,14 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 				cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
 								 rects[cpt].width, rects[cpt].height);
 			g_free(rects);
+			cairo_clip(context);
+			
+			cairo_rectangle_round(context, self->priv->area.x - 2, 
+								  self->priv->area.y - 2,
+								  self->priv->area.width + 3, 
+								  self->priv->area.height + 3, 
+								  10.0f, CAIRO_CORNER_ALL);
+
 			cairo_clip(context);
 				
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL CLIP");
@@ -1194,6 +981,99 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	}
 
 	return ret;
+}
+
+static void
+ccm_magnifier_screen_on_cursor_move (CCMScreenPlugin* plugin, CCMScreen* screen,
+                                     int x, int y)
+{
+	CCMMagnifier* self = CCM_MAGNIFIER (plugin);
+	CCMDisplay* display = ccm_screen_get_display (screen);
+	CCMCursor* cursor = (CCMCursor*)
+		ccm_display_get_current_cursor (display, FALSE);
+	gboolean damaged = FALSE;
+	
+	if (cursor)
+	{
+		double width = ccm_cursor_get_width (cursor);
+		double height = ccm_cursor_get_height (cursor);
+	
+		if (self->priv->x_offset > x - self->priv->border)
+		{
+			self->priv->x_offset = MAX(self->priv->restrict_area.x, 
+				                       x - self->priv->border);
+			damaged = TRUE;
+		}
+		if (self->priv->y_offset > y  - self->priv->border)
+		{
+			self->priv->y_offset = MAX(self->priv->restrict_area.y, 
+				                       y - self->priv->border);
+			damaged = TRUE;
+		}
+		if (self->priv->x_offset + (self->priv->area.width / self->priv->scale) < 
+			x + width + self->priv->border)
+		{
+			self->priv->x_offset = x + self->priv->border + width - 
+								   (self->priv->area.width / self->priv->scale);
+			if (self->priv->x_offset + 
+				(self->priv->area.width / self->priv->scale) > 
+				self->priv->restrict_area.width)
+				self->priv->x_offset = self->priv->restrict_area.width - 
+									   (self->priv->area.width / self->priv->scale);
+			damaged = TRUE;
+		}
+		if (self->priv->y_offset + (self->priv->area.height / self->priv->scale) < 
+			y + height + self->priv->border)
+		{
+			self->priv->y_offset = y + self->priv->border + height - 
+								   (self->priv->area.height / self->priv->scale) ;
+			if (self->priv->y_offset + 
+				(self->priv->area.height / self->priv->scale) > 
+				self->priv->restrict_area.height)
+				self->priv->y_offset = self->priv->restrict_area.height - 
+									  (self->priv->area.height / self->priv->scale);
+			damaged = TRUE;
+		}
+	}
+	
+	if (damaged)
+	{
+		CCMRegion* damage;
+		cairo_rectangle_t area;
+
+		area.x = self->priv->x_offset;
+		area.y = self->priv->y_offset;
+		area.width = self->priv->area.width / self->priv->scale;
+		area.height = self->priv->area.height / self->priv->scale;
+		damage = ccm_region_rectangle (&area);
+		ccm_debug("MAGNIFIER POSITION CHANGED");
+		ccm_screen_damage_region (self->priv->screen, damage);
+		ccm_region_destroy (damage);
+	}
+	
+	ccm_screen_plugin_on_cursor_move (CCM_SCREEN_PLUGIN_PARENT (plugin), 
+	                                  screen, x, y);
+}
+
+static void
+ccm_magnifier_screen_paint_cursor (CCMScreenPlugin* plugin, CCMScreen* screen,
+                                   cairo_t* context, int x, int y)
+{
+	CCMMagnifier* self = CCM_MAGNIFIER (plugin);
+	CCMDisplay* display = ccm_screen_get_display (screen);
+	CCMCursor* cursor = (CCMCursor*)
+		ccm_display_get_current_cursor (display, FALSE);
+
+	if (cursor)
+	{
+		cairo_save(context);
+		cairo_translate(context, self->priv->area.x, self->priv->area.y);
+		cairo_scale(context, self->priv->scale, self->priv->scale);
+		ccm_cursor_paint(cursor, context, 
+		                 x - self->priv->x_offset,
+		                 y - self->priv->y_offset);
+		cairo_restore(context);
+	}
 }
 
 static gboolean
@@ -1274,6 +1154,8 @@ ccm_magnifier_screen_iface_init(CCMScreenPluginClass* iface)
 	iface->add_window 		= NULL;
 	iface->remove_window 	= NULL;
 	iface->damage			= NULL;
+	iface->on_cursor_move   = ccm_magnifier_screen_on_cursor_move;
+	iface->paint_cursor     = ccm_magnifier_screen_paint_cursor;
 }
 
 static void
