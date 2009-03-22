@@ -155,15 +155,28 @@ ccm_opacity_change_opacity(CCMWindow* window, gfloat value)
 	g_object_get(G_OBJECT(window), "child", &child, NULL);
 	
 	if (value == 1.0f)
+	{
+		if (child)
+			XDeleteProperty (CCM_DISPLAY_XDISPLAY(display), child, 
+							 CCM_WINDOW_GET_CLASS(window)->opacity_atom);
 		XDeleteProperty (CCM_DISPLAY_XDISPLAY(display), 
-						 child ? child : CCM_WINDOW_XWINDOW(window), 
-						 CCM_WINDOW_GET_CLASS(window)->opacity_atom);
+		                 CCM_WINDOW_XWINDOW(window), 
+		                 CCM_WINDOW_GET_CLASS(window)->opacity_atom);
+	}
 	else
+	{
+		if (child)
+			XChangeProperty(CCM_DISPLAY_XDISPLAY(display), child, 
+							CCM_WINDOW_GET_CLASS(window)->opacity_atom, 
+							XA_CARDINAL, 32, PropModeReplace, 
+							(unsigned char *) &opacity, 1L);
 		XChangeProperty(CCM_DISPLAY_XDISPLAY(display), 
-						child ? child : CCM_WINDOW_XWINDOW(window), 
+						CCM_WINDOW_XWINDOW(window), 
 						CCM_WINDOW_GET_CLASS(window)->opacity_atom, 
 						XA_CARDINAL, 32, PropModeReplace, 
 						(unsigned char *) &opacity, 1L);
+	}
+
 	ccm_display_sync(display);
 }
 
