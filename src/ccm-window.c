@@ -716,19 +716,17 @@ ccm_window_get_property_async(CCMWindow* self, Atom property_atom,
 		self->priv->properties_pending = 
 			g_slist_prepend (self->priv->properties_pending, property);
 	}
-	else
-	{
-		property = ccm_property_async_new (display, CCM_WINDOW_XWINDOW(self), 
+
+	property = ccm_property_async_new (display, CCM_WINDOW_XWINDOW(self), 
 									   property_atom, req_type, length);
-		g_signal_connect_swapped(property, "reply", 
-								 G_CALLBACK(ccm_window_on_get_property_async), 
-								 self);
-		g_signal_connect_swapped(property, "error", 
-								 G_CALLBACK(ccm_window_on_property_async_error), 
-								 self);
-		self->priv->properties_pending = 
-				g_slist_prepend (self->priv->properties_pending, property);
-	}
+	g_signal_connect_swapped(property, "reply", 
+							 G_CALLBACK(ccm_window_on_get_property_async), 
+							 self);
+	g_signal_connect_swapped(property, "error", 
+							 G_CALLBACK(ccm_window_on_property_async_error), 
+							 self);
+	self->priv->properties_pending = 
+			g_slist_prepend (self->priv->properties_pending, property);
 }
 
 static gchar*
