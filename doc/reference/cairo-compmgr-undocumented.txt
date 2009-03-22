@@ -1,13 +1,13 @@
-25% symbol docs coverage.
-70 symbols documented.
+26% symbol docs coverage.
+72 symbols documented.
 3 symbols incomplete.
-205 not documented.
+208 not documented.
 
 
 CCMDisplay
+CCMDisplay::cursor-changed
 CCMDisplay::damage-event
 CCMDisplay::event
-CCMDisplay::xfixes-cursor-event
 CCMDrawable
 CCMImage
 CCMKeybind
@@ -20,6 +20,9 @@ CCMPreferencesPage::plugin-state-changed
 CCMPreferencesPagePlugin
 CCMRegion
 CCMScreen
+CCMScreen::activate-window-notify
+CCMScreen::enter-window-notify
+CCMScreen::leave-window-notify
 CCMScreen::plugins-changed
 CCMScreen::refresh-rate-changed
 CCMScreen::window-destroyed

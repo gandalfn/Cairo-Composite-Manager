@@ -39,6 +39,30 @@ CCMScreen
 </para>
 
 
+<!-- ##### SIGNAL CCMScreen::activate-window-notify ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMScreen::enter-window-notify ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMScreen::leave-window-notify ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
+
 <!-- ##### SIGNAL CCMScreen::plugins-changed ##### -->
 <para>
 

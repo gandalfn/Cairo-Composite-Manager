@@ -36,3 +36,7 @@ plugins/vala-test/ccm-vala-window-plugin.plugin.desktop.in
 plugins/vala-test/ccm-vala-window-plugin.schema-key.in
 src/cairo-compmgr.c
 src/ccm-tray-menu.c
+lib/ccm-config-entry-shortcut.c
+plugins/freeze/ccm-freeze.ui
+plugins/mosaic/ccm-mosaic.ui
+plugins/opacity/ccm-opacity.ui

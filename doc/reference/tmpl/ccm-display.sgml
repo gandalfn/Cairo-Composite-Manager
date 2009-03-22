@@ -31,6 +31,14 @@ CCMDisplay
 </para>
 
 
+<!-- ##### SIGNAL CCMDisplay::cursor-changed ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
 <!-- ##### SIGNAL CCMDisplay::damage-event ##### -->
 <para>
 
@@ -40,14 +48,6 @@ CCMDisplay
 @arg1: 
 
 <!-- ##### SIGNAL CCMDisplay::event ##### -->
-<para>
-
-</para>
-
-@ccmdisplay: the object which received the signal.
-@arg1: 
-
-<!-- ##### SIGNAL CCMDisplay::xfixes-cursor-event ##### -->
 <para>
 
 </para>

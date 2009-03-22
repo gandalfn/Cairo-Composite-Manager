@@ -53,6 +53,19 @@ CCMWindow
 @ccmwindow: the object which received the signal.
 @arg1: 
 
+<!-- ##### SIGNAL CCMWindow::redirect-input ##### -->
+<para>
+
+</para>
+
+@ccmwindow: the object which received the signal.
+@arg1: 
+
+<!-- ##### ARG CCMWindow:block-mouse-redirect-event ##### -->
+<para>
+
+</para>
+
 <!-- ##### ARG CCMWindow:child ##### -->
 <para>
 

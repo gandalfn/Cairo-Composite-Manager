@@ -1,3 +1,15 @@
+Overview of Changes in Cairo Composite Manager 0.2.92
+====================================
+
+* Add settings UI page for plugins except magnifier
+* Add cursor redirect paint API
+* Fix some death window steal on screen
+* Mosaic plugin click on window activate it, shadow window when cursor is not
+  over them.
+* Magnifier plugin use latest cursor redirect API to draw pointer.
+* Fix some crash on enable/disable ccm
+* Fix some memery leak.
+
 Overview of Changes in Cairo Composite Manager 0.2.91
 ====================================
 

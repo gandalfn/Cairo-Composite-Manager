@@ -22,6 +22,14 @@
 @ccmdisplay: the object which received the signal.
 @arg1: 
 
+<!-- ##### SIGNAL CCMDisplay::xfixes-cursor-event ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
 <!-- ##### FUNCTION ccm_display_get_device_button_press_type ##### -->
 <para>
 

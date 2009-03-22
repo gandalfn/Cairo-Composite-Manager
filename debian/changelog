@@ -1,3 +1,18 @@
+cairo-compmgr (0.2.92-0ubuntu1~ppa1) intrepid; urgency=low
+
+  * New upstream release.
+  * Add settings UI page for plugins except magnifier
+  * Add cursor redirect paint API
+  * Fix some death window steal on screen
+  * Mosaic plugin click on window activate it, shadow window when cursor
+    is not
+  *   over them.
+  * Magnifier plugin use latest cursor redirect API to draw pointer.
+  * Fix some crash on enable/disable ccm
+  * Fix some memery leak.
+
+ -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Sun, 22 Mar 2009 14:55:42 +0100
+
 cairo-compmgr (0.2.91-0ubuntu1~ppa1) intrepid; urgency=low
 
   * New upstream release.
