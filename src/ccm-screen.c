@@ -1553,13 +1553,10 @@ ccm_screen_paint_cursor(CCMScreen* self, cairo_t* ctx)
 	g_return_if_fail(self != NULL);
 	g_return_if_fail(ctx != NULL);
 
-	if (self->priv->cursor_x >= 0 && self->priv->cursor_y >= 0 && 
-	    self->priv->damaged)
-	{
+	if (self->priv->cursor_x >= 0 && self->priv->cursor_y >= 0)
 		ccm_screen_plugin_paint_cursor (self->priv->plugin, self, ctx,
 				                        self->priv->cursor_x, 
 				                        self->priv->cursor_y);
-	}
 }
 
 static void
@@ -1625,11 +1622,10 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 		
 		if (ccm_screen_plugin_paint(self->priv->plugin, self, 
 									self->priv->ctx))
-		{
-			ccm_screen_paint_cursor(self, self->priv->ctx);
-	
+		{	
 			if (self->priv->damaged)
 			{
+				ccm_screen_paint_cursor(self, self->priv->ctx);
 				ccm_drawable_flush_region (CCM_DRAWABLE(self->priv->cow),
 										   self->priv->damaged);
 				ccm_region_destroy(self->priv->damaged);

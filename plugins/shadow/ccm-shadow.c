@@ -1085,7 +1085,7 @@ ccm_shadow_window_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* window,
 {
 	CCMShadow* self = CCM_SHADOW(plugin);
        
-    if (self->priv->geometry) 
+    if (self->priv->geometry && area) 
 	{
 		CCMRegion* opaque = ccm_region_copy(self->priv->geometry);
 		

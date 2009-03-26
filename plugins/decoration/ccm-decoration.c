@@ -22,6 +22,7 @@
 
 #include <X11/Xatom.h>
 
+#include "ccm-debug.h"
 #include "ccm-cairo-utils.h"
 #include "ccm-drawable.h"
 #include "ccm-config.h"
@@ -272,7 +273,8 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		ccm_region_destroy(self->priv->opaque);
 	self->priv->opaque = NULL;
 	
-	g_object_set(self->priv->window, "mask", mask, NULL);
+	g_object_set(self->priv->window, "mask", mask, 
+	             "mask_width", 0, "mask_height", 0, NULL);
 		
 	ccm_window_get_frame_extends(self->priv->window, &self->priv->left,
 								 &self->priv->right, &self->priv->top,
@@ -326,18 +328,25 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		clipbox.y += self->priv->top;
 		clipbox.width -= self->priv->left + self->priv->right;
 		clipbox.height -= self->priv->top + self->priv->bottom;
-		self->priv->opaque = ccm_region_rectangle(&clipbox);
+
+		if (clipbox.width > 0 && clipbox.height > 0)
+			self->priv->opaque = ccm_region_rectangle(&clipbox);
 				
 		decoration = ccm_region_copy(self->priv->geometry);
-		tmp = ccm_region_rectangle(&clipbox);
-		ccm_region_subtract(decoration, tmp);
-		ccm_region_destroy(tmp);
+
+		if (pattern)
+		{
+			cairo_set_source(ctx, pattern);
+		}
+		else
+		{
+			cairo_set_source_rgba(ctx, 1, 1, 1, self->priv->opacity * opacity);
+			tmp = ccm_region_rectangle(&clipbox);
+			ccm_region_subtract(decoration, tmp);
+			ccm_region_destroy(tmp);
+		}
 		
 		ccm_region_get_rectangles(decoration, &rects, &nb_rects);
-		if (pattern)
-			cairo_set_source(ctx, pattern);
-		else
-			cairo_set_source_rgba(ctx, 1, 1, 1, self->priv->opacity * opacity);
 		
 		for (cpt = 0; cpt < nb_rects; ++cpt)
 			cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y, 
@@ -346,11 +355,14 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		cairo_fill(ctx);
 		if (pattern) cairo_pattern_destroy(pattern);
 		ccm_region_destroy(decoration);
-		
-		cairo_set_source_rgba(ctx, 1, 1, 1, opacity);
-		cairo_rectangle(ctx, clipbox.x, clipbox.y, 
-						clipbox.width, clipbox.height);
-		cairo_fill(ctx);
+
+		if (clipbox.width > 0 && clipbox.height > 0)
+		{
+			cairo_set_source_rgba(ctx, 1, 1, 1, opacity);
+			cairo_rectangle(ctx, clipbox.x, clipbox.y, 
+							clipbox.width, clipbox.height);
+			cairo_fill(ctx);
+		}
 		
 		cairo_destroy(ctx);
 	}
@@ -386,12 +398,14 @@ ccm_decoration_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	gboolean ret = FALSE;
 	cairo_surface_t* mask = NULL;
 	
-	if (self->priv->geometry && self->priv->opaque)
+	if (self->priv->geometry)
 	{
 		CCMRegion* decoration = ccm_region_copy(self->priv->geometry);
 		CCMRegion* damaged = NULL;
+
+		if (self->priv->opaque)
+			ccm_region_subtract(decoration, self->priv->opaque);
 		
-		ccm_region_subtract(decoration, self->priv->opaque);
 		g_object_get(G_OBJECT(window), "damaged", &damaged, NULL);
 		if (damaged)
 		{
@@ -427,15 +441,19 @@ ccm_decoration_window_set_opaque_region(CCMWindowPlugin* plugin,
 {
 	CCMDecoration* self = CCM_DECORATION(plugin);
        
-    if (self->priv->opaque) 
+    if (self->priv->geometry) 
 	{
-		CCMRegion* opaque = ccm_region_copy(self->priv->opaque);
+		CCMRegion* opaque = NULL;
 		
-		ccm_region_intersect (opaque, (CCMRegion*)area);
+		if (self->priv->opaque && area)
+		{ 
+			opaque = ccm_region_copy(self->priv->opaque);   
+			ccm_region_intersect (opaque, (CCMRegion*)area);
+		}
 	
 		ccm_window_plugin_set_opaque_region (CCM_WINDOW_PLUGIN_PARENT(plugin), 
 											 window, opaque);
-		ccm_region_destroy (opaque);
+		if (opaque) ccm_region_destroy (opaque);
 	}
 	else
 		ccm_window_plugin_set_opaque_region (CCM_WINDOW_PLUGIN_PARENT(plugin), 

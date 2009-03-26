@@ -691,6 +691,24 @@ create_atoms(CCMWindow* self)
 	}
 }
 
+static GSList*
+ccm_window_get_state_atom_list(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	GSList* list = NULL;
+
+	list = g_slist_prepend(list, (gpointer)CCM_WINDOW_GET_CLASS(self)->state_shade_atom);
+	list = g_slist_prepend(list, (gpointer)CCM_WINDOW_GET_CLASS(self)->state_fullscreen_atom);
+	list = g_slist_prepend(list, (gpointer)CCM_WINDOW_GET_CLASS(self)->state_above_atom);
+	list = g_slist_prepend(list, (gpointer)CCM_WINDOW_GET_CLASS(self)->state_below_atom);
+	list = g_slist_prepend(list, (gpointer)CCM_WINDOW_GET_CLASS(self)->state_skip_taskbar);
+	list = g_slist_prepend(list, (gpointer)CCM_WINDOW_GET_CLASS(self)->state_skip_pager);
+	list = g_slist_prepend(list, (gpointer)CCM_WINDOW_GET_CLASS(self)->state_is_modal);
+	
+	return list;
+}
+
 static void
 ccm_window_get_property_async(CCMWindow* self, Atom property_atom, 
 							  Atom req_type, long length)
@@ -1385,15 +1403,15 @@ impl_ccm_window_set_opaque_region(CCMWindowPlugin* plugin, CCMWindow* self,
 {
 	g_return_if_fail(plugin != NULL);
 	g_return_if_fail(self != NULL);
-	g_return_if_fail(area != NULL);
+	
+	ccm_window_set_alpha(self);
 
-	if (!ccm_region_empty((CCMRegion*)area))
+	if (area && !ccm_region_empty((CCMRegion*)area))
 	{
 		cairo_matrix_t transform = 
 			ccm_drawable_get_transform(CCM_DRAWABLE(self));
 		cairo_rectangle_t clipbox;
 		
-		ccm_window_set_alpha(self);
 		self->priv->orig_opaque = ccm_region_copy((CCMRegion*)area);
 		self->priv->opaque = ccm_region_copy((CCMRegion*)area);
 		if (ccm_drawable_get_device_geometry_clipbox(CCM_DRAWABLE(self),
@@ -1628,17 +1646,18 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 		{
 			Atom *atom = (Atom *) result;
 			gulong cpt;
-			gboolean updated = FALSE;
-			
+			GSList* item, *list = ccm_window_get_state_atom_list(self);
+
 			for (cpt = 0; cpt < n_items; ++cpt)
 			{
-				updated |= ccm_window_set_state (self, atom[cpt]);
+				list = g_slist_remove(list, (gpointer)atom[cpt]);
+				ccm_window_set_state (self, atom[cpt]);
 			}
-			if (updated) 
+			for (item = list; item; item = item->next)
 			{
-				g_signal_emit(self, signals[PROPERTY_CHANGED], 0,
-							  CCM_PROPERTY_STATE);
+				ccm_window_unset_state (self, (Atom)item->data);
 			}
+			g_slist_free(list);
 		}
 	}
 	else if (property == CCM_WINDOW_GET_CLASS(self)->opacity_atom)
@@ -2133,6 +2152,9 @@ ccm_window_set_state(CCMWindow* self, Atom state_atom)
 		updated = old != self->priv->keep_below;
 		ccm_debug_window(self, "KEEP_BELOW %i", self->priv->keep_below);
 	}
+
+	if (updated) 
+		g_signal_emit(self, signals[PROPERTY_CHANGED], 0, CCM_PROPERTY_STATE);
 	
 	return updated;
 }
@@ -2773,7 +2795,6 @@ void
 ccm_window_set_opaque_region(CCMWindow* self, const CCMRegion* region)
 {
 	g_return_if_fail(self != NULL);
-	g_return_if_fail(region != NULL);
 	
 	ccm_window_plugin_set_opaque_region (self->priv->plugin, self, region);
 }
