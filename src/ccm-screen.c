@@ -1625,7 +1625,9 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 		{	
 			if (self->priv->damaged)
 			{
-				ccm_screen_paint_cursor(self, self->priv->ctx);
+				if (self->priv->manage_cursor)
+					ccm_screen_paint_cursor(self, self->priv->ctx);
+				
 				ccm_drawable_flush_region (CCM_DRAWABLE(self->priv->cow),
 										   self->priv->damaged);
 				ccm_region_destroy(self->priv->damaged);
@@ -2526,6 +2528,7 @@ ccm_screen_damage_region(CCMScreen* self, const CCMRegion* area)
 			ccm_window_is_viewable (item->data))
 		{
 			ccm_drawable_damage_region (item->data, area);
+			break;
 		}
 	}
 }

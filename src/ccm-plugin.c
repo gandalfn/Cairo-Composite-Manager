@@ -239,7 +239,7 @@ ccm_plugin_get_parent(CCMPlugin* self)
 {
 	g_return_val_if_fail(self != NULL, NULL);
 	
-	GObject* val; g_object_get(self, "parent", &val, NULL); return val;
+	return self->priv->parent;
 }
 
 void 
