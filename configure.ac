@@ -1,6 +1,6 @@
 m4_define(ccm_version_major, 0)
 m4_define(ccm_version_minor, 2)
-m4_define(ccm_version_micro, 93)
+m4_define(ccm_version_micro, 94)
 AC_INIT(cairo-compmgr, ccm_version_major.ccm_version_minor.ccm_version_micro)
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
@@ -74,6 +74,7 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         xdamage,
         xext,
         xi,
+        sm,
         cairo >= $CAIRO_REQUIRED,
         pixman-1 >= $PIXMAN_REQUIRED,
         gtk+-2.0 >= $GTK_REQUIRED])

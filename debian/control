@@ -5,7 +5,7 @@ Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
 XSBC-Original-Maintainer: Nicolas Bruguier <gandalfn@club-internet.fr>
 Build-Depends: debhelper (>= 5.0.37), cdbs, autotools-dev, patchutils, intltool, gnome-pkg-tools, libgtk2.0-dev, libgconf2-dev, 
   libxcomposite-dev, libxdamage-dev, libxext-dev, libcairo2-dev, libglitz1-dev, libglitz-glx1-dev, libpixman-1-dev, libgtop2-dev, 
-  valac, libvala-dev, gtk-doc-tools
+  valac, libvala-dev, gtk-doc-tools, libsm-dev
 Standards-Version: 3.8.0
 
 Package: cairo-compmgr

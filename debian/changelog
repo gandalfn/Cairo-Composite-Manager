@@ -1,3 +1,12 @@
+cairo-compmgr (0.2.94-0ubuntu1~ppa1) brownie; urgency=low
+
+  * New upstream release.
+  * Fix window shade issue
+  * Some performance improvements
+  * Add session management support
+
+ -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Fri, 27 Mar 2009 18:17:56 +0100
+
 cairo-compmgr (0.2.93-0ubuntu1~ppa1) intrepid; urgency=low
 
   * New upstream release.

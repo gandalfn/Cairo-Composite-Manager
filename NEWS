@@ -1,3 +1,10 @@
+Overview of Changes in Cairo Composite Manager 0.2.94
+====================================
+
+* Fix window shade issue
+* Some performance improvements
+* Add session management support
+
 Overview of Changes in Cairo Composite Manager 0.2.93
 ====================================
 

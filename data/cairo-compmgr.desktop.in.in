@@ -8,3 +8,6 @@ Terminal=false
 Type=Application
 StartupNotify=false
 Categories=GNOME;GTK;System;
+X-GNOME-Autostart-Phase=Desktop
+X-GNOME-Autostart-Notify=true
+X-GNOME-AutoRestart=true

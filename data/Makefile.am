@@ -54,10 +54,13 @@ DESKTOP_FILES =$(DESKTOP_IN_FILES:.desktop.in=.desktop)
 desktopdir = $(datadir)/applications
 desktop_DATA = $(DESKTOP_FILES)
 
+gladecatalog_DATA =
+noinst_DATA =
+
 if ENABLE_GLADE
-gladecatalog_DATA = cairo-compmgr.xml
+gladecatalog_DATA += cairo-compmgr.xml
 else
-noinst_DATA = cairo-compmgr.xml
+noinst_DATA += cairo-compmgr.xml
 endif
 
 EXTRA_DIST = cairo-compmgr.desktop.in \
@@ -65,7 +68,8 @@ EXTRA_DIST = cairo-compmgr.desktop.in \
              $(ui_DATA) \
 			 $(pkgconfig_DATA) \
 			 $(pixmaps_DATA) \
-             $(gladecatalog_DATA)
+             $(gladecatalog_DATA) \
+             $(noinst_DATA)
 
 CLEANFILES = $(schemakey_DATA) \
              $(pkgconfig_DATA) \

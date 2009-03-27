@@ -8,7 +8,8 @@ INCLUDES = \
 	-DPACKAGE_PLUGIN_DIR=\""$(libdir)/cairo-compmgr"\" \
     -DPACKAGE_PIXMAP_DIR=\""$(datadir)/pixmaps/cairo-compmgr"\" \
 	-DPACKAGE_DATA_DIR=\""$(datadir)"\" \
-    -DUI_DIR=\""$(uidir)"\" $(CAIRO_COMPMGR_CFLAGS)
+    -DUI_DIR=\""$(uidir)"\" $(CAIRO_COMPMGR_CFLAGS) \
+    -DEGG_SM_CLIENT_BACKEND_XSMP
 
 if HAVE_XRENDER_BACKEND    
 INCLUDES += $(CCM_XRENDER_BACKEND_CFLAGS)
@@ -131,7 +132,13 @@ cairo_compmgr_SOURCES = \
     ccm-preferences-page.h \
     ccm-preferences-page.c \
     ccm-cursor.h \
-    ccm-cursor.c
+    ccm-cursor.c \
+    eggdesktopfile.c \
+    eggdesktopfile.h \
+    eggsmclient-private.h \
+    eggsmclient-xsmp.c \
+    eggsmclient.c \
+    eggsmclient.h
 	
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

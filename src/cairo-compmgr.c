@@ -31,6 +31,8 @@
 #include "ccm-config.h"
 #include "ccm-tray-icon.h"
 #include "ccm-extension-loader.h"
+#include "eggsmclient.h"
+#include "eggdesktopfile.h"
 
 #ifdef ENABLE_GOBJECT_INTROSPECTION
 #include <girepository.h>
@@ -86,7 +88,8 @@ main(gint argc, gchar **argv)
 	CCMTrayIcon* trayicon;
     GError* error = NULL;
     gchar* user_plugin_path = NULL;
-
+    EggSMClient *client;
+    
 #ifdef ENABLE_GCONF
     static gboolean use_gconf = FALSE;
 #endif
@@ -94,6 +97,7 @@ main(gint argc, gchar **argv)
     static gchar* gir_output = NULL;
 #endif
     
+    GOptionContext* option_context; 
     GOptionEntry options[] = 
     {
 #ifdef ENABLE_GCONF
@@ -115,14 +119,26 @@ main(gint argc, gchar **argv)
 	textdomain (GETTEXT_PACKAGE);
 #endif
     
-	signal(SIGSEGV, crash);
+    signal(SIGSEGV, crash);
+
+    g_type_init (); 
     
-    if (!gtk_init_with_args (&argc, &argv, NULL, options, NULL, &error)) 
+    egg_set_desktop_file(PACKAGE_DATA_DIR "/applications/cairo-compmgr.desktop");
+
+    option_context = g_option_context_new (_("- Cairo composite manager"));
+    g_option_context_add_group (option_context, gtk_get_option_group (TRUE));
+    g_option_context_add_group (option_context, egg_sm_client_get_option_group ());
+    g_option_context_add_main_entries(option_context, options, GETTEXT_PACKAGE);
+        
+    if (!g_option_context_parse (option_context, &argc, &argv, &error)) 
     {
 		g_print ("%s\n", error->message);
 		return 1;
 	}
 
+    client = egg_sm_client_get ();
+    egg_sm_client_set_mode (EGG_SM_CLIENT_MODE_NORMAL);
+    
 #ifdef ENABLE_GOBJECT_INTROSPECTION
     if (gir_output)
     {
