@@ -31,6 +31,7 @@
 #include "ccm-config.h"
 #include "ccm-tray-icon.h"
 #include "ccm-extension-loader.h"
+#include "ccm-preferences.h"
 #include "eggsmclient.h"
 #include "eggdesktopfile.h"
 
@@ -82,6 +83,12 @@ log_func(const gchar *log_domain, GLogLevelFlags log_level,
 	ccm_log_print_backtrace();
 }
 
+static void
+on_preferences_closed(CCMPreferences* pref, gpointer data)
+{
+    gtk_main_quit();
+}
+
 int
 main(gint argc, gchar **argv)
 {
@@ -89,7 +96,8 @@ main(gint argc, gchar **argv)
     GError* error = NULL;
     gchar* user_plugin_path = NULL;
     EggSMClient *client;
-    
+
+    static gboolean configure = FALSE;
 #ifdef ENABLE_GCONF
     static gboolean use_gconf = FALSE;
 #endif
@@ -100,6 +108,9 @@ main(gint argc, gchar **argv)
     GOptionContext* option_context; 
     GOptionEntry options[] = 
     {
+        { "configure", 'c', 0, G_OPTION_ARG_NONE, &configure,
+ 		  N_("Start cairo composite manager configuration tools"),
+ 		  NULL },
 #ifdef ENABLE_GCONF
         { "use-gconf", 'g', 0, G_OPTION_ARG_NONE, &use_gconf,
  		  N_("Force use gconf for configuration files"),
@@ -136,22 +147,7 @@ main(gint argc, gchar **argv)
 		return 1;
 	}
 
-    client = egg_sm_client_get ();
-    egg_sm_client_set_mode (EGG_SM_CLIENT_MODE_NORMAL);
-    
-#ifdef ENABLE_GOBJECT_INTROSPECTION
-    if (gir_output)
-    {
-        if (!g_irepository_dump (gir_output, &error))
-        {
-            g_print ("%s\n", error->message);
-            return 1;
-        }
-        return 0;
-    }
-#endif
-    
-	g_log_set_default_handler(log_func, NULL);
+    g_log_set_default_handler(log_func, NULL);
 
 #ifdef ENABLE_GCONF
     if (use_gconf)
@@ -166,6 +162,35 @@ main(gint argc, gchar **argv)
                                        PACKAGE);
     ccm_extension_loader_add_plugin_path (user_plugin_path);
     g_free(user_plugin_path);
+    
+    if (configure)
+    {
+        CCMPreferences* pref = ccm_preferences_new();
+        if (pref)
+        {
+            g_signal_connect(pref, "closed", 
+                             G_CALLBACK(on_preferences_closed), NULL);
+            
+            ccm_preferences_show(pref);
+            gtk_main();
+            return 0;
+        }
+    }
+    
+    client = egg_sm_client_get ();
+    egg_sm_client_set_mode (EGG_SM_CLIENT_MODE_NORMAL);
+    
+#ifdef ENABLE_GOBJECT_INTROSPECTION
+    if (gir_output)
+    {
+        if (!g_irepository_dump (gir_output, &error))
+        {
+            g_print ("%s\n", error->message);
+            return 1;
+        }
+        return 0;
+    }
+#endif
     
 	trayicon = ccm_tray_icon_new ();
 	gtk_main();

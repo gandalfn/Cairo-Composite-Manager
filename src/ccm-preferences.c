@@ -25,6 +25,14 @@
 #include "ccm-preferences.h"
 #include "ccm-preferences-page.h"
 
+enum
+{
+	CLOSED,
+    N_SIGNALS
+};
+
+static guint signals[N_SIGNALS] = { 0 };
+
 G_DEFINE_TYPE (CCMPreferences, ccm_preferences, G_TYPE_OBJECT);
 
 #define CCM_PREFERENCES_GET_PRIVATE(o)  \
@@ -81,6 +89,12 @@ ccm_preferences_class_init (CCMPreferencesClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 
 	g_type_class_add_private (klass, sizeof (CCMPreferencesPrivate));
+
+	signals[CLOSED] = g_signal_new ("closed",
+									G_OBJECT_CLASS_TYPE (object_class),
+									G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+									g_cclosure_marshal_VOID__VOID,
+									G_TYPE_NONE, 0);
 	
 	object_class->finalize = ccm_preferences_finalize;
 }
@@ -398,6 +412,7 @@ ccm_preferences_on_response(CCMPreferences* self, gint response,
 {
 	if (response != GTK_RESPONSE_DELETE_EVENT)
 		ccm_preferences_hide(self);
+	g_signal_emit(self, signals[CLOSED], 0);
 }
 
 CCMPreferences*
