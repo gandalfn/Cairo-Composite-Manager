@@ -575,6 +575,9 @@ create_atoms(CCMWindow* self)
 		klass->active_atom 	 	 = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 												"_NET_ACTIVE_WINDOW", 
 												False);
+		klass->root_pixmap_atom	 = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+												"_XROOTPMAP_ID", 
+												False);
 		klass->user_time_atom 	 = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 												"_NET_WM_USER_TIME", 
 												False);

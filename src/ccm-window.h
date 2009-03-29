@@ -52,6 +52,8 @@ struct _CCMWindowClass
 	
 	Atom			 active_atom;
     Atom             user_time_atom;
+
+	Atom			 root_pixmap_atom;
 	
 	Atom		 	 client_list_atom;
 	Atom		 	 client_stacking_list_atom;

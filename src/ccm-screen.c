@@ -103,6 +103,7 @@ enum
 	CCM_SCREEN_PLUGINS,
 	CCM_SCREEN_REFRESH_RATE,
 	CCM_SCREEN_INDIRECT,
+	CCM_SCREEN_USE_ROOT_BACKGROUND,
 	CCM_SCREEN_BACKGROUND,
 	CCM_SCREEN_COLOR_BACKGROUND,
 	CCM_SCREEN_BACKGROUND_X,
@@ -117,6 +118,7 @@ static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 	"plugins",
 	"refresh_rate",
 	"indirect",
+	"use_root_background",
 	"background",
 	"color_background",
 	"background_x",
@@ -577,7 +579,10 @@ static void
 ccm_screen_update_background (CCMScreen* self)
 {
 	g_return_if_fail(self != NULL);
-	
+
+	gboolean use_root_background =
+		ccm_config_get_boolean (self->priv->options[CCM_SCREEN_USE_ROOT_BACKGROUND], 
+							    NULL);
 	gchar* filename = 
 		ccm_config_get_string (self->priv->options[CCM_SCREEN_BACKGROUND], 
 							   NULL);
@@ -585,7 +590,22 @@ ccm_screen_update_background (CCMScreen* self)
 		ccm_config_get_color (self->priv->options[CCM_SCREEN_COLOR_BACKGROUND], 
 							  NULL);
 
-	if (filename && color)
+	if (use_root_background)
+	{
+		guint32* data = NULL;
+		guint n_items;
+		
+		data = ccm_window_get_property (self->priv->root, 
+		                                CCM_WINDOW_GET_CLASS(self->priv->root)->root_pixmap_atom, 
+		                                XA_PIXMAP, &n_items);
+		if (data)
+		{
+			self->priv->background = ccm_pixmap_new (CCM_DRAWABLE(self->priv->root),
+			                                         (Pixmap)*data);
+			g_free(data);
+		}
+	}
+	else if (filename && color)
 	{
 		cairo_t* ctx;
 		int x, y;
@@ -1621,7 +1641,7 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 		}
 		
 		if (ccm_screen_plugin_paint(self->priv->plugin, self, 
-									self->priv->ctx))
+									self->priv->ctx) || self->priv->damaged)
 		{	
 			if (self->priv->damaged)
 			{
@@ -1676,7 +1696,7 @@ impl_ccm_screen_damage(CCMScreenPlugin* plugin, CCMScreen* self,
 	
 	damage_above = ccm_region_copy(area);
 	damage_below = ccm_region_copy(area);
-	
+
 	ccm_debug_region(CCM_DRAWABLE(window), "ON_DAMAGE");
 	
 	// Substract opaque region of window to damage region below
@@ -2175,6 +2195,12 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 							          self->priv->active);
 				}
 			}
+			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->root_pixmap_atom)
+			{
+				g_object_unref(self->priv->background);
+				self->priv->background = NULL;
+				ccm_screen_damage (self);
+			}
 			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_stacking_list_atom ||
 					 property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->client_list_atom)
 			{
@@ -2296,6 +2322,13 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				CCMWindow* window = ccm_screen_find_window_or_child (self,
 													   client_event->window);
 				if (window) ccm_window_query_opacity (window, FALSE);
+			}
+			else if (client_event->message_type == 
+						CCM_WINDOW_GET_CLASS(self->priv->root)->root_pixmap_atom)
+			{
+				g_object_unref(self->priv->background);
+				self->priv->background = NULL;
+				ccm_screen_damage (self);
 			}
 		}
 		break;

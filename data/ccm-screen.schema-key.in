@@ -29,6 +29,11 @@ Type=bool
 Default=false
 _Description=Use indirect rendering.
 
+[use_root_background]
+Type=bool
+Default=true
+_Description=Use the default xset root pixmap.
+
 [background]
 Type=string
 Default=
