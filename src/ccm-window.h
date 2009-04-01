@@ -44,6 +44,8 @@ struct _CCMWindowClass
 {
 	CCMDrawableClass parent_class;
 
+	Atom			 ccm_atom;
+	
     Atom			 atom;
 	Atom			 none_atom;
 	Atom			 utf8_string_atom;

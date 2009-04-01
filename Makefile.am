@@ -1,4 +1,4 @@
-SUBDIRS = lib src tools plugins doc gir vapi data po
+SUBDIRS = lib src tools plugins test doc gir vapi data po
 
 doc: all
 	cd doc && $(MAKE) $(AM_MAKEFLAGS) doc

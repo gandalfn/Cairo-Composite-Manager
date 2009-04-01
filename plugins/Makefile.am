@@ -10,5 +10,6 @@ SUBDIRS = \
     decoration \
     snapshot \
     vala-test \
-    automate
+    automate \
+    clone
     

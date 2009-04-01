@@ -1,0 +1,7 @@
+[CCMPlugin]
+Plugin=ccm-clone
+Version=@VERSION@
+_Name=Clone
+_Description=Clone window or screen
+Backends=xrender;glitz
+Depends=

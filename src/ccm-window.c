@@ -563,6 +563,9 @@ create_atoms(CCMWindow* self)
 	{
 		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 		
+		klass->ccm_atom  	     = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
+												"_CCM_CLIENT_MESSAGE", False);
+
 		klass->atom  			 = XInternAtom (CCM_DISPLAY_XDISPLAY(display),
 												"ATOM", False);
 		

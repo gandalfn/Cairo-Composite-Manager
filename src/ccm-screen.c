@@ -41,6 +41,7 @@
 #include "ccm-extension-loader.h"
 #include "ccm-keybind.h"
 #include "ccm-timeline.h"
+#include "ccm-marshallers.h"
 
 #define DEFAULT_PLUGINS "opacity,fade,shadow,menu-animation,magnifier"
 
@@ -66,6 +67,7 @@ enum
 	ENTER_WINDOW_NOTIFY,
 	LEAVE_WINDOW_NOTIFY,
 	ACTIVATE_WINDOW_NOTIFY,
+	COMPOSITE_MESSAGE,
     N_SIGNALS
 };
 
@@ -561,6 +563,13 @@ ccm_screen_class_init (CCMScreenClass *klass)
 	                                                G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 	                                                g_cclosure_marshal_VOID__POINTER,
 	                                                G_TYPE_NONE, 1, G_TYPE_POINTER);
+
+	signals[COMPOSITE_MESSAGE] = g_signal_new ("composite-message",
+	                                           G_OBJECT_CLASS_TYPE (object_class),
+	                                           G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+	                                           ccm_cclosure_marshal_VOID__OBJECT_LONG_LONG_LONG,
+	                                           G_TYPE_NONE, 4, CCM_TYPE_WINDOW, G_TYPE_LONG, G_TYPE_LONG, 
+	                                           G_TYPE_LONG, G_TYPE_LONG);
 }
 
 static void
@@ -2268,8 +2277,19 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 			
 			ccm_debug_atom(self->priv->display, client_event->message_type, 
 						   "CLIENT MESSAGE");
-			
+
 			if (client_event->message_type == 
+							CCM_WINDOW_GET_CLASS(self->priv->root)->ccm_atom)
+			{
+				CCMWindow* window = ccm_screen_find_window_or_child (self,
+													   client_event->data.l[1]);
+				if (window)
+					g_signal_emit(self, signals[COMPOSITE_MESSAGE], 0, window, 
+					              client_event->data.l[0], 
+					              client_event->data.l[2], 
+					              client_event->data.l[3]);
+			}
+			else if (client_event->message_type == 
 							CCM_WINDOW_GET_CLASS(self->priv->root)->state_atom)
 			{
 				CCMWindow* window = ccm_screen_find_window_or_child (self,
