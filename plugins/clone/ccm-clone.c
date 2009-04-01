@@ -112,7 +112,32 @@ ccm_clone_add_output(CCMClone* self, CCMWindow* window,
 		CCMPixmap* output = ccm_pixmap_new_from_visual (screen, vinfo.visual, 
 		                                                xpixmap);
 		if (output)
+		{
+			const cairo_rectangle_t* area = ccm_window_get_area (window);
+			cairo_rectangle_t clipbox, geometry;
+			cairo_t* ctx;
+			
+			ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE(window), 
+			                                          &geometry);
 			self->priv->outputs = g_slist_prepend(self->priv->outputs, output);
+			ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(output), &clipbox);
+
+			ctx = ccm_drawable_create_context (CCM_DRAWABLE(output));
+			if (ctx)
+			{
+				cairo_surface_t* surface = 
+					ccm_drawable_get_surface (CCM_DRAWABLE(window));
+				
+				cairo_scale(ctx, clipbox.width / area->width, 
+							clipbox.height / area->height);
+				cairo_set_source_surface(ctx, surface, 
+				                         -(geometry.width - area->width) / 2, 
+				                         -(geometry.height - area->height) / 2);
+				cairo_paint(ctx);
+				cairo_destroy(ctx);
+				cairo_surface_destroy(surface);
+			}
+		}
 	}
 }
 

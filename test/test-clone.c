@@ -24,7 +24,7 @@ static GdkWindow* clone_window = NULL;
 static Damage damage = None;
 int event_base;
 int error_base;
-int width, height;
+int width = 400, height = 400;
 
 void
 on_realize(GtkWidget* widget, gpointer data)
@@ -33,15 +33,19 @@ on_realize(GtkWidget* widget, gpointer data)
     GdkScreen* screen = gdk_screen_get_default();
     GdkWindow* root = gdk_screen_get_root_window(screen);
     GdkCursor* cursor = gdk_cursor_new_for_display(display, GDK_CROSSHAIR);
+    cairo_t* clone;
     
     XGrabPointer(GDK_DISPLAY_XDISPLAY(display), GDK_WINDOW_XWINDOW(root), False,
                  ButtonPressMask | ButtonReleaseMask, GrabModeSync,
                  GrabModeAsync, GDK_WINDOW_XWINDOW(root), 
                  GDK_CURSOR_XCURSOR(cursor), GDK_CURRENT_TIME);
 
-    gdk_drawable_get_size(GDK_DRAWABLE(widget->window), &width, &height);
     pixmap = gdk_pixmap_new(widget->window, width, height, -1);
-
+    clone = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+    cairo_set_operator(clone, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(clone);
+    cairo_destroy(clone);
+    
     XDamageQueryExtension (GDK_DISPLAY_XDISPLAY(display), 
                            &event_base, &error_base);
     
@@ -49,6 +53,7 @@ on_realize(GtkWidget* widget, gpointer data)
                            GDK_PIXMAP_XID(pixmap), 
                            XDamageReportBoundingBox);
     
+    gtk_window_resize(GTK_WINDOW(main_window), width, height);
 }
 
 gboolean
@@ -61,18 +66,24 @@ on_delete_event(GtkWidget* widget, GdkEvent* event, gpointer data)
 gboolean
 on_expose_event(GtkWidget* widget, GdkEventExpose* event, gpointer data)
 {
+    gboolean ret = FALSE;
+    
     if (clone_window)
     {
         cairo_t* clone = gdk_cairo_create(GDK_DRAWABLE(pixmap));
         cairo_t* ctx = gdk_cairo_create(GDK_DRAWABLE(widget->window));
-        
+
+        cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
+        cairo_paint(ctx);
+        cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
         cairo_set_source_surface(ctx, cairo_get_target(clone), 0, 0);
         cairo_paint(ctx);
         cairo_destroy(ctx);
         cairo_destroy(clone);
+        ret = TRUE;
     }
 
-    return FALSE;
+    return ret;
 }
 
 void
@@ -105,6 +116,7 @@ on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
         (event->width != width || event->height != height))
     {
         GdkDisplay* display = gdk_display_get_default();
+        cairo_t* ctx;
         
         width = event->width;
         height = event->height;
@@ -114,6 +126,11 @@ on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
         XDamageDestroy(GDK_DISPLAY_XDISPLAY(display), damage);
 
         pixmap = gdk_pixmap_new(widget->window, width, height, -1);
+        ctx = gdk_cairo_create(GDK_DRAWABLE(pixmap));
+        cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
+        cairo_paint(ctx);
+        cairo_destroy(ctx);
+
         damage = XDamageCreate(GDK_DISPLAY_XDISPLAY(display), 
                                    GDK_PIXMAP_XID(pixmap), 
                                    XDamageReportBoundingBox);
@@ -142,8 +159,8 @@ on_filter_event(XEvent* xevent, GdkEvent* event, gpointer data)
 
     if (xevent->type == event_base + XDamageNotify)
     {
-        gtk_widget_queue_draw(main_window);
         XDamageSubtract(xevent->xany.display, damage, None, None);
+        gtk_widget_queue_draw(main_window);
     }
     
     return GDK_FILTER_CONTINUE;
@@ -152,6 +169,7 @@ on_filter_event(XEvent* xevent, GdkEvent* event, gpointer data)
 gint
 main(gint argc, gchar** argv)
 {
+    GtkWidget* label;
     gtk_init(&argc, &argv);
 
     main_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -160,6 +178,10 @@ main(gint argc, gchar** argv)
     g_signal_connect(main_window, "expose-event", G_CALLBACK(on_expose_event), NULL);
     g_signal_connect(main_window, "configure-event", G_CALLBACK(on_configure_event), NULL);
 
+    label = gtk_label_new("Click on the window to clone");
+    gtk_widget_show(label);
+    gtk_container_add(GTK_CONTAINER(main_window), label);
+    
     gdk_window_add_filter(NULL, (GdkFilterFunc)on_filter_event, NULL);
 
     gtk_widget_set_app_paintable(main_window, TRUE);
