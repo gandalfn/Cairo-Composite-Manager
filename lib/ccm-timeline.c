@@ -29,7 +29,7 @@
 G_DEFINE_TYPE (CCMTimeline, ccm_timeline, G_TYPE_OBJECT);
 
 #define FPS_TO_INTERVAL(f)          (1000 / (f))
-#define CCM_TIMELINE_PRIORITY       (G_PRIORITY_DEFAULT)
+#define CCM_TIMELINE_PRIORITY       (G_PRIORITY_DEFAULT + 10)
 
 struct _CCMTimelinePrivate
 {
