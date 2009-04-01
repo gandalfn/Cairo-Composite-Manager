@@ -263,7 +263,8 @@ ccm_fade_get_duration(CCMFade* self)
 			ccm_config_set_float(self->priv->options[CCM_FADE_DURATION],
 								 self->priv->duration, NULL);
 		
-		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), refresh_rate);
+		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), 
+		                                        refresh_rate);
 	
 		g_signal_connect_swapped(self->priv->timeline, "new-frame", 
 								 G_CALLBACK(ccm_fade_on_new_frame), self);
