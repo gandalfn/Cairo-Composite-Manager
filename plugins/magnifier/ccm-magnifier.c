@@ -1125,7 +1125,6 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 		if (!ccm_region_empty (tmp)) 
 		{
 			cairo_t* ctx = cairo_create (self->priv->surface);
-			cairo_path_t* damaged_path;
 			cairo_matrix_t translate;
 			
 			ccm_debug_window(window, "MAGNIFIER PAINT WINDOW");
@@ -1145,9 +1144,8 @@ ccm_magnifier_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 										 -self->priv->y_offset);
 			
 			cairo_translate (ctx, -self->priv->x_offset, -self->priv->y_offset);
-			damaged_path = ccm_drawable_get_damage_path(CCM_DRAWABLE(window), ctx);
+			ccm_drawable_get_damage_path(CCM_DRAWABLE(window), ctx);
 			cairo_clip (ctx);
-			cairo_path_destroy (damaged_path);
 			
 			g_object_set(G_OBJECT(window), "redirect", FALSE, NULL);
 			ccm_drawable_push_matrix (CCM_DRAWABLE(window), 

@@ -939,17 +939,13 @@ ccm_drawable_create_context(CCMDrawable* self)
  * @context: #cairo_t 
  *
  * Get damaged path.
- *
- * Returns: #cairo_path_t
  **/
-cairo_path_t*
+void
 ccm_drawable_get_damage_path(CCMDrawable* self, cairo_t* context)
 {
-	g_return_val_if_fail (self != NULL, NULL);
-    g_return_val_if_fail (context != NULL, NULL);
+	g_return_if_fail (self != NULL);
+    g_return_if_fail (context != NULL);
 	
-	cairo_path_t* path = NULL;
-		
 	ccm_debug_region(self, "GET_DAMAGE_PATH");
 	if (self->priv->damaged && !ccm_region_empty(self->priv->damaged))
 	{
@@ -963,10 +959,7 @@ ccm_drawable_get_damage_path(CCMDrawable* self, cairo_t* context)
 							rectangles[cpt].width, rectangles[cpt].height);
 		}
 		g_free(rectangles);
-		path = cairo_copy_path(context);
 	}
-			
-	return path;
 }
 
 /**

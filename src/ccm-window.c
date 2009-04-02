@@ -971,10 +971,8 @@ ccm_window_get_attribs (CCMWindow* self)
 	CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	XWindowAttributes attribs;
 	
-	ccm_display_trap_error (display);
 	if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY(display), 
-							   CCM_WINDOW_XWINDOW(self), &attribs) ||
-		ccm_display_pop_error (display))
+							   CCM_WINDOW_XWINDOW(self), &attribs))
 	{
 		g_signal_emit(self, signals[ERROR], 0);
 		return FALSE;
@@ -2588,13 +2586,10 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 			if (surface)
 			{
 				ccm_debug_window(self, "PAINT");
-				cairo_path_t* damaged;
 			
 				cairo_save(context);
-				damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(self), 
-													   context);
+				ccm_drawable_get_damage_path(CCM_DRAWABLE(self), context);
 				cairo_clip(context);
-				cairo_path_destroy(damaged);
 				ret = ccm_window_plugin_paint(self->priv->plugin, self, 
 											  context, surface, y_invert);
 				cairo_surface_destroy(surface);

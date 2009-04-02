@@ -246,7 +246,7 @@ cairo_surface_t* ccm_drawable_get_surface           (CCMDrawable* self);
 cairo_t*	     ccm_drawable_create_context        (CCMDrawable* self);
 cairo_path_t*	 ccm_drawable_get_geometry_path     (CCMDrawable* self, 
 													 cairo_t* context);
-cairo_path_t*	 ccm_drawable_get_damage_path       (CCMDrawable* self, 
+void        	 ccm_drawable_get_damage_path       (CCMDrawable* self, 
 						                             cairo_t* context);
 void             ccm_drawable_push_matrix           (CCMDrawable* self,
                                                      gchar* key,

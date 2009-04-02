@@ -245,17 +245,13 @@ ccm_clone_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 				ctx = ccm_drawable_create_context (CCM_DRAWABLE(pixmap));
 				if (ctx)
 				{
-					cairo_path_t* damaged;
-					
 					ccm_debug("PAINT CLONE %x", CCM_PIXMAP_XPIXMAP(pixmap));
 					cairo_translate(ctx, -geometry.x, -geometry.y);
-					damaged = ccm_drawable_get_damage_path(CCM_DRAWABLE(window), 
-														   context);
+					ccm_drawable_get_damage_path(CCM_DRAWABLE(window), context);
 					cairo_clip(context);
 					cairo_translate(ctx, geometry.x, geometry.y);
 					cairo_scale(ctx, clipbox.width / area->width, 
 								clipbox.height / area->height);
-					cairo_path_destroy(damaged);
 					cairo_set_source_surface(ctx, surface, 
 					                         -(geometry.width - area->width) / 2, 
 					                         -(geometry.height - area->height) / 2);
