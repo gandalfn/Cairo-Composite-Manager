@@ -376,10 +376,8 @@ __ccm_drawable_query_geometry(CCMDrawable* self)
 					   self->priv->drawable, &root, 
 					   &x, &y, &width, &height,
 					   &bw, &self->priv->depth))
-    {
-		g_warning("Error on get drawable geometry");
-		return;
-    }
+    	return;
+
 	rectangle.x = (double)x;
 	rectangle.y = (double)y;
 	rectangle.width = (double)width;

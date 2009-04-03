@@ -1629,10 +1629,12 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 			{
 				cairo_rectangle_t* rects;
 				gint cpt, nb_rects;
-				cairo_surface_t* surface = ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->background));
+				cairo_surface_t* surface = 
+				 ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->background));
 				
 				cairo_save(self->priv->ctx);
-				ccm_region_get_rectangles (self->priv->root_damage, &rects, &nb_rects);
+				ccm_region_get_rectangles (self->priv->root_damage, 
+				                           &rects, &nb_rects);
 				for (cpt = 0; cpt < nb_rects; ++cpt)
 					cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
 									 rects[cpt].width, rects[cpt].height);

@@ -250,12 +250,15 @@ gboolean
 ccm_region_empty(CCMRegion* self)
 {
 	g_return_val_if_fail(self != NULL, TRUE);
-	
+
 	cairo_rectangle_t clipbox;
+
+	if (!pixman_region32_not_empty(&self->reg))
+		return TRUE;
+	
 	ccm_region_get_clipbox (self, &clipbox);
 	
-	return !pixman_region32_not_empty(&self->reg) || 
-		   clipbox.width  <= 0 || clipbox.height <= 0;
+	return clipbox.width  <= 0 || clipbox.height <= 0;
 }
 
 void

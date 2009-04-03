@@ -1460,12 +1460,11 @@ impl_ccm_window_get_pixmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	CCMDisplay *display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 	Pixmap xpixmap;
 	
-	ccm_display_trap_error (display);
 	ccm_display_grab(display);
 	xpixmap = XCompositeNameWindowPixmap(CCM_DISPLAY_XDISPLAY(display),
 										 CCM_WINDOW_XWINDOW(self));
 	ccm_display_ungrab(display);
-	if (xpixmap && !ccm_display_pop_error (display))
+	if (xpixmap)
 	{
 		if (self->priv->use_pixmap_image)
 		{
@@ -2959,15 +2958,14 @@ ccm_window_get_property(CCMWindow* self, Atom property_atom,
     gulong bytes_after;
     guint32 *result;
     
-	ccm_display_trap_error (display);
-    ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
+	ret = XGetWindowProperty (CCM_DISPLAY_XDISPLAY(display), 
 							  CCM_WINDOW_XWINDOW(self), property_atom, 
 							  0, G_MAXLONG, False,
 							  req_type, &type, &format,
 							  &n_items_internal, &bytes_after,
 							  &property);
     
-    if (ret != Success || ccm_display_pop_error (display))
+    if (ret != Success)
     {
 		ccm_debug("ERROR GET  PROPERTY = %i", ret);
 		if (property) XFree(property);
@@ -3009,7 +3007,7 @@ ccm_window_get_child_property(CCMWindow* self, Atom property_atom,
 							  &n_items_internal, &bytes_after,
 							  &property);
     
-    if (ret != Success || ccm_display_pop_error (display))
+    if (ret != Success)
     {
 		ccm_debug("ERROR GET  PROPERTY = %i", ret);
 		g_signal_emit(self, signals[ERROR], 0);
