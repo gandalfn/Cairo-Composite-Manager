@@ -49,9 +49,15 @@ cairo_surface_t* cairo_image_surface_blur (cairo_surface_t *surface,
 					   int              y,
 					   int              width,
 					   int              height);
+cairo_surface_t* cairo_image_surface_blur2 (cairo_surface_t *surface,
+					   double           radius,
+					   int              x,
+					   int              y,
+					   int              width,
+					   int              height);
 
-cairo_surface_t* cairo_blur_path(cairo_path_t* path, cairo_path_t* clip,
-                                 int border, double step, 
+cairo_surface_t* cairo_blur_path(cairo_surface_t* surface, cairo_path_t* path, 
+                                 cairo_path_t* clip, int border, double step, 
                                  double width, double height);
 				  
 #endif /* _CCM_CAIRO_UTILS_H_ */

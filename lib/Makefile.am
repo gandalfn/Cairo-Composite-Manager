@@ -28,6 +28,8 @@ libcairo_compmgr_la_SOURCES =  \
 	ccm-timeline.c \
 	ccm-timeout-pool.c \
 	ccm-timeout-pool.h \
+	ccm-timeout-interval.c \
+	ccm-timeout-interval.h \
 	ccm-cairo-utils.c \
 	ccm-cairo-utils.h \
 	ccm-config-key.h \
