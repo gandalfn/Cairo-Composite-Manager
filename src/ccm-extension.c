@@ -227,36 +227,19 @@ ccm_extension_get_version(CCMExtension* self)
 	return (const gchar*)self->priv->version;
 }
 
+const gchar**
+ccm_extension_get_backends(CCMExtension* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	
+	return (const gchar**)self->priv->backends;
+}
+
 GType
 ccm_extension_get_type_object (CCMExtension* self)
 {
 	g_return_val_if_fail(self != NULL, 0);
 	
-	//gint cpt;
-	//gboolean found = TRUE;
-	//GType backend = ccm_window_backend_get_type();
-	
-	/* Check if plugin support current backend */
-	/*for (cpt = 0; self->priv->backends && self->priv->backends[cpt]; ++cpt)
-	{
-#ifndef DISABLE_XRENDER_BACKEND
-		if (!g_ascii_strcasecmp("xrender", self->priv->backends[cpt]) &&
-			backend == CCM_TYPE_WINDOW_X_RENDER)
-		{
-			found = TRUE;
-			break;
-		}
-#endif
-#ifndef DISABLE_GLITZ_BACKEND
-		if (!g_ascii_strcasecmp("glitz", self->priv->backends[cpt]) &&
-			backend == CCM_TYPE_WINDOW_GLITZ)
-		{
-			found = TRUE;
-			break;
-		}
-#endif
-	}*/
-			
 	if (!self->priv->type && self->priv->get_type)
 		self->priv->type = self->priv->get_type(G_TYPE_MODULE(self));
 	

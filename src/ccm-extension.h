@@ -58,6 +58,7 @@ GType 		    ccm_extension_get_type_object 	(CCMExtension* self);
 const gchar*	ccm_extension_get_label			(CCMExtension* self);
 const gchar*    ccm_extension_get_description   (CCMExtension* self);
 const gchar*    ccm_extension_get_version       (CCMExtension* self);
+const gchar**   ccm_extension_get_backends		(CCMExtension* self);
 gint		    _ccm_extension_compare			(CCMExtension* self,
                                                  CCMExtension* other);
 
