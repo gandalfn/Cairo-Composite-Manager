@@ -81,7 +81,7 @@ struct _CCMDecorationPrivate
 	CCMRegion*		geometry;
 	CCMRegion*		opaque;
 	
-	int				id_check;
+	gboolean		locked;
 
 	GtkBuilder*		builder;
 	
@@ -106,7 +106,7 @@ ccm_decoration_init (CCMDecoration *self)
 	self->priv->opacity = 1.0;
 	self->priv->geometry = NULL;
 	self->priv->opaque = NULL;
-	self->priv->id_check = 0;
+	self->priv->locked = FALSE;
 	self->priv->builder = NULL;
 	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt) 
 		self->priv->options[cpt] = NULL;
@@ -215,7 +215,8 @@ ccm_decoration_on_property_changed(CCMDecoration* self, CCMPropertyType changed,
 {
 	if (self->priv->geometry && 
 		(changed == CCM_PROPERTY_OPACITY || 
-		 changed == CCM_PROPERTY_FRAME_EXTENDS))
+		 changed == CCM_PROPERTY_FRAME_EXTENDS) &&
+	    !self->priv->locked)
 	{
 		ccm_decoration_create_mask(self);
 	}
@@ -224,7 +225,8 @@ ccm_decoration_on_property_changed(CCMDecoration* self, CCMPropertyType changed,
 static void
 ccm_decoration_on_opacity_changed(CCMDecoration* self, CCMWindow* window)
 {
-	if (self->priv->geometry)
+	if (self->priv->geometry &&
+	    !self->priv->locked)
 	{
 		ccm_decoration_create_mask(self);
 	}
@@ -269,6 +271,8 @@ ccm_decoration_create_mask(CCMDecoration* self)
 	
 	cairo_surface_t* mask = NULL;
 
+	ccm_debug("CREATE MASK");
+	
 	if (self->priv->opaque)
 		ccm_region_destroy(self->priv->opaque);
 	self->priv->opaque = NULL;
@@ -451,6 +455,49 @@ ccm_decoration_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	return ret;
 }
 
+static void
+ccm_decoration_on_map_unmap_unlocked(CCMDecoration* self)
+{
+	ccm_debug("UNLOCK");
+
+	self->priv->locked = FALSE;
+	ccm_decoration_create_mask(self);	
+}
+
+static void
+ccm_decoration_window_map(CCMWindowPlugin* plugin, CCMWindow* window)
+{
+	CCMDecoration* self = CCM_DECORATION(plugin);
+
+	ccm_debug("MAP");
+	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, 
+	                                   (CCMPluginUnlockFunc)ccm_decoration_on_map_unmap_unlocked, 
+	                                   self);
+	self->priv->locked = TRUE;
+
+	ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+
+	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, map);
+	ccm_window_plugin_map((CCMWindowPlugin*)window, window);
+}
+
+static void
+ccm_decoration_window_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
+{
+	CCMDecoration* self = CCM_DECORATION(plugin);
+
+	ccm_debug("UNMAP");
+	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap, 
+	                                   (CCMPluginUnlockFunc)ccm_decoration_on_map_unmap_unlocked, 
+	                                   self);
+	self->priv->locked = TRUE;
+
+	ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+
+	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, unmap);
+	ccm_window_plugin_unmap((CCMWindowPlugin*)window, window);
+}
+
 static void 
 ccm_decoration_window_set_opaque_region(CCMWindowPlugin* plugin, 
 										CCMWindow* window,
@@ -582,8 +629,8 @@ ccm_decoration_window_iface_init(CCMWindowPluginClass* iface)
 	iface->load_options 	 = ccm_decoration_window_load_options;
 	iface->query_geometry 	 = ccm_decoration_window_query_geometry;
 	iface->paint 			 = ccm_decoration_window_paint;
-	iface->map				 = NULL;
-	iface->unmap			 = NULL;
+	iface->map				 = ccm_decoration_window_map;
+	iface->unmap			 = ccm_decoration_window_unmap;
 	iface->query_opacity	 = NULL;
 	iface->move				 = ccm_decoration_window_move;
 	iface->resize			 = ccm_decoration_window_resize;
