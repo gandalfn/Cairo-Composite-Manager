@@ -164,6 +164,7 @@ Display*        ccm_display_get_xdisplay		          (CCMDisplay* self);
 CCMScreen*	    ccm_display_get_screen 			          (CCMDisplay* self, 
 				                    			           guint number);
 int		        ccm_display_get_shape_notify_event_type   (CCMDisplay* self);
+void            ccm_display_flush                         (CCMDisplay* self);
 void		    ccm_display_sync			              (CCMDisplay* self);
 void		    ccm_display_grab			              (CCMDisplay* self);
 void		    ccm_display_ungrab			              (CCMDisplay* self);
@@ -338,6 +339,8 @@ Window           ccm_window_redirect_event          (CCMWindow* self,
 void             ccm_window_activate                (CCMWindow* self, 
                                                      Time timestamp);
 GSList*          ccm_window_get_transients          (CCMWindow* self);
+gboolean         ccm_window_undamage_sibling        (CCMWindow* self);
+gboolean         ccm_window_has_redirect_input      (CCMWindow* self);
 /******************************************************************************/
 
 G_END_DECLS

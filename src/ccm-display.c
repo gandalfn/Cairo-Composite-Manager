@@ -836,11 +836,18 @@ ccm_display_report_device_event(CCMDisplay* self, CCMScreen* screen,
 }
 
 void
+ccm_display_flush(CCMDisplay* self)
+{
+	g_return_if_fail(self != NULL);
+
+	XFlush(self->priv->xdisplay);
+}
+	
+void
 ccm_display_sync(CCMDisplay* self)
 {
 	g_return_if_fail(self != NULL);
-	
-	XFlush(self->priv->xdisplay);
+
 	XSync(self->priv->xdisplay, FALSE);
 }
 
