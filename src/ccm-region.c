@@ -82,7 +82,7 @@ _ccm_region_print(CCMRegion* self)
 CCMRegion*
 ccm_region_new(void)
 {
-	CCMRegion* self = g_new0(CCMRegion, 1);
+	CCMRegion* self = g_slice_new (CCMRegion);
 	
 	pixman_region32_init(&self->reg);
 	
@@ -96,7 +96,7 @@ ccm_region_destroy(CCMRegion* self)
 	
 	pixman_region32_fini(&self->reg);
 	
-	g_free(self);
+	g_slice_free(CCMRegion, self);
 }
 
 CCMRegion*
