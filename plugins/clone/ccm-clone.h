@@ -47,6 +47,8 @@ struct _CCMCloneClass
 
 	Atom		   clone_enable_atom;
 	Atom		   clone_disable_atom;
+	Atom		   clone_screen_enable_atom;
+	Atom		   clone_screen_disable_atom;
 };
 
 typedef struct _CCMClonePrivate CCMClonePrivate;
