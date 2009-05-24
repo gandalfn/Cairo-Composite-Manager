@@ -28,6 +28,8 @@
 #include <glibtop/cpu.h>
 #include <glibtop/proctime.h>
 #include <glibtop/procmap.h>
+#define WNCK_I_KNOW_THIS_IS_UNSTABLE
+#include <libwnck/libwnck.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -81,7 +83,7 @@ struct _CCMPerfPrivate
 	guint				pcpu;
 		
 	guint64				mem_size;
-	guint64				mem_shared;
+	guint64				mem_xorg;
 	
 	gboolean			enabled;
 	gboolean			need_refresh;
@@ -109,7 +111,7 @@ ccm_perf_init (CCMPerf *self)
 	self->priv->cpu_time = 0;
 	self->priv->pcpu = 0;
 	self->priv->mem_size = 0;
-	self->priv->mem_shared = 0;
+	self->priv->mem_xorg = 0;
 	self->priv->enabled = FALSE;
 	self->priv->need_refresh = TRUE;
 	self->priv->timer = g_timer_new();
@@ -173,15 +175,15 @@ ccm_perf_get_pcpu(CCMPerf* self)
 	glibtop_cpu cpu;
 	
 	glibtop_get_cpu (&cpu);
-	self->priv->cpu_total = MAX(cpu.total - self->priv->last_cpu_total, 1);
-	self->priv->last_cpu_total = cpu.total;
-	if (self->priv->cpu_total > 90)
+	self->priv->cpu_total = (int)((float)(cpu.total - self->priv->last_cpu_total) / (float)cpu.frequency);
+	if (self->priv->cpu_total >= 1)
 	{
+		self->priv->last_cpu_total = cpu.total;
 		pid_t pid = getpid();
 		glibtop_proc_time proctime;
 	
 		glibtop_get_proc_time (&proctime, pid);
-		self->priv->pcpu = (proctime.rtime - self->priv->cpu_time) * 100 / self->priv->cpu_total;
+		self->priv->pcpu = (proctime.rtime - self->priv->cpu_time) / self->priv->cpu_total;
 		self->priv->pcpu = MIN(self->priv->pcpu, 100);
 		self->priv->cpu_time = proctime.rtime;
 	}
@@ -196,17 +198,25 @@ ccm_perf_get_mem_info(CCMPerf* self)
 	glibtop_map_entry *maps;
 	guint cpt;
 	pid_t pid = getpid();
-		
+	WnckResourceUsage xresources;
+	
 	self->priv->mem_size = 0;
-	self->priv->mem_shared = 0;
+	self->priv->mem_xorg = 0;
 
 	maps = glibtop_get_proc_map(&buf, pid);
 
 	for (cpt = 0; cpt < buf.number; ++cpt) {
 		self->priv->mem_size += maps[cpt].private_dirty;
-		self->priv->mem_shared += maps[cpt].shared_dirty;
 	}
 
+	wnck_xid_read_resource_usage (gdk_display_get_default(), 
+	                              _ccm_screen_get_selection_owner(self->priv->screen),
+	                              &xresources);
+	self->priv->mem_xorg = xresources.total_bytes_estimate;
+	wnck_pid_read_resource_usage (gdk_display_get_default(), pid,
+	                              &xresources);
+	self->priv->mem_xorg += xresources.total_bytes_estimate;
+	
 	g_free(maps);
 }
 
@@ -257,7 +267,7 @@ ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 		error = NULL;
 		self->priv->area.y = 20;
 	}
-	self->priv->area.width = 260;
+	self->priv->area.width = 280;
 	self->priv->area.height = 100;
 		
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
@@ -348,10 +358,10 @@ ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			g_free(text);
 			
 			ccm_perf_get_mem_info(self);
-			text = g_strdup_printf("Mem : %lli Kb", self->priv->mem_size / 1024);
+			text = g_strdup_printf("Mem : %li Kb", (glong)(self->priv->mem_size / 1024));
 			ccm_perf_show_text(self, context, text, 2);
 			g_free(text);
-			text = g_strdup_printf("Shared : %lli Kb", self->priv->mem_shared / 1024);
+			text = g_strdup_printf("XMem : %li Kb", (glong)(self->priv->mem_xorg / 1024));
 			ccm_perf_show_text(self, context, text, 3);
 			g_free(text);
 			
