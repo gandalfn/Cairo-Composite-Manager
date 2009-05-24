@@ -218,6 +218,7 @@ ccm_shadow_need_shadow(CCMShadow* self)
 	
 	return self->priv->force_enable ||
 		   (!self->priv->force_disable &&
+		    !ccm_window_is_fullscreen (window) &&
 		    !ccm_window_is_input_only (window) &&
 		    (ccm_window_is_decorated (window) || 
 		     (type != CCM_WINDOW_TYPE_NORMAL && 
@@ -256,7 +257,7 @@ ccm_shadow_check_needed(CCMShadow* self)
 		ccm_drawable_query_geometry(CCM_DRAWABLE(self->priv->window));
 		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 	}
-	else if (!self->priv->geometry)
+	else if (ccm_shadow_need_shadow(self) && !self->priv->geometry)
 	{
 		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
 		ccm_drawable_query_geometry(CCM_DRAWABLE(self->priv->window));
@@ -433,28 +434,31 @@ ccm_shadow_create_fake_shadow(CCMShadow* self)
 	cairo_surface_t* tmp;
 	cairo_t* cr;
 	CCMRegion* opaque = ccm_region_copy(self->priv->geometry);
-	CCMRegion* clip = ccm_region_copy(self->priv->geometry);
+	CCMRegion* clip;
 	cairo_rectangle_t* rects;
 	gint cpt, nb_rects;
 	cairo_rectangle_t clipbox;
 	cairo_path_t* path, *clip_path;
 	gint border = self->priv->radius * 2;
-
+	cairo_surface_t* surface = 
+		ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->shadow));
+	
 	ccm_region_get_clipbox(self->priv->geometry, &clipbox);
 	
 	ccm_region_offset(opaque, 
 					  -clipbox.x + self->priv->radius, 
 					  -clipbox.y + self->priv->radius);
-	
+
+	clip = ccm_region_rectangle (&clipbox);
 	ccm_region_resize(clip, clipbox.width + self->priv->radius * 2,
 					  clipbox.height + self->priv->radius * 2);
 	ccm_region_offset(clip, -clipbox.x, -clipbox.y);
 	ccm_region_subtract(clip, opaque);
 
 	// Create tmp surface for shadow
-	tmp = cairo_image_surface_create(CAIRO_FORMAT_A8, 
-									 clipbox.width + border, 
-									 clipbox.height + border);
+	tmp = cairo_surface_create_similar(surface, CAIRO_CONTENT_ALPHA,
+	                                   clipbox.width + border, 
+	                                   clipbox.height + border);
 	cr = cairo_create(tmp);
 	ccm_region_get_rectangles(clip, &rects, &nb_rects);
 	for (cpt = 0; cpt < nb_rects; ++cpt)
@@ -466,23 +470,23 @@ ccm_shadow_create_fake_shadow(CCMShadow* self)
 	ccm_region_destroy(clip);
 	cairo_new_path(cr);
 	
-	cairo_set_source_rgba(cr, 0, 0, 0, 1);
 	ccm_region_get_rectangles(opaque, &rects, &nb_rects);
 	for (cpt = 0; cpt < nb_rects; ++cpt)
 		cairo_rectangle(cr, rects[cpt].x, rects[cpt].y,
 						rects[cpt].width, rects[cpt].height);
 	
 	path = cairo_copy_path(cr);
-	g_free(rects);
+	if (rects) g_free(rects);
 	ccm_region_destroy(opaque);
 	cairo_destroy(cr);
 	cairo_surface_destroy(tmp);
 	
 	// Create shadow surface
-	self->priv->shadow_image = cairo_blur_path(path, clip_path,
+	self->priv->shadow_image = cairo_blur_path(surface, path, clip_path,
 											   self->priv->radius, 1, 
 											   clipbox.width + border, 
 											   clipbox.height + border);
+	cairo_surface_destroy(surface);
 	
 	cairo_path_destroy(path);
 	cairo_path_destroy(clip_path);
@@ -704,7 +708,7 @@ static void
 ccm_shadow_on_pixmap_destroyed(CCMShadow* self)
 {
 	g_return_if_fail (self != NULL);
-	
+
 	self->priv->shadow = NULL;
 }
 
@@ -712,20 +716,25 @@ static void
 ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
 {
 	g_return_if_fail (self != NULL);
-   
+			
 	if (self->priv->shadow)
 	{
-		CCMPixmap* pixmap = 
+	    CCMPixmap* pixmap = 
 			(CCMPixmap*)g_object_get_data(G_OBJECT(self->priv->shadow), 
 										  "CCMShadowPixmap");
-		cairo_surface_t* surface = 
-			ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
-		cairo_t* ctx = 
-			ccm_drawable_create_context(CCM_DRAWABLE(self->priv->shadow));
+		CCMDisplay* display = ccm_drawable_get_display (CCM_DRAWABLE(pixmap));
+		cairo_surface_t* surface;
+		cairo_t* ctx;
 		cairo_rectangle_t* rects;
 		gint cpt, nb_rects;
 		cairo_rectangle_t clipbox;
-				
+		
+		surface = ccm_drawable_get_surface(CCM_DRAWABLE(pixmap));
+		if (!surface) return;
+
+		ctx = ccm_drawable_create_context(CCM_DRAWABLE(self->priv->shadow));
+		if (!ctx) return;
+
 		ccm_region_get_clipbox(self->priv->geometry, &clipbox);
 			
 		if (!self->priv->shadow_image)
@@ -779,16 +788,7 @@ ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
 		}
 		cairo_destroy(ctx);
 		cairo_surface_destroy(surface);
-		if (area)
-		{
-			CCMRegion* tmp = ccm_region_copy(area);
-			ccm_region_offset(tmp, self->priv->radius, self->priv->radius);
-			ccm_drawable_flush_region(CCM_DRAWABLE(self->priv->shadow), tmp);
-			ccm_drawable_damage_region(CCM_DRAWABLE(self->priv->shadow), tmp);
-			ccm_region_destroy(tmp);
-		}
-		else
-			ccm_drawable_flush(CCM_DRAWABLE(self->priv->shadow));
+		ccm_display_flush(display);
 	}
 }
 
@@ -1129,7 +1129,7 @@ ccm_shadow_window_get_pixmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	pixmap = ccm_window_plugin_get_pixmap (CCM_WINDOW_PLUGIN_PARENT(plugin),
 										   window);
 
-	if (pixmap && self->priv->geometry)
+	if (pixmap && ccm_shadow_need_shadow(self) && self->priv->geometry)
 	{
 		gint swidth, sheight;
 		cairo_rectangle_t clipbox;
