@@ -56,6 +56,7 @@ struct _CCMScreen
 
 GType 			 ccm_screen_get_type			(void) G_GNUC_CONST;
 CCMScreenPlugin* _ccm_screen_get_plugin			(CCMScreen *self, GType type);
+Window			 _ccm_screen_get_selection_owner(CCMScreen *self);
 
 G_END_DECLS
 
