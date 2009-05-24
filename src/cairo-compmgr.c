@@ -95,9 +95,11 @@ main(gint argc, gchar **argv)
 	CCMTrayIcon* trayicon;
     GError* error = NULL;
     gchar* user_plugin_path = NULL;
+    EggDesktopFile* desktop;
     EggSMClient *client;
 
     static gboolean configure = FALSE;
+    static gboolean restart = FALSE;
 #ifdef ENABLE_GCONF
     static gboolean use_gconf = FALSE;
 #endif
@@ -108,6 +110,9 @@ main(gint argc, gchar **argv)
     GOptionContext* option_context; 
     GOptionEntry options[] = 
     {
+        { "restart", 'r', 0, G_OPTION_ARG_NONE, &restart,
+ 		  N_("Always restart cairo composite manager"),
+ 		  NULL },
         { "configure", 'c', 0, G_OPTION_ARG_NONE, &configure,
  		  N_("Start cairo composite manager configuration tools"),
  		  NULL },
@@ -176,6 +181,9 @@ main(gint argc, gchar **argv)
             return 0;
         }
     }
+
+    desktop = egg_get_desktop_file ();
+    egg_desktop_file_set_boolean (desktop, "X-GNOME-AutoRestart", restart);
     
     client = egg_sm_client_get ();
     egg_sm_client_set_mode (EGG_SM_CLIENT_MODE_NORMAL);
