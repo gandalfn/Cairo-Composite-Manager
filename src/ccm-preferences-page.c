@@ -520,7 +520,7 @@ ccm_preferences_page_on_composite_desktop_toggled(CCMPreferencesPage* self,
 		GSList* list = NULL;
 			
 		for (item = unmanaged; item; item = item->next)
-			if (self->priv->screen_num != (int)item->data)
+			if (self->priv->screen_num != GPOINTER_TO_INT(item->data))
 				list = g_slist_prepend(list, item->data);
 		g_slist_free(unmanaged);
 		ccm_config_set_integer_list 
@@ -530,7 +530,7 @@ ccm_preferences_page_on_composite_desktop_toggled(CCMPreferencesPage* self,
 	}
 	else
 	{
-		unmanaged = g_slist_prepend(unmanaged, (gpointer)self->priv->screen_num);
+		unmanaged = g_slist_prepend(unmanaged, GINT_TO_POINTER(self->priv->screen_num));
 		ccm_config_set_integer_list 
 			(self->priv->general_options[CCM_GENERAL_UNMANAGED_SCREEN], 
 			 unmanaged, NULL);
@@ -633,7 +633,7 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 		(self->priv->general_options[CCM_GENERAL_UNMANAGED_SCREEN], NULL);
 	
 	for (item = unmanaged; item; item = item->next)
-		not_active |= self->priv->screen_num == (int)item->data;
+		not_active |= self->priv->screen_num == GPOINTER_TO_INT(item->data);
 	g_slist_free(unmanaged);
 	gtk_toggle_button_set_active(button, !not_active);
 	
