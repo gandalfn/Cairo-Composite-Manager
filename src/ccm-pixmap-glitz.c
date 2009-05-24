@@ -113,7 +113,7 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 							 GLITZ_FORMAT_RED_SIZE_MASK |
 							 GLITZ_FORMAT_GREEN_SIZE_MASK |
 							 GLITZ_FORMAT_BLUE_SIZE_MASK |
-							 GLITZ_FORMAT_ALPHA_SIZE_MASK;
+							 GLITZ_FORMAT_DEPTH_SIZE_MASK;
 		
 		if (!visual ||
 			!ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(self), &geometry)) 
@@ -123,11 +123,12 @@ ccm_pixmap_glitz_create_gl_drawable(CCMPixmapGlitz* self)
 		tmp.color.red_size = 8;
 		tmp.color.green_size = 8;
 		tmp.color.blue_size = 8;
-		tmp.color.alpha_size = 8;
-		if (ccm_drawable_get_format(CCM_DRAWABLE(self)) == CAIRO_FORMAT_ARGB32)
+		tmp.depth_size = 0;
+
+		if (ccm_drawable_get_format (CCM_DRAWABLE(self)) == CAIRO_FORMAT_ARGB32)
 		{
-			tmp.depth = 32;
-			mask |= GLITZ_FORMAT_DEPTH_MASK;
+			tmp.color.alpha_size = 8;
+		    mask |= GLITZ_FORMAT_ALPHA_SIZE_MASK;
 		}
 		
 		format = glitz_glx_find_window_format (
