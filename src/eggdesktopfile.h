@@ -124,6 +124,9 @@ char     *egg_desktop_file_get_locale_string      (EggDesktopFile  *desktop_file
 gboolean  egg_desktop_file_get_boolean            (EggDesktopFile  *desktop_file,
 						   const char      *key,
 						   GError         **error);
+void      egg_desktop_file_set_boolean (EggDesktopFile  *desktop_file,
+                                        const char      *key,
+                                        gboolean        value);
 double    egg_desktop_file_get_numeric            (EggDesktopFile  *desktop_file,
 						   const char      *key,
 						   GError         **error);

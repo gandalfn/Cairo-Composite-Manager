@@ -411,6 +411,16 @@ egg_desktop_file_get_locale_string (EggDesktopFile  *desktop_file,
 				       error);
 }
 
+void
+egg_desktop_file_set_boolean (EggDesktopFile  *desktop_file,
+			      const char      *key,
+			      gboolean        value)
+{
+  return g_key_file_set_boolean (desktop_file->key_file,
+				 EGG_DESKTOP_FILE_GROUP, key,
+				 value);
+}
+
 gboolean
 egg_desktop_file_get_boolean (EggDesktopFile  *desktop_file,
 			      const char      *key,
