@@ -57,7 +57,7 @@ namespace CCM
 			long diff = (current.tv_sec * 1000000 + current.tv_usec) - 
 						(time.tv_sec * 1000000 + time.tv_usec);
 			
-			if (event.type == X.MotionNotify)
+			if (event.type == X.EventType.MotionNotify)
 			{
 				CCM.Action action = actions.last() != null ? actions.last().data : null;
 				bool insert = true;
@@ -78,7 +78,7 @@ namespace CCM
 					actions.append(action);
 				}
 			}
-			else if (event.type == X.ButtonPress)
+			else if (event.type == X.EventType.ButtonPress)
 			{
 				try
 				{
@@ -90,7 +90,7 @@ namespace CCM
 					CCM.debug(ex.message);
 				}
 			}
-			else if (event.type == X.ButtonRelease)
+			else if (event.type == X.EventType.ButtonRelease)
 			{
 				try
 				{

@@ -10,8 +10,8 @@ PLUGIN_VALA_SOURCES = \
     ccm-action-pointer-press.vala \
     ccm-action-pointer-release.vala \
     ccm-story-board.vala \
-	ccm-automate-dialog.vala \
-	ccm-automate.vala
+    ccm-automate-dialog.vala \
+    ccm-automate.vala
 	
 include $(top_srcdir)/plugin.make
 

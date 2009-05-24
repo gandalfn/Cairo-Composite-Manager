@@ -24,10 +24,9 @@ using GLib;
 using Gtk;
 using Cairo;
 using CCM;
-using X;
 using math;
 
-namespace CCM
+namespace CCM   
 {
     public class ActionPointerPress : CCM.ActionPointer
     {
