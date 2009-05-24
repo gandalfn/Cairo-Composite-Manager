@@ -177,7 +177,7 @@ ccm_opacity_change_opacity(CCMWindow* window, gfloat value)
 						(unsigned char *) &opacity, 1L);
 	}
 
-	ccm_display_sync(display);
+	ccm_display_flush(display);
 }
 
 static void
