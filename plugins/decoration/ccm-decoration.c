@@ -268,7 +268,7 @@ ccm_decoration_create_mask(CCMDecoration* self)
 	g_return_if_fail(self != NULL);
 	
 	cairo_surface_t* mask = NULL;
-	
+
 	if (self->priv->opaque)
 		ccm_region_destroy(self->priv->opaque);
 	self->priv->opaque = NULL;
@@ -291,7 +291,9 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		CCMRegion* decoration, *tmp;
 		cairo_surface_t* surface = 
 			ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->window));
-		
+		gboolean y_invert;
+
+		g_object_get(self->priv->window, "mask_y_invert", &y_invert, NULL);
 
 		ccm_region_get_clipbox(self->priv->geometry, &clipbox);
 		mask = cairo_surface_create_similar(surface, CAIRO_CONTENT_ALPHA,
@@ -303,6 +305,12 @@ ccm_decoration_create_mask(CCMDecoration* self)
 					 "mask_height", (int)clipbox.height, NULL);
 		
 		ctx = cairo_create(mask);
+		if (y_invert) 
+		{
+			cairo_scale(ctx, 1, -1);
+			cairo_translate (ctx, 0.0f, -clipbox.height);
+		}
+		cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
 		cairo_set_source_rgba(ctx, 0, 0, 0, 0);
 		cairo_paint(ctx);
 		
@@ -335,16 +343,13 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		decoration = ccm_region_copy(self->priv->geometry);
 
 		if (pattern)
-		{
 			cairo_set_source(ctx, pattern);
-		}
 		else
-		{
 			cairo_set_source_rgba(ctx, 1, 1, 1, self->priv->opacity * opacity);
-			tmp = ccm_region_rectangle(&clipbox);
-			ccm_region_subtract(decoration, tmp);
-			ccm_region_destroy(tmp);
-		}
+		
+		tmp = ccm_region_rectangle(&clipbox);
+		ccm_region_subtract(decoration, tmp);
+		ccm_region_destroy(tmp);
 		
 		ccm_region_get_rectangles(decoration, &rects, &nb_rects);
 		
@@ -374,16 +379,28 @@ ccm_decoration_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 	CCMDecoration* self = CCM_DECORATION(plugin);
 	CCMRegion* geometry = NULL;
 	
-	if (self->priv->geometry)
-		ccm_region_destroy(self->priv->geometry);
-	self->priv->geometry = NULL;
-
 	geometry = ccm_window_plugin_query_geometry(CCM_WINDOW_PLUGIN_PARENT(plugin), 
 												window);
-	if (geometry) 
+	if (geometry && !ccm_region_empty (geometry)) 
 	{
-		self->priv->geometry = ccm_region_copy(geometry);
-		ccm_decoration_create_mask(self);
+		if (self->priv->geometry)
+		{
+			cairo_rectangle_t old, new;
+
+			ccm_region_get_clipbox (geometry, &new);
+			ccm_region_get_clipbox (self->priv->geometry, &old);
+			if (new.width != old.width || new.height != old.height)
+			{
+				ccm_region_destroy(self->priv->geometry);
+				self->priv->geometry = NULL;
+			}
+		}
+		
+		if (!self->priv->geometry)
+		{
+			self->priv->geometry = ccm_region_copy(geometry);
+			ccm_decoration_create_mask(self);
+		}
 	}
 	
 	return geometry;
@@ -397,7 +414,7 @@ ccm_decoration_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	CCMDecoration* self = CCM_DECORATION(plugin);
 	gboolean ret = FALSE;
 	cairo_surface_t* mask = NULL;
-	
+
 	if (self->priv->geometry)
 	{
 		CCMRegion* decoration = ccm_region_copy(self->priv->geometry);
