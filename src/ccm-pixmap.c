@@ -282,6 +282,11 @@ ccm_pixmap_new (CCMDrawable* drawable, Pixmap xpixmap)
 						NULL);
 	
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+	if (!ccm_drawable_get_device_geometry (CCM_DRAWABLE(self)))
+	{
+		g_object_unref(self);
+		return NULL;
+	}
 	ccm_pixmap_register_damage(self);
 	if (!self->priv->damage)
 	{
@@ -320,6 +325,11 @@ ccm_pixmap_new_from_visual (CCMScreen* screen, Visual* visual, Pixmap xpixmap)
 						NULL);
 	
 	ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+	if (!ccm_drawable_get_device_geometry (CCM_DRAWABLE(self)))
+	{
+		g_object_unref(self);
+		return NULL;
+	}
 	ccm_pixmap_register_damage(self);
 	if (!self->priv->damage)
 	{
