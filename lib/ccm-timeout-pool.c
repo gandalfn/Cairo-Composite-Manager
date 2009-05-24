@@ -28,39 +28,40 @@
  */
 
 #include <gdk/gdk.h>
+
 #include "ccm-timeout-pool.h"
+#include "ccm-timeout-interval.h"
 
 typedef struct _CCMTimeout  CCMTimeout;
 typedef enum {
-  CCM_TIMEOUT_NONE   = 0,
-  CCM_TIMEOUT_READY  = 1 << 1
+	CCM_TIMEOUT_NONE   = 0,
+ 	CCM_TIMEOUT_READY  = 1 << 1
 } CCMTimeoutFlags;
 
 struct _CCMTimeout
 {
-  guint id;
-  CCMTimeoutFlags flags;
-  gint refcount;
+    guint id;
+    CCMTimeoutFlags flags;
+    gint refcount;
 
-  guint interval;
-  guint last_time;
+    CCMTimeoutInterval interval;
 
-  GSourceFunc func;
-  gpointer data;
-  GDestroyNotify notify;
+    GSourceFunc func;
+    gpointer data;
+    GDestroyNotify notify;
 };
 
 struct _CCMTimeoutPool
 {
-  GSource source;
+    GSource source;
 
-  guint next_id;
+    guint next_id;
 
-  GTimeVal start_time;
-  GList *timeouts, *dispatched_timeouts;
-  gint ready;
+    GTimeVal start_time;
+    GList *timeouts, *dispatched_timeouts;
+    gint ready;
 
-  guint id;
+    guint id;
 };
 
 #define TIMEOUT_READY(timeout)   (timeout->flags & CCM_TIMEOUT_READY)
@@ -75,167 +76,102 @@ static void ccm_timeout_pool_finalize     (GSource     *source);
 
 static GSourceFuncs ccm_timeout_pool_funcs =
 {
-  ccm_timeout_pool_prepare,
-  ccm_timeout_pool_check,
-  ccm_timeout_pool_dispatch,
-  ccm_timeout_pool_finalize
+    ccm_timeout_pool_prepare,
+    ccm_timeout_pool_check,
+    ccm_timeout_pool_dispatch,
+    ccm_timeout_pool_finalize
 };
 
 static gint
 ccm_timeout_sort (gconstpointer a,
                       gconstpointer b)
 {
-  const CCMTimeout *t_a = a;
-  const CCMTimeout *t_b = b;
-  gint comparison;
+    const CCMTimeout *t_a = a;
+    const CCMTimeout *t_b = b;
 
-  /* Keep 'ready' timeouts at the front */
-  if (TIMEOUT_READY (t_a))
+    /* Keep 'ready' timeouts at the front */
+    if (TIMEOUT_READY (t_a))
     return -1;
 
-  if (TIMEOUT_READY (t_b))
+    if (TIMEOUT_READY (t_b))
     return 1;
 
-  /* Otherwise sort by expiration time */
-  comparison = (t_a->last_time + t_a->interval)
-    - (t_b->last_time + t_b->interval);
-  if (comparison < 0)
-    return -1;
-
-  if (comparison > 0)
-    return 1;
-
-  return 0;
+    return _ccm_timeout_interval_compare_expiration (&t_a->interval,
+                                                   &t_b->interval);
 }
 
 static gint
 ccm_timeout_find_by_id (gconstpointer a,
                             gconstpointer b)
 {
-  const CCMTimeout *t_a = a;
+    const CCMTimeout *t_a = a;
 
-  return t_a->id == GPOINTER_TO_UINT (b) ? 0 : 1;
+    return t_a->id == GPOINTER_TO_UINT (b) ? 0 : 1;
 }
 
-static guint
-ccm_timeout_pool_get_ticks (CCMTimeoutPool *pool)
+static CCMTimeout *
+ccm_timeout_new (guint fps)
 {
-  GTimeVal time_now;
+    CCMTimeout *timeout;
 
-  g_source_get_current_time ((GSource *) pool, &time_now);
-  
-  return (time_now.tv_sec - pool->start_time.tv_sec) * 1000
-    + (time_now.tv_usec - pool->start_time.tv_usec) / 1000;
+    timeout = g_slice_new0 (CCMTimeout);
+    _ccm_timeout_interval_init (&timeout->interval, fps);
+    timeout->flags = CCM_TIMEOUT_NONE;
+    timeout->refcount = 1;
+
+    return timeout;
 }
 
 static gboolean
 ccm_timeout_prepare (CCMTimeoutPool *pool,
-                         CCMTimeout     *timeout,
-                         gint               *next_timeout)
+                     CCMTimeout     *timeout,
+                     gint           *next_timeout)
 {
-  guint now = ccm_timeout_pool_get_ticks (pool);
+    GTimeVal now;
 
-  /* If time has gone backwards or the time since the last frame is
-     greater than the two frames worth then reset the time and do a
-     frame now */
-  if (timeout->last_time > now || now - timeout->last_time
-      > timeout->interval * 2)
-    {
-      timeout->last_time = now - timeout->interval;
-      if (next_timeout)
-	*next_timeout = 0;
-      return TRUE;
-    }
-  else if (now - timeout->last_time >= timeout->interval)
-    {
-      if (next_timeout)
-	*next_timeout = 0;
-      return TRUE;
-    }
-  else
-    {
-      if (next_timeout)
-	*next_timeout = timeout->interval + timeout->last_time - now;
-      return FALSE;
-    }
+    g_source_get_current_time (&pool->source, &now);
+
+    return _ccm_timeout_interval_prepare (&now, &timeout->interval, 
+                                          next_timeout);
 }
-
-static gboolean
-ccm_timeout_dispatch (GSource        *source,
-                          CCMTimeout *timeout)
-{
-  gboolean retval = FALSE;
-
-  if (G_UNLIKELY (!timeout->func))
-    {
-      g_warning ("Timeout dispatched without a callback.");
-      return FALSE;
-    }
-
-  if (timeout->func (timeout->data))
-    {
-      timeout->last_time += timeout->interval;
-
-      retval = TRUE;
-    }
-
-  return retval;
-}
-
-static CCMTimeout *
-ccm_timeout_new (guint interval)
-{
-  CCMTimeout *timeout;
-
-  timeout = g_slice_new0 (CCMTimeout);
-  timeout->interval = interval;
-  timeout->flags = CCM_TIMEOUT_NONE;
-  timeout->refcount = 1;
-
-  return timeout;
-}
-
-/* ref and unref are always called under the main CCM lock, so there
- * is not need for us to use g_atomic_int_* API.
- */
 
 static CCMTimeout *
 ccm_timeout_ref (CCMTimeout *timeout)
 {
-  g_return_val_if_fail (timeout != NULL, timeout);
-  g_return_val_if_fail (timeout->refcount > 0, timeout);
+    g_return_val_if_fail (timeout != NULL, timeout);
+    g_return_val_if_fail (timeout->refcount > 0, timeout);
 
-  timeout->refcount += 1;
+    timeout->refcount += 1;
 
-  return timeout;
+    return timeout;
 }
 
 static void
 ccm_timeout_unref (CCMTimeout *timeout)
 {
-  g_return_if_fail (timeout != NULL);
-  g_return_if_fail (timeout->refcount > 0);
+    g_return_if_fail (timeout != NULL);
+    g_return_if_fail (timeout->refcount > 0);
 
-  timeout->refcount -= 1;
+    timeout->refcount -= 1;
 
-  if (timeout->refcount == 0)
+    if (timeout->refcount == 0)
     {
-      if (timeout->notify)
-        timeout->notify (timeout->data);
+        if (timeout->notify)
+            timeout->notify (timeout->data);
 
-      g_slice_free (CCMTimeout, timeout);
+        g_slice_free (CCMTimeout, timeout);
     }
 }
 
 static void
 ccm_timeout_free (CCMTimeout *timeout)
 {
-  if (G_LIKELY (timeout))
+    if (G_LIKELY (timeout))
     {
-      if (timeout->notify)
-        timeout->notify (timeout->data);
+        if (timeout->notify)
+            timeout->notify (timeout->data);
 
-      g_slice_free (CCMTimeout, timeout);
+        g_slice_free (CCMTimeout, timeout);
     }
 }
 
@@ -243,51 +179,51 @@ static gboolean
 ccm_timeout_pool_prepare (GSource *source,
                               gint    *next_timeout)
 {
-  CCMTimeoutPool *pool = (CCMTimeoutPool *) source;
-  GList *l = pool->timeouts;
+    CCMTimeoutPool *pool = (CCMTimeoutPool *) source;
+    GList *l = pool->timeouts;
 
-  /* the pool is ready if the first timeout is ready */
-  if (l && l->data)
+    /* the pool is ready if the first timeout is ready */
+    if (l && l->data)
     {
-      CCMTimeout *timeout = l->data;
-      return ccm_timeout_prepare (pool, timeout, next_timeout);
+        CCMTimeout *timeout = l->data;
+        return ccm_timeout_prepare (pool, timeout, next_timeout);
     }
-  else
+    else
     {
-      *next_timeout = -1;
-      return FALSE;
+        *next_timeout = -1;
+        return FALSE;
     }
 }
 
 static gboolean
 ccm_timeout_pool_check (GSource *source)
 {
-  CCMTimeoutPool *pool = (CCMTimeoutPool *) source;
-  GList *l = pool->timeouts;
+    CCMTimeoutPool *pool = (CCMTimeoutPool *) source;
+    GList *l = pool->timeouts;
 
-  gdk_threads_enter ();
+    gdk_threads_enter ();
 
-  for (l = pool->timeouts; l; l = l->next)
+    for (l = pool->timeouts; l; l = l->next)
     {
-      CCMTimeout *timeout = l->data;
+        CCMTimeout *timeout = l->data;
 
-      /* since the timeouts are sorted by expiration, as soon
-       * as we get a check returning FALSE we know that the
-       * following timeouts are not expiring, so we break as
-       * soon as possible
-       */
-      if (ccm_timeout_prepare (pool, timeout, NULL))
+        /* since the timeouts are sorted by expiration, as soon
+        * as we get a check returning FALSE we know that the
+        * following timeouts are not expiring, so we break as
+        * soon as possible
+        */
+        if (ccm_timeout_prepare (pool, timeout, NULL))
         {
-          timeout->flags |= CCM_TIMEOUT_READY;
-          pool->ready += 1;
+            timeout->flags |= CCM_TIMEOUT_READY;
+            pool->ready += 1;
         }
-      else
-        break;
+        else
+            break;
     }
 
-  gdk_threads_leave ();
+    gdk_threads_leave ();
 
-  return (pool->ready > 0);
+    return (pool->ready > 0);
 }
 
 static gboolean
@@ -295,176 +231,176 @@ ccm_timeout_pool_dispatch (GSource     *source,
                                GSourceFunc  func,
                                gpointer     data)
 {
-  CCMTimeoutPool *pool = (CCMTimeoutPool *) source;
-  GList *dispatched_timeouts;
+    CCMTimeoutPool *pool = (CCMTimeoutPool *) source;
+    GList *dispatched_timeouts;
 
-  /* the main loop might have predicted this, so we repeat the
-   * check for ready timeouts.
-   */
-  if (!pool->ready)
-    ccm_timeout_pool_check (source);
+    /* the main loop might have predicted this, so we repeat the
+    * check for ready timeouts.
+    */
+    if (!pool->ready)
+        ccm_timeout_pool_check (source);
 
-  gdk_threads_enter ();
+    gdk_threads_enter ();
 
-  /* Iterate by moving the actual start of the list along so that it
-   * can cope with adds and removes while a timeout is being dispatched
-   */
-  while (pool->timeouts && pool->timeouts->data && pool->ready-- > 0)
+    /* Iterate by moving the actual start of the list along so that it
+    * can cope with adds and removes while a timeout is being dispatched
+    */
+    while (pool->timeouts && pool->timeouts->data && pool->ready-- > 0)
     {
-      CCMTimeout *timeout = pool->timeouts->data;
-      GList *l;
+        CCMTimeout *timeout = pool->timeouts->data;
+        GList *l;
 
-      /* One of the ready timeouts may have been removed during dispatch,
-       * in which case pool->ready will be wrong, but the ready timeouts
-       * are always kept at the start of the list so we can stop once
-       * we've reached the first non-ready timeout
-       */
-      if (!(TIMEOUT_READY (timeout)))
-	break;
+        /* One of the ready timeouts may have been removed during dispatch,
+        * in which case pool->ready will be wrong, but the ready timeouts
+        * are always kept at the start of the list so we can stop once
+        * we've reached the first non-ready timeout
+        */
+        if (!(TIMEOUT_READY (timeout)))
+            break;
 
-      /* Add a reference to the timeout so it can't disappear
-       * while it's being dispatched
-       */
-      ccm_timeout_ref (timeout);
+        /* Add a reference to the timeout so it can't disappear
+        * while it's being dispatched
+        */
+        ccm_timeout_ref (timeout);
 
-      timeout->flags &= ~CCM_TIMEOUT_READY;
+        timeout->flags &= ~CCM_TIMEOUT_READY;
 
-      /* Move the list node to a list of dispatched timeouts */
-      l = pool->timeouts;
-      if (l->next)
-	l->next->prev = NULL;
+        /* Move the list node to a list of dispatched timeouts */
+        l = pool->timeouts;
+        if (l->next)
+            l->next->prev = NULL;
 
-      pool->timeouts = l->next;
+         pool->timeouts = l->next;
 
-      if (pool->dispatched_timeouts)
-	pool->dispatched_timeouts->prev = l;
+        if (pool->dispatched_timeouts)
+	        pool->dispatched_timeouts->prev = l;
 
-      l->prev = NULL;
-      l->next = pool->dispatched_timeouts;
-      pool->dispatched_timeouts = l;
+        l->prev = NULL;
+        l->next = pool->dispatched_timeouts;
+        pool->dispatched_timeouts = l;
 
-      if (!ccm_timeout_dispatch (source, timeout))
-	{
-	  /* The timeout may have already been removed, but nothing
-           * can be added to the dispatched_timeout list except in this
-           * function so it will always either be at the head of the
-           * dispatched list or have been removed
-           */
-          if (pool->dispatched_timeouts &&
+        if (!_ccm_timeout_interval_dispatch (&timeout->interval,
+                                             timeout->func, timeout->data))
+        {
+            /* The timeout may have already been removed, but nothing
+            * can be added to the dispatched_timeout list except in this
+            * function so it will always either be at the head of the
+            * dispatched list or have been removed
+            */
+            if (pool->dispatched_timeouts &&
               pool->dispatched_timeouts->data == timeout)
-	    {
-	      pool->dispatched_timeouts =
-                g_list_delete_link (pool->dispatched_timeouts,
-                                    pool->dispatched_timeouts);
+            {
+                pool->dispatched_timeouts =
+                    g_list_delete_link (pool->dispatched_timeouts,
+                                        pool->dispatched_timeouts);
 
-	      /* Remove the reference that was held by it being in the list */
-	      ccm_timeout_unref (timeout);
-	    }
-	}
+                /* Remove the reference that was held by it being in the list */
+                ccm_timeout_unref (timeout);
+            }
+        }
 
-      ccm_timeout_unref (timeout);
+        ccm_timeout_unref (timeout);
     }
 
-  /* Re-insert the dispatched timeouts in sorted order */
-  dispatched_timeouts = pool->dispatched_timeouts;
-  while (dispatched_timeouts)
+    /* Re-insert the dispatched timeouts in sorted order */
+    dispatched_timeouts = pool->dispatched_timeouts;
+    while (dispatched_timeouts)
     {
-      CCMTimeout *timeout = dispatched_timeouts->data;
-      GList *next = dispatched_timeouts->next;
+        CCMTimeout *timeout = dispatched_timeouts->data;
+        GList *next = dispatched_timeouts->next;
 
-      if (timeout)
-        pool->timeouts = g_list_insert_sorted (pool->timeouts, timeout,
-                                               ccm_timeout_sort);
+        if (timeout)
+            pool->timeouts = g_list_insert_sorted (pool->timeouts, timeout,
+                                                   ccm_timeout_sort);
 
-      dispatched_timeouts = next;
+        dispatched_timeouts = next;
     }
 
-  g_list_free (pool->dispatched_timeouts);
-  pool->dispatched_timeouts = NULL;
+    g_list_free (pool->dispatched_timeouts);
+    pool->dispatched_timeouts = NULL;
 
-  pool->ready = 0;
+    pool->ready = 0;
 
-  gdk_threads_leave ();
+    gdk_threads_leave ();
 
-  return TRUE;
+    return TRUE;
 }
 
 static void
 ccm_timeout_pool_finalize (GSource *source)
 {
-  CCMTimeoutPool *pool = (CCMTimeoutPool *) source;
+    CCMTimeoutPool *pool = (CCMTimeoutPool *) source;
 
-  /* force destruction */
-  g_list_foreach (pool->timeouts, (GFunc) ccm_timeout_free, NULL);
-  g_list_free (pool->timeouts);
+    /* force destruction */
+    g_list_foreach (pool->timeouts, (GFunc) ccm_timeout_free, NULL);
+    g_list_free (pool->timeouts);
 }
 
 CCMTimeoutPool *
 ccm_timeout_pool_new (gint priority)
 {
-  CCMTimeoutPool *pool;
-  GSource *source;
+    CCMTimeoutPool *pool;
+    GSource *source;
 
-  source = g_source_new (&ccm_timeout_pool_funcs,
+    source = g_source_new (&ccm_timeout_pool_funcs,
                          sizeof (CCMTimeoutPool));
-  if (!source)
-    return NULL;
+    if (!source)
+        return NULL;
 
-  if (priority != G_PRIORITY_DEFAULT)
-    g_source_set_priority (source, priority);
+    if (priority != G_PRIORITY_DEFAULT)
+        g_source_set_priority (source, priority);
 
-  pool = (CCMTimeoutPool *) source;
-  g_get_current_time (&pool->start_time);
-  pool->next_id = 1;
-  pool->id = g_source_attach (source, NULL);
-  g_source_unref (source);
+    pool = (CCMTimeoutPool *) source;
+    g_get_current_time (&pool->start_time);
+    pool->next_id = 1;
+    pool->id = g_source_attach (source, NULL);
+    g_source_unref (source);
 
-  return pool;
+    return pool;
 }
 
 guint
-ccm_timeout_pool_add (CCMTimeoutPool *pool,
-                          guint               interval,
-                          GSourceFunc         func,
-                          gpointer            data,
-                          GDestroyNotify      notify)
+ccm_timeout_pool_add (CCMTimeoutPool      *pool,
+                      guint               fps,
+                      GSourceFunc         func,
+                      gpointer            data,
+                      GDestroyNotify      notify)
 {
-  CCMTimeout *timeout;
-  guint retval = 0;
+    CCMTimeout *timeout;
+    guint retval = 0;
 
-  timeout = ccm_timeout_new (interval);
+    timeout = ccm_timeout_new (fps);
 
-  retval = timeout->id = pool->next_id++;
+    retval = timeout->id = pool->next_id++;
 
-  timeout->last_time = ccm_timeout_pool_get_ticks (pool);
-  timeout->func = func;
-  timeout->data = data;
-  timeout->notify = notify;
+    timeout->func = func;
+    timeout->data = data;
+    timeout->notify = notify;
 
-  pool->timeouts = g_list_insert_sorted (pool->timeouts, timeout,
+    pool->timeouts = g_list_insert_sorted (pool->timeouts, timeout,
                                          ccm_timeout_sort);
 
-  return retval;
+    return retval;
 }
 
 void
 ccm_timeout_pool_remove (CCMTimeoutPool *pool,
                              guint               id)
 {
-  GList *l;
+    GList *l;
 
-  if ((l = g_list_find_custom (pool->timeouts, GUINT_TO_POINTER (id),
-			       ccm_timeout_find_by_id)))
+    if ((l = g_list_find_custom (pool->timeouts, GUINT_TO_POINTER (id),
+	           ccm_timeout_find_by_id)))
     {
-      ccm_timeout_unref (l->data);
-      pool->timeouts = g_list_delete_link (pool->timeouts, l);
+        ccm_timeout_unref (l->data);
+        pool->timeouts = g_list_delete_link (pool->timeouts, l);
     }
-  else if ((l = g_list_find_custom (pool->dispatched_timeouts,
-				    GUINT_TO_POINTER (id),
-				    ccm_timeout_find_by_id)))
+    else if ((l = g_list_find_custom (pool->dispatched_timeouts,
+                                      GUINT_TO_POINTER (id),
+                                      ccm_timeout_find_by_id)))
     {
-      ccm_timeout_unref (l->data);
-      pool->dispatched_timeouts
-	= g_list_delete_link (pool->dispatched_timeouts, l);
+        ccm_timeout_unref (l->data);
+        pool->dispatched_timeouts = 
+            g_list_delete_link (pool->dispatched_timeouts, l);
     }
 }

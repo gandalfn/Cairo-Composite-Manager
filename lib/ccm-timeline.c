@@ -28,7 +28,6 @@
 
 G_DEFINE_TYPE (CCMTimeline, ccm_timeline, G_TYPE_OBJECT);
 
-#define FPS_TO_INTERVAL(f)          (1000 / (f))
 #define CCM_TIMELINE_PRIORITY       (G_PRIORITY_DEFAULT + 10)
 
 struct _CCMTimelinePrivate
@@ -93,11 +92,12 @@ static guint signals[LAST_SIGNAL] = { 0 };
 static CCMTimeoutPool *timeline_pool = NULL;
 
 static guint
-timeout_add (guint          interval, GSourceFunc    func,
+timeout_add (guint          fps, 
+             GSourceFunc    func,
              gpointer       data,
              GDestroyNotify notify)
 {
-    return ccm_timeout_pool_add (timeline_pool, interval, 
+    return ccm_timeout_pool_add (timeline_pool, fps, 
                                  func, data, notify);
 }
 
@@ -344,12 +344,54 @@ ccm_timeline_init (CCMTimeline *self)
                                                          timeline_marker_free);
 }
 
+static void
+emit_frame_signal (CCMTimeline *self)
+{
+  gint i;
+
+  g_signal_emit (self, signals[NEW_FRAME], 0,
+                 self->priv->current_frame_num);
+
+  if (self->priv->markers_by_name == NULL ||
+      self->priv->markers_by_frame == NULL)
+    return;
+
+  for (i = self->priv->skipped_frames; i >= 0; i--)
+    {
+      gint frame_num;
+      GSList *markers, *l;
+
+      frame_num = self->priv->current_frame_num
+                + (self->priv->direction == CCM_TIMELINE_FORWARD ? -i : i);
+      markers = g_hash_table_lookup (self->priv->markers_by_frame,
+                                     GUINT_TO_POINTER (frame_num));
+      for (l = markers; l; l = l->next)
+      {
+          TimelineMarker *marker = l->data;
+
+          g_signal_emit (self, signals[MARKER_REACHED],
+                         marker->quark,
+                         marker->name,
+                         marker->frame_num);
+        }
+    }
+}
+
+static gboolean
+is_complete (CCMTimeline *self)
+{
+  return ((self->priv->direction == CCM_TIMELINE_FORWARD) &&
+          (self->priv->current_frame_num >= self->priv->n_frames)) ||
+         ((self->priv->direction == CCM_TIMELINE_BACKWARD) &&
+          (self->priv->current_frame_num <= 0));
+}
+
 static gboolean
 timeline_timeout_func (CCMTimeline *self)
 {
     GTimeVal timeval;
     guint n_frames;
-    gulong msecs;
+    gulong msecs, speed;
 
     g_object_ref (self);
 
@@ -361,7 +403,9 @@ timeline_timeout_func (CCMTimeline *self)
     msecs = (timeval.tv_sec - self->priv->prev_frame_timeval.tv_sec) * 1000;
     msecs += (timeval.tv_usec - self->priv->prev_frame_timeval.tv_usec) / 1000;
     self->priv->msecs_delta = msecs;
-    n_frames = msecs / (1000 / self->priv->fps);
+    
+    speed = MAX (1000 / self->priv->fps, 1);
+    n_frames = msecs / speed;
     if (n_frames == 0)
         n_frames = 1;
 
@@ -374,33 +418,9 @@ timeline_timeout_func (CCMTimeline *self)
     else
         self->priv->current_frame_num -= n_frames;
 
-    if (!(((self->priv->direction == CCM_TIMELINE_FORWARD) &&
-           (self->priv->current_frame_num >= self->priv->n_frames)) ||
-          ((self->priv->direction == CCM_TIMELINE_BACKWARD) &&
-           (self->priv->current_frame_num <= 0))))
+    if (!is_complete (self))
     {
-        gint i;
-
-        g_signal_emit (self, signals[NEW_FRAME], 0,
-                       self->priv->current_frame_num);
-
-        for (i = self->priv->skipped_frames; i >= 0; i--)
-        {
-            gint frame_num = self->priv->current_frame_num - i;
-            GSList *markers, *l;
-          
-            markers = g_hash_table_lookup (self->priv->markers_by_frame,
-                                           GUINT_TO_POINTER (frame_num));
-            for (l = markers; l; l = l->next)
-            {
-                TimelineMarker *marker = l->data;
-
-                g_signal_emit (self, signals[MARKER_REACHED],
-                               marker->quark,
-                               marker->frame_num,
-                               marker->name);
-            }
-        }
+        emit_frame_signal (self);
 
         if (!self->priv->timeout_id)
         {
@@ -418,14 +438,20 @@ timeline_timeout_func (CCMTimeline *self)
         gint end_frame;
   
         if (self->priv->direction == CCM_TIMELINE_FORWARD)
+        {
+            self->priv->skipped_frames -= self->priv->current_frame_num - 
+                                          self->priv->n_frames;
             self->priv->current_frame_num = self->priv->n_frames;
+        }
         else if (self->priv->direction == CCM_TIMELINE_BACKWARD)
+        {
+            self->priv->skipped_frames += self->priv->current_frame_num;
             self->priv->current_frame_num = 0;
+        }
 
         end_frame = self->priv->current_frame_num;
 
-        g_signal_emit (self, signals[NEW_FRAME], 0,
-                       self->priv->current_frame_num);
+        emit_frame_signal (self);
 
         if (self->priv->current_frame_num != end_frame)
         {
@@ -483,7 +509,7 @@ timeline_timeout_func (CCMTimeline *self)
 }
 
 static guint
-timeline_timeout_add (CCMTimeline *self, guint interval, GSourceFunc func,
+timeline_timeout_add (CCMTimeline *self, guint fps, GSourceFunc func,
                       gpointer data, GDestroyNotify notify)
 {
     GTimeVal timeval;
@@ -496,7 +522,7 @@ timeline_timeout_add (CCMTimeline *self, guint interval, GSourceFunc func,
     self->priv->skipped_frames   = 0;
     self->priv->msecs_delta      = 0;
 
-    return timeout_add (interval, func, data, notify);
+    return timeout_add (fps, func, data, notify);
 }
 
 static gboolean
@@ -505,7 +531,7 @@ delay_timeout_func (CCMTimeline* self)
     self->priv->delay_id = 0;
 
     self->priv->timeout_id = timeline_timeout_add (self,
-                                                   FPS_TO_INTERVAL (self->priv->fps),
+                                                   self->priv->fps,
                                                    (GSourceFunc)timeline_timeout_func,
                                                    self, NULL);
 
@@ -534,7 +560,7 @@ ccm_timeline_start (CCMTimeline *self)
     else
     {
         self->priv->timeout_id = timeline_timeout_add (self,
-                                                       FPS_TO_INTERVAL (self->priv->fps),
+                                                       self->priv->fps,
                                                        (GSourceFunc)timeline_timeout_func,
                                                        self, NULL);
 
@@ -680,7 +706,7 @@ ccm_timeline_set_speed (CCMTimeline *self, guint fps)
             timeout_remove (self->priv->timeout_id);
 
             self->priv->timeout_id = timeline_timeout_add (self,
-                                                           FPS_TO_INTERVAL (self->priv->fps),
+                                                           self->priv->fps,
                                                            (GSourceFunc)timeline_timeout_func,
                                                            self, NULL);
         }
