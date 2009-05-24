@@ -5,20 +5,30 @@ Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
 XSBC-Original-Maintainer: Nicolas Bruguier <gandalfn@club-internet.fr>
 Build-Depends: debhelper (>= 5.0.37), cdbs, autotools-dev, patchutils, intltool, gnome-pkg-tools, libgtk2.0-dev, libgconf2-dev, 
   libxcomposite-dev, libxdamage-dev, libxext-dev, libcairo2-dev, libglitz1-dev, libglitz-glx1-dev, libpixman-1-dev, libgtop2-dev, 
-  valac, libvala-dev, gtk-doc-tools, libsm-dev
+  valac, libvala-dev, gtk-doc-tools, libsm-dev, libgladeui-1-dev, libwnck-dev
 Standards-Version: 3.8.0
 
 Package: cairo-compmgr
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libcairo-compmgr0
+Depends: cairo-compmgr-core, cairo-compmgr-plugins
 Description: Cairo Composite Manager
+ Cairo Composite Manager is a versatile and extensible composite manager which 
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Glitz backends. Plugins can be used to add some cool effects to your desktop.
+
+Package: cairo-compmgr-core
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libcairo-compmgr0
+Conflicts: cairo-compmgr (<= 0.2.93)
+Replaces: cairo-compmgr (<= 0.2.93)
+Description: Cairo Composite Manager Core
  Cairo Composite Manager is a versatile and extensible composite manager which 
  use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
  Glitz backends. Plugins can be used to add some cool effects to your desktop.
 
 Package: cairo-compmgr-plugins
 Architecture: any
-Depends: ${misc:Depends}, cairo-compmgr
+Depends: ${misc:Depends}, cairo-compmgr-core
 Conflicts: cairo-compmgr (<= 0.2.3)
 Replaces: cairo-compmgr (<= 0.2.3)
 Description: Cairo Composite Manager Plugins
@@ -38,6 +48,7 @@ Description: Cairo Composite Manager Library
 Package: cairo-compmgr-dev
 Architecture: any
 Section: devel
+Recommends: glade-3
 Depends: ${misc:Depends}, libcairo-compmgr-dev
 Conflicts: cairo-compmgr-dev (<= 0.2.90)
 Description: Cairo Composite Manager Developpement Files

@@ -53,7 +53,7 @@ EXTRA_DIST = $(cairo_compmgrdoc_DATA)\
              debian/control \
              debian/copyright \
              debian/rules \
-             debian/cairo-compmgr.install \
+             debian/cairo-compmgr-core.install \
              debian/cairo-compmgr-plugins.install \
              debian/cairo-compmgr-dev.install \
              debian/cairo-compmgr-vala.install \

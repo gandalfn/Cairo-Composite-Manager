@@ -91,6 +91,16 @@ CCMWindow
 
 </para>
 
+<!-- ##### ARG CCMWindow:mask-y-invert ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMWindow:no-undamage-sibling ##### -->
+<para>
+
+</para>
+
 <!-- ##### ARG CCMWindow:redirect ##### -->
 <para>
 

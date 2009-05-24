@@ -1,3 +1,5 @@
 debian/tmp/usr/lib/*.la usr/lib
 debian/tmp/usr/lib/*.so usr/lib
 debian/tmp/usr/lib/pkgconfig/*.pc usr/lib/pkgconfig
+debian/tmp/usr/share/glade3/catalogs/* usr/share/glade3/catalogs
+debian/tmp/usr/lib/glade3/modules/libgladeccm.so usr/lib/glade3/modules

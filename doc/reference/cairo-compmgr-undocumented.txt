@@ -1,7 +1,7 @@
-26% symbol docs coverage.
-72 symbols documented.
+35% symbol docs coverage.
+112 symbols documented.
 3 symbols incomplete.
-208 not documented.
+209 not documented.
 
 
 CCMDisplay
@@ -21,6 +21,7 @@ CCMPreferencesPagePlugin
 CCMRegion
 CCMScreen
 CCMScreen::activate-window-notify
+CCMScreen::composite-message
 CCMScreen::enter-window-notify
 CCMScreen::leave-window-notify
 CCMScreen::plugins-changed

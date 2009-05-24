@@ -1,4 +1,13 @@
-cairo-compmgr (0.2.94-0ubuntu1~ppa1) brownie; urgency=low
+cairo-compmgr (0.2.96-0ubuntu1~ppa1) jaunty; urgency=low
+
+  * New upstream release.
+  * Some performances improvements
+  * Fix some crash
+  * Add experimental screen clone.
+
+ -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Sun, 24 May 2009 23:20:14 +0200
+
+cairo-compmgr (0.2.94-0ubuntu1~ppa1) intrepid; urgency=low
 
   * New upstream release.
   * Fix window shade issue

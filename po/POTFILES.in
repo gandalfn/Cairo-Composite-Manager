@@ -42,3 +42,4 @@ plugins/mosaic/ccm-mosaic.ui
 plugins/opacity/ccm-opacity.ui
 src/eggdesktopfile.c
 src/eggsmclient.c
+plugins/clone/ccm-clone.plugin.desktop.in

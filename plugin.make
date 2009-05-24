@@ -17,8 +17,7 @@ BUILT_SOURCES = \
 
 PLUGIN_SOURCES += \
     $(BUILT_SOURCES) \
-    $(PLUGIN_VALA_SOURCES:.vala=.c) \
-	$(PLUGIN_VALA_SOURCES:.vala=.h)
+    $(PLUGIN_VALA_SOURCES:.vala=.c)
 
 $(PLUGIN).vala.stamp: $(PLUGIN_VALA_SOURCES)
 	$(VALAC) --library=$(PLUGIN) --vapidir=. --vapidir=${top_srcdir}/vapi --pkg=cairo --pkg=cairo-compmgr -C $^

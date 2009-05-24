@@ -1,6 +1,6 @@
 m4_define(ccm_version_major, 0)
 m4_define(ccm_version_minor, 2)
-m4_define(ccm_version_micro, 94)
+m4_define(ccm_version_micro, 96)
 AC_INIT(cairo-compmgr, ccm_version_major.ccm_version_minor.ccm_version_micro)
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
@@ -20,7 +20,7 @@ CAIRO_OPENVG_REQUIRED=1.5.7
 GLITZ_REQUIRED=0.5.7
 GLITZ_GLX_REQUIRED=0.5.7
 GL_PROTO_REQUIRED=1.4.9
-VALA_REQUIRED=0.5.6
+VALA_REQUIRED=0.7.2
 GOBJECT_INTROSPECTION_REQUIRED=0.6.2
 GLADEUI_REQUIRED=3.5.7
 
@@ -30,6 +30,13 @@ dnl ****************************************************************************
 AC_ARG_ENABLE(debug,
   [  --disable-debug        Disable debug],
   [use_debug=$enableval], [use_debug=yes])
+
+dnl ****************************************************************************
+dnl Check for profiler flags
+dnl ****************************************************************************
+AC_ARG_ENABLE(profile,
+  [  --disable-profile        Enable profile],
+  [use_profile=$enableval], [use_profile=no])
 
 dnl ****************************************************************************
 dnl Check for build
@@ -42,6 +49,9 @@ if test "x$GCC" = "xyes" ; then
         CFLAGS="-O2 -Wall -fPIC -fomit-frame-pointer -ffast-math -fno-strict-aliasing"
     else
         CFLAGS="-g -O2 -Wall -fPIC"
+    fi
+    if test "x$use_profile" = "xyes"; then
+        CFLAGS="$CFLAGS -pg"
     fi
 fi
 AM_PROG_CC_STDC
@@ -182,7 +192,8 @@ AC_ARG_ENABLE(perf-plugin,
 
 if [ test x$perfplugin = xyes ]; then
     PKG_CHECK_MODULES(CCM_PERF_PLUGIN, 
-           [libgtop-2.0],
+           [libgtop-2.0,
+            libwnck-1.0],
            [perfplugin="yes"],
            [perfplugin="no"])
 	AC_SUBST(CCM_PERF_PLUGIN_CFLAGS)

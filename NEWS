@@ -1,3 +1,17 @@
+Overview of Changes in Cairo Composite Manager 0.2.96
+====================================
+
+* Some performances improvements
+* Fix some crash
+* Add experimental screen clone.
+
+Overview of Changes in Cairo Composite Manager 0.2.95
+====================================
+
+* Some performances improvements
+* Fix some crash
+* Add experimental clone plugin
+
 Overview of Changes in Cairo Composite Manager 0.2.94
 ====================================
 
