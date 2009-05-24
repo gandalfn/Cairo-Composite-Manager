@@ -105,13 +105,15 @@ enum
 {
     PROP_0,
 	PROP_CHILD,
+	PROP_NO_UNDAMAGE_SIBLING,
 	PROP_INPUT,
 	PROP_REDIRECT,
 	PROP_BLOCK_MOUSE_REDIRECT_EVENT,
 	PROP_IMAGE,
 	PROP_MASK,
 	PROP_MASK_WIDTH,
-	PROP_MASK_HEIGHT
+	PROP_MASK_HEIGHT,
+	PROP_MASK_Y_INVERT
 };
 
 enum
@@ -167,6 +169,7 @@ struct _CCMWindowPrivate
 	GSList*				properties_pending;
 	CCMPixmap*			pixmap;
 	gboolean			use_pixmap_image;
+	gboolean			no_undamage_sibling;
 	gboolean			redirect;
 	gboolean			block_mouse_redirect_event;
 	
@@ -178,6 +181,7 @@ struct _CCMWindowPrivate
 	cairo_surface_t		*mask;
 	gint				mask_width;
 	gint				mask_height;
+	gboolean			mask_y_invert;
 };
 
 #define CCM_WINDOW_GET_PRIVATE(o)  \
@@ -210,6 +214,11 @@ ccm_window_set_gobject_property(GObject *object,
 			}
 			break;
 		}
+		case PROP_NO_UNDAMAGE_SIBLING:
+		{
+			priv->no_undamage_sibling = g_value_get_boolean (value);
+			break;
+		}
 		case PROP_REDIRECT:
 		{
 			priv->redirect = g_value_get_boolean (value);
@@ -232,6 +241,9 @@ ccm_window_set_gobject_property(GObject *object,
 		case PROP_MASK_HEIGHT:
 			priv->mask_height = g_value_get_int (value);
 			break;
+		case PROP_MASK_Y_INVERT:
+			priv->mask_y_invert = g_value_get_boolean (value);
+			break;
 		default:
 			break;
     }
@@ -250,6 +262,9 @@ ccm_window_get_gobject_property (GObject* object,
     	case PROP_CHILD:
 			g_value_set_pointer (value, (gpointer)priv->child);
 			break;
+		case PROP_NO_UNDAMAGE_SIBLING:
+			g_value_set_boolean (value, priv->no_undamage_sibling);
+			break;
 		case PROP_INPUT:
 			g_value_set_pointer (value, (gpointer)priv->input);
 			break;
@@ -261,6 +276,9 @@ ccm_window_get_gobject_property (GObject* object,
 			break;
 		case PROP_MASK_HEIGHT:
 			g_value_set_int (value, priv->mask_height);
+			break;
+		case PROP_MASK_Y_INVERT:
+			g_value_set_boolean (value, priv->mask_y_invert);
 			break;
 		default:
 			break;
@@ -307,12 +325,14 @@ ccm_window_init (CCMWindow *self)
  	self->priv->properties_pending = NULL;
 	self->priv->pixmap = NULL;
 	self->priv->use_pixmap_image = FALSE;
+	self->priv->no_undamage_sibling = FALSE;
 	self->priv->redirect = TRUE;
 	self->priv->block_mouse_redirect_event = FALSE;
 	self->priv->plugin = NULL;
 	self->priv->mask = NULL;
 	self->priv->mask_width = 0;
 	self->priv->mask_height = 0;
+	self->priv->mask_y_invert = FALSE;
 }
 
 static void
@@ -406,6 +426,19 @@ ccm_window_class_init (CCMWindowClass *klass)
 		 					  "Child",
 			     			  "Child of window",
 			     			  G_PARAM_READWRITE));
+
+	/**
+	 * CCMWindow:no_undamage_sibling:
+	 *
+	 * This property indicate if the window don't clip damage area of 
+	 * sibling window.
+	 */
+	g_object_class_install_property(object_class, PROP_NO_UNDAMAGE_SIBLING,
+		g_param_spec_boolean("no_undamage_sibling",
+		 					 "No undamage sibling",
+			     			 "Get if window undamage sibling",
+							 FALSE,
+			     			 G_PARAM_READABLE | G_PARAM_WRITABLE));
 	
 	/**
 	 * CCMWindow:input:
@@ -467,6 +500,18 @@ ccm_window_class_init (CCMWindowClass *klass)
 						  G_MININT, G_MAXINT, 0, 
 			     		  G_PARAM_READWRITE));
 	
+	/**
+	 * CCMWindow:mask_y_invert:
+	 *
+	 * This property indicate if the mask paint is y inverted.
+	 */
+	g_object_class_install_property(object_class, PROP_MASK_Y_INVERT,
+		g_param_spec_boolean("mask_y_invert",
+		 					 "Mask Y Invert",
+			     			 "Get if mask is y inverted",
+							 FALSE,
+			     			 G_PARAM_READABLE | G_PARAM_WRITABLE));
+
 	/**
 	 * CCMWindow:mask_height:
 	 *
@@ -1140,6 +1185,10 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 		
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->move(CCM_DRAWABLE(self), 
 														  x, y);
+
+		self->priv->area.x += x - geometry.x;
+		self->priv->area.y += y - geometry.y;
+
 		if (self->priv->opaque)
 			ccm_region_offset(self->priv->opaque, 
 							  x - geometry.x, y - geometry.y);
@@ -1153,7 +1202,6 @@ impl_ccm_window_move(CCMWindowPlugin* plugin, CCMWindow* self, int x, int y)
 			ccm_drawable_damage_region (CCM_DRAWABLE(self), old_geometry);
 		}
 		ccm_region_destroy (old_geometry);
-		ccm_window_get_attribs(self);
 	}
 }
 
@@ -1174,6 +1222,9 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 		CCM_DRAWABLE_CLASS(ccm_window_parent_class)->resize(CCM_DRAWABLE(self), 
 															width, height);
 		
+		self->priv->area.width += width - geometry.width;
+		self->priv->area.height += height - geometry.height;
+
 		new_geometry = 
 			(CCMRegion*)ccm_drawable_get_device_geometry(CCM_DRAWABLE(self));
 		
@@ -1204,8 +1255,6 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 			self->priv->pixmap = NULL;
 		}
 		
-		ccm_window_get_attribs(self);
-
 		if (new_geometry)
 		{
 			cairo_rectangle_t clipbox;
@@ -1256,7 +1305,7 @@ ccm_window_check_mask(CCMWindow* self)
 			CCMRegion* tmp2 = ccm_region_copy(geometry);
 			int x, y, cpt, nb_rects;
 			cairo_surface_t *old = self->priv->mask;
-			cairo_rectangle_t* rects;
+			cairo_rectangle_t* rects = NULL;
 			cairo_t* ctx;
 			cairo_surface_t* surface = 
 				ccm_drawable_get_surface(CCM_DRAWABLE(self));
@@ -1275,6 +1324,8 @@ ccm_window_check_mask(CCMWindow* self)
 
 			// Add opaque mask around the old mask
 			ctx = cairo_create(self->priv->mask);
+			cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+			
 			cairo_translate(ctx, -clipbox.x, -clipbox.y);
 			cairo_set_source_surface(ctx, old, x, y);
 			cairo_paint(ctx);
@@ -1292,7 +1343,7 @@ ccm_window_check_mask(CCMWindow* self)
 			for (cpt = 0; cpt < nb_rects; ++cpt)
 				cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
 								rects[cpt].width, rects[cpt].height);
-			g_free(rects);
+			if (rects) g_free(rects);
 			cairo_fill(ctx);
 			ccm_region_destroy(tmp1);
 			ccm_region_destroy(tmp2);
@@ -1387,6 +1438,18 @@ impl_ccm_window_unmap(CCMWindowPlugin* plugin, CCMWindow* self)
 	ccm_drawable_pop_matrix(CCM_DRAWABLE(self), "CCMWindowTransient");
 	
 	ccm_window_unredirect_input(self);
+
+	if (self->priv->mask)
+	{
+		cairo_surface_destroy(self->priv->mask);
+		self->priv->mask = NULL;
+	}
+	
+	if (CCM_IS_PIXMAP(self->priv->pixmap))
+	{
+		g_object_unref(self->priv->pixmap);
+		self->priv->pixmap = NULL;
+	}
 }
 	
 static void
@@ -1987,6 +2050,7 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 						   CCM_WINDOW_XWINDOW(self),
 						   ShapeNotifyMask);
 		
+		ccm_display_flush(display);
 		ccm_display_sync(display);
 	}
 	
@@ -2077,6 +2141,22 @@ ccm_window_get_opaque_clipbox(CCMWindow* self, cairo_rectangle_t* clipbox)
 		return TRUE;
 	}
 	return FALSE;
+}
+
+/**
+ * ccm_window_undamage_sibling:
+ * @self: #CCMWindow
+ *
+ * Get if window undamage sibling windows
+ *
+ * Returns: TRUE if window undamage sibling
+ **/
+gboolean
+ccm_window_undamage_sibling(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+
+	return !self->priv->no_undamage_sibling;
 }
 
 void
@@ -2526,7 +2606,7 @@ ccm_window_create_pixmap(CCMWindow* self, int width, int height, int depth)
 	if (CCM_WINDOW_GET_CLASS(self)->create_pixmap)
 		pixmap = CCM_WINDOW_GET_CLASS(self)->create_pixmap(self, width, 
 														   height, depth);
-	   
+
 	return pixmap;
 }
 
@@ -2569,7 +2649,7 @@ ccm_window_paint (CCMWindow* self, cairo_t* context, gboolean buffered)
 	if (ccm_drawable_is_damaged(CCM_DRAWABLE(self)))
 	{
 		CCMPixmap* pixmap = ccm_window_get_pixmap(self);
-		
+
 		if (pixmap)
 		{
 			cairo_surface_t* surface;
@@ -2614,7 +2694,7 @@ void
 ccm_window_map(CCMWindow* self)
 {
 	g_return_if_fail(self != NULL);
-	
+
 	if (!self->priv->visible)
 	{
 		if (!ccm_drawable_get_device_geometry(CCM_DRAWABLE(self)))
@@ -2630,6 +2710,7 @@ ccm_window_map(CCMWindow* self)
 			g_object_unref(self->priv->pixmap);
 			self->priv->pixmap = NULL;
 		}
+
 		ccm_window_plugin_map(self->priv->plugin, self);
 	}
 }
@@ -3024,6 +3105,14 @@ ccm_window_get_child_property(CCMWindow* self, Atom property_atom,
     return result;
 }
 
+gboolean
+ccm_window_has_redirect_input(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+
+	return self->priv->input != None;
+}
+
 void
 ccm_window_redirect_input(CCMWindow* self)
 {
@@ -3117,12 +3206,14 @@ ccm_window_activate(CCMWindow* self, Time timestamp)
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 	CCMWindow* root = ccm_screen_get_root_window (screen);
 
+	ccm_debug_window(self, "ACTIVATE");
+	
 	XChangeProperty (CCM_DISPLAY_XDISPLAY(display), 
 					 CCM_WINDOW_XWINDOW(self), 
 					 CCM_WINDOW_GET_CLASS(root)->user_time_atom, 
 					 XA_CARDINAL, 32, PropModeReplace, 
 					 (guchar *)&timestamp, 1);
-	
+
 	if (self->priv->child)
 	{
 		XClientMessageEvent event;
