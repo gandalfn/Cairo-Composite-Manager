@@ -112,7 +112,7 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 		for (cpt = 0; cpt < nb_rects; ++cpt)
 			ccm_log("--> %i, %i, %i, %i", (int)rects[cpt].x, (int)rects[cpt].y,
 					(int)rects[cpt].width, (int)rects[cpt].height);
-		g_free(rects);
+		cairo_rectangles_free(rects, nb_rects);
 	}	
 	
 	g_object_get (drawable, "damaged", &damaged, NULL);
@@ -124,7 +124,7 @@ ccm_log_region (CCMDrawable* drawable, const char *format, ...)
 		for (cpt = 0; cpt < nb_rects; ++cpt)
 			ccm_log("--> %i, %i, %i, %i", (int)rects[cpt].x, (int)rects[cpt].y,
 					(int)rects[cpt].width, (int)rects[cpt].height);
-		g_free(rects);
+		cairo_rectangles_free(rects, nb_rects);
 	}
 	
 	g_free(formatted);

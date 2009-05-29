@@ -384,7 +384,7 @@ ccm_freeze_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			cairo_rectangle(context, rects[cpt].x, rects[cpt].y, 
 							rects[cpt].width, rects[cpt].height);
 		cairo_clip(context);
-		g_free(rects);
+		cairo_rectangles_free(rects, nb_rects);
 		ccm_region_destroy(tmp);
 		if (!self->priv->color)
 			cairo_set_source_rgb(context, 0, 0, 0);

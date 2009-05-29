@@ -1343,7 +1343,7 @@ ccm_window_check_mask(CCMWindow* self)
 			for (cpt = 0; cpt < nb_rects; ++cpt)
 				cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
 								rects[cpt].width, rects[cpt].height);
-			if (rects) g_free(rects);
+			if (rects) cairo_rectangles_free(rects, nb_rects);
 			cairo_fill(ctx);
 			ccm_region_destroy(tmp1);
 			ccm_region_destroy(tmp2);
@@ -3168,7 +3168,7 @@ ccm_window_redirect_input(CCMWindow* self)
 											self->priv->input, ShapeInput, 
 											0, 0, region);
 				XFixesDestroyRegion(CCM_DISPLAY_XDISPLAY(display), region);
-				g_free(rects);
+				x_rectangles_free(rects, nb_rects);
 				ccm_region_destroy(area);
 			
 				xwc.stack_mode = Above;

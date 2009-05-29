@@ -863,7 +863,7 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
 							 rects[cpt].width, rects[cpt].height);
 		cairo_clip(context);
-		g_free(rects);
+		cairo_rectangles_free(rects, nb_rects);
 		ccm_region_destroy (area);
 		ccm_region_destroy (geometry);
 		
@@ -911,7 +911,7 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 									 rects[cpt].width, rects[cpt].height);
 					cairo_fill(context);
 				}
-				g_free(rects);
+				cairo_rectangles_free(rects, nb_rects);
 				cairo_restore(context);
 				
 				cairo_save(context);
@@ -967,7 +967,7 @@ ccm_magnifier_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			for (cpt = 0; cpt < nb_rects; ++cpt)
 				cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
 								 rects[cpt].width, rects[cpt].height);
-			g_free(rects);
+			cairo_rectangles_free(rects, nb_rects);
 			cairo_clip(context);
 				
 			ccm_debug("MAGNIFIER PAINT SCREEN FILL CLIP");

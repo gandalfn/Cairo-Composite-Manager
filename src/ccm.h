@@ -149,6 +149,10 @@ gboolean        ccm_region_device_transform_invert (CCMRegion         *self,
                                                     cairo_matrix_t    *matrix);
 gboolean        ccm_region_point_in         (CCMRegion* self, int x, int y);
 gboolean        ccm_region_is_shaped        (CCMRegion* self);
+
+#define cairo_rectangles_free(c, nb) (g_slice_free1(sizeof(cairo_rectangle_t) * nb, c))
+#define x_rectangles_free(c, nb) (g_slice_free1(sizeof(XRectangle) * nb, c))
+
 /******************************************************************************/
 
 /********************************** Cursor ************************************/

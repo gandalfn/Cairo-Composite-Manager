@@ -193,7 +193,7 @@ ccm_window_xrender_flush_region(CCMDrawable* drawable, CCMRegion* region)
 		}
 		ccm_display_flush(display);
 		ccm_display_sync(display);
-		g_free(rects);
+		cairo_rectangles_free(rects, nb_rects);
 	}
 }
 

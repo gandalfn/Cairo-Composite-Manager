@@ -261,7 +261,7 @@ ccm_window_openvg_flush_region(CCMDrawable* drawable, CCMRegion* region)
 				csb(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self),
 					x, y > 0 ? y : 0, width, height);
 		}
-		g_free(rects);
+		cairo_rectangles_free(rects, nb_rects);
 	}
 	else
 		glXSwapBuffers(CCM_DISPLAY_XDISPLAY(display), CCM_WINDOW_XWINDOW(self));

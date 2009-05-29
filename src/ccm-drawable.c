@@ -956,7 +956,7 @@ ccm_drawable_get_damage_path(CCMDrawable* self, cairo_t* context)
 			cairo_rectangle(context, rectangles[cpt].x, rectangles[cpt].y,
 							rectangles[cpt].width, rectangles[cpt].height);
 		}
-		g_free(rectangles);
+		cairo_rectangles_free(rectangles, nb_rects);
 	}
 }
 
@@ -988,7 +988,7 @@ ccm_drawable_get_geometry_path(CCMDrawable* self, cairo_t* context)
 			cairo_rectangle(context, rectangles[cpt].x, rectangles[cpt].y,
 							rectangles[cpt].width, rectangles[cpt].height);
 		}
-		g_free(rectangles);
+		cairo_rectangles_free(rectangles, nb_rects);
 		path = cairo_copy_path(context);
 	}
 			

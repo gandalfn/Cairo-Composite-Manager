@@ -1674,7 +1674,7 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 				for (cpt = 0; cpt < nb_rects; ++cpt)
 					cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
 									 rects[cpt].width, rects[cpt].height);
-				g_free(rects);
+				cairo_rectangles_free(rects, nb_rects);
 				cairo_clip (self->priv->ctx);
 				
 				cairo_set_source_surface (self->priv->ctx, surface, 0, 0);

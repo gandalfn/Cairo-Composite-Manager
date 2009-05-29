@@ -360,7 +360,7 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		for (cpt = 0; cpt < nb_rects; ++cpt)
 			cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y, 
 							rects[cpt].width, rects[cpt].height);
-		g_free(rects);
+		cairo_rectangles_free(rects, nb_rects);
 		cairo_fill(ctx);
 		if (pattern) cairo_pattern_destroy(pattern);
 		ccm_region_destroy(decoration);

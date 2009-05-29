@@ -76,7 +76,7 @@ _ccm_region_print(CCMRegion* self)
 		ccm_log("      : %f,%f %f,%f", rects[cpt].x, rects[cpt].y,
 				rects[cpt].width, rects[cpt].height);
 	}
-	if (rects) g_free(rects);
+	if (rects) cairo_rectangles_free(rects, nb_rects);
 }
 
 CCMRegion*
@@ -192,7 +192,7 @@ ccm_region_get_rectangles(CCMRegion* self, cairo_rectangle_t** rectangles,
 	
 	if (*n_rectangles > 0)
 	{
-		*rectangles = g_new(cairo_rectangle_t, *n_rectangles);
+		*rectangles = g_slice_alloc(sizeof(cairo_rectangle_t) * *n_rectangles);
 		for (cpt = 0; cpt < *n_rectangles; ++cpt)
 		{
 			PIXMAN_BOX_TO_CAIRO_RECTANGLE(boxes[cpt], (*rectangles)[cpt]);
@@ -215,7 +215,7 @@ ccm_region_get_xrectangles(CCMRegion* self, XRectangle** rectangles,
 	
 	if (*n_rectangles > 0)
 	{
-		*rectangles = g_new(XRectangle, *n_rectangles);
+		*rectangles = g_slice_alloc(sizeof(XRectangle) *  *n_rectangles);
 		for (cpt = 0; cpt < *n_rectangles; ++cpt)
 		{
 			PIXMAN_BOX_TO_X_RECTANGLE(boxes[cpt], (*rectangles)[cpt]);

@@ -162,7 +162,7 @@ ccm_pixmap_image_repair (CCMDrawable* drawable, CCMRegion* area)
 					break;
 				}
 			}
-			g_free(rects);
+			x_rectangles_free(rects, nb_rects);
 		}
 	}
 	
@@ -234,6 +234,6 @@ ccm_pixmap_image_flush_region (CCMDrawable* drawable, CCMRegion* area)
 								 rects[cpt].x, rects[cpt].y,
 								 rects[cpt].x, rects[cpt].y,
 								 rects[cpt].width, rects[cpt].height);
-		g_free(rects);
+		x_rectangles_free(rects, nb_rects);
 	}
 }

@@ -466,7 +466,7 @@ ccm_shadow_create_fake_shadow(CCMShadow* self)
 						rects[cpt].width, rects[cpt].height);
 	
 	clip_path = cairo_copy_path(cr);
-	g_free(rects);
+	cairo_rectangles_free(rects, nb_rects);
 	ccm_region_destroy(clip);
 	cairo_new_path(cr);
 	
@@ -476,7 +476,7 @@ ccm_shadow_create_fake_shadow(CCMShadow* self)
 						rects[cpt].width, rects[cpt].height);
 	
 	path = cairo_copy_path(cr);
-	if (rects) g_free(rects);
+	if (rects) cairo_rectangles_free(rects, nb_rects);
 	ccm_region_destroy(opaque);
 	cairo_destroy(cr);
 	cairo_surface_destroy(tmp);
@@ -522,7 +522,7 @@ ccm_shadow_create_blur_shadow(CCMShadow* self)
 		cairo_rectangle(cr, rects[cpt].x, rects[cpt].y,
 						rects[cpt].width, rects[cpt].height);
 	cairo_fill(cr);
-	g_free(rects);
+	cairo_rectangles_free(rects, nb_rects);
 	ccm_region_destroy(opaque);
 	cairo_destroy(cr);
 	
@@ -753,7 +753,7 @@ ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
 				cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
 								rects[cpt].width, rects[cpt].height);
 			cairo_clip(ctx);
-			g_free(rects);
+			cairo_rectangles_free(rects, nb_rects);
 		}
 		else
 		{
@@ -775,7 +775,7 @@ ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
 				cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
 								rects[cpt].width, rects[cpt].height);
 			cairo_clip(ctx);
-			g_free(rects);
+			cairo_rectangles_free(rects, nb_rects);
 			cairo_translate(ctx, clipbox.x, clipbox.y);
 		}
 		gboolean freeze ;
