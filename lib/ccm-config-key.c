@@ -239,7 +239,7 @@ ccm_config_key_class_init (CCMConfigKeyClass *klass)
 	
 	klass->schemas = g_hash_table_new_full (g_str_hash, g_str_equal,
 	                                        g_free, g_object_unref);
-	klass->configs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, 
+	klass->configs = g_hash_table_new_full (g_int_hash, g_int_equal, NULL, 
 	                                        (GDestroyNotify)ccm_config_key_monitor_free);
 	
 	CCM_CONFIG_CLASS(klass)->initialize = ccm_config_key_initialize;
@@ -299,20 +299,21 @@ ccm_config_key_initialize (CCMConfig* config, int screen,
 
 	self->priv->key = g_strdup(key);
 	
-	if (screen == -1)
-		filename = g_strdup_printf("%s/cairo-compmgr/ccm-display.conf", 
-		                           g_get_user_config_dir());
-	else if (screen >= 0)
-		filename = g_strdup_printf("%s/cairo-compmgr/ccm-screen-%i.conf", 
-		                           g_get_user_config_dir(), screen);
-	else
-		return FALSE;
-
 	self->priv->monitor = 
-		g_hash_table_lookup(CCM_CONFIG_KEY_GET_CLASS(self)->configs, filename);
+		g_hash_table_lookup(CCM_CONFIG_KEY_GET_CLASS(self)->configs, 
+		                    &screen);
 	
 	if (!self->priv->monitor)
 	{
+		if (screen == -1)
+			filename = g_strdup_printf("%s/cairo-compmgr/ccm-display.conf", 
+		    		                   g_get_user_config_dir());
+		else if (screen >= 0)
+			filename = g_strdup_printf("%s/cairo-compmgr/ccm-screen-%i.conf", 
+				                       g_get_user_config_dir(), screen);
+		else
+			return FALSE;
+
 		self->priv->monitor = ccm_config_key_monitor_new (filename);
 		if (!self->priv->monitor)
 		{
@@ -320,10 +321,9 @@ ccm_config_key_initialize (CCMConfig* config, int screen,
 			return FALSE;
 		}
 		g_hash_table_insert(CCM_CONFIG_KEY_GET_CLASS(self)->configs,
-		                    filename, self->priv->monitor);
+		                    &screen, self->priv->monitor);
+		g_free(filename);
 	}
-	else 
-		g_free (filename);
 	
 	self->priv->monitor->configs = g_slist_prepend(self->priv->monitor->configs, 
 	                                               self);
