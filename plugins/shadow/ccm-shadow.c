@@ -789,6 +789,7 @@ ccm_shadow_on_pixmap_damage(CCMShadow* self, CCMRegion* area)
 		cairo_destroy(ctx);
 		cairo_surface_destroy(surface);
 		ccm_display_flush(display);
+		ccm_display_sync(display);
 	}
 }
 
