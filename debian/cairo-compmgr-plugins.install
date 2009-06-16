@@ -12,7 +12,6 @@ debian/tmp/usr/share/cairo-compmgr/schemas/ccm-perf.schema-key usr/share/cairo-c
 debian/tmp/usr/share/cairo-compmgr/schemas/ccm-shadow.schema-key usr/share/cairo-compmgr/schemas
 debian/tmp/usr/share/cairo-compmgr/schemas/ccm-snapshot.schema-key usr/share/cairo-compmgr/schemas
 debian/tmp/usr/share/cairo-compmgr/schemas/ccm-vala-window-plugin.schema-key usr/share/cairo-compmgr/schemas
-debian/tmp/usr/share/cairo-compmgr/ui/ccm-preferences.ui usr/share/cairo-compmgr/ui
 debian/tmp/usr/share/cairo-compmgr/ui/ccm-automate.ui usr/share/cairo-compmgr/ui
 debian/tmp/usr/share/cairo-compmgr/ui/ccm-menu-animation.ui usr/share/cairo-compmgr/ui
 debian/tmp/usr/share/cairo-compmgr/ui/menu-animation.png usr/share/cairo-compmgr/ui
