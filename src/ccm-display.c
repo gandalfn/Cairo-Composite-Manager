@@ -485,8 +485,12 @@ ccm_display_init_input(CCMDisplay *self)
 	g_return_val_if_fail(self != NULL, FALSE);
 	
 	XExtensionVersion	*version;
-    
+	
+#ifdef HAVE_XI2
+	version = XQueryInputVersion(self->priv->xdisplay, XI_2_Major, XI_2_Minor);
+#else
     version = XGetExtensionVersion(self->priv->xdisplay, INAME);
+#endif
 
     if (version && (version != (XExtensionVersion*) NoSuchExtension)) 
 	{

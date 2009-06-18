@@ -92,6 +92,14 @@ AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 
 dnl ****************************************************************************
+dnl Check for XInput2
+dnl *****************************************************************************
+LIBS="$CAIRO_COMPMGR_LIBS $LIBS"
+AC_CHECK_FUNC(XSetClientPointer,AC_DEFINE(HAVE_XI2,1,[XInput Version 2 Enabled]))
+AM_CONDITIONAL(HAVE_XI2, [test "x$ac_cv_func_XSetClientPointer" = "xyes"] )
+AC_SUBST(HAVE_XI2)
+
+dnl ****************************************************************************
 dnl Check for gtk-doc and docbook
 dnl ****************************************************************************
 GTK_DOC_CHECK([1.6])
