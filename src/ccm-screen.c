@@ -1661,27 +1661,32 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 			{
 				ccm_screen_update_background(self);
 			}
+			cairo_rectangle_t* rects;
+			gint cpt, nb_rects;
+			cairo_surface_t* surface = 
+			 ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->background));
+				
+			cairo_save(self->priv->ctx);
+			ccm_region_get_rectangles (self->priv->root_damage, 
+				                           &rects, &nb_rects);
+			for (cpt = 0; cpt < nb_rects; ++cpt)
+				cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
+								 rects[cpt].width, rects[cpt].height);
+			cairo_rectangles_free(rects, nb_rects);
+			cairo_clip (self->priv->ctx);
+				
 			if (self->priv->background)
 			{
-				cairo_rectangle_t* rects;
-				gint cpt, nb_rects;
-				cairo_surface_t* surface = 
-				 ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->background));
-				
-				cairo_save(self->priv->ctx);
-				ccm_region_get_rectangles (self->priv->root_damage, 
-				                           &rects, &nb_rects);
-				for (cpt = 0; cpt < nb_rects; ++cpt)
-					cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
-									 rects[cpt].width, rects[cpt].height);
-				cairo_rectangles_free(rects, nb_rects);
-				cairo_clip (self->priv->ctx);
-				
 				cairo_set_source_surface (self->priv->ctx, surface, 0, 0);
 				cairo_paint(self->priv->ctx);
 				cairo_surface_destroy (surface);
-				cairo_restore(self->priv->ctx);
 			}
+			else
+			{
+				cairo_set_source_rgb(self->priv->ctx, 0, 0, 0);
+				cairo_paint(self->priv->ctx);
+			}
+			cairo_restore(self->priv->ctx);
 			ccm_screen_add_damaged_region (self, self->priv->root_damage);
 			ccm_region_destroy (self->priv->root_damage);
 			self->priv->root_damage = NULL;
