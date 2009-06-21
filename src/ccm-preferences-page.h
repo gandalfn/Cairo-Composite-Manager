@@ -61,9 +61,12 @@ typedef enum
 	CCM_PREFERENCES_PAGE_SECTION_N
 } CCMPreferencesPageSection;
 
+typedef gboolean (*CCMNeedRestartFunc)       (CCMPreferencesPage* self,
+                                              gboolean restore_old,
+                                              gpointer data);
+
 GType ccm_preferences_page_get_type			 (void) G_GNUC_CONST;
-CCMPreferencesPage* ccm_preferences_page_new (CCMPreferences* preferences, 
-                                              gint screen_num);
+CCMPreferencesPage* ccm_preferences_page_new (gint screen_num);
 GtkWidget* ccm_preferences_page_get_widget	 (CCMPreferencesPage* self);
 int ccm_preferences_page_get_screen_num		 (CCMPreferencesPage* self);
 void ccm_preferences_page_set_current_section(CCMPreferencesPage* self,
@@ -76,6 +79,9 @@ void ccm_preferences_page_section_register_widget(CCMPreferencesPage* self,
                                                   CCMPreferencesPageSection section,
                                                   GtkWidget* widget,
                                                   gchar* plugin);
+void ccm_preferences_page_need_restart		 (CCMPreferencesPage* self,
+                                              CCMNeedRestartFunc func,
+		                                      gpointer data);
 G_END_DECLS
 
 #endif /* _CCM_PREFERENCES_PAGE_H_ */

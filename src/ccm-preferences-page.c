@@ -79,6 +79,7 @@ static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 
 enum
 {
+	NEED_RESTART,
 	PLUGIN_STATE_CHANGED,
 	N_SIGNALS
 };
@@ -120,7 +121,6 @@ ccm_preferences_page_init (CCMPreferencesPage *self)
 	
 	self->priv = CCM_PREFERENCES_PAGE_GET_PRIVATE(self);
 	self->priv->screen_num = -1;
-	self->priv->preferences = NULL;
 	self->priv->builder = NULL;
 	self->priv->last_section = NULL;
 	self->priv->plugin_loader = NULL;
@@ -165,6 +165,12 @@ ccm_preferences_page_class_init (CCMPreferencesPageClass *klass)
 
 	object_class->finalize = ccm_preferences_page_finalize;
 
+	signals[NEED_RESTART] = g_signal_new ("need-restart",
+	                                G_OBJECT_CLASS_TYPE (object_class),
+									G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+									ccm_cclosure_marshal_VOID__POINTER_POINTER,
+									G_TYPE_NONE, 2, G_TYPE_POINTER, G_TYPE_POINTER);
+	
 	signals[PLUGIN_STATE_CHANGED] = g_signal_new ("plugin-state-changed",
 									G_OBJECT_CLASS_TYPE (object_class),
 									G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -551,7 +557,7 @@ ccm_preferences_page_on_backend_changed(CCMPreferencesPage* self,
 	if (gtk_combo_box_get_active_iter(combo, &iter))
 	{
 		gchar* name;
-		
+
 		gtk_tree_model_get(model, &iter, 0, &name, -1);
 		if (!g_ascii_strcasecmp(name, "image"))
 		{
@@ -814,15 +820,13 @@ ccm_preferences_page_get_plugins(CCMPreferencesPage* self)
 }
 
 CCMPreferencesPage*
-ccm_preferences_page_new (CCMPreferences* preferences, gint screen_num)
+ccm_preferences_page_new (gint screen_num)
 {
-	g_return_val_if_fail(preferences != NULL, NULL);
 	g_return_val_if_fail(screen_num >= 0, NULL);
 	
 	CCMPreferencesPage* self = g_object_new(CCM_TYPE_PREFERENCES_PAGE, NULL);
 	
 	self->priv->screen_num = screen_num;
-	self->priv->preferences = preferences;
 	self->priv->builder = gtk_builder_new();
 	gtk_builder_add_from_file(self->priv->builder, 
 							  UI_DIR "/ccm-preferences.ui", NULL);
@@ -1019,4 +1023,14 @@ ccm_preferences_page_section_register_widget(CCMPreferencesPage* self,
 	g_signal_connect(G_OBJECT(self), "plugin-state-changed",
 	                 G_CALLBACK(ccm_preferences_page_section_on_plugin_changed),
 	                 widget);
+}
+
+void
+ccm_preferences_page_need_restart (CCMPreferencesPage* self,
+                                   CCMNeedRestartFunc func,
+                                   gpointer data)
+{
+	g_return_if_fail(self != NULL);
+
+	g_signal_emit(self, signals[NEED_RESTART], 0, func, data);
 }

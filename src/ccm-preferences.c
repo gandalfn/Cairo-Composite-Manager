@@ -22,11 +22,13 @@
 #include <gtk/gtk.h>
 
 #include "ccm-cairo-utils.h"
+#include "ccm-timed-dialog.h"
 #include "ccm-preferences.h"
 #include "ccm-preferences-page.h"
 
 enum
 {
+	RELOAD,
 	CLOSED,
     N_SIGNALS
 };
@@ -38,6 +40,14 @@ G_DEFINE_TYPE (CCMPreferences, ccm_preferences, G_TYPE_OBJECT);
 #define CCM_PREFERENCES_GET_PRIVATE(o)  \
    ((CCMPreferencesPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PREFERENCES, \
 														 CCMPreferencesClass))
+
+typedef struct
+{
+	CCMPreferences* self;
+	CCMPreferencesPage* page;
+	CCMNeedRestartFunc func;
+	gpointer data;
+} CCMPreferencesNeedRestartData;
 
 struct _CCMPreferencesPrivate
 {
@@ -89,6 +99,12 @@ ccm_preferences_class_init (CCMPreferencesClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 
 	g_type_class_add_private (klass, sizeof (CCMPreferencesPrivate));
+
+	signals[RELOAD] = g_signal_new ("reload",
+									G_OBJECT_CLASS_TYPE (object_class),
+									G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+									g_cclosure_marshal_VOID__VOID,
+									G_TYPE_NONE, 0);
 
 	signals[CLOSED] = g_signal_new ("closed",
 									G_OBJECT_CLASS_TYPE (object_class),
@@ -161,6 +177,54 @@ ccm_preferences_on_title_on_size_allocate (CCMPreferences* self,
 }
 
 static void
+on_need_restart_dialog_response(GtkDialog* dialog, int response, 
+                                CCMPreferencesNeedRestartData* data)
+{
+	data->func(data->page, response != GTK_RESPONSE_YES, data->data);
+	if (response != GTK_RESPONSE_YES) 
+		g_signal_emit(data->self, signals[RELOAD], 0);
+	g_free(data);
+	
+	g_object_unref(dialog);	
+}
+
+static void
+on_need_restart_dialog_close(GtkDialog* dialog, 
+                             CCMPreferencesNeedRestartData* data)
+{
+	data->func(data->page, TRUE, data->data);
+	g_signal_emit(data->self, signals[RELOAD], 0);
+	g_free(data);
+	
+	g_object_unref(dialog);	
+}
+
+static void
+ccm_preferences_on_need_restart(CCMPreferences* self, CCMNeedRestartFunc func,
+                                gpointer data, CCMPreferencesPage* page)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(page != NULL);
+
+	g_signal_emit(self, signals[RELOAD], 0);
+	if (func)
+	{
+		GtkWidget* widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder,
+		                                                      "shell"));
+		GtkWidget* dialog = ccm_timed_dialog_new (widget, 20);
+		CCMPreferencesNeedRestartData* nr_data = g_new(CCMPreferencesNeedRestartData, 1);
+		nr_data->self = self;
+		nr_data->page = page;
+		nr_data->func = func;
+		nr_data->data = data;
+		g_signal_connect(G_OBJECT(dialog), "response", 
+		                 G_CALLBACK(on_need_restart_dialog_response), nr_data);
+		g_signal_connect(G_OBJECT(dialog), "close", 
+		                 G_CALLBACK(on_need_restart_dialog_close), nr_data);
+	}
+}
+
+static void
 ccm_preferences_create_page(CCMPreferences* self, int screen_num)
 {
 	g_return_if_fail(self != NULL);
@@ -211,8 +275,10 @@ ccm_preferences_create_page(CCMPreferences* self, int screen_num)
 	gtk_label_set_markup(screen_name, str);
 	g_free(str);
 
-	self->priv->screen_pages[screen_num] = ccm_preferences_page_new(self,
-																	screen_num);
+	self->priv->screen_pages[screen_num] = ccm_preferences_page_new(screen_num);
+	g_signal_connect_swapped(G_OBJECT(self->priv->screen_pages[screen_num]),
+	                         "need-restart", 
+	                         G_CALLBACK(ccm_preferences_on_need_restart), self);
 	page = ccm_preferences_page_get_widget(self->priv->screen_pages[screen_num]);
 	gtk_widget_show(page);
 	gtk_notebook_append_page(notebook, page, NULL);
