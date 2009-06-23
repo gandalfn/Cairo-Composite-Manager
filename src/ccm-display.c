@@ -230,12 +230,14 @@ ccm_display_finalize (GObject *object)
 	{
 		for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
 		{
-			if (self->priv->screens[cpt])
+			if (self->priv->screens[cpt] && 
+			    CCM_IS_SCREEN(self->priv->screens[cpt]))
 			{
 				g_object_unref(self->priv->screens[cpt]);
 				self->priv->screens[cpt] = NULL;
 			}
 		}
+		self->priv->nb_screens = 0;
 		
 		g_slice_free1(sizeof(CCMScreen*) * (self->priv->nb_screens + 1), 
 					  self->priv->screens);

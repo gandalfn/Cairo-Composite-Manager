@@ -170,6 +170,20 @@ ccm_tray_menu_enable_ccm_changed (CCMTrayMenu * self, CCMConfig* config)
 	}
 }
 
+static gboolean
+ccm_tray_menu_on_preferences_reload (CCMTrayMenu * self, CCMPreferences* preferences)
+{
+	gboolean ret = FALSE;
+	
+	if (self->priv->display)
+	{
+		g_object_unref(self->priv->display);
+		self->priv->display = ccm_display_new(NULL);
+		ret = TRUE;
+	}
+
+	return ret;
+}
 
 CCMTrayMenu*
 ccm_tray_menu_new (void)
@@ -194,6 +208,9 @@ ccm_tray_menu_new (void)
 		
 	/* Get preferences dialog */
 	self->priv->preferences = ccm_preferences_new ();
+	g_signal_connect_swapped(self->priv->preferences,  "reload",
+	                         G_CALLBACK(ccm_tray_menu_on_preferences_reload),
+	                         self);
 	
 	/* Create preferences menu */
 	self->priv->preferences_menu = 

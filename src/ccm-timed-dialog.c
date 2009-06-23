@@ -104,8 +104,6 @@ ccm_timed_dialog_set_timeout_string (CCMTimedDialog* self)
 static gboolean
 ccm_timed_dialog_timeout_callback (CCMTimedDialog* self)
 {
-	gboolean ret = TRUE;
-	
 	if (!self->priv->timed_out)
 	{
 		self->priv->time--;
@@ -115,11 +113,10 @@ ccm_timed_dialog_timeout_callback (CCMTimedDialog* self)
 			self->priv->timed_out = TRUE;
 			gtk_dialog_response(GTK_DIALOG(self), GTK_RESPONSE_NO);
 			self->priv->timeout = 0;
-			ret = FALSE;
 		}
 	}
 	
-	return ret;
+	return !self->priv->timed_out;
 }
 
 GtkWidget*

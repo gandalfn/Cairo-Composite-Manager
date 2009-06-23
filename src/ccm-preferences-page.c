@@ -22,6 +22,9 @@
 #include <string.h>
 
 #include "ccm-config.h"
+#include "ccm-config-check-button.h"
+#include "ccm-config-color-button.h"
+#include "ccm-config-adjustment.h"
 #include "ccm-extension.h"
 #include "ccm-extension-loader.h"
 #include "ccm-preferences-page-plugin.h"
@@ -46,6 +49,7 @@ enum
 	CCM_SCREEN_REFRESH_RATE,
 	CCM_SCREEN_SYNC_WITH_VBLANK,
 	CCM_SCREEN_INDIRECT,
+	CCM_SCREEN_USE_ROOT_BACKGROUND,
 	CCM_SCREEN_BACKGROUND,
 	CCM_SCREEN_COLOR_BACKGROUND,
 	CCM_SCREEN_BACKGROUND_X,
@@ -67,6 +71,7 @@ static gchar* CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
 	"refresh_rate",
 	"sync_with_vblank",
 	"indirect",
+	"use_root_background",
 	"background",
 	"color_background",
 	"background_x",
@@ -93,6 +98,8 @@ struct _CCMPreferencesPagePrivate
 	gint						screen_num;
 	GtkBuilder*					builder;
 	GtkTreePath*				last_section;
+
+	gchar*						backend;
 	
 	CCMExtensionLoader*			plugin_loader;
 	CCMPreferencesPagePlugin*   plugin;
@@ -105,7 +112,13 @@ static void
 impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 											   CCMPreferencesPage* self,
 											   GtkWidget* widget);
+static void
+impl_ccm_preferences_page_init_desktop_section(CCMPreferencesPagePlugin* plugin,
+											   CCMPreferencesPage* self,
+											   GtkWidget* desktop_section);
 static void ccm_preferences_page_iface_init (CCMPreferencesPagePluginClass* iface);
+static void ccm_preferences_page_on_backend_changed(CCMPreferencesPage* self,
+                                                    GtkComboBox* combo);
 
 G_DEFINE_TYPE_EXTENDED (CCMPreferencesPage, ccm_preferences_page, G_TYPE_OBJECT, 
 						0, G_IMPLEMENT_INTERFACE(CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
@@ -123,6 +136,7 @@ ccm_preferences_page_init (CCMPreferencesPage *self)
 	self->priv->screen_num = -1;
 	self->priv->builder = NULL;
 	self->priv->last_section = NULL;
+	self->priv->backend = NULL;
 	self->priv->plugin_loader = NULL;
 	self->priv->plugin = NULL;
 	for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; ++cpt)
@@ -136,6 +150,8 @@ ccm_preferences_page_finalize (GObject *object)
 {
 	CCMPreferencesPage *self = CCM_PREFERENCES_PAGE(object);
 	gint cpt;
+
+	if (self->priv->backend) g_free(self->priv->backend);
 	
 	if (self->priv->last_section) gtk_tree_path_free(self->priv->last_section);
 	
@@ -182,6 +198,31 @@ static void
 ccm_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
 {
 	iface->init_general_section = impl_ccm_preferences_page_init_general_section;
+	iface->init_desktop_section = impl_ccm_preferences_page_init_desktop_section;
+}
+
+static void
+ccm_preferences_page_on_use_root_background_changed(CCMPreferencesPage* self,
+                                                    CCMConfig* config)
+{
+	gboolean use_root_background = ccm_config_get_boolean (config, NULL);
+	GtkWidget* widget;
+
+	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+	                                           "color_background"));
+	gtk_widget_set_sensitive(widget, !use_root_background);
+
+	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+	                                           "background_button"));
+	gtk_widget_set_sensitive(widget, !use_root_background);
+	
+	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder,
+	                                           "background_x"));
+	gtk_widget_set_sensitive(widget, !use_root_background);
+
+	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+	                                           "background_y"));
+	gtk_widget_set_sensitive(widget, !use_root_background);
 }
 
 static void
@@ -200,6 +241,12 @@ ccm_preferences_page_load_config(CCMPreferencesPage* self)
 	{
 		self->priv->screen_options[cpt] = 
 			ccm_config_new(self->priv->screen_num, NULL, CCMScreenOptions[cpt]);
+
+		if (cpt == CCM_SCREEN_USE_ROOT_BACKGROUND)
+			g_signal_connect_swapped(self->priv->screen_options[cpt],
+			                         "changed",
+			                         G_CALLBACK(ccm_preferences_page_on_use_root_background_changed),
+			                         self);
 	}
 }
 
@@ -545,6 +592,104 @@ ccm_preferences_page_on_composite_desktop_toggled(CCMPreferencesPage* self,
 }
 
 static void
+ccm_preferences_page_change_backend(CCMPreferencesPage* self, gchar* name)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(name != NULL);
+	
+	if (!g_ascii_strcasecmp(name, "image"))
+	{
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
+							   FALSE, NULL);
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_USE_BUFFERED], 
+							   TRUE, NULL);
+		ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
+							  "xrender", NULL);
+	}
+	else if (!g_ascii_strcasecmp(name, "xrender"))
+	{
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
+							   TRUE, NULL);
+		ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
+							  "xrender", NULL);
+	}
+	else if (!g_ascii_strcasecmp(name, "glitz-tfp"))
+	{
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
+							   TRUE, NULL);
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_INDIRECT], 
+							   TRUE, NULL);
+		ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
+							  "glitz", NULL);
+	}
+	else if (!g_ascii_strcasecmp(name, "glitz"))
+	{
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
+							   FALSE, NULL);
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_INDIRECT], 
+							   FALSE, NULL);
+		ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
+							  "glitz", NULL);
+	}
+	else if (!g_ascii_strcasecmp(name, "openvg"))
+	{
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
+							   FALSE, NULL);
+		ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_INDIRECT], 
+							   FALSE, NULL);
+		ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
+							  "openvg", NULL);
+	}
+}
+static void 
+ccm_preferences_page_on_backend_need_restart(CCMPreferencesPage* self,
+                                             gboolean restore_old,
+                                             gchar* name)
+{
+	g_return_if_fail(self != NULL);
+
+	if (restore_old)
+	{
+		GtkComboBox* combo;
+		GtkTreeModel* backends;
+		GtkTreeIter iter;
+
+		g_free(name);
+		combo = GTK_COMBO_BOX(gtk_builder_get_object(self->priv->builder, 
+		                                             "backend"));
+		if (!combo) return;
+		backends = GTK_TREE_MODEL(gtk_builder_get_object(self->priv->builder, 
+														 "backends_list"));
+		if (!backends) return;
+
+		ccm_preferences_page_change_backend(self, self->priv->backend);
+
+		g_signal_handlers_block_by_func(combo, 
+		                                ccm_preferences_page_on_backend_changed,
+		                                self);
+		if (gtk_tree_model_get_iter_first(backends, &iter))
+		{
+			do 
+			{
+				gtk_tree_model_get(backends, &iter, 0, &name, -1);
+				if (name && !g_ascii_strcasecmp(name, self->priv->backend))
+				{
+					gtk_combo_box_set_active_iter(combo, &iter);
+					g_free (name);
+					break;
+				}
+				if (name) g_free (name);
+			} while (gtk_tree_model_iter_next(backends, &iter));
+		}
+		g_signal_handlers_unblock_by_func(combo, 
+		                                  ccm_preferences_page_on_backend_changed,
+		                                  self);
+	}
+	else
+		self->priv->backend = name;
+}
+
+static void
 ccm_preferences_page_on_backend_changed(CCMPreferencesPage* self,
 										GtkComboBox* combo)
 {
@@ -559,50 +704,11 @@ ccm_preferences_page_on_backend_changed(CCMPreferencesPage* self,
 		gchar* name;
 
 		gtk_tree_model_get(model, &iter, 0, &name, -1);
-		if (!g_ascii_strcasecmp(name, "image"))
-		{
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
-								   FALSE, NULL);
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_USE_BUFFERED], 
-								   TRUE, NULL);
-			ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
-								  "xrender", NULL);
-		}
-		else if (!g_ascii_strcasecmp(name, "xrender"))
-		{
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
-								   TRUE, NULL);
-			ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
-								  "xrender", NULL);
-		}
-		else if (!g_ascii_strcasecmp(name, "glitz-tfp"))
-		{
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
-								   TRUE, NULL);
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_INDIRECT], 
-								   TRUE, NULL);
-			ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
-								  "glitz", NULL);
-		}
-		else if (!g_ascii_strcasecmp(name, "glitz"))
-		{
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
-								   FALSE, NULL);
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_INDIRECT], 
-								   FALSE, NULL);
-			ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
-								  "glitz", NULL);
-		}
-		else if (!g_ascii_strcasecmp(name, "openvg"))
-		{
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_PIXMAP], 
-								   FALSE, NULL);
-			ccm_config_set_boolean(self->priv->screen_options[CCM_SCREEN_INDIRECT], 
-								   FALSE, NULL);
-			ccm_config_set_string(self->priv->screen_options[CCM_SCREEN_BACKEND], 
-								  "openvg", NULL);
-		}
-		g_free(name);
+		ccm_preferences_page_change_backend(self, name);
+		
+		ccm_preferences_page_need_restart (self, 
+		                                   (CCMNeedRestartFunc)ccm_preferences_page_on_backend_need_restart, 
+		                                   name);
 	}
 }
 
@@ -624,7 +730,6 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 											   CCMPreferencesPage* self,
 											   GtkWidget* widget)
 {
-	gchar* backend;
 	gboolean not_active = FALSE;
 	GSList* unmanaged, *item;
 	GtkToggleButton* button;
@@ -649,9 +754,9 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 	
 	ccm_preferences_page_init_backends_list(self);
 	
-	backend = ccm_config_get_string 
+	self->priv->backend = ccm_config_get_string 
 		(self->priv->screen_options[CCM_SCREEN_BACKEND], NULL);
-	if (backend)
+	if (self->priv->backend)
 	{
 		GtkComboBox* combo;
 		GtkTreeModel* backends;
@@ -671,15 +776,15 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 		native = ccm_config_get_boolean
 			(self->priv->screen_options[CCM_SCREEN_PIXMAP], NULL);
 		
-		if (!g_ascii_strcasecmp(backend, "xrender") && !native)
+		if (!g_ascii_strcasecmp(self->priv->backend, "xrender") && !native)
 		{
-			g_free(backend);
-			backend = g_strdup("image");
+			g_free(self->priv->backend);
+			self->priv->backend = g_strdup("image");
 		}
-		if (!g_ascii_strcasecmp(backend, "glitz") && native)
+		if (!g_ascii_strcasecmp(self->priv->backend, "glitz") && native)
 		{
-			g_free(backend);
-			backend = g_strdup("glitz-tfp");
+			g_free(self->priv->backend);
+			self->priv->backend = g_strdup("glitz-tfp");
 		}
 		if (gtk_tree_model_get_iter_first(backends, &iter))
 		{
@@ -687,7 +792,7 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 			{
 				gchar* name;
 				gtk_tree_model_get(backends, &iter, 0, &name, -1);
-				if (name && !g_ascii_strcasecmp(name, backend))
+				if (name && !g_ascii_strcasecmp(name, self->priv->backend))
 				{
 					gtk_combo_box_set_active_iter(combo, &iter);
 					g_free (name);
@@ -696,7 +801,6 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 				if (name) g_free (name);
 			} while (gtk_tree_model_iter_next(backends, &iter));
 		}
-		g_free(backend);
 	}
 	
 	refresh_rate = ccm_config_get_integer 
@@ -713,6 +817,62 @@ impl_ccm_preferences_page_init_general_section(CCMPreferencesPagePlugin* plugin,
 	ccm_preferences_page_init_plugins_list(self);
 
 	ccm_preferences_page_section_p(self,CCM_PREFERENCES_PAGE_SECTION_GENERAL);
+}
+
+static void
+impl_ccm_preferences_page_init_desktop_section(CCMPreferencesPagePlugin* plugin,
+											   CCMPreferencesPage* self,
+											   GtkWidget* desktop_section)
+{
+	GtkWidget* widget = 
+			GTK_WIDGET(gtk_builder_get_object(self->priv->builder, "background"));
+	if (widget)
+	{
+		gboolean use_root = 
+			ccm_config_get_boolean (self->priv->screen_options[CCM_SCREEN_USE_ROOT_BACKGROUND], 
+				                    NULL);
+		gint screen_num = ccm_preferences_page_get_screen_num (self);
+		
+		gtk_box_pack_start(GTK_BOX(desktop_section), widget, 
+		                   FALSE, TRUE, 0);
+
+		ccm_preferences_page_section_register_widget (self,
+		                                              CCM_PREFERENCES_PAGE_SECTION_DESKTOP,
+		                                              widget, "general");
+		
+		CCMConfigCheckButton* use_root_background = 
+			CCM_CONFIG_CHECK_BUTTON(gtk_builder_get_object(self->priv->builder, 
+			                                               "use_root_background"));
+		g_object_set(use_root_background, "screen", screen_num, NULL);
+
+		CCMConfigColorButton* color_background = 
+			CCM_CONFIG_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
+			                                               "color_background"));
+		g_object_set(color_background, "screen", screen_num, NULL);
+		gtk_widget_set_sensitive(GTK_WIDGET(color_background), !use_root);
+
+		widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder,
+	                                           "background_button"));
+		gtk_widget_set_sensitive(GTK_WIDGET(widget), !use_root);
+
+		CCMConfigAdjustment* background_x = 
+			CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+			                                             "background_x_adjustment"));
+		g_object_set(background_x, "screen", screen_num, NULL);
+		widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder,
+	                                           "background_x"));
+		gtk_widget_set_sensitive(GTK_WIDGET(widget), !use_root);
+
+		CCMConfigAdjustment* background_y = 
+			CCM_CONFIG_ADJUSTMENT(gtk_builder_get_object(self->priv->builder, 
+			                                             "background_y_adjustment"));
+		g_object_set(background_y, "screen", screen_num, NULL);
+		widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder,
+	                                           "background_y"));
+		gtk_widget_set_sensitive(GTK_WIDGET(widget), !use_root);
+	}
+	ccm_preferences_page_plugin_init_desktop_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
+													  self, desktop_section);
 }
 
 static void
