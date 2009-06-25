@@ -226,6 +226,56 @@ ccm_preferences_page_on_use_root_background_changed(CCMPreferencesPage* self,
 }
 
 static void
+ccm_preferences_page_on_background_changed(CCMPreferencesPage* self,
+                                           CCMConfig* config)
+{
+	gchar* filename;
+
+	filename = ccm_config_get_string(self->priv->screen_options[CCM_SCREEN_BACKGROUND], 
+	                                 NULL);
+	if (filename && g_file_test(filename, G_FILE_TEST_EXISTS) &&
+	    !g_file_test(filename, G_FILE_TEST_IS_DIR))
+	{
+		GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
+
+		if (pixbuf)
+		{
+			GdkPixbuf* scaled;
+			GtkImage* image;
+			int width, height;
+			
+			image = GTK_IMAGE(gtk_builder_get_object(self->priv->builder,
+			                                         "background_image"));
+			if (!image)
+			{
+				g_object_unref(pixbuf);
+				return;
+			}
+
+			gtk_widget_get_size_request(GTK_WIDGET(image), &width, &height);
+			if (gdk_pixbuf_get_width(pixbuf) > gdk_pixbuf_get_height(pixbuf))
+			{
+				height = (int)((float)gdk_pixbuf_get_height(pixbuf) * 
+				               ((float)width / (float)gdk_pixbuf_get_width(pixbuf)));
+			}
+			else
+			{
+				width = (int)((float)gdk_pixbuf_get_width(pixbuf) * 
+					          ((float)height / (float)gdk_pixbuf_get_height(pixbuf)));
+			}
+
+			scaled = gdk_pixbuf_scale_simple(pixbuf, width, height, 
+			                                 GDK_INTERP_BILINEAR);
+			g_object_unref(pixbuf);
+			
+			gtk_image_set_from_pixbuf(image, scaled);
+
+			g_object_unref(scaled);
+		}
+	}
+}
+
+static void
 ccm_preferences_page_load_config(CCMPreferencesPage* self)
 {
 	g_return_if_fail(self != NULL);
@@ -246,6 +296,11 @@ ccm_preferences_page_load_config(CCMPreferencesPage* self)
 			g_signal_connect_swapped(self->priv->screen_options[cpt],
 			                         "changed",
 			                         G_CALLBACK(ccm_preferences_page_on_use_root_background_changed),
+			                         self);
+		if (cpt == CCM_SCREEN_BACKGROUND)
+			g_signal_connect_swapped(self->priv->screen_options[cpt],
+			                         "changed",
+			                         G_CALLBACK(ccm_preferences_page_on_background_changed),
 			                         self);
 	}
 }
@@ -641,6 +696,7 @@ ccm_preferences_page_change_backend(CCMPreferencesPage* self, gchar* name)
 							  "openvg", NULL);
 	}
 }
+
 static void 
 ccm_preferences_page_on_backend_need_restart(CCMPreferencesPage* self,
                                              gboolean restore_old,
@@ -723,6 +779,51 @@ ccm_preferences_page_on_refresh_rate_changed(CCMPreferencesPage* self,
 		(self->priv->screen_options[CCM_SCREEN_REFRESH_RATE], 
 		 (gint)gtk_spin_button_get_value(spin),
 		 NULL);
+}
+
+static void
+ccm_preferences_page_on_file_chooser_response(CCMPreferencesPage* self,
+                                              int response,
+                                              GtkDialog* dialog)
+{
+	if (response == GTK_RESPONSE_ACCEPT)
+	{
+		gchar* filename;
+		
+		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+		ccm_config_set_string (self->priv->screen_options[CCM_SCREEN_BACKGROUND],
+		                       filename, NULL);
+		g_free(filename);
+	}
+	gtk_widget_destroy(GTK_WIDGET(dialog));
+}
+
+static void
+ccm_preferences_page_on_button_background_clicked(CCMPreferencesPage* self,
+                                                  GtkButton* button)
+{
+	GtkWidget* dialog;
+	GtkFileFilter* filter;
+	gchar* filename;
+
+	filename = ccm_config_get_string(self->priv->screen_options[CCM_SCREEN_BACKGROUND], 
+	                                 NULL);
+	dialog = gtk_file_chooser_dialog_new("Open File",
+				  						  NULL,
+	                                     GTK_FILE_CHOOSER_ACTION_OPEN,
+	                                     GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+	                                     GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+	                                     NULL);
+	filter = gtk_file_filter_new();
+	gtk_file_filter_add_pixbuf_formats(filter);
+	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+	gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(dialog), filename);
+	g_free(filename);
+	
+	gtk_widget_show(dialog);
+	g_signal_connect_swapped(G_OBJECT(dialog), "response",
+	                         G_CALLBACK(ccm_preferences_page_on_file_chooser_response),
+	                         self);
 }
 
 static void
@@ -845,6 +946,16 @@ impl_ccm_preferences_page_init_desktop_section(CCMPreferencesPagePlugin* plugin,
 			                                               "use_root_background"));
 		g_object_set(use_root_background, "screen", screen_num, NULL);
 
+		GtkButton* button_background =
+			GTK_BUTTON(gtk_builder_get_object(self->priv->builder, 
+			                                  "background_button"));
+		g_signal_connect_swapped(G_OBJECT(button_background),
+		                         "clicked", 
+		                         G_CALLBACK(ccm_preferences_page_on_button_background_clicked),
+		                         self);
+		ccm_preferences_page_on_background_changed (self, 
+		                                            self->priv->screen_options[CCM_SCREEN_BACKGROUND]);
+		
 		CCMConfigColorButton* color_background = 
 			CCM_CONFIG_COLOR_BUTTON(gtk_builder_get_object(self->priv->builder, 
 			                                               "color_background"));
