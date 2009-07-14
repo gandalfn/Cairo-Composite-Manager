@@ -1,0 +1,4 @@
+[duration]
+Type=float
+Default=0.2
+_Description=Window animation duration

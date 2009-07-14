@@ -1,0 +1,7 @@
+[CCMPlugin]
+Plugin=ccm-window-animation
+Version=@VERSION@
+_Name=Window-Animation
+_Description=Add animation on window open/close
+Backends=xrender;glitz
+Depends=fade;shadow

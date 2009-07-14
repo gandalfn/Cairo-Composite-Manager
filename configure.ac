@@ -306,6 +306,8 @@ plugins/freeze/Makefile
 plugins/freeze/ccm-freeze.plugin.desktop
 plugins/menu-animation/Makefile
 plugins/menu-animation/ccm-menu-animation.plugin.desktop
+plugins/window-animation/Makefile
+plugins/window-animation/ccm-window-animation.plugin.desktop
 plugins/magnifier/Makefile
 plugins/magnifier/ccm-magnifier.plugin.desktop
 plugins/mosaic/Makefile

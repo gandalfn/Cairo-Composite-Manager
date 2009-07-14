@@ -26,30 +26,56 @@ using CCM;
 
 namespace CCM
 {
-	public class ValaWindowPlugin : CCM.Plugin, CCM.WindowPlugin
+	enum Options
 	{
-		private enum Options
-		{
-			ENABLE,
-			N
-		}
-		
-		private string[Options.N] options =  {
-			"enable"
-		};
+		ENABLED,
+		N
+	}
+	
+	const string[Options.N] options_key =  {
+		"enabled"
+	};
+	
+	class ValaWindowOptions : PluginOptions
+	{
+		public bool enabled;
+	}
+	
+	private class ValaWindowPlugin : CCM.Plugin, CCM.WindowPlugin
+	{
+		static ValaWindowOptions options = null;
 		
 		private weak CCM.Window window;
 		
-		private bool enabled = false;
 		private uint counter = 0;
 		
-		private CCM.Config[Options.N] configs = new CCM.Config[Options.N]; 
-		
-		private void
-		on_changed(CCM.Config config)
+		~ValaWindowPlugin()
 		{
-			enabled = config.get_boolean();
-			if (!enabled) window.get_screen().damage_all();
+			options_unload();
+		}
+
+		protected override weak PluginOptions
+		options_init()
+		{
+			options = new ValaWindowOptions();
+
+			options.enabled = false;
+
+			return options;
+		}
+		
+		protected override void
+		options_finalize(PluginOptions opts)
+		{
+			if ((ValaWindowOptions)opts == options)
+				options = null;
+		}
+		
+		protected override void
+		option_changed(CCM.Config config)
+		{
+			((ValaWindowOptions)get_option()).enabled = config.get_boolean();
+			if (!((ValaWindowOptions)get_option()).enabled) window.get_screen().damage_all();
 		}
 		
 		/**
@@ -60,18 +86,7 @@ namespace CCM
 		{
 			this.window = window;
 			
-			var screen = window.get_screen();
-		
-			/* create configs */
-			for (int cpt = 0; cpt < (int)Options.N; ++cpt)
-			{
-				configs[cpt] = new CCM.Config((int)screen.get_number(), 
-											  "vala-window-plugin",
-											  options[cpt]);
-				if (configs[cpt] != null) 
-					configs[cpt].changed += on_changed;
-			}
-			enabled = configs[(int)Options.ENABLE].get_boolean();
+			options_load("vala-window-plugin", options_key);
 			
 			/* Chain call to next plugin */
 			((CCM.WindowPlugin)parent).load_options(window);
@@ -91,13 +106,13 @@ namespace CCM
 												   surface, y_invert);
 			
 			/* Paint damaged area */
-			if (enabled)
+			if (((ValaWindowOptions)get_option()).enabled)
 			{
 				CCM.Region damaged = window.get_damaged().copy();
 			
 				if (damaged != null)
 				{
-					Cairo.Rectangle[] rectangles;
+					unowned Cairo.Rectangle[] rectangles;
 				
 					damaged.get_rectangles(out rectangles);
 				
@@ -123,6 +138,7 @@ namespace CCM
 									  rectangle.width, rectangle.height);
 					}
 					ctx.fill();
+					rectangles_free(rectangles);
 				}
 			}
 			

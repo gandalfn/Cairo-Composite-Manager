@@ -4,6 +4,7 @@ SUBDIRS = \
     fade \
     freeze \
     menu-animation \
+    window-animation \
 	magnifier \
 	mosaic \
 	perf \
