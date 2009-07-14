@@ -45,7 +45,7 @@ G_DEFINE_TYPE (CCMKeybind, ccm_keybind, G_TYPE_OBJECT);
 struct _CCMKeybindPrivate
 {
 	CCMDisplay* display;
-	CCMWindow* root;
+	Window root;
 	
 	gchar* keystring;
 	guint keycode;
@@ -72,7 +72,7 @@ ccm_keybind_init (CCMKeybind *self)
 {
 	self->priv = CCM_KEYBIND_GET_PRIVATE(self);
 	self->priv->display = NULL;
-	self->priv->root = NULL;
+	self->priv->root = None;
 	self->priv->keystring = NULL;
 	self->priv->keycode = 0;
 	self->priv->modifiers = 0;
@@ -148,12 +148,12 @@ ccm_keybind_ungrab (CCMKeybind* self)
 			XUngrabButton (CCM_DISPLAY_XDISPLAY (self->priv->display), 
 						   self->priv->button, 
 						   self->priv->modifiers | mod_masks [cpt], 
-						   CCM_WINDOW_XWINDOW (self->priv->root));
+						   self->priv->root);
 		else
 			XUngrabKey (CCM_DISPLAY_XDISPLAY (self->priv->display), 
 						self->priv->keycode, 
 						self->priv->modifiers | mod_masks [cpt], 
-						CCM_WINDOW_XWINDOW (self->priv->root));
+						self->priv->root);
 	}
 }
 
@@ -180,7 +180,7 @@ ccm_keybind_grab (CCMKeybind* self)
 				if (!XGrabButton (CCM_DISPLAY_XDISPLAY (self->priv->display), 
 								  self->priv->button, 
 								  self->priv->modifiers | mod_masks [cpt], 
-							      CCM_WINDOW_XWINDOW (self->priv->root), 
+							      self->priv->root, 
 								  !self->priv->exclusive, 
 								  ButtonPressMask | ButtonReleaseMask |
 								  ButtonMotionMask, GrabModeAsync, 
@@ -196,7 +196,7 @@ ccm_keybind_grab (CCMKeybind* self)
 				if (!XGrabKey (CCM_DISPLAY_XDISPLAY (self->priv->display), 
 							   self->priv->keycode, 
 							   self->priv->modifiers | mod_masks [cpt], 
-							   CCM_WINDOW_XWINDOW (self->priv->root), 
+							   self->priv->root, 
 							   !self->priv->exclusive, GrabModeAsync, 
 							   self->priv->exclusive ? GrabModeAsync : GrabModeSync))
 				{
@@ -220,7 +220,7 @@ ccm_keybind_on_event(CCMKeybind* self, XEvent* xevent)
 	{
 		case KeyPress:
 		{
-			if (xevent->xkey.root != CCM_WINDOW_XWINDOW(self->priv->root))
+			if (xevent->xkey.root != self->priv->root)
 				return;
 			
 			event_mods = xevent->xkey.state & ~(self->priv->caps_lock_mask | 
@@ -252,7 +252,7 @@ ccm_keybind_on_event(CCMKeybind* self, XEvent* xevent)
 			gint button = xevent->xbutton.button;
 			gint state = xevent->xbutton.state & 0xFF;
 			
-			if (xevent->xbutton.root != CCM_WINDOW_XWINDOW(self->priv->root))
+			if (xevent->xbutton.root != self->priv->root)
 				return;
 			
 			event_mods = state & ~(self->priv->caps_lock_mask | 
@@ -278,7 +278,7 @@ ccm_keybind_on_event(CCMKeybind* self, XEvent* xevent)
 		break;
 		case KeyRelease:
 		{
-			if (xevent->xkey.root != CCM_WINDOW_XWINDOW(self->priv->root))
+			if (xevent->xkey.root != self->priv->root)
 				return;
 			
 			ccm_debug("Key Release: keycode = %i, modifiers = %i", 
@@ -305,7 +305,7 @@ ccm_keybind_on_event(CCMKeybind* self, XEvent* xevent)
 			gint button = xevent->xbutton.button;
 			gint state = xevent->xbutton.state & 0xFF;
 
-			if (xevent->xbutton.root != CCM_WINDOW_XWINDOW(self->priv->root))
+			if (xevent->xbutton.root != self->priv->root)
 				return;
 			
 			event_mods = state & ~(self->priv->caps_lock_mask | 
@@ -337,7 +337,7 @@ ccm_keybind_on_event(CCMKeybind* self, XEvent* xevent)
 			gint button = xevent->xbutton.state >> 8;
 			gint state = xevent->xbutton.state & 0xFF;
 			
-			if (xevent->xbutton.root != CCM_WINDOW_XWINDOW(self->priv->root))
+			if (xevent->xbutton.root != self->priv->root)
 				return;
 			
 			event_mods = state & ~(self->priv->caps_lock_mask | 
@@ -386,7 +386,7 @@ ccm_keybind_new (CCMScreen* screen, gchar* keystring, gboolean exclusive)
 	guint keysym = 0;
 	
 	self->priv->display = ccm_screen_get_display (screen);
-	self->priv->root = ccm_screen_get_root_window (screen);
+	self->priv->root = CCM_WINDOW_XWINDOW(ccm_screen_get_root_window (screen));
 	self->priv->exclusive = exclusive;
 	self->priv->keystring = g_strdup(keystring);
 	
