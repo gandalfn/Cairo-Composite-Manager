@@ -28,21 +28,21 @@ using math;
 
 namespace CCM
 {
-    public class ActionPointerMotion : CCM.ActionPointer
+    class ActionPointerMotion : CCM.ActionPointer
     {
-		public X.MotionEvent event {
+		public X.Event* event {
 			set 
 			{
-				this.button = (uint)value.state >> 8;
-				this.x = value.y_root;
-				this.y = value.x_root;
+				this.button = (uint)value->xmotion.state >> 8;
+				this.x = value->xmotion.y_root;
+				this.y = value->xmotion.x_root;
 			}
 		}
 		
-		public ActionPointerMotion(CCM.Screen screen, X.MotionEvent event, 
+		public ActionPointerMotion(CCM.Screen screen, X.Event event, 
 								   long time)
 		{			
-			this.event = event;
+			this.event = &event;
 			this.time = (int)((double)time / (double)1000);
 		}
 		

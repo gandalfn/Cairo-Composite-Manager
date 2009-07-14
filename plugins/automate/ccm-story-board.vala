@@ -27,7 +27,7 @@ using CCM;
 
 namespace CCM
 {
-    public class StoryBoard : GLib.Object
+    class StoryBoard : GLib.Object
     {
 		public bool hint_motion { get; set; }
 		
@@ -66,7 +66,7 @@ namespace CCM
 				{
 					if (action is CCM.ActionPointerMotion)
 					{
-						((CCM.ActionPointerMotion)action).event = (X.MotionEvent)event;
+						((CCM.ActionPointerMotion)action).event = &event;
 						((CCM.ActionPointerMotion)action).time = (int)((double)diff / (double)1000);
 						insert = false;
 					}
@@ -74,7 +74,7 @@ namespace CCM
 				
 				if (insert)
 				{
-					action = new CCM.ActionPointerMotion(screen, (X.MotionEvent)event, diff);
+					action = new CCM.ActionPointerMotion(screen, event, diff);
 					actions.append(action);
 				}
 			}
@@ -82,7 +82,7 @@ namespace CCM
 			{
 				try
 				{
-					var action = new CCM.ActionPointerPress(screen, (X.ButtonEvent)event, diff, ignore);
+					var action = new CCM.ActionPointerPress(screen, event, diff, ignore);
 					actions.append(action);
 				}
 				catch (CCM.ActionError ex)
@@ -94,7 +94,7 @@ namespace CCM
 			{
 				try
 				{
-					var action = new CCM.ActionPointerRelease(screen, (X.ButtonEvent)event, diff, ignore);
+					var action = new CCM.ActionPointerRelease(screen, event, diff, ignore);
 					actions.append(action);
 				}
 				catch (CCM.ActionError ex)

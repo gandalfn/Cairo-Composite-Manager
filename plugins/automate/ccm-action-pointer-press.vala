@@ -28,13 +28,13 @@ using math;
 
 namespace CCM   
 {
-    public class ActionPointerPress : CCM.ActionPointer
+    class ActionPointerPress : ActionPointer
     {
-		public ActionPointerPress(CCM.Screen screen, X.ButtonEvent event, 
+		public ActionPointerPress(CCM.Screen screen, X.Event event, 
 								  long time, List<weak CCM.Window> ignore) throws CCM.ActionError
 		{			
-			CCM.Window window = screen.find_window_at_pos(event.y_root, 
-														  event.x_root);
+			CCM.Window window = screen.find_window_at_pos(event.xbutton.y_root, 
+														  event.xbutton.x_root);
 			if (window != null)
 			{
 				bool found = false;
@@ -44,25 +44,25 @@ namespace CCM
 				
 				if (!found)
 				{
-					this.button = (uint)event.state >> 8;
-					this.x = event.y_root;
-					this.y = event.x_root;
+					this.button = (uint)event.xbutton.state >> 8;
+					this.x = event.xbutton.y_root;
+					this.y = event.xbutton.x_root;
 					this.time = (long)((double)time / (double)1000);
 				}
 				else
 				{
 					this.unref();
 					throw new CCM.ActionError.WINDOW_IGNORE("Window is ignored at pos %i,%i", 
-															event.y_root,
-															event.x_root);
+															event.xbutton.y_root,
+															event.xbutton.x_root);
 				}
 			}
 			else
 			{
 				this.unref();
 				throw new CCM.ActionError.WINDOW_NOT_FOUND("Window not found at pos %i,%i", 
-														   event.y_root,
-														   event.x_root);
+														   event.xbutton.y_root,
+														   event.xbutton.x_root);
 			}
 		}
 		

@@ -21,9 +21,6 @@
  */
 
 using GLib;
-using Gtk;
-using Cairo;
-using CCM;
 
 namespace CCM
 {
@@ -33,7 +30,7 @@ namespace CCM
 		WINDOW_NOT_FOUND
 	}
 
-    public abstract class Action : GLib.Object
+    abstract class Action : Object
     {
 		public long time { get; set; }
 		

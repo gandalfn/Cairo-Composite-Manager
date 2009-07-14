@@ -26,26 +26,63 @@ using CCM;
 
 namespace CCM
 {
-	public class Automate : CCM.Plugin, CCM.ScreenPlugin
+	enum Options
 	{
-		private enum Options
-		{
-		    SHOW_SHORTCUT,
-			N
-		}
-		
-		private string[Options.N] options =  {
-		    "show"
-		};
-		
+	    SHOW_SHORTCUT,
+		N
+	}
+	
+	const string[Options.N] options_key =  
+	{
+	    "show"
+	};
+
+	class AutomateOptions : PluginOptions
+	{
+		public CCM.Keybind show_keybind;
+	}
+	
+	class Automate : CCM.Plugin, CCM.ScreenPlugin
+	{
+		static AutomateOptions options = null;
+			
 		private weak CCM.Screen screen;
 		
 		private bool enable = false;
 		
 		private CCM.AutomateDialog dialog;
-		private CCM.Keybind show_keybind;
+
+		~Automate()
+		{
+			options_unload();
+		}
 		
-		private CCM.Config[Options.N] configs = new CCM.Config[Options.N]; 
+		protected override weak PluginOptions
+		options_init()
+		{
+			options = new AutomateOptions();
+
+			options.show_keybind = null;
+
+			return (PluginOptions)options;
+		}
+
+		protected override void
+		options_finalize(PluginOptions opts)
+		{
+			if (opts == options)
+			{
+				options.show_keybind = null;
+				options = null;
+			}
+		}
+		
+		protected override void
+		option_changed(Config config)
+		{
+			// Reload show shortcut
+			get_show_shortcut();
+		}
 		
 		private void
 		on_show_shortcut_pressed()
@@ -62,24 +99,17 @@ namespace CCM
 		get_show_shortcut()
 		{
 		    string shortcut = "<Super>a";
-		    
+			
 		    try
 		    {
-		        shortcut = configs[Options.SHOW_SHORTCUT].get_string();
+		        shortcut = get_config(Options.SHOW_SHORTCUT).get_string();
 		    }
 		    catch (GLib.Error ex)
 		    {
 		        CCM.log("Error on get show shortcut config get default");
 		    }
-		    show_keybind = new CCM.Keybind(screen, shortcut, true);
-		    show_keybind.key_press += on_show_shortcut_pressed;
-		}
-		
-		private void
-		on_changed()
-		{
-			// Reload show shortcut
-			get_show_shortcut();
+		    options.show_keybind = new CCM.Keybind(screen, shortcut, true);
+		    options.show_keybind.key_press += on_show_shortcut_pressed;
 		}
 		
 		protected void
@@ -89,18 +119,8 @@ namespace CCM
 			
 			this.dialog = new CCM.AutomateDialog(screen);
 			
-			// Get config object
-			for (int cpt = 0; cpt < (int)Options.N; ++cpt)
-			{
-				configs[cpt] = new CCM.Config((int)screen.get_number(), 
-											  "automate",
-											  options[cpt]);
-				if (configs[cpt] != null) 
-					configs[cpt].changed += on_changed;
-			}
-			
-			// get default shortcut
-			get_show_shortcut();
+			// load options
+			options_load("automate", options_key);
 			
 			((CCM.ScreenPlugin)parent).load_options(screen);
 		}

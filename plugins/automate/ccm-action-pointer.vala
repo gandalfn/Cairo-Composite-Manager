@@ -21,13 +21,10 @@
  */
 
 using GLib;
-using Gtk;
-using Cairo;
-using CCM;
 
 namespace CCM
 {
-    public abstract class ActionPointer : CCM.Action
+    abstract class ActionPointer : Action
     {
     	public uint button { get; set; }
         public int x { get; set; }
