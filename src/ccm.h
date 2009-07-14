@@ -187,6 +187,7 @@ CCMScreen* 	    ccm_screen_new                      (CCMDisplay* display,
 CCMDisplay*	    ccm_screen_get_display	            (CCMScreen* self);
 Screen*         ccm_screen_get_xscreen 	            (CCMScreen* self);
 guint           ccm_screen_get_number  	            (CCMScreen* self);
+guint    		ccm_screen_get_refresh_rate         (CCMScreen* self);
 CCMWindow* 	    ccm_screen_get_root_window         	(CCMScreen* self);
 CCMWindow* 	    ccm_screen_get_overlay_window      	(CCMScreen* self);
 gboolean	    ccm_screen_add_window          		(CCMScreen* self, 

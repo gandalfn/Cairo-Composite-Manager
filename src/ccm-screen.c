@@ -68,11 +68,13 @@ enum
 	LEAVE_WINDOW_NOTIFY,
 	ACTIVATE_WINDOW_NOTIFY,
 	COMPOSITE_MESSAGE,
+	DESKTOP_CHANGED,
     N_SIGNALS
 };
 
 static guint signals[N_SIGNALS] = { 0 };
 
+static void		ccm_screen_update_backend		(CCMScreen* self);
 static GSList* 	ccm_screen_get_window_plugins	(CCMScreen* self);
 static void 	ccm_screen_paint				(CCMScreen* self, int num_frame, 
 							 					 CCMTimeline* timeline);
@@ -157,8 +159,11 @@ struct _CCMScreenPrivate
 	GList*				removed;
 	gboolean			buffered;
 	gint				nb_redirect_input;
-	
+
+	gchar*				backend;
 	guint 				refresh_rate;
+	gboolean			native_pixmap_bind;
+	gboolean			indirect;
 	CCMTimeline*		paint;
 	guint				id_pendings;
 	
@@ -275,40 +280,13 @@ ccm_screen_get_property (GObject* object,
 		break;
 		case PROP_BACKEND:
 		{
-			GError* error = NULL;
-			gchar* backend = 
-				ccm_config_get_string(priv->options[CCM_SCREEN_BACKEND],
-									  &error);
-			if (!error && backend)
-			{
-				g_value_set_string (value, backend);
-			}
-			else
-			{
-				g_warning("Error on get backend value %s", 
-						  error ? error->message : "");
-				if (error) g_error_free(error);
-				g_value_set_string (value, "xrender");
-			}
-			if (backend) g_free(backend);
+			if (!priv->backend) ccm_screen_update_backend(CCM_SCREEN(object));
+			g_value_set_string (value, priv->backend);		
 			break;
 		}
 		case PROP_NATIVE_PIXMAP_BIND:
 		{
-			GError* error = NULL;
-			gboolean native = 
-			   ccm_config_get_boolean(priv->options[CCM_SCREEN_PIXMAP], &error);
-			if (!error)
-			{
-				g_value_set_boolean (value, native);
-			}
-			else
-			{
-				g_warning("Error on get native backend conf : %s", 
-						  error->message);
-				g_error_free(error);
-				g_value_set_boolean (value, TRUE);
-			}
+			g_value_set_boolean(value, priv->native_pixmap_bind);
 		}
 		break;
 		case PROP_BUFFERED_PIXMAP:
@@ -318,21 +296,7 @@ ccm_screen_get_property (GObject* object,
 		break;
 		case PROP_INDIRECT_RENDERING:
 		{
-			GError* error = NULL;
-			gboolean indirect = 
-				ccm_config_get_boolean(priv->options[CCM_SCREEN_INDIRECT],
-									   &error);
-			if (!error)
-			{
-				g_value_set_boolean (value, indirect);
-			}
-			else
-			{
-				g_warning("Error on get indirect rendering conf : %s", 
-						  error->message);
-				g_error_free(error);
-				g_value_set_boolean (value, TRUE);
-			}
+			g_value_set_boolean (value, priv->indirect);
 		}
 		break;
 		default:
@@ -368,6 +332,9 @@ ccm_screen_init (CCMScreen *self)
 	self->priv->removed = NULL;
 	self->priv->buffered = FALSE;
 	self->priv->nb_redirect_input = 0;
+	self->priv->backend = NULL;
+	self->priv->native_pixmap_bind = TRUE;
+	self->priv->indirect = FALSE;
 	self->priv->refresh_rate = 0;
 	self->priv->paint = NULL;
 	self->priv->id_pendings = 0;
@@ -391,6 +358,9 @@ ccm_screen_finalize (GObject *object)
 		                                     ccm_screen_on_cursor_changed, 
 		                                     self);
 	ccm_screen_unmanage_cursors (self);
+
+	if (self->priv->backend)
+		g_free(self->priv->backend);
 	
 	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin))
 		g_object_unref(self->priv->plugin);
@@ -431,12 +401,7 @@ ccm_screen_finalize (GObject *object)
 		g_list_foreach(self->priv->removed, (GFunc)g_object_unref, NULL);
 		g_list_free(self->priv->removed);
 	}
-	if (self->priv->root) 
-	{
-		ccm_window_unredirect_subwindows(self->priv->root);
-		ccm_display_sync(self->priv->display);
-		g_object_unref(self->priv->root);
-	}
+
 	if (self->priv->damaged)
 		ccm_region_destroy(self->priv->damaged);
 	if (self->priv->root_damage)
@@ -450,6 +415,13 @@ ccm_screen_finalize (GObject *object)
 		g_object_unref(self->priv->cow);
 	}
 	
+	if (self->priv->root) 
+	{
+		ccm_window_unredirect_subwindows(self->priv->root);
+		ccm_display_sync(self->priv->display);
+		g_object_unref(self->priv->root);
+	}
+
 	if (self->priv->background)
 		g_object_unref (self->priv->background);
 
@@ -570,6 +542,12 @@ ccm_screen_class_init (CCMScreenClass *klass)
 	                                           ccm_cclosure_marshal_VOID__OBJECT_LONG_LONG_LONG,
 	                                           G_TYPE_NONE, 4, CCM_TYPE_WINDOW, G_TYPE_LONG, G_TYPE_LONG, 
 	                                           G_TYPE_LONG, G_TYPE_LONG);
+
+	signals[DESKTOP_CHANGED] = g_signal_new ("desktop-changed",
+	                                         G_OBJECT_CLASS_TYPE (object_class),        
+	                                         G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+	                                         g_cclosure_marshal_VOID__INT,
+	                                         G_TYPE_NONE, 1, G_TYPE_INT);
 }
 
 static void
@@ -603,6 +581,10 @@ ccm_screen_update_background (CCMScreen* self)
 	{
 		guint32* data = NULL;
 		guint n_items;
+		
+		if (self->priv->background)
+			g_object_unref(self->priv->background);
+		self->priv->background = NULL;
 		
 		data = ccm_window_get_property (self->priv->root, 
 		                                CCM_WINDOW_GET_CLASS(self->priv->root)->root_pixmap_atom, 
@@ -682,7 +664,7 @@ ccm_screen_update_background (CCMScreen* self)
 			ccm_screen_damage (self);
 			self->priv->root_damage = ccm_region_rectangle (&area);
 		}
-		else
+		else if (self->priv->background)
 		{
 			g_object_unref(self->priv->background);
 			self->priv->background = NULL;
@@ -692,6 +674,45 @@ ccm_screen_update_background (CCMScreen* self)
 	if (color) g_free(color);
 }
 
+static void
+ccm_screen_update_backend(CCMScreen* self)
+{
+	GError* error = NULL;
+
+	if (self->priv->backend) g_free(self->priv->backend);
+	
+	self->priv->backend = 
+		ccm_config_get_string(self->priv->options[CCM_SCREEN_BACKEND],
+							  &error);
+	if (error)
+	{
+		g_warning("Error on get backend value %s", 
+				  error ? error->message : "");
+		if (error) g_error_free(error);
+		error = NULL;
+		self->priv->backend = g_strdup("xrender");
+	}
+
+	self->priv->native_pixmap_bind = 
+		   ccm_config_get_boolean(self->priv->options[CCM_SCREEN_PIXMAP], &error);
+	if (error)
+	{
+		g_warning("Error on get native backend conf : %s", 
+				  error->message);
+		g_error_free(error);
+		error = NULL;
+	}
+
+	self->priv->indirect = 
+		ccm_config_get_boolean(self->priv->options[CCM_SCREEN_INDIRECT], &error);
+	if (error)
+	{
+		g_warning("Error on get indirect rendering conf : %s", 
+				  error->message);
+		g_error_free(error);
+	}
+}
+			
 static gboolean
 ccm_screen_update_refresh_rate(CCMScreen* self)
 {
@@ -763,6 +784,7 @@ ccm_screen_load_config(CCMScreen* self)
 		g_error_free(error);
 		self->priv->buffered = TRUE;
 	}
+	ccm_screen_update_backend (self);
 	ccm_screen_update_refresh_rate (self);
 }
 
@@ -826,14 +848,14 @@ ccm_screen_print_stack(CCMScreen* self)
 	
 	GList* item;
 	
-	ccm_debug("XID\t\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\t\tName");
+	ccm_log("XID\t\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\t\tName");
 	for (item = self->priv->windows; item; item = item->next)
 	{
 		CCMWindow* transient = ccm_window_transient_for (item->data);
 		CCMWindow* leader = ccm_window_get_group_leader (item->data);
 
 		if (ccm_window_is_viewable (item->data))
-		ccm_debug("0x%lx\t%i\t%i\t%i\t%i\t%i\t\t%i\t%i\t0x%08lx\t0x%08lx\t%s", 
+		ccm_log("0x%lx\t%i\t%i\t%i\t%i\t%i\t\t%i\t%i\t0x%08lx\t0x%08lx\t%s", 
 				CCM_WINDOW_XWINDOW(item->data), 
 				ccm_window_is_viewable (item->data),
 				ccm_window_get_hint_type (item->data),
@@ -941,9 +963,9 @@ ccm_screen_find_window(CCMScreen* self, Window xwindow)
 	
 	GList* item;
 	
-	for (item = g_list_first(self->priv->windows); item; item = item->next)
+	for (item = self->priv->windows; item; item = item->next)
 	{
-		if (CCM_IS_WINDOW(item->data) && CCM_WINDOW_XWINDOW(item->data) == xwindow)
+		if (CCM_WINDOW_XWINDOW(item->data) == xwindow)
 			return CCM_WINDOW(item->data);
 	}
 	
@@ -1245,14 +1267,49 @@ ccm_screen_check_stack(CCMScreen* self)
 	}
 
 	viewable = g_list_reverse(viewable);
-	if (desktop && viewable->data != desktop)
+	if (desktop)
 	{
-		GList* desktop_link = g_list_find(stack, desktop);
-
-		stack = g_list_remove(stack, viewable->data);
-		stack = g_list_insert_before (stack, desktop_link->next, viewable->data);
+		for (item = viewable; item->data != desktop; item = item->next)
+		{
+			ccm_debug("RESTACK 0x%x", item->data);
+			stack = g_list_remove(stack, item->data);
+			stack = g_list_append (stack, item->data);
+		}
 	}
 
+	for (item = viewable; item; item = item->next)
+	{
+		CCMWindow* transient = ccm_window_transient_for (item->data);
+		CCMWindow* leader = ccm_window_get_group_leader (item->data);
+		
+		if (transient && 
+		    g_list_index(stack, item->data) < g_list_index(stack, transient))
+		{
+			ccm_debug ("RESTACK TRANSIENT");
+			stack = g_list_remove(stack, item->data);
+			stack = g_list_insert_before(stack, 
+			                             g_list_find(stack, transient)->next,
+			                             item->data);
+		}
+		if (leader && ccm_window_get_hint_type (item->data) == CCM_WINDOW_TYPE_DIALOG)
+		{
+			GList* iter;
+
+			for (iter = item; iter; iter = iter->next)
+			{
+				if (leader == ccm_window_get_group_leader (iter->data) &&
+				    ccm_window_get_hint_type (iter->data) == CCM_WINDOW_TYPE_NORMAL)
+				{
+					ccm_debug("RESTACK LEADER");
+					stack = g_list_remove(stack, item->data);
+					stack = g_list_insert_before(stack, 
+					                             g_list_find(stack, iter->data)->next,
+			                        			 item->data);
+					break;
+				}
+			}
+		}
+	}
 	g_list_free(self->priv->windows);
 	self->priv->windows = stack;
 	
@@ -1295,13 +1352,23 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* sibling)
 	
 	GList* sibling_link = NULL, *item;
 	gboolean found = FALSE;
+	CCMWindow* transient = NULL, *leader = NULL;
+	
+	if (g_list_find(self->priv->removed, sibling)) return;
 	
 	if (ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP)
 		return;
 
-	sibling_link = g_list_find(self->priv->windows, sibling);
+	transient = ccm_window_transient_for (sibling);
 
-	for (item = sibling_link; item; item = item->next)
+	if (transient && transient == window) return;
+
+	leader = ccm_window_get_group_leader(window);
+	if (leader && leader == ccm_window_get_group_leader(sibling) &&
+	    ccm_window_get_hint_type (sibling) == CCM_WINDOW_TYPE_DIALOG) 
+		return;
+	
+	for (item = self->priv->windows; item; item = item->next)
 	{
 		if (item->data == window) 
 		{
@@ -1316,7 +1383,7 @@ ccm_screen_restack(CCMScreen* self, CCMWindow* window, CCMWindow* sibling)
 			if (found) break;
 		}
 	}
-	
+
 	ccm_debug_window(window, "RESTACK AFTER 0x%x", CCM_WINDOW_XWINDOW(sibling));
 	
 	self->priv->windows = g_list_remove (self->priv->windows, window);
@@ -1557,7 +1624,7 @@ ccm_screen_get_window_plugins(CCMScreen* self)
 	if (filter)
 	{
 		plugins = ccm_extension_loader_get_window_plugins(self->priv->plugin_loader,
-													  filter);
+		                                                  filter);
 		g_slist_foreach(filter, (GFunc)g_free, NULL);
 		g_slist_free(filter);
 	}
@@ -1603,7 +1670,9 @@ ccm_screen_get_plugins(CCMScreen* self)
 		{
 			GType type = GPOINTER_TO_INT(item->data);
 			GObject* prev = G_OBJECT(self->priv->plugin);
-			CCMScreenPlugin* plugin = g_object_new(type, "parent", prev, NULL);
+			CCMScreenPlugin* plugin = g_object_new(type, "parent", prev, 
+			                                       "screen", self->priv->number,
+			                                       NULL);
 		
 			if (plugin) self->priv->plugin = plugin;
 		}
@@ -1718,6 +1787,10 @@ ccm_screen_on_option_changed (CCMScreen* self, CCMConfig* config)
 	{
 		ccm_screen_get_plugins (self);
 		g_signal_emit (self, signals[PLUGINS_CHANGED], 0);
+	}
+	else if (config == self->priv->options[CCM_SCREEN_BACKEND])
+	{
+		ccm_screen_update_backend (self);
 	}
 	else if (config == self->priv->options[CCM_SCREEN_REFRESH_RATE])
 	{
@@ -2077,12 +2150,13 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 		break;	
 		case DestroyNotify:
 		{	
-			CCMWindow* window = ccm_screen_find_window(self,
+			CCMWindow* window = ccm_screen_find_window_or_child (self,
 										((XDestroyWindowEvent*)event)->window);
 			ccm_debug("REMOVE 0x%x", ((XDestroyWindowEvent*)event)->window);
 			if (window) 
 			{
-				ccm_debug_window(window, "EVENT REMOVE");
+				ccm_debug_window(window, "EVENT REMOVE 0x%x", 
+				               ((XDestroyWindowEvent*)event)->window);
 				ccm_screen_remove_window(self, window);
 			}
 		}
@@ -2100,7 +2174,7 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				ccm_debug_window(window, "MAP");
 				ccm_window_map(window);
 			}
-			else if (parent == self->priv->root)
+			else if (((XMapEvent*)event)->event == CCM_WINDOW_XWINDOW(self->priv->root))
 			{
 				window = ccm_window_new(self, ((XMapEvent*)event)->window);
 				if (window)
@@ -2144,9 +2218,9 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 											((XReparentEvent*)event)->parent);
 				
 			ccm_debug("REPARENT 0x%x, 0x%x", ((XReparentEvent*)event)->parent,
-					((XReparentEvent*)event)->window);
+			          ((XReparentEvent*)event)->window);
 			
-			if (parent == self->priv->root)
+			if (((XReparentEvent*)event)->parent == CCM_WINDOW_XWINDOW(self->priv->root))
 			{
 				if (!window)
 				{
@@ -2296,6 +2370,20 @@ ccm_screen_on_event(CCMScreen* self, XEvent* event)
 				window = ccm_screen_find_window_or_child (self,
 														  property_event->window);
 				if (window) ccm_window_query_frame_extends(window);
+			}
+			else if (property_event->atom == CCM_WINDOW_GET_CLASS(self->priv->root)->current_desktop_atom)
+			{
+				guint n_items;
+				guint32* desktop = NULL;
+				
+				desktop = ccm_window_get_property (self->priv->root,
+				                                   CCM_WINDOW_GET_CLASS(self->priv->root)->current_desktop_atom,
+				                                   XA_CARDINAL, &n_items);
+				if (desktop)
+				{
+					g_signal_emit(self, signals[DESKTOP_CHANGED], 0, *desktop + 1);
+					g_free(desktop);
+				}
 			}
 		}
 		break;
@@ -2541,6 +2629,14 @@ ccm_screen_get_number(CCMScreen* self)
 	g_return_val_if_fail(CCM_IS_SCREEN(self), 0);
 	
 	return self->priv->number;
+}
+
+guint
+ccm_screen_get_refresh_rate(CCMScreen* self)
+{
+	g_return_val_if_fail(CCM_IS_SCREEN(self), 60);
+	
+	return self->priv->refresh_rate;
 }
 
 CCMWindow*
