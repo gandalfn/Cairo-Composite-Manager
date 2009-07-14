@@ -92,6 +92,15 @@ struct _CCMWindowClass
 	Atom			 frame_extends_atom;
 	
 	Atom			 transient_for_atom;
+
+	Atom			 current_desktop_atom;
+
+	Atom			 protocol_atom;
+	Atom			 delete_window_atom;
+	Atom			 ping_atom;
+	Atom			 pid_atom;
+
+	GSList*			 plugins;
 	
 	CCMPixmap*       (*create_pixmap) (CCMWindow* self, int width, int height,
 	                                   int depth);

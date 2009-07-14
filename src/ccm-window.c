@@ -43,6 +43,7 @@
 #include "ccm-pixmap.h"
 #include "ccm-pixmap-backend.h"
 #include "ccm-property-async.h"
+#include "ccm-object.h"
 
 #define MWM_HINTS_DECORATIONS (1L << 1)
 
@@ -127,9 +128,9 @@ enum
 
 static guint signals[N_SIGNALS] = { 0 };
 
-G_DEFINE_TYPE_EXTENDED (CCMWindow, ccm_window, CCM_TYPE_DRAWABLE, 0,
-						G_IMPLEMENT_INTERFACE(CCM_TYPE_WINDOW_PLUGIN,
-											  ccm_window_iface_init))
+CCM_DEFINE_TYPE_EXTENDED (CCMWindow, ccm_window, CCM_TYPE_DRAWABLE,
+                          G_IMPLEMENT_INTERFACE(CCM_TYPE_WINDOW_PLUGIN,
+                                                ccm_window_iface_init))
 
 struct _CCMWindowPrivate
 {
@@ -414,6 +415,8 @@ ccm_window_class_init (CCMWindowClass *klass)
 	CCM_DRAWABLE_CLASS(klass)->query_geometry = ccm_window_query_geometry;
 	CCM_DRAWABLE_CLASS(klass)->move = ccm_window_move;
 	CCM_DRAWABLE_CLASS(klass)->resize = ccm_window_resize;
+
+	klass->plugins = NULL;
 	
 	/**
 	 * CCMWindow:child:
@@ -739,6 +742,26 @@ create_atoms(CCMWindow* self)
 											CCM_DISPLAY_XDISPLAY(display),
 											"WM_TRANSIENT_FOR", 
 											False);
+		klass->current_desktop_atom    = XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_NET_CURRENT_DESKTOP", 
+											False);
+		klass->protocol_atom  			= XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"WM_PROTOCOLS", 
+											False);
+		klass->delete_window_atom      = XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_NET_WM_DELETE_WINDOW", 
+											False);
+		klass->ping_atom  				= XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_NET_WM_PING", 
+											False);
+		klass->pid_atom  				= XInternAtom (
+											CCM_DISPLAY_XDISPLAY(display),
+											"_NET_WM_PID", 
+											False);
 	}
 }
 
@@ -934,25 +957,33 @@ ccm_window_get_plugins(CCMWindow* self)
 	g_return_if_fail(self != NULL);
 	
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
-	GSList* item, *plugins = NULL;
-	
-	g_object_get(G_OBJECT(screen), "window_plugins", &plugins, NULL);
+	GSList* item;
+
+	if (!CCM_WINDOW_GET_CLASS(self)->plugins)
+		g_object_get(G_OBJECT(screen), "window_plugins", 
+		             &CCM_WINDOW_GET_CLASS(self)->plugins, NULL);
 	
 	if (self->priv->plugin && CCM_IS_PLUGIN(self->priv->plugin)) 
 		g_object_unref(self->priv->plugin);
 	
 	self->priv->plugin = (CCMWindowPlugin*)self;
 	
-	for (item = plugins; item; item = item->next)
+	if (CCM_WINDOW_XWINDOW(self) == RootWindowOfScreen(CCM_SCREEN_XSCREEN(screen)))
+		return;
+
+	if (self == ccm_screen_get_overlay_window (screen)) return;
+	
+	for (item = CCM_WINDOW_GET_CLASS(self)->plugins; item; item = item->next)
 	{
 		GType type = GPOINTER_TO_INT(item->data);
 		GObject* prev = G_OBJECT(self->priv->plugin);
-		CCMWindowPlugin* plugin = g_object_new(type, "parent", prev, NULL);
+		CCMWindowPlugin* plugin = g_object_new(type, "parent", prev, "screen", 
+		                                       ccm_screen_get_number (screen),
+		                                       NULL);
 		
 		if (plugin) self->priv->plugin = plugin;
 	}
-	g_slist_free(plugins);
-	
+
 	ccm_window_plugin_load_options(self->priv->plugin, self);
 }
 
@@ -1758,6 +1789,9 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 static void
 ccm_window_on_plugins_changed(CCMWindow* self, CCMScreen* screen)
 {
+	if (CCM_WINDOW_GET_CLASS(self)->plugins)
+		g_slist_free(CCM_WINDOW_GET_CLASS(self)->plugins);
+	CCM_WINDOW_GET_CLASS(self)->plugins = NULL;
 	ccm_window_get_plugins (self);
 	ccm_drawable_query_geometry (CCM_DRAWABLE(self));
 }
