@@ -25,7 +25,8 @@
 enum
 {
     PROP_0,
-	PROP_PARENT
+	PROP_PARENT,
+	PROP_SCREEN
 };
 
 typedef struct {
@@ -42,6 +43,7 @@ typedef struct {
 struct _CCMPluginPrivate
 {
 	GObject* 	parent;
+	guint	    screen;
 };
 
 #define CCMPLuginLockTable g_quark_from_static_string ("CCMPluginLockTable")
@@ -49,7 +51,41 @@ struct _CCMPluginPrivate
 #define CCM_PLUGIN_GET_PRIVATE(o) \
 	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PLUGIN, CCMPluginPrivate))
 
-G_DEFINE_TYPE (CCMPlugin, ccm_plugin, G_TYPE_OBJECT);
+static void     ccm_plugin_init   		   (CCMPlugin      *self);
+static void     ccm_plugin_class_init	   (CCMPluginClass *klass);
+
+static gpointer ccm_plugin_parent_class = NULL;
+
+GType
+ccm_plugin_get_type (void)
+{
+	static volatile gsize g_define_type_id__volatile = 0;
+
+    if (g_once_init_enter (&g_define_type_id__volatile))
+	{
+		static const GTypeInfo info = 
+		{
+			sizeof(CCMPluginClass),
+		    (GBaseInitFunc) NULL,
+		    (GBaseFinalizeFunc) NULL,
+		    (GClassInitFunc) ccm_plugin_class_init,
+		    (GClassFinalizeFunc) NULL,
+		    NULL,
+			sizeof(CCMPlugin),
+		    10,
+			(GInstanceInitFunc) ccm_plugin_init,
+		    NULL
+		};
+
+		GType g_define_type_id = 
+			g_type_register_static(G_TYPE_OBJECT, "CCMPlugin",
+			                       &info, (GTypeFlags) 0);
+		
+		g_once_init_leave (&g_define_type_id__volatile, g_define_type_id);
+    }
+
+    return g_define_type_id__volatile;
+}
 
 static void
 ccm_plugin_set_property(GObject *object,
@@ -64,7 +100,10 @@ ccm_plugin_set_property(GObject *object,
     	case PROP_PARENT:
 			priv->parent = g_value_get_pointer (value);
 			break;
-    	default:
+    	case PROP_SCREEN:
+			priv->screen = g_value_get_uint (value);
+			break;
+		default:
 			break;
     }
 }
@@ -82,6 +121,9 @@ ccm_plugin_get_property (GObject* object,
     	case PROP_PARENT:
 			g_value_set_pointer (value, priv->parent);
 			break;
+		case PROP_SCREEN:
+			g_value_set_uint (value, priv->screen);
+			break;
     	default:
 			break;
     }
@@ -92,6 +134,7 @@ ccm_plugin_init (CCMPlugin *self)
 {
 	self->priv = CCM_PLUGIN_GET_PRIVATE(self);
 	self->priv->parent = NULL;
+	self->priv->screen = 0;
 }
 
 static void
@@ -104,7 +147,7 @@ ccm_plugin_finalize (GObject *object)
 		g_object_unref(self->priv->parent);
 		self->priv->parent = NULL;
 	}
-	
+
 	G_OBJECT_CLASS (ccm_plugin_parent_class)->finalize (object);
 }
 
@@ -113,7 +156,13 @@ ccm_plugin_class_init (CCMPluginClass *klass)
 {
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 	
+	ccm_plugin_parent_class = g_type_class_peek_parent (klass);
+
 	g_type_class_add_private (klass, sizeof (CCMPluginPrivate));
+
+	klass->count = 0;
+	klass->options = NULL;
+	klass->options_size = 0;
 
 	object_class->get_property = ccm_plugin_get_property;
     object_class->set_property = ccm_plugin_set_property;
@@ -124,6 +173,73 @@ ccm_plugin_class_init (CCMPluginClass *klass)
 							  "Parent",
 							  "Parent plugin",
 							  G_PARAM_READWRITE));
+	g_object_class_install_property(object_class, PROP_SCREEN,
+		g_param_spec_uint ("screen",
+		                   "Screen",
+		                   "Plugin screen number",
+		                   0, G_MAXUINT, 0, G_PARAM_READWRITE));
+}
+
+static void
+ccm_plugin_options_finalize (CCMPluginClass *klass)
+{
+	if (klass->options != NULL)
+	{ 
+		gint i, j;
+
+		for (i = 0; i < klass->options_size; i++)
+		{
+			if (klass->options[i]) 
+			{
+				if (klass->options[i]->configs)
+				{
+					for (j = 0; j < klass->options[i]->configs_size; j++)
+						g_object_unref(klass->options[i]->configs[j]);
+					g_free(klass->options[i]->configs);
+					klass->options[i]->configs = NULL;
+				}
+			
+				if (klass->options_finalize)
+					klass->options_finalize(NULL, klass->options[i]);
+				else
+					g_free(klass->options[i]);
+				klass->options[i] = NULL;
+			}
+		}
+		g_free(klass->options);
+		klass->options = NULL;
+		klass->options_size = 0;
+	}
+}
+
+
+static void
+ccm_plugin_options_init(CCMPlugin* self)
+{
+	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
+
+	if (self->priv->screen >= klass->options_size)
+	{
+		klass->options_size++;
+		if (klass->options_size == 1)
+			klass->options = g_new0(CCMPluginOptions*, klass->options_size);
+		else
+			klass->options = g_renew(CCMPluginOptions*, klass->options,
+			                         klass->options_size);
+		klass->options[self->priv->screen] = NULL;
+	}
+	
+	if (klass->options[self->priv->screen] == NULL)
+	{
+		if (klass->options_init)
+			klass->options[self->priv->screen] = klass->options_init(self);
+		else
+			klass->options[self->priv->screen] = g_new0(CCMPluginOptions, 1);
+
+		klass->options[self->priv->screen]->initialized = FALSE;
+		klass->options[self->priv->screen]->configs = NULL;
+		klass->options[self->priv->screen]->configs_size = 0;
+	}
 }
 
 static void
@@ -232,6 +348,93 @@ _ccm_plugin_unlock_method(GObject* obj, gpointer func)
 		}
 		g_hash_table_remove (lock_table, func);
 	}
+}
+
+void
+ccm_plugin_options_load(CCMPlugin* self, gchar* plugin_name, 
+                        const gchar** options_key, int nb_options)
+{
+	g_return_if_fail(self != NULL);
+	g_return_if_fail(plugin_name != NULL);
+	g_return_if_fail(options_key != NULL);
+	g_return_if_fail(nb_options > 0);
+
+	gint cpt;
+	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
+
+	klass->count++;
+	ccm_plugin_options_init (self);
+	if (klass->options[self->priv->screen]->configs == NULL)
+	{
+		klass->options[self->priv->screen]->configs = 
+			g_new0(CCMConfig*, nb_options);
+		klass->options[self->priv->screen]->configs_size = nb_options;
+	}
+	for (cpt = 0; cpt < nb_options; cpt++)
+	{
+		if (klass->options[self->priv->screen]->configs[cpt] == NULL)
+			klass->options[self->priv->screen]->configs[cpt] = 
+			ccm_config_new(self->priv->screen, plugin_name, (gchar*)options_key[cpt]);
+
+		if (klass->options[self->priv->screen]->configs[cpt] != NULL)
+		{
+			if (klass->option_changed)
+			{
+				if (klass->options[self->priv->screen]->initialized == FALSE) 
+					klass->option_changed(self, klass->options[self->priv->screen]->configs[cpt]);
+
+				g_signal_connect_swapped(G_OBJECT(klass->options[self->priv->screen]->configs[cpt]), "changed",
+				                         G_CALLBACK(klass->option_changed), 
+				                         self);
+			}
+		}
+	}
+	klass->options[self->priv->screen]->initialized = TRUE;
+}
+
+void
+ccm_plugin_options_unload(CCMPlugin* self)
+{
+	g_return_if_fail(self != NULL);
+
+	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
+
+	if (klass->count > 0)
+	{
+		if (klass->options && klass->option_changed &&
+			self->priv->screen < klass->options_size &&
+			klass->options[self->priv->screen] != NULL)
+		{
+			gint cpt; 
+
+			for (cpt = 0; cpt < klass->options[self->priv->screen]->configs_size; cpt++)
+				g_signal_handlers_disconnect_by_func(G_OBJECT(klass->options[self->priv->screen]->configs[cpt]),
+									 				 klass->option_changed, self);
+		}
+
+		klass->count--;
+		if (klass->count == 0) ccm_plugin_options_finalize (klass);
+	}	
+}
+
+CCMPluginOptions*
+ccm_plugin_get_option(CCMPlugin* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
+
+	return klass->options[self->priv->screen];
+}
+
+CCMConfig*
+ccm_plugin_get_config(CCMPlugin* self, int index)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
+
+	return klass->options[self->priv->screen]->configs[index];
 }
 
 GObject*

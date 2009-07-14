@@ -41,18 +41,25 @@ enum
 	CCM_FADE_OPTION_N
 };
 
-static gchar* CCMFadeOptions[CCM_FADE_OPTION_N] = {
+static const gchar* CCMFadeOptionKeys[CCM_FADE_OPTION_N] = {
 	"duration"
 };
+
+typedef struct
+{
+	CCMPluginOptions parent;
+	
+	float			 duration;
+} CCMFadeOptions;
 
 static void ccm_fade_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_fade_window_iface_init(CCMWindowPluginClass* iface);
 static void ccm_fade_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
 static void ccm_fade_on_event(CCMFade* self, XEvent* event);
-static void	ccm_fade_on_error(CCMFade* self, CCMWindow* window);
 static void ccm_fade_on_property_changed(CCMFade* self, 
 										 CCMPropertyType changed,
 										 CCMWindow* window);
+static void ccm_fade_on_option_changed(CCMPlugin* plugin, CCMConfig* config);
 
 CCM_DEFINE_PLUGIN (CCMFade, ccm_fade, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_fade,
@@ -73,41 +80,42 @@ struct _CCMFadePrivate
 	
 	gfloat			origin;
 	
-	gfloat			duration;
 	CCMTimeline*	timeline;
 	
 	gboolean		force_disable;
 
 	GtkBuilder*		builder;
-
-	CCMConfig*		options[CCM_FADE_OPTION_N];
 };
 
 #define CCM_FADE_GET_PRIVATE(o)  \
    ((CCMFadePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FADE, CCMFadeClass))
 
+static CCMPluginOptions*
+ccm_fade_options_init(CCMPlugin* plugin)
+{
+	CCMFadeOptions* options = g_new0(CCMFadeOptions, 1);
+	
+	options->duration = 1.0f;
+
+	return (CCMPluginOptions*)options;
+}
+
 static void
 ccm_fade_init (CCMFade *self)
 {
-	gint cpt;
-	
 	self->priv = CCM_FADE_GET_PRIVATE(self);
 	self->priv->origin = 1.0f;
-	self->priv->duration = 1.0f;
 	self->priv->screen = NULL;
 	self->priv->window = NULL;
 	self->priv->timeline = NULL;
 	self->priv->force_disable = FALSE;
 	self->priv->builder = NULL;
-	for (cpt = 0; cpt < CCM_FADE_OPTION_N; ++cpt)
-		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_fade_finalize (GObject *object)
 {
 	CCMFade* self = CCM_FADE(object);
-	gint cpt;
 
 	if (self->priv->screen)
 	{
@@ -124,14 +132,9 @@ ccm_fade_finalize (GObject *object)
 		g_signal_handlers_disconnect_by_func(self->priv->window, 
 											 ccm_fade_on_property_changed, 
 											 self);	
-	
-		g_signal_handlers_disconnect_by_func(self->priv->window, 
-											 ccm_fade_on_error, 
-											 self);	
 	}
 	
-	for (cpt = 0; cpt < CCM_FADE_OPTION_N; ++cpt)
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
+	ccm_plugin_options_unload(CCM_PLUGIN(self));
 	
 	if (self->priv->timeline) 
 		g_object_unref (self->priv->timeline);
@@ -147,6 +150,9 @@ ccm_fade_class_init (CCMFadeClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 	
 	g_type_class_add_private (klass, sizeof (CCMFadePrivate));
+
+	CCM_PLUGIN_CLASS(klass)->options_init = ccm_fade_options_init;
+	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_fade_on_option_changed;
 	
 	object_class->finalize = ccm_fade_finalize;
 }
@@ -202,19 +208,6 @@ ccm_fade_on_completed(CCMFade* self, CCMTimeline* timeline)
 }
 
 static void
-ccm_fade_on_error(CCMFade* self, CCMWindow* window)
-{
-	if (ccm_timeline_is_playing(self->priv->timeline))
-	{
-		ccm_debug_window(window, "FADE ON ERROR");
-		
-		ccm_timeline_stop(self->priv->timeline);
-		
-		ccm_fade_finish(self);
-	}
-}
-
-static void
 ccm_fade_on_property_changed(CCMFade* self, CCMPropertyType changed,
 							 CCMWindow* window)
 {
@@ -222,6 +215,16 @@ ccm_fade_on_property_changed(CCMFade* self, CCMPropertyType changed,
 	{
 		self->priv->origin = ccm_window_get_opacity (window);
 		ccm_debug_window(window, "FADE OPACITY %f", self->priv->origin);
+		if (!self->priv->timeline)
+		{
+			self->priv->timeline = 
+				ccm_timeline_new_for_duration ((guint)(ccm_fade_get_option(self)->duration * 1000.0));
+
+			g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+									 G_CALLBACK(ccm_fade_on_new_frame), self);
+			g_signal_connect_swapped(self->priv->timeline, "completed", 
+									 G_CALLBACK(ccm_fade_on_completed), self);
+		}
 		if (ccm_timeline_is_playing (self->priv->timeline))
 		{
 			gdouble progress = ccm_timeline_get_progress (self->priv->timeline);
@@ -239,9 +242,11 @@ ccm_fade_get_duration(CCMFade* self)
 	GError* error = NULL;
 	gfloat real_duration;
 	gfloat duration;
+	gboolean ret = FALSE;
 	
 	real_duration = 
-		ccm_config_get_float(self->priv->options[CCM_FADE_DURATION], &error);
+		ccm_config_get_float(ccm_fade_get_config(self, CCM_FADE_DURATION), 
+		                     &error);
 	if (error)
 	{
 		g_error_free(error);
@@ -250,37 +255,31 @@ ccm_fade_get_duration(CCMFade* self)
 	}
 	duration = MAX(0.1f, real_duration);
 	duration = MIN(2.0f, real_duration);
-	if (duration != self->priv->duration)
-	{
-		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self->priv->window));
-		guint refresh_rate;
-		g_object_get (G_OBJECT(screen), "refresh_rate", &refresh_rate, NULL);
-		
-		if (self->priv->timeline) g_object_unref (self->priv->timeline);
 
-		self->priv->duration = duration;
-		if (duration != real_duration)
-			ccm_config_set_float(self->priv->options[CCM_FADE_DURATION],
-								 self->priv->duration, NULL);
-		
-		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), 
-		                                        refresh_rate);
+	ccm_fade_get_option(self)->duration = duration;
 	
-		g_signal_connect_swapped(self->priv->timeline, "new-frame", 
-								 G_CALLBACK(ccm_fade_on_new_frame), self);
-		g_signal_connect_swapped(self->priv->timeline, "completed", 
-								 G_CALLBACK(ccm_fade_on_completed), self);
-		
-		return TRUE;
+	if (duration != real_duration)
+	{
+		ccm_config_set_float(ccm_fade_get_config(self, CCM_FADE_DURATION),
+							 ccm_fade_get_option(self)->duration, NULL);
+		ret = TRUE;
+	}
+
+	if (self->priv->timeline)
+	{
+		g_object_unref (self->priv->timeline);
+		self->priv->timeline = NULL;
 	}
 	
-	return FALSE;
+	return ret;
 }
 
 static void
-ccm_fade_on_option_changed(CCMFade* self, CCMConfig* config)
+ccm_fade_on_option_changed(CCMPlugin* plugin, CCMConfig* config)
 {
-	if (config == self->priv->options[CCM_FADE_DURATION])
+	CCMFade* self = CCM_FADE(plugin);
+	
+	if (config == ccm_fade_get_config(self, CCM_FADE_DURATION))
 	{
 		ccm_fade_get_duration (self);
 	}
@@ -415,8 +414,8 @@ ccm_fade_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	CCMFade* self = CCM_FADE(plugin);
 	CCMDisplay* display = ccm_screen_get_display(screen);
 	
-	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	self->priv->screen = screen;
+	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	g_signal_connect_swapped(display, "event", 
 							 G_CALLBACK(ccm_fade_on_event), self);
 }
@@ -425,36 +424,21 @@ static void
 ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
-	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	gint cpt;
-	
-	for (cpt = 0; cpt < CCM_FADE_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
-												  "fade", 
-												  CCMFadeOptions[cpt]);
-		if (self->priv->options[cpt])
-		g_signal_connect_swapped(self->priv->options[cpt], "changed",
-								 G_CALLBACK(ccm_fade_on_option_changed), 
-								 self);
-	}
-	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	self->priv->window = window;
+	self->priv->origin = ccm_window_get_opacity (window);
+
+	ccm_plugin_options_load(CCM_PLUGIN(self), "fade", CCMFadeOptionKeys,
+	                        CCM_FADE_OPTION_N);
+
+	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	ccm_fade_create_atoms(self);
-	
-	self->priv->origin = ccm_window_get_opacity (window);
 	
 	g_signal_connect_swapped(window, "property-changed",
 							 G_CALLBACK(ccm_fade_on_property_changed), 
 							 self);
-	g_signal_connect_swapped(window, "error",
-							 G_CALLBACK(ccm_fade_on_error), 
-							 self);
-
-	ccm_fade_get_duration(self);
+	
 	ccm_fade_query_force_disable(self);
 }
 
@@ -473,14 +457,24 @@ ccm_fade_window_query_geometry(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
-ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
+ccm_fade_window_map(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
 	
 	if (!self->priv->force_disable)
 	{
 		guint current_frame = 0;
-	
+
+		if (!self->priv->timeline)
+		{
+			self->priv->timeline = 
+				ccm_timeline_new_for_duration ((guint)(ccm_fade_get_option(self)->duration * 1000.0));
+
+			g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+									 G_CALLBACK(ccm_fade_on_new_frame), self);
+			g_signal_connect_swapped(self->priv->timeline, "completed", 
+									 G_CALLBACK(ccm_fade_on_completed), self);
+		}
 		if (ccm_timeline_is_playing (self->priv->timeline))
 		{
 			current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
@@ -510,7 +504,7 @@ ccm_fade_map(CCMWindowPlugin* plugin, CCMWindow* window)
 }
 
 static void
-ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
+ccm_fade_window_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMFade* self = CCM_FADE(plugin);
 	
@@ -518,6 +512,16 @@ ccm_fade_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	{
 		guint current_frame = 0;
 		
+		if (!self->priv->timeline)
+		{
+			self->priv->timeline = 
+				ccm_timeline_new_for_duration ((guint)(ccm_fade_get_option(self)->duration * 1000.0));
+
+			g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+									 G_CALLBACK(ccm_fade_on_new_frame), self);
+			g_signal_connect_swapped(self->priv->timeline, "completed", 
+									 G_CALLBACK(ccm_fade_on_completed), self);
+		}
 		if (ccm_timeline_is_playing (self->priv->timeline))
 		{
 			current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
@@ -587,8 +591,8 @@ ccm_fade_window_iface_init(CCMWindowPluginClass* iface)
 	iface->load_options 	 = ccm_fade_window_load_options;
 	iface->query_geometry 	 = ccm_fade_window_query_geometry;
 	iface->paint 			 = NULL;
-	iface->map				 = ccm_fade_map;
-	iface->unmap			 = ccm_fade_unmap;
+	iface->map				 = ccm_fade_window_map;
+	iface->unmap			 = ccm_fade_window_unmap;
 	iface->query_opacity  	 = NULL;
 	iface->move				 = NULL;
 	iface->resize			 = NULL;

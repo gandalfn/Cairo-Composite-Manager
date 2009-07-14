@@ -53,14 +53,24 @@ enum
 	CCM_SNAPSHOT_OPTION_N
 };
 
-static gchar* CCMSnapshotOptions[CCM_SNAPSHOT_OPTION_N] = {
+static const gchar* CCMSnapshotOptionKeys[CCM_SNAPSHOT_OPTION_N] = {
 	"area",
 	"window",
 	"color"
 };
 
+typedef struct
+{
+	CCMPluginOptions parent;
+
+	CCMKeybind*		 area_keybind;
+	CCMKeybind*		 window_keybind;
+	GdkColor*		 color;
+} CCMSnapshotOptions;
+
 static void ccm_snapshot_screen_iface_init  (CCMScreenPluginClass* iface);
 static void ccm_snapshot_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
+static void ccm_snapshot_on_option_changed(CCMPlugin* plugin, CCMConfig* config);
 
 CCM_DEFINE_PLUGIN (CCMSnapshot, ccm_snapshot, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_snapshot,
@@ -73,65 +83,62 @@ CCM_DEFINE_PLUGIN (CCMSnapshot, ccm_snapshot, CCM_TYPE_PLUGIN,
 struct _CCMSnapshotPrivate
 {	
 	CCMScreen*			screen;
-	CCMKeybind*			area_keybind;
-	CCMKeybind*			window_keybind;
-	GdkColor*			color;
 	
 	cairo_rectangle_t   area;
 	CCMWindow*			selected;
 
 	GtkBuilder*			builder;
-	
-	CCMConfig* 	options[CCM_SNAPSHOT_OPTION_N];
 };
 
 #define CCM_SNAPSHOT_GET_PRIVATE(o)  \
    ((CCMSnapshotPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT, CCMSnapshotClass))
 
+static CCMPluginOptions*
+ccm_snapshot_options_init(CCMPlugin* plugin)
+{
+	CCMSnapshotOptions* options = g_new0(CCMSnapshotOptions, 1);
+	
+	options->area_keybind = NULL;
+	options->window_keybind = NULL;
+	options->color = NULL;
+
+	return (CCMPluginOptions*)options;
+}
+
+static void
+ccm_snapshot_options_finalize(CCMPlugin* plugin, CCMPluginOptions* opts)
+{
+	CCMSnapshotOptions* options = (CCMSnapshotOptions*)opts;
+	
+	if (options->color)	g_free(options->color);
+	options->color = NULL;
+	if (options->area_keybind) g_object_unref(options->area_keybind);
+	options->area_keybind = NULL;
+	if (options->window_keybind) g_object_unref(options->window_keybind);
+	options->window_keybind = NULL;
+
+	g_free(options);
+}
+
 static void
 ccm_snapshot_init (CCMSnapshot *self)
 {
-	gint cpt;
-	
 	self->priv = CCM_SNAPSHOT_GET_PRIVATE(self);
 	self->priv->screen = NULL;
-	self->priv->area_keybind = NULL;
-	self->priv->window_keybind = NULL;
-	self->priv->color = NULL;
 	self->priv->area.x = 0;
 	self->priv->area.y = 0;
 	self->priv->area.width = 0;
 	self->priv->area.height = 0;
 	self->priv->selected = NULL;
 	self->priv->builder = NULL;
-	
-	for (cpt = 0; cpt < CCM_SNAPSHOT_OPTION_N; ++cpt) 
-		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_snapshot_finalize (GObject *object)
 {
 	CCMSnapshot* self = CCM_SNAPSHOT(object);
-	gint cpt;
-	
-	for (cpt = 0; cpt < CCM_SNAPSHOT_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = NULL;
-	}
-	
-	if (self->priv->color)
-		g_free(self->priv->color);
-	self->priv->color = NULL;
-	
-	if (self->priv->area_keybind) 
-		g_object_unref(self->priv->area_keybind);
-	self->priv->area_keybind = NULL;
-	
-	if (self->priv->window_keybind) 
-		g_object_unref(self->priv->window_keybind);
-	self->priv->window_keybind = NULL;
+
+    ccm_plugin_options_unload(CCM_PLUGIN(self));
 
 	if (self->priv->builder)
 		g_object_unref(self->priv->builder);
@@ -144,8 +151,12 @@ static void
 ccm_snapshot_class_init (CCMSnapshotClass *klass)
 {
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
-	
+
 	g_type_class_add_private (klass, sizeof (CCMSnapshotPrivate));
+
+	CCM_PLUGIN_CLASS(klass)->options_init = ccm_snapshot_options_init;
+	CCM_PLUGIN_CLASS(klass)->options_finalize = ccm_snapshot_options_finalize;
+	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_snapshot_on_option_changed;
 	
 	object_class->finalize = ccm_snapshot_finalize;
 	
@@ -342,27 +353,31 @@ ccm_snapshot_get_area_keybind(CCMSnapshot* self)
 	GError* error = NULL;
 	gchar* shortcut = NULL;
 
-	if (self->priv->area_keybind) g_object_unref(self->priv->area_keybind);
+	if (ccm_snapshot_get_option(self)->area_keybind) 
+		g_object_unref(ccm_snapshot_get_option(self)->area_keybind);
 	
-	shortcut = 
-		ccm_config_get_string(self->priv->options [CCM_SNAPSHOT_AREA], 
-							  &error);
+	shortcut = ccm_config_get_string(ccm_snapshot_get_config(self , CCM_SNAPSHOT_AREA), 
+	                                 &error);
 	if (error)
 	{
 		g_warning("Error on get snapshot area shortcut configuration value");
 		g_error_free(error);
 		shortcut = g_strdup("<Super>Button1");
 	}
-	self->priv->area_keybind = ccm_keybind_new(self->priv->screen, 
-											   shortcut, TRUE);
+	ccm_snapshot_get_option(self)->area_keybind = 
+		ccm_keybind_new(self->priv->screen, shortcut, TRUE);
+	
 	g_free(shortcut);
-	g_signal_connect_swapped(self->priv->area_keybind, "key_press", 
+	g_signal_connect_swapped(ccm_snapshot_get_option(self)->area_keybind, 
+	                         "key_press", 
 							 G_CALLBACK(ccm_snapshot_on_area_key_press), 
 							 self);
-	g_signal_connect_swapped(self->priv->area_keybind, "key_release", 
+	g_signal_connect_swapped(ccm_snapshot_get_option(self)->area_keybind, 
+	                         "key_release", 
 							 G_CALLBACK(ccm_snapshot_on_area_key_release), 
 							 self);
-	g_signal_connect_swapped(self->priv->area_keybind, "key_motion", 
+	g_signal_connect_swapped(ccm_snapshot_get_option(self)->area_keybind, 
+	                         "key_motion", 
 							 G_CALLBACK(ccm_snapshot_on_area_key_motion), 
 							 self);
 }
@@ -373,24 +388,27 @@ ccm_snapshot_get_window_keybind(CCMSnapshot* self)
 	GError* error = NULL;
 	gchar* shortcut = NULL;
 
-	if (self->priv->window_keybind) g_object_unref(self->priv->window_keybind);
+	if (ccm_snapshot_get_option(self)->window_keybind) 
+		g_object_unref(ccm_snapshot_get_option(self)->window_keybind);
 	
-	shortcut = 
-		ccm_config_get_string(self->priv->options [CCM_SNAPSHOT_WINDOW], 
-							  &error);
+	shortcut = ccm_config_get_string(ccm_snapshot_get_config(self, CCM_SNAPSHOT_WINDOW), 
+	                                 &error);
 	if (error)
 	{
 		g_warning("Error on get snapshot window shortcut configuration value");
 		g_error_free(error);
 		shortcut = g_strdup("<Super><Alt>Button1");
 	}
-	self->priv->window_keybind = ccm_keybind_new(self->priv->screen, 
-												 shortcut, TRUE);
+	ccm_snapshot_get_option(self)->window_keybind = 
+		ccm_keybind_new(self->priv->screen, shortcut, TRUE);
 	g_free(shortcut);
-	g_signal_connect_swapped(self->priv->window_keybind, "key_press", 
+	
+	g_signal_connect_swapped(ccm_snapshot_get_option(self)->window_keybind, 
+	                         "key_press", 
 							 G_CALLBACK(ccm_snapshot_on_window_key_press), 
 							 self);
-	g_signal_connect_swapped(self->priv->window_keybind, "key_release", 
+	g_signal_connect_swapped(ccm_snapshot_get_option(self)->window_keybind, 
+	                         "key_release", 
 							 G_CALLBACK(ccm_snapshot_on_window_key_release), 
 							 self);
 }
@@ -400,11 +418,12 @@ ccm_snapshot_get_color(CCMSnapshot* self)
 {
 	GError* error = NULL;
 	
-	if (self->priv->color) g_free(self->priv->color);
+	if (ccm_snapshot_get_option(self)->color) 
+		g_free(ccm_snapshot_get_option(self)->color);
 	
-	self->priv->color = 
-		ccm_config_get_color(self->priv->options [CCM_SNAPSHOT_COLOR], 
-							 &error);
+	ccm_snapshot_get_option(self)->color = 
+		ccm_config_get_color(ccm_snapshot_get_config(self, CCM_SNAPSHOT_COLOR), 
+		                    &error);
 	if (error)
 	{
 		g_warning("Error on get snapshot select color configuration value");
@@ -413,13 +432,15 @@ ccm_snapshot_get_color(CCMSnapshot* self)
 }
 
 static void
-ccm_snapshot_on_option_changed(CCMSnapshot* self, CCMConfig* config)
+ccm_snapshot_on_option_changed(CCMPlugin* plugin, CCMConfig* config)
 {
-	if (config == self->priv->options[CCM_SNAPSHOT_AREA])
+	CCMSnapshot* self = CCM_SNAPSHOT(plugin);
+	
+	if (config == ccm_snapshot_get_config(self, CCM_SNAPSHOT_AREA))
 		ccm_snapshot_get_area_keybind (self);
-	else if (config == self->priv->options[CCM_SNAPSHOT_WINDOW])
+	else if (config == ccm_snapshot_get_config(self, CCM_SNAPSHOT_WINDOW))
 		ccm_snapshot_get_window_keybind (self);
-	else if (config == self->priv->options[CCM_SNAPSHOT_COLOR])
+	else if (config == ccm_snapshot_get_config(self, CCM_SNAPSHOT_COLOR))
 		ccm_snapshot_get_color (self);
 }
 
@@ -427,26 +448,14 @@ static void
 ccm_snapshot_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMSnapshot* self = CCM_SNAPSHOT(plugin);
-	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_SNAPSHOT_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
-												  "snapshot", 
-												  CCMSnapshotOptions[cpt]);
-		if (self->priv->options[cpt])
-		g_signal_connect_swapped(self->priv->options[cpt], "changed",
-								 G_CALLBACK(ccm_snapshot_on_option_changed), 
-								 self);
-	}
-	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
-		
 	self->priv->screen = screen;
+
+	ccm_plugin_options_load(CCM_PLUGIN(self), "snapshot", CCMSnapshotOptionKeys,
+	                        CCM_SNAPSHOT_OPTION_N);
 	
-	ccm_snapshot_get_area_keybind(self);
-	ccm_snapshot_get_window_keybind(self);
-	ccm_snapshot_get_color (self);
+	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
+	
 }
 
 static gboolean
@@ -464,8 +473,9 @@ ccm_snapshot_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		cairo_save(context);
 		cairo_reset_clip(context);
 		cairo_set_line_width(context, 4);
-		if (self->priv->color)
-			gdk_cairo_set_source_color(context, self->priv->color);
+		if (ccm_snapshot_get_option(self)->color)
+			gdk_cairo_set_source_color(context, 
+			                           ccm_snapshot_get_option(self)->color);
 		else
 			cairo_set_source_rgb(context, 1, 1, 1);
 		cairo_rectangle(context, self->priv->area.x - 2, self->priv->area.y - 2,  
@@ -485,11 +495,11 @@ ccm_snapshot_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		
 		path = ccm_drawable_get_geometry_path(CCM_DRAWABLE(self->priv->selected),
 											  context);
-		if (self->priv->color)
+		if (ccm_snapshot_get_option(self)->color)
 			cairo_set_source_rgba(context, 
-								  (double)self->priv->color->red / 65535.0f, 
-								  (double)self->priv->color->green / 65535.0f,
-								  (double)self->priv->color->blue / 65535.0f,
+								  (double)ccm_snapshot_get_option(self)->color->red / 65535.0f, 
+								  (double)ccm_snapshot_get_option(self)->color->green / 65535.0f,
+								  (double)ccm_snapshot_get_option(self)->color->blue / 65535.0f,
 								  0.5);
 		else
 			cairo_set_source_rgba(context, 1, 1, 1, 0.5);

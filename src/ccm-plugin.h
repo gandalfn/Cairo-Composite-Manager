@@ -25,6 +25,9 @@
 
 #include <glib-object.h>
 
+#include "ccm-object.h"
+#include "ccm-config.h"
+
 G_BEGIN_DECLS
 
 #define CCM_TYPE_PLUGIN             (ccm_plugin_get_type ())
@@ -39,24 +42,50 @@ G_BEGIN_DECLS
 typedef struct _CCMPluginPrivate CCMPluginPrivate;
 typedef struct _CCMPluginClass CCMPluginClass;
 typedef struct _CCMPlugin CCMPlugin;
+typedef struct _CCMPluginOptions CCMPluginOptions;
 
 typedef  void (*CCMPluginUnlockFunc) (gpointer data);
 
 struct _CCMPluginClass
 {
-	GObjectClass parent_class;
+	GObjectClass		parent_class;
+
+	int					count;
+	CCMPluginOptions**  options;
+	int					options_size;
+
+	CCMPluginOptions*   (*options_init)		(CCMPlugin* self);
+	void			    (*options_finalize) (CCMPlugin* self,
+				                             CCMPluginOptions* options);
+	void				(*option_changed)   (CCMPlugin* self, 
+					                         CCMConfig* config);
 };
 
 struct _CCMPlugin
 {
-	GObject parent_instance;
-	
-	CCMPluginPrivate* priv;
+	GObject				parent_instance;
+
+	CCMPluginPrivate*   priv;
 };
 
-GType ccm_plugin_get_type (void) G_GNUC_CONST;
-GObject* ccm_plugin_get_parent(CCMPlugin* self);
-void ccm_plugin_set_parent(CCMPlugin* self, GObject* parent);
+struct _CCMPluginOptions
+{
+	gboolean			initialized;
+	CCMConfig**			configs;
+	int					configs_size;
+};
+
+GType				ccm_plugin_get_type			(void) G_GNUC_CONST;
+GObject*			ccm_plugin_get_parent		(CCMPlugin* self);
+void				ccm_plugin_set_parent	    (CCMPlugin* self, 
+					                              GObject* parent);
+void				ccm_plugin_options_load		(CCMPlugin* self, 
+						                         gchar* plugin_name, 
+				                    			 const gchar** options_key, 
+						                         int nb_options);
+void				ccm_plugin_options_unload	(CCMPlugin* self);
+CCMPluginOptions*   ccm_plugin_get_option	    (CCMPlugin* self);
+CCMConfig*			ccm_plugin_get_config	    (CCMPlugin* self, int index);
 
 #define CCM_DEFINE_PLUGIN(class_name, prefix, parent_class_type, CODE) \
 \
@@ -71,13 +100,28 @@ prefix##_get_type (void) \
 G_MODULE_EXPORT GType \
 prefix##_get_plugin_type (GTypeModule * plugin); \
 \
-static void     prefix##_init              (class_name        *self); \
-static void     prefix##_class_init        (class_name##Class *klass); \
-static gpointer prefix##_parent_class = NULL; \
-static void     prefix##_class_intern_init (gpointer klass) \
+static void 	prefix##_init              (class_name           *self); \
+static void 	prefix##_class_init        (class_name##Class    *klass); \
+\
+static gpointer				prefix##_parent_class = NULL; \
+\
+static void \
+prefix##_class_intern_init (gpointer klass) \
 { \
   prefix##_parent_class = g_type_class_peek_parent (klass); \
   prefix##_class_init ((class_name##Class*) klass); \
+} \
+\
+static inline class_name##Options* \
+prefix##_get_option(class_name *self) \
+{ \
+	return (class_name##Options*)ccm_plugin_get_option((CCMPlugin*)self); \
+} \
+\
+static inline CCMConfig* \
+prefix##_get_config(class_name *self, int option) \
+{ \
+	return ccm_plugin_get_config((CCMPlugin*)self, option); \
 } \
 \
 GType \
@@ -92,7 +136,7 @@ prefix##_get_plugin_type (GTypeModule * plugin) \
 			NULL, \
 			NULL, \
 			sizeof (class_name), \
-			0, \
+			CCM_OBJECT_PREFETCH, \
 			(GInstanceInitFunc)prefix##_init \
 		}; \
 		prefix##_type = g_type_module_register_type (plugin, \
@@ -104,6 +148,8 @@ prefix##_get_plugin_type (GTypeModule * plugin) \
 	return prefix##_type; \
 }
 
+
+
 #define CCM_IMPLEMENT_INTERFACE(prefix, TYPE_IFACE, iface_init)       { \
   const GInterfaceInfo g_implement_interface_info = { \
     (GInterfaceInitFunc) iface_init, NULL, NULL \
@@ -111,11 +157,11 @@ prefix##_get_plugin_type (GTypeModule * plugin) \
   g_type_module_add_interface (plugin, prefix##_type, TYPE_IFACE, &g_implement_interface_info); \
 }
 
-gboolean 	_ccm_plugin_method_locked	(GObject* obj, gpointer func);
-void 		_ccm_plugin_lock_method		(GObject* obj, gpointer func, 
-										 CCMPluginUnlockFunc callback, 
-										 gpointer data);
-void	 	_ccm_plugin_unlock_method	(GObject* obj, gpointer func);
+gboolean			_ccm_plugin_method_locked	(GObject* obj, gpointer func);
+void				_ccm_plugin_lock_method		(GObject* obj, gpointer func, 
+			        			                 CCMPluginUnlockFunc callback, 
+			                			         gpointer data);
+void	 			_ccm_plugin_unlock_method	(GObject* obj, gpointer func);
 
 G_END_DECLS
 

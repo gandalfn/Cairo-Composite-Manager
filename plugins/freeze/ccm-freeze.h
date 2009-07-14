@@ -44,10 +44,6 @@ typedef struct _CCMFreeze CCMFreeze;
 struct _CCMFreezeClass
 {
 	CCMPluginClass parent_class;
-	
-	Atom protocol_atom;
-	Atom ping_atom;
-	Atom pid_atom;
 };
 
 typedef struct _CCMFreezePrivate CCMFreezePrivate;

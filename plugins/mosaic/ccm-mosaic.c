@@ -44,15 +44,24 @@ enum
 	CCM_MOSAIC_OPTION_N
 };
 
-static gchar* CCMMosaicOptions[CCM_MOSAIC_OPTION_N] = {
+static const gchar* CCMMosaicOptionKeys[CCM_MOSAIC_OPTION_N] = {
 	"spacing",
 	"shortcut"
 };
+
+typedef struct
+{
+	CCMPluginOptions	parent;
+
+	gint				spacing;
+	CCMKeybind*			keybind;
+} CCMMosaicOptions;
 
 static void ccm_mosaic_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_mosaic_window_iface_init(CCMWindowPluginClass* iface);
 static void ccm_mosaic_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
 static void ccm_mosaic_check_windows(CCMMosaic* self);
+static void ccm_mosaic_on_option_changed(CCMPlugin* plugin, CCMConfig* config);
 
 CCM_DEFINE_PLUGIN (CCMMosaic, ccm_mosaic, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_mosaic,
@@ -78,48 +87,54 @@ struct _CCMMosaicPrivate
 	CCMMosaicArea*     	 areas;
 	gint				 nb_areas;
 	
-	CCMKeybind*			 keybind;
-
 	gboolean			 mouse_over;
 
 	GtkBuilder*			 builder;
-	
-	CCMConfig*           options[CCM_MOSAIC_OPTION_N];
 };
 
 #define CCM_MOSAIC_GET_PRIVATE(o)  \
    ((CCMMosaicPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MOSAIC, CCMMosaicClass))
 
+static CCMPluginOptions*
+ccm_mosaic_options_init (CCMPlugin* plugin)
+{
+	CCMMosaicOptions* options = g_new0(CCMMosaicOptions, 1);
+	
+	options->spacing = 5;
+	options->keybind = NULL;
+
+	return (CCMPluginOptions*)options;
+}
+
+static void
+ccm_mosaic_options_finalize (CCMPlugin* plugin, CCMPluginOptions* opts)
+{
+	CCMMosaicOptions* options = (CCMMosaicOptions*)opts;
+	
+	if (options->keybind) g_object_unref(options->keybind);
+	options->keybind = NULL;
+	g_free(options);
+}
+
 static void
 ccm_mosaic_init (CCMMosaic *self)
 {
-	gint cpt;
-	
 	self->priv = CCM_MOSAIC_GET_PRIVATE(self);
 	self->priv->screen = NULL;
 	self->priv->enabled = FALSE;
 	self->priv->areas = NULL;
 	self->priv->nb_areas = 0;
-	self->priv->keybind = NULL;
 	self->priv->mouse_over = FALSE;
 	self->priv->builder = NULL;
-	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; ++cpt) 
-		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_mosaic_finalize (GObject *object)
 {
 	CCMMosaic* self = CCM_MOSAIC(object);
-	gint cpt;
 	
-	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = NULL;
-	}
-	if (self->priv->keybind) g_object_unref(self->priv->keybind);
-	self->priv->keybind = NULL;
+	if (self->priv->screen) ccm_plugin_options_unload (CCM_PLUGIN(self));
+	
 	if (self->priv->areas) g_free(self->priv->areas);
 	self->priv->areas = NULL;
 	if (self->priv->builder) g_object_unref(self->priv->builder);
@@ -135,6 +150,10 @@ ccm_mosaic_class_init (CCMMosaicClass *klass)
 	
 	g_type_class_add_private (klass, sizeof (CCMMosaicPrivate));
 
+	CCM_PLUGIN_CLASS(klass)->options_init = ccm_mosaic_options_init;
+	CCM_PLUGIN_CLASS(klass)->options_finalize = ccm_mosaic_options_finalize;
+	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_mosaic_on_option_changed;
+	
 	object_class->finalize = ccm_mosaic_finalize;
 }
 
@@ -322,9 +341,7 @@ ccm_mosaic_create_areas(CCMMosaic* self, gint nb_windows)
 	GError* error = NULL;
 	int i, j, lines, n;
 	int x, y, width, height;
-    int spacing = 
-		ccm_config_get_integer (self->priv->options [CCM_MOSAIC_SPACING],
-								&error);
+    int spacing = ccm_mosaic_get_option(self)->spacing;
     
 	if (error)
 	{
@@ -448,34 +465,50 @@ ccm_mosaic_on_key_press(CCMMosaic* self)
 }
 
 static void
+ccm_mosaic_on_option_changed(CCMPlugin* plugin, CCMConfig* config)
+{
+	CCMMosaic* self = CCM_MOSAIC(plugin);
+	
+	if (config == ccm_mosaic_get_config(self, CCM_MOSAIC_SPACING))
+	{
+		ccm_mosaic_get_option(self)->spacing = 
+			ccm_config_get_integer (config, NULL);
+	}
+	if (config == ccm_mosaic_get_config(self, CCM_MOSAIC_SHORTCUT))
+	{
+		gchar* shortcut;
+		GError* error = NULL;
+		
+		if (ccm_mosaic_get_option(self)->keybind)
+			g_object_unref(ccm_mosaic_get_option(self)->keybind);
+
+		shortcut = ccm_config_get_string(config, &error);
+		if (error)
+		{
+			g_error_free(error);
+			error = NULL;
+			g_warning("Error on get mosaic shortcut configuration value");
+			shortcut = g_strdup("<Super>Tab");
+		}
+		ccm_mosaic_get_option(self)->keybind = 
+			ccm_keybind_new(self->priv->screen, shortcut, TRUE);
+		g_free(shortcut);
+		g_signal_connect_swapped(ccm_mosaic_get_option(self)->keybind, "key_press", 
+		                         G_CALLBACK(ccm_mosaic_on_key_press), self);
+	}
+}
+
+static void
 ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 {
 	CCMMosaic* self = CCM_MOSAIC(plugin);
-	gint cpt;
-	GError* error = NULL;
-	gchar* shortcut;
-	
-	for (cpt = 0; cpt < CCM_MOSAIC_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
-												  "mosaic", 
-												  CCMMosaicOptions[cpt]);
-	}
-	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	
 	self->priv->screen = screen;
-	shortcut = 
-	   ccm_config_get_string(self->priv->options [CCM_MOSAIC_SHORTCUT], &error);
-	if (error)
-	{
-		g_error_free(error);
-		error = NULL;
-		g_warning("Error on get mosaic shortcut configuration value");
-		shortcut = g_strdup("<Super>Tab");
-	}
-	self->priv->keybind = ccm_keybind_new(self->priv->screen, shortcut, TRUE);
-	g_free(shortcut);
+	
+	ccm_plugin_options_load(CCM_PLUGIN(self), "mosaic", CCMMosaicOptionKeys,
+	                        CCM_MOSAIC_OPTION_N);
+	
+	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	
 	g_signal_connect_swapped(self->priv->screen, "enter-window-notify",
 	                         G_CALLBACK(ccm_mosaic_on_window_enter_notify),
@@ -486,8 +519,6 @@ ccm_mosaic_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	g_signal_connect_swapped(self->priv->screen, "activate-window-notify",
 	                         G_CALLBACK(ccm_mosaic_on_window_activate_notify),
 	                         self);
-	g_signal_connect_swapped(self->priv->keybind, "key_press", 
-							 G_CALLBACK(ccm_mosaic_on_key_press), self);
 }
 
 static gboolean 

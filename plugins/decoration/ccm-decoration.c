@@ -43,10 +43,18 @@ enum
 	CCM_DECORATION_OPTION_N
 };
 
-static gchar* CCMDecorationOptions[CCM_DECORATION_OPTION_N] = {
+static const gchar* CCMDecorationOptionKeys[CCM_DECORATION_OPTION_N] = {
 	"opacity",
 	"gradiant"
 };
+
+typedef struct
+{
+	CCMPluginOptions parent;
+	
+	float			 opacity;
+	gboolean	  	 gradiant;	
+} CCMDecorationOptions;
 
 static void ccm_decoration_window_iface_init  (CCMWindowPluginClass* iface);
 static void ccm_decoration_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface);
@@ -57,6 +65,8 @@ static void ccm_decoration_on_property_changed(CCMDecoration* self,
 											   CCMWindow* window);
 static void ccm_decoration_on_opacity_changed (CCMDecoration* self, 
 											   CCMWindow* window);
+static void ccm_decoration_on_option_changed  (CCMPlugin* plugin, 
+                                               CCMConfig* config);
 
 CCM_DEFINE_PLUGIN (CCMDecoration, ccm_decoration, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_decoration,
@@ -75,48 +85,47 @@ struct _CCMDecorationPrivate
 	int				left;
 	int				right;
 	
-	float			opacity;
-	gboolean		gradiant;
-	
 	CCMRegion*		geometry;
 	CCMRegion*		opaque;
 	
 	gboolean		locked;
 
 	GtkBuilder*		builder;
-	
-	CCMConfig       *options[CCM_DECORATION_OPTION_N];
 };
 
 #define CCM_DECORATION_GET_PRIVATE(o)  \
    ((CCMDecorationPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DECORATION, CCMDecorationClass))
 
+static CCMPluginOptions*
+ccm_decoration_options_init (CCMPlugin* plugin)
+{	
+	CCMDecorationOptions* options = g_new0(CCMDecorationOptions, 1);
+	
+	options->gradiant = TRUE;
+	options->opacity = 1.0;
+
+	return (CCMPluginOptions*)options;
+}
+
 static void
 ccm_decoration_init (CCMDecoration *self)
 {
-	gint cpt;
-	
 	self->priv = CCM_DECORATION_GET_PRIVATE(self);
 	self->priv->window = NULL;
 	self->priv->top = 0;
 	self->priv->bottom = 0;
 	self->priv->left = 0;
 	self->priv->right = 0;
-	self->priv->gradiant = TRUE;
-	self->priv->opacity = 1.0;
 	self->priv->geometry = NULL;
 	self->priv->opaque = NULL;
 	self->priv->locked = FALSE;
 	self->priv->builder = NULL;
-	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt) 
-		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_decoration_finalize (GObject *object)
 {
 	CCMDecoration* self = CCM_DECORATION(object);
-	gint cpt;
 	
 	if (CCM_IS_WINDOW(self->priv->window) && 
 		G_OBJECT(self->priv->window)->ref_count)
@@ -141,13 +150,8 @@ ccm_decoration_finalize (GObject *object)
 
 	if (self->priv->builder) g_object_unref(self->priv->builder);
 
-	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) 
-			g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = NULL;
-	}
-	
+	ccm_plugin_options_unload (CCM_PLUGIN(self));
+
 	G_OBJECT_CLASS (ccm_decoration_parent_class)->finalize (object);
 }
 
@@ -157,6 +161,9 @@ ccm_decoration_class_init (CCMDecorationClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 	
 	g_type_class_add_private (klass, sizeof (CCMDecorationPrivate));
+
+	CCM_PLUGIN_CLASS(klass)->options_init = ccm_decoration_options_init;
+	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_decoration_on_option_changed;
 	
 	object_class->finalize = ccm_decoration_finalize;
 }
@@ -169,28 +176,28 @@ ccm_decoration_get_opacity(CCMDecoration* self)
 	gfloat opacity;
 	gboolean ret = FALSE;
 	gboolean gradiant = 
-		ccm_config_get_boolean (self->priv->options[CCM_DECORATION_GRADIANT], 
-								&error);
+		ccm_config_get_boolean (ccm_decoration_get_config(self, CCM_DECORATION_GRADIANT), 
+								NULL);
 
-	ret = self->priv->gradiant != gradiant;
-	self->priv->gradiant = gradiant;
-	
+	ret = ccm_decoration_get_option(self)->gradiant != gradiant;
+	ccm_decoration_get_option(self)->gradiant = gradiant;
+
 	real_opacity = 
-		ccm_config_get_float (self->priv->options[CCM_DECORATION_OPACITY], 
+		ccm_config_get_float (ccm_decoration_get_config(self, CCM_DECORATION_OPACITY), 
 							  &error);
 	if (error)
 	{
-		g_warning("Error on get opacity configuration value");
+		g_warning("Error on get opacity configuration value %s", error->message);
 		g_error_free(error);
 		real_opacity = 0.8f;
 	}
 	opacity = MAX(0.0f, real_opacity);
 	opacity = MIN(1.0f, opacity);
-	if (self->priv->opacity != opacity)
+	if (ccm_decoration_get_option(self)->opacity != opacity)
 	{
-		self->priv->opacity = opacity;
+		ccm_decoration_get_option(self)->opacity = opacity;
 		if (opacity != real_opacity)
-			ccm_config_set_float (self->priv->options[CCM_DECORATION_OPACITY], 
+			ccm_config_set_float (ccm_decoration_get_config(self, CCM_DECORATION_OPACITY), 
 								  opacity, NULL);
 		ret = TRUE;
 	}
@@ -199,8 +206,10 @@ ccm_decoration_get_opacity(CCMDecoration* self)
 }
 
 static void
-ccm_decoration_on_option_changed(CCMDecoration* self, CCMConfig* config)
+ccm_decoration_on_option_changed(CCMPlugin* plugin, CCMConfig* config)
 {
+	CCMDecoration* self = CCM_DECORATION(plugin);
+	
 	if (ccm_decoration_get_opacity (self) && 
 		self->priv->window && self->priv->geometry)
 	{
@@ -236,25 +245,13 @@ static void
 ccm_decoration_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMDecoration* self = CCM_DECORATION(plugin);
-	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	gint cpt;
-	
-	for (cpt = 0; cpt < CCM_DECORATION_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
-												  "decoration", 
-												  CCMDecorationOptions[cpt]);
-		if (self->priv->options[cpt])
-		g_signal_connect_swapped(self->priv->options[cpt], "changed",
-								 G_CALLBACK(ccm_decoration_on_option_changed), 
-								 self);
-	}
-	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
-	
+
 	self->priv->window = window;
 	
-	ccm_decoration_get_opacity (self);
+	ccm_plugin_options_load(CCM_PLUGIN(self), "decoration", CCMDecorationOptionKeys,
+	                        CCM_DECORATION_OPTION_N);
+
+	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	g_signal_connect_swapped(window, "property-changed",
 							 G_CALLBACK(ccm_decoration_on_property_changed), 
@@ -318,14 +315,14 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		cairo_set_source_rgba(ctx, 0, 0, 0, 0);
 		cairo_paint(ctx);
 		
-		if (self->priv->gradiant)
+		if (ccm_decoration_get_option(self)->gradiant)
 		{
 			pattern = cairo_pattern_create_linear(clipbox.x + clipbox.width / 2, 
 												  clipbox.y, 
 												  clipbox.x + clipbox.width / 2,
 												  clipbox.height);
 			cairo_pattern_add_color_stop_rgba(pattern, 0, 1, 1, 1, 
-											  self->priv->opacity * opacity);
+											  ccm_decoration_get_option(self)->opacity * opacity);
 			cairo_pattern_add_color_stop_rgba(pattern, 
 											  (double)self->priv->top /
 											  (double)clipbox.height, 
@@ -349,7 +346,7 @@ ccm_decoration_create_mask(CCMDecoration* self)
 		if (pattern)
 			cairo_set_source(ctx, pattern);
 		else
-			cairo_set_source_rgba(ctx, 1, 1, 1, self->priv->opacity * opacity);
+			cairo_set_source_rgba(ctx, 1, 1, 1, ccm_decoration_get_option(self)->opacity * opacity);
 		
 		tmp = ccm_region_rectangle(&clipbox);
 		ccm_region_subtract(decoration, tmp);

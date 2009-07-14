@@ -34,6 +34,19 @@
 #include "ccm-display.h"
 #include "ccm.h"
 
+enum
+{
+	CCM_CLONE_OPTION_N
+};
+
+static const gchar* CCMCloneOptionKeys[CCM_CLONE_OPTION_N] = {
+};
+
+typedef struct
+{
+	CCMPluginOptions parent;
+} CCMCloneOptions;
+
 static void ccm_clone_screen_iface_init  (CCMScreenPluginClass* iface);
 static void ccm_clone_window_iface_init  (CCMWindowPluginClass* iface);
 
@@ -386,8 +399,7 @@ ccm_clone_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 			ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE(window), 
 			                                          &geometry);
 
-			if (window != output->window &&
-			    ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(output->output), 
+			if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE(output->output), 
 			                                       &clipbox))
 			{
 				cairo_t* ctx;
@@ -402,12 +414,12 @@ ccm_clone_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 					                        clipbox.height / CCM_SCREEN_XSCREEN(screen)->height);
 					cairo_matrix_translate(&matrix, 
 					                       -geometry.x * (1 - clipbox.width / CCM_SCREEN_XSCREEN(screen)->width),
-					                       -geometry.x * (1 - clipbox.height / CCM_SCREEN_XSCREEN(screen)->height));
+					                       -geometry.y * (1 - clipbox.height / CCM_SCREEN_XSCREEN(screen)->height));
 					cairo_scale(ctx, 
 					            clipbox.width / CCM_SCREEN_XSCREEN(screen)->width,
 					            clipbox.height / CCM_SCREEN_XSCREEN(screen)->height);
 					ccm_drawable_get_damage_path(CCM_DRAWABLE(window), ctx);
-					cairo_clip(ctx);	
+					cairo_clip(ctx);
 					cairo_scale(ctx, 
 					            CCM_SCREEN_XSCREEN(screen)->width / clipbox.width,
 					            CCM_SCREEN_XSCREEN(screen)->height / clipbox.height);

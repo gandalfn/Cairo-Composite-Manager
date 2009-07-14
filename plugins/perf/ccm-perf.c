@@ -53,14 +53,23 @@ enum
 	CCM_PERF_OPTION_N
 };
 
-static gchar* CCMPerfOptions[CCM_PERF_OPTION_N] = {
+static const gchar* CCMPerfOptionKeys[CCM_PERF_OPTION_N] = {
 	"x",
 	"y",
 	"shortcut"
 };
 
+typedef struct 
+{
+	CCMPluginOptions parent;
+
+	cairo_rectangle_t	area;
+	CCMKeybind*		 keybind;
+} CCMPerfOptions;
+
 static void ccm_perf_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_perf_window_iface_init(CCMWindowPluginClass* iface);
+static void ccm_perf_on_option_changed(CCMPlugin* plugin, CCMConfig* config);
 
 CCM_DEFINE_PLUGIN (CCMPerf, ccm_perf, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_perf,
@@ -87,21 +96,38 @@ struct _CCMPerfPrivate
 	
 	gboolean			enabled;
 	gboolean			need_refresh;
-	cairo_rectangle_t	area;
 	
 	CCMScreen*			screen;
-	CCMKeybind*			keybind;
-	CCMConfig*          options[CCM_PERF_OPTION_N];
 };
 
 #define CCM_PERF_GET_PRIVATE(o)  \
    ((CCMPerfPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PERF, CCMPerfClass))
 
+static CCMPluginOptions*
+ccm_perf_options_init (CCMPlugin* plugin)
+{
+	CCMPerfOptions* options = g_new0(CCMPerfOptions, 1);
+	
+	options->keybind = NULL;
+
+	return (CCMPluginOptions*)options;
+}
+
+static void
+ccm_perf_options_finalize (CCMPlugin* plugin, CCMPluginOptions* opts)
+{
+	g_return_if_fail(opts != NULL);
+
+	CCMPerfOptions* options = (CCMPerfOptions*)opts;
+	
+	if (options->keybind) g_object_unref(options->keybind);
+	options->keybind = NULL;
+	g_free(options);
+}
+
 static void
 ccm_perf_init (CCMPerf *self)
 {
-	gint cpt;
-	
 	self->priv = CCM_PERF_GET_PRIVATE(self);
 	self->priv->frames = 0;
 	self->priv->elapsed = 0.0f;
@@ -116,21 +142,16 @@ ccm_perf_init (CCMPerf *self)
 	self->priv->need_refresh = TRUE;
 	self->priv->timer = g_timer_new();
 	self->priv->screen = NULL;
-	self->priv->keybind = NULL;
-	for (cpt = 0; cpt < CCM_PERF_OPTION_N; ++cpt) 
-		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_perf_finalize (GObject *object)
 {
 	CCMPerf* self = CCM_PERF(object);
-	gint cpt;
+
+	if (self->priv->screen) ccm_plugin_options_unload (CCM_PLUGIN(self));
 	
-	for (cpt = 0; cpt < CCM_PERF_OPTION_N; ++cpt)
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
 	if (self->priv->timer) g_timer_destroy (self->priv->timer);
-	if (self->priv->keybind) g_object_unref (self->priv->keybind);
 	
 	G_OBJECT_CLASS (ccm_perf_parent_class)->finalize (object);
 }
@@ -142,6 +163,10 @@ ccm_perf_class_init (CCMPerfClass *klass)
 	
 	g_type_class_add_private (klass, sizeof (CCMPerfPrivate));
 
+	CCM_PLUGIN_CLASS(klass)->options_init = ccm_perf_options_init;
+	CCM_PLUGIN_CLASS(klass)->options_finalize = ccm_perf_options_finalize;
+	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_perf_on_option_changed;
+	
 	object_class->finalize = ccm_perf_finalize;
 }
 
@@ -226,7 +251,7 @@ ccm_perf_on_key_press(CCMPerf* self)
 	self->priv->enabled = ~self->priv->enabled;
 	if (!self->priv->enabled)
 	{
-		CCMRegion* area = ccm_region_rectangle(&self->priv->area);
+		CCMRegion* area = ccm_region_rectangle(&ccm_perf_get_option(self)->area);
 		
 		ccm_screen_damage_region (self->priv->screen, area);
 		ccm_region_destroy(area);
@@ -234,57 +259,74 @@ ccm_perf_on_key_press(CCMPerf* self)
 }
 
 static void
-ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
+ccm_perf_on_option_changed(CCMPlugin* plugin, CCMConfig* config)
 {
 	CCMPerf* self = CCM_PERF(plugin);
 	GError* error = NULL;
-	gchar* shortcut;
-	gint cpt;
-	
-	for (cpt = 0; cpt < CCM_PERF_OPTION_N; ++cpt)
+
+	if (config == ccm_perf_get_config(self, CCM_PERF_X) ||
+	    config == ccm_perf_get_config(self, CCM_PERF_Y))
 	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
-												  "perf", 
-												  CCMPerfOptions[cpt]);
+		ccm_perf_get_option(self)->area.x = 
+			ccm_config_get_integer (ccm_perf_get_config(self, CCM_PERF_X), 
+			                        &error);
+		if (error)
+		{
+			g_error_free(error);
+			error = NULL;
+			ccm_perf_get_option(self)->area.x = 20;
+		}
+
+		ccm_perf_get_option(self)->area.y = 
+			ccm_config_get_integer (ccm_perf_get_config(self, CCM_PERF_Y), 
+			                        &error);
+		if (error)
+		{
+			g_error_free(error);
+			error = NULL;
+			ccm_perf_get_option(self)->area.y = 20;
+		}
+		ccm_perf_get_option(self)->area.width = 280;
+		ccm_perf_get_option(self)->area.height = 100;
 	}
 
+	if (config == ccm_perf_get_config(self, CCM_PERF_SHORTCUT))
+	{
+		gchar* shortcut;
+
+		if (ccm_perf_get_option(self)->keybind)
+			g_object_unref(ccm_perf_get_option(self)->keybind);
+
+		shortcut = ccm_config_get_string(ccm_perf_get_config(self, CCM_PERF_SHORTCUT),
+		                                 &error);
+		if (error)
+		{
+			g_error_free(error);
+			error = NULL;
+			shortcut = g_strdup("<Super>f");
+		}
+
+		ccm_perf_get_option(self)->keybind = 
+			ccm_keybind_new(self->priv->screen, shortcut, TRUE);
+		g_free(shortcut);
+	
+		g_signal_connect_swapped(ccm_perf_get_option(self)->keybind, 
+		                         "key_press", 
+		                         G_CALLBACK(ccm_perf_on_key_press), self);
+	}
+}
+
+static void
+ccm_perf_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
+{
+	CCMPerf* self = CCM_PERF(plugin);
+	
 	self->priv->screen = screen;
-	self->priv->area.x = 
-		ccm_config_get_integer (self->priv->options[CCM_PERF_X], &error);
-	if (error)
-	{
-		g_error_free(error);
-		error = NULL;
-		self->priv->area.x = 20;
-	}
 
-	self->priv->area.y = 
-		ccm_config_get_integer (self->priv->options[CCM_PERF_Y], &error);
-	if (error)
-	{
-		g_error_free(error);
-		error = NULL;
-		self->priv->area.y = 20;
-	}
-	self->priv->area.width = 280;
-	self->priv->area.height = 100;
-		
+	ccm_plugin_options_load (CCM_PLUGIN(self), "perf", CCMPerfOptionKeys,
+	                         CCM_PERF_OPTION_N);
+
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
-	shortcut = ccm_config_get_string(self->priv->options [CCM_PERF_SHORTCUT],
-									 &error);
-	if (error)
-	{
-		g_error_free(error);
-		error = NULL;
-		shortcut = g_strdup("<Super>f");
-	}
-
-	self->priv->keybind = ccm_keybind_new(screen, shortcut, TRUE);
-	g_free(shortcut);
-	
-	g_signal_connect_swapped(self->priv->keybind, "key_press", 
-							 G_CALLBACK(ccm_perf_on_key_press), self);
 }
 
 static gboolean
@@ -304,7 +346,7 @@ ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 			self->priv->elapsed = 0.0f;
 			self->priv->frames = 0;
 			self->priv->need_refresh = TRUE;
-			CCMRegion* area = ccm_region_rectangle(&self->priv->area);
+			CCMRegion* area = ccm_region_rectangle(&ccm_perf_get_option(self)->area);
 		
 			ccm_screen_damage_region (screen, area);
 			ccm_region_destroy(area);
@@ -318,7 +360,7 @@ ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 	{	
 		if (ret)
 		{
-			CCMRegion* area = ccm_region_rectangle(&self->priv->area);
+			CCMRegion* area = ccm_region_rectangle(&ccm_perf_get_option(self)->area);
 			CCMRegion* damaged = ccm_screen_get_damaged(screen);
 		
 			ccm_region_intersect(area, damaged);
@@ -330,20 +372,24 @@ ccm_perf_screen_paint(CCMScreenPlugin* plugin, CCMScreen* screen,
 		{
 			cairo_surface_t* icon;
 			gchar* text;
-			CCMRegion* area = ccm_region_rectangle(&self->priv->area);
+			CCMRegion* area = ccm_region_rectangle(&ccm_perf_get_option(self)->area);
 			
 			ccm_screen_add_damaged_region(screen, area);
 			ccm_region_destroy(area);
 		
 			
 			cairo_save(context);
-			cairo_rectangle_round (context, self->priv->area.x, self->priv->area.y, 
-								   self->priv->area.width, self->priv->area.height, 
+			cairo_rectangle_round (context, 
+			                       ccm_perf_get_option(self)->area.x, 
+			                       ccm_perf_get_option(self)->area.y, 
+								   ccm_perf_get_option(self)->area.width, 
+			                       ccm_perf_get_option(self)->area.height, 
 								   20, CAIRO_CORNER_ALL);
 			cairo_set_source_rgba (context, 1.0f, 1.0f, 1.0f, 0.6f);
 			cairo_fill(context);
 			icon = cairo_image_surface_create_from_png (CCM_LOGO_PIXMAP);
-			cairo_translate(context, self->priv->area.x + 16 , self->priv->area.y + 16);
+			cairo_translate(context, ccm_perf_get_option(self)->area.x + 16 , 
+			                ccm_perf_get_option(self)->area.y + 16);
 			cairo_set_source_surface (context, icon, 0, 0);
 			cairo_paint(context);
 			cairo_surface_destroy (icon);
@@ -385,7 +431,7 @@ ccm_perf_window_paint(CCMWindowPlugin* plugin, CCMWindow* window,
 	g_object_get(G_OBJECT(window), "damaged", &damaged, NULL);
 	if (damaged && self->priv->enabled && !self->priv->need_refresh) 
 	{
-		CCMRegion *area = ccm_region_rectangle (&self->priv->area);
+		CCMRegion *area = ccm_region_rectangle (&ccm_perf_get_option(self)->area);
 	
 		ccm_region_intersect (area, damaged);
 		self->priv->need_refresh = !ccm_region_empty (area);

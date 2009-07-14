@@ -52,9 +52,16 @@ enum
 	CCM_MENU_ANIMATION_OPTION_N
 };
 
-static gchar* CCMMenuAnimationOptions[CCM_MENU_ANIMATION_OPTION_N] = {
+static const gchar* CCMMenuAnimationOptionKeys[CCM_MENU_ANIMATION_OPTION_N] = {
 	"duration"
 };
+
+typedef struct
+{
+	CCMPluginOptions parent;
+
+	gfloat 		     duration;
+} CCMMenuAnimationOptions;
 
 static void ccm_menu_animation_screen_iface_init(CCMScreenPluginClass* iface);
 static void ccm_menu_animation_window_iface_init(CCMWindowPluginClass* iface);
@@ -65,6 +72,8 @@ static void ccm_menu_animation_on_property_changed (CCMMenuAnimation* self,
 													CCMPropertyType changed,
 													CCMWindow* window);
 static void ccm_menu_animation_on_event(CCMMenuAnimation* self, XEvent* event);
+static void ccm_menu_animation_on_option_changed(CCMPlugin* plugin, 
+                                                 CCMConfig* config);
 
 CCM_DEFINE_PLUGIN (CCMMenuAnimation, ccm_menu_animation, CCM_TYPE_PLUGIN, 
 				   CCM_IMPLEMENT_INTERFACE(ccm_menu_animation,
@@ -85,43 +94,43 @@ struct _CCMMenuAnimationPrivate
 	CCMWindowType  type;
 		
 	CCMTimeline*   timeline;
-	gfloat 		   duration;
 	guint		   x_pos;
 	guint		   y_pos;
 	gboolean	   forced_animation;
 	
 	GtkBuilder*	   builder;
-	
-	CCMConfig*     options[CCM_MENU_ANIMATION_OPTION_N];
 };
 
 #define CCM_MENU_ANIMATION_GET_PRIVATE(o)  \
    ((CCMMenuAnimationPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationClass))
 
+static CCMPluginOptions*
+ccm_menu_animation_options_init(CCMPlugin* plugin)
+{
+	CCMMenuAnimationOptions* options = g_new0(CCMMenuAnimationOptions, 1);
+	
+	options->duration = 0.1f;
+
+	return (CCMPluginOptions*)options;
+}
+
 static void
 ccm_menu_animation_init (CCMMenuAnimation *self)
 {
-	gint cpt;
-	
 	self->priv = CCM_MENU_ANIMATION_GET_PRIVATE(self);
 	self->priv->window = NULL;
 	self->priv->type = CCM_WINDOW_TYPE_UNKNOWN;
 	self->priv->timeline = NULL;
-	self->priv->duration = 0.1f;
 	self->priv->x_pos = CCM_MENU_ANIMATION_LEFT;
 	self->priv->y_pos = CCM_MENU_ANIMATION_TOP;
 	self->priv->forced_animation = FALSE;
 	self->priv->builder = NULL;
-	
-	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; ++cpt) 
-		self->priv->options[cpt] = NULL;
 }
 
 static void
 ccm_menu_animation_finalize (GObject *object)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(object);
-	gint cpt;
 	
 	if (self->priv->screen)
 	{
@@ -143,11 +152,7 @@ ccm_menu_animation_finalize (GObject *object)
 											 self);	
 	}
 	
-	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = NULL;
-	}
+	ccm_plugin_options_unload(CCM_PLUGIN(self));
 	
 	if (self->priv->timeline) 
 	{
@@ -166,6 +171,9 @@ ccm_menu_animation_class_init (CCMMenuAnimationClass *klass)
 	GObjectClass* object_class = G_OBJECT_CLASS (klass);
 	
 	g_type_class_add_private (klass, sizeof (CCMMenuAnimationPrivate));
+
+	CCM_PLUGIN_CLASS(klass)->options_init = ccm_menu_animation_options_init;
+	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_menu_animation_on_option_changed;
 	
 	object_class->finalize = ccm_menu_animation_finalize;
 }
@@ -485,9 +493,10 @@ ccm_menu_animation_get_duration(CCMMenuAnimation* self)
 {
 	GError* error = NULL;
 	gfloat real_duration = 
-		ccm_config_get_float(self->priv->options[CCM_MENU_ANIMATION_DURATION],
-							 &error);
+		ccm_config_get_float(ccm_menu_animation_get_config(self, CCM_MENU_ANIMATION_DURATION),
+		                     &error);
 	gfloat duration;
+	gboolean ret = TRUE;
 	
 	if (error)
 	{
@@ -497,40 +506,28 @@ ccm_menu_animation_get_duration(CCMMenuAnimation* self)
 	}
 	duration = MAX(0.1f, real_duration);
 	duration = MIN(2.0f, real_duration);
-	if (duration != self->priv->duration)
+	if (duration != ccm_menu_animation_get_option(self)->duration)
 	{
-		CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self->priv->window));
-		guint refresh_rate;
-		
-		g_object_get (G_OBJECT(screen), "refresh_rate", &refresh_rate, NULL);
-		
-		if (self->priv->timeline) g_object_unref (self->priv->timeline);
-
-		self->priv->duration = duration;
+		ccm_menu_animation_get_option(self)->duration = duration;
 		if (duration != real_duration)
-			ccm_config_set_float(self->priv->options[CCM_MENU_ANIMATION_DURATION],
-								 self->priv->duration, NULL);
+			ccm_config_set_float(ccm_menu_animation_get_config(self, CCM_MENU_ANIMATION_DURATION),
+								 ccm_menu_animation_get_option(self)->duration, NULL);
 		
-		self->priv->timeline = ccm_timeline_new((int)(refresh_rate * duration), 
-												refresh_rate);
-	
-		g_signal_connect_swapped(self->priv->timeline, "new-frame", 
-							 	 G_CALLBACK(ccm_menu_animation_on_new_frame), 
-								 self);
-		g_signal_connect_swapped(self->priv->timeline, "completed", 
-								 G_CALLBACK(ccm_menu_animation_on_completed), 
-								 self);
-		
-		return TRUE;
+		ret = TRUE;
 	}
+
+	if (self->priv->timeline) g_object_unref (self->priv->timeline);
+	self->priv->timeline = NULL;
 	
-	return FALSE;
+	return ret;
 }
 
 static void
-ccm_menu_animation_on_option_changed(CCMMenuAnimation* self, CCMConfig* config)
+ccm_menu_animation_on_option_changed(CCMPlugin* plugin, CCMConfig* config)
 {
-	if (config == self->priv->options[CCM_MENU_ANIMATION_DURATION])
+	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
+	
+	if (config == ccm_menu_animation_get_config(self, CCM_MENU_ANIMATION_DURATION))
 	{
 		ccm_menu_animation_get_duration (self);
 	}
@@ -584,34 +581,24 @@ static void
 ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(plugin);
-	CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(window));
-	gint cpt;
-	
-	for (cpt = 0; cpt < CCM_MENU_ANIMATION_OPTION_N; ++cpt)
-	{
-		if (self->priv->options[cpt]) g_object_unref(self->priv->options[cpt]);
-		self->priv->options[cpt] = ccm_config_new(CCM_SCREEN_NUMBER(screen), 
-												  "menu-animation", 
-												  CCMMenuAnimationOptions[cpt]);
-		if (self->priv->options[cpt])
-		g_signal_connect_swapped(self->priv->options[cpt], "changed",
-								 G_CALLBACK(ccm_menu_animation_on_option_changed), 
-								 self);
-	}
-	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
 	self->priv->window = window;
+	self->priv->type = ccm_window_get_hint_type (window);
+	
+	ccm_plugin_options_load(CCM_PLUGIN(self), "menu-animation", 
+	                        CCMMenuAnimationOptionKeys,
+	                        CCM_MENU_ANIMATION_OPTION_N);
+	
+	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
+	
 	ccm_menu_animation_create_atoms(self);
 	
-	self->priv->type = ccm_window_get_hint_type (window);
 	g_signal_connect_swapped(window, "property-changed",
 							 G_CALLBACK(ccm_menu_animation_on_property_changed), 
 							 self);
 	g_signal_connect_swapped(window, "error",
 							 G_CALLBACK(ccm_menu_animation_on_error), 
 							 self);	
-	
-	ccm_menu_animation_get_duration (self);
 }
 
 static CCMRegion*
@@ -641,6 +628,19 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		self->priv->type == CCM_WINDOW_TYPE_POPUP_MENU)
 	{
 		guint current_frame = 0;
+
+		if (!self->priv->timeline)
+		{
+			self->priv->timeline = 
+				ccm_timeline_new_for_duration ((guint)(ccm_menu_animation_get_option(self)->duration * 1000.0));
+
+			g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+								 	 G_CALLBACK(ccm_menu_animation_on_new_frame), 
+									self);
+			g_signal_connect_swapped(self->priv->timeline, "completed", 
+									G_CALLBACK(ccm_menu_animation_on_completed), 
+									self);	
+		}
 		
 		if (!self->priv->forced_animation)
 			ccm_menu_animation_get_position (self);
@@ -653,6 +653,7 @@ ccm_menu_animation_map(CCMWindowPlugin* plugin, CCMWindow* window)
 		else
 		{
 			cairo_matrix_t matrix;
+			cairo_matrix_init_identity(&matrix);
 			cairo_matrix_scale(&matrix, 0., 0.);
 			ccm_drawable_push_matrix (CCM_DRAWABLE(self->priv->window), 
 									  "CCMMenuAnimation", &matrix);
@@ -688,6 +689,19 @@ ccm_menu_animation_unmap(CCMWindowPlugin* plugin, CCMWindow* window)
 	{
 		guint current_frame = 0;
 		
+		if (!self->priv->timeline)
+		{
+			self->priv->timeline = 
+				ccm_timeline_new_for_duration ((guint)(ccm_menu_animation_get_option(self)->duration * 1000.0));
+
+			g_signal_connect_swapped(self->priv->timeline, "new-frame", 
+								 	 G_CALLBACK(ccm_menu_animation_on_new_frame), 
+									self);
+			g_signal_connect_swapped(self->priv->timeline, "completed", 
+									G_CALLBACK(ccm_menu_animation_on_completed), 
+									self);	
+		}
+
 		if (ccm_timeline_is_playing (self->priv->timeline))
 		{
 			current_frame = ccm_timeline_get_current_frame (self->priv->timeline);
