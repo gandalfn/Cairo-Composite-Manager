@@ -20,10 +20,12 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
+using GLib;
+
 [CCode (cheader_filename = "math.h") ]
 public const double M_PI;
 
-[CCode (cheader_filename = "cairo.h")]
+[CCode (cheader_filename = "cairo.h,ccm.h")]
 namespace Cairo 
 {
 	[CCode (cname = "cairo_rectangle_t")]
@@ -34,6 +36,7 @@ namespace Cairo
 		public double width;
 		public double height;
 	}
+	public static void rectangles_free(Rectangle[] rects);
 	
 	[Compact]
 	[CCode (cname = "cairo_surface_t", cprefix = "cairo_surface_")]
@@ -87,7 +90,7 @@ namespace CCM
 		public void set_float (float value) throws GLib.Error;
 		public void set_integer (int value) throws GLib.Error;
 		public void set_integer_list (GLib.SList value) throws GLib.Error;
-		public void set_string (owned string value) throws GLib.Error;
+		public void set_string (string value) throws GLib.Error;
 		public void set_string_list (GLib.SList value) throws GLib.Error;
 		
 		[HasEmitter]
@@ -109,19 +112,29 @@ namespace CCM
 	}
 
 	public static delegate void PluginUnlockFunc (void* data);
-		
+
+	[Compact]
+	[CCode (cheader_filename = "ccm-plugin.h", destroy_function = "g_slice_free")]
+	public class PluginOptions	{
+	}
+	
 	[CCode (cheader_filename = "ccm-plugin.h")]
 	public abstract class Plugin : GLib.Object
 	{
 		public GLib.Object parent { get; set; }
+
+		protected abstract weak PluginOptions options_init();
+		protected abstract void options_finalize(PluginOptions options);
+		protected abstract void option_changed(Config config);
+
+		public void options_load(string name, string[] options_keys);
+		public void options_unload();
+		
+		public unowned PluginOptions get_option();
+		public unowned Config get_config(int index);
 		
 		[CCode (cname = "ccm_plugin_get_type")]
-		public static GLib.Type get_type (); 
-		
-		[CCode (cname="_ccm_plugin_lock_method")]
-		protected void lock_method(void* method, PluginUnlockFunc callback, void* data);
-		[CCode (cname="_ccm_plugin_unlock_method")]
-		protected void unlock_method(void* method);
+		public static GLib.Type get_type ();
 	}
 	
 	[CCode (cheader_filename = "ccm.h,ccm-display.h")]
@@ -154,23 +167,12 @@ namespace CCM
 		[HasEmitter]
 		public signal void xfixes_cursor_event (X.Event event);
 	}
-	
+
 	[CCode (cheader_filename = "ccm-screen-plugin.h")]
-	public interface ScreenPlugin 
+	public interface ScreenPlugin : GLib.Object
 	{
 		[CCode (cname = "_ccm_screen_plugin_get_root")]
 		protected weak CCM.ScreenPlugin get_root();
-		
-		protected void 
-		lock_root_method(void* func, PluginUnlockFunc callback, void* data)
-		{
-			((CCM.Plugin)this).lock_method(func, callback, data);
-		}
-		protected void 
-		unlock_root_method(void* func, PluginUnlockFunc callback, void* data)
-		{
-			((CCM.Plugin)this).unlock_method(func);
-		}
 
 		protected virtual bool add_window (CCM.Screen screen, CCM.Window window);
 		protected virtual void damage (CCM.Screen screen, CCM.Region area, CCM.Window window);
@@ -224,6 +226,8 @@ namespace CCM
 		public signal void refresh_rate_changed ();
 		[HasEmitter]
 		public signal void window_destroyed ();
+		[HasEmitter]
+		public signal void desktop_changed (int desktop);
 	}
 
 	[CCode (cheader_filename = "ccm.h,ccm-drawable.h")]
@@ -255,13 +259,13 @@ namespace CCM
 		public Cairo.Format get_format ();
 		
 		public Cairo.Matrix get_transform ();
-		public void push_matrix (owned string key, Cairo.Matrix matrix);
-		public void pop_matrix (owned string key);
+		public void push_matrix (string key, Cairo.Matrix matrix);
+		public void pop_matrix (string key);
 		
 		public unowned CCM.Region? get_geometry ();
-		public bool get_geometry_clipbox (Cairo.Rectangle area);
+		public bool get_geometry_clipbox (out Cairo.Rectangle area);
 		public unowned CCM.Region? get_device_geometry ();
-		public bool get_device_geometry_clipbox (Cairo.Rectangle area);
+		public bool get_device_geometry_clipbox (out Cairo.Rectangle area);
 		
 		public bool is_damaged ();
 		public void damage ();
@@ -297,34 +301,55 @@ namespace CCM
 		public virtual void release ();		
 	}
 	
-	public interface WindowPlugin 
+	public interface WindowPlugin : GLib.Object
 	{
 		[CCode (cname = "_ccm_window_plugin_get_root")]
 		protected CCM.WindowPlugin get_root();
 		
-		protected void 
-		lock_root_method(void* func, PluginUnlockFunc callback, void* data)
-		{
-			((CCM.Plugin)this).lock_method(func, callback, data);
-		}
-		protected void 
-		unlock_root_method(void* func, PluginUnlockFunc callback, void* data)
-		{
-			((CCM.Plugin)this).unlock_method(func);
-		}
-									 
-		protected virtual void get_origin (CCM.Window window, out int x, out int y);
-		protected virtual CCM.Pixmap get_pixmap (CCM.Window window);
 		protected virtual void load_options (CCM.Window window);
+		protected void lock_load_options(PluginUnlockFunc? func);
+		protected void unlock_load_options();
+
 		protected virtual void map (CCM.Window window);
-		protected virtual void move (CCM.Window window, int x, int y);
-		protected virtual bool paint (CCM.Window window, Cairo.Context ctx, Cairo.Surface surface, bool y_invert);
-		protected virtual CCM.Region query_geometry (CCM.Window window);
-		protected virtual void query_opacity (CCM.Window window);
-		protected virtual void resize (CCM.Window window, int width, int height);
-		protected virtual void set_opaque_region (CCM.Window window, CCM.Region area);
+		protected void lock_map(PluginUnlockFunc? func);
+		protected void unlock_map();
+		
 		protected virtual void unmap (CCM.Window window);
-	}
+		protected void lock_unmap(PluginUnlockFunc? func);
+		protected void unlock_unmap();
+
+		protected virtual void move (CCM.Window window, int x, int y);
+		protected void lock_move(PluginUnlockFunc? func);
+		protected void unlock_move();
+
+		protected virtual bool paint (CCM.Window window, Cairo.Context ctx, Cairo.Surface surface, bool y_invert);
+		protected void lock_paint(PluginUnlockFunc? func);
+		protected void unlock_paint();
+		
+		protected virtual CCM.Region query_geometry (CCM.Window window);
+		protected void lock_query_geometry(PluginUnlockFunc? func);
+		protected void unlock_query_geometry();
+		
+		protected virtual void query_opacity (CCM.Window window);
+		protected void lock_query_opacity(PluginUnlockFunc? func);
+		protected void unlock_query_opacity();
+
+		protected virtual void resize (CCM.Window window, int width, int height);
+		protected void lock_resize(PluginUnlockFunc? func);
+		protected void unlock_resize();
+
+		protected virtual void set_opaque_region (CCM.Window window, CCM.Region area);
+		protected void lock_set_opaque_region(PluginUnlockFunc? func);
+		protected void unlock_set_opaque_region();
+
+		protected virtual void get_origin (CCM.Window window, out int x, out int y);
+		protected void lock_get_origin(PluginUnlockFunc? func);
+		protected void unlock_get_origin();
+			
+		protected virtual CCM.Pixmap get_pixmap (CCM.Window window);
+		protected void lock_get_pixmap(PluginUnlockFunc? func);
+		protected void unlock_get_pixmap();
+	}	
 
 	[CCode (cheader_filename = "ccm.h,ccm-window.h,ccm-window-plugin.h")]
 	public class Window : CCM.Drawable, CCM.WindowPlugin 
@@ -345,7 +370,7 @@ namespace CCM
 		
 		public void activate (GLib.Time timestamp);
 		public virtual CCM.Pixmap create_pixmap (int width, int height, int depth);
-		public Cairo.Rectangle get_area ();
+		public Cairo.Rectangle* get_area ();
 		public uint32 get_child_property (X.Atom property_atom, X.Atom req_type, out uint n_items);
 		public void get_frame_extends (out int left_frame, out int right_frame, out int top_frame, out int bottom_frame);
 		public weak CCM.Window get_group_leader ();
@@ -400,7 +425,7 @@ namespace CCM
 		[HasEmitter]
 		public signal void opacity_changed ();
 		[HasEmitter]
-		public signal void property_changed (int object);
+		public signal void property_changed (CCM.PropertyType type);
 	}
 	
 	[CCode (cheader_filename = "ccm-preferences.h")]
@@ -535,8 +560,8 @@ namespace CCM
     	public bool is_empty ();
     	public CCM.RegionBox[] get_boxes (out int n_box);
     	public void get_clipbox (out Cairo.Rectangle clipbox);
-	    public void get_rectangles (out Cairo.Rectangle[] rectangles);
-    	public void region_get_xrectangles (out X.RECTANGLE[] rectangles);
+		public void get_rectangles (out unowned Cairo.Rectangle[] rectangles);
+    	public void region_get_xrectangles (out unowned X.RECTANGLE[] rectangles);
 
     	public void intersect (CCM.Region other);
     	public void offset (int dx, int dy);
