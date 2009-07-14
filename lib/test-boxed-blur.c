@@ -53,7 +53,6 @@ main(int argc, char**argv)
     cr = cairo_create(surface);
     cairo_set_source_rgba(cr, 0, 0, 0, 1);
     cairo_rectangle(cr, 50, 50, 200, 200);
-    path = cairo_copy_path(cr);
     cairo_fill(cr);
     cairo_destroy(cr);
     {
@@ -70,6 +69,7 @@ main(int argc, char**argv)
     cr = cairo_create(surface);
     cairo_set_source_rgba(cr, 0, 0, 0, 1);
     cairo_rectangle(cr, 50, 50, 200, 200);
+    path = cairo_copy_path(cr);
     {
         GET_TIME_START
         cairo_set_source_rgba(cr, 0, 0, 0, 1);
