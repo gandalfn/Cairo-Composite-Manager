@@ -20,7 +20,7 @@ PLUGIN_SOURCES += \
     $(PLUGIN_VALA_SOURCES:.vala=.c)
 
 $(PLUGIN).vala.stamp: $(PLUGIN_VALA_SOURCES)
-	$(VALAC) --library=$(PLUGIN) --vapidir=. --vapidir=${top_srcdir}/vapi --pkg=cairo --pkg=cairo-compmgr -C $^
+	$(VALAC) --vapidir=${top_srcdir}/vapi --pkg=cairo-compmgr -C $^
 	touch $@
 endif
 
