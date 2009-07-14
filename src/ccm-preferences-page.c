@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <X11/Xlib.h>
 #include <gtk/gtk.h>
 #include <stdlib.h>
 #include <string.h>
@@ -202,30 +203,6 @@ ccm_preferences_page_iface_init(CCMPreferencesPagePluginClass* iface)
 }
 
 static void
-ccm_preferences_page_on_use_root_background_changed(CCMPreferencesPage* self,
-                                                    CCMConfig* config)
-{
-	gboolean use_root_background = ccm_config_get_boolean (config, NULL);
-	GtkWidget* widget;
-
-	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
-	                                           "color_background"));
-	gtk_widget_set_sensitive(widget, !use_root_background);
-
-	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
-	                                           "background_button"));
-	gtk_widget_set_sensitive(widget, !use_root_background);
-	
-	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder,
-	                                           "background_x"));
-	gtk_widget_set_sensitive(widget, !use_root_background);
-
-	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
-	                                           "background_y"));
-	gtk_widget_set_sensitive(widget, !use_root_background);
-}
-
-static void
 ccm_preferences_page_on_background_changed(CCMPreferencesPage* self,
                                            CCMConfig* config)
 {
@@ -276,6 +253,98 @@ ccm_preferences_page_on_background_changed(CCMPreferencesPage* self,
 }
 
 static void
+ccm_preferences_page_on_use_root_background_changed(CCMPreferencesPage* self,
+                                                    CCMConfig* config)
+{
+	gboolean use_root_background = ccm_config_get_boolean (config, NULL);
+	GtkWidget* widget;
+
+	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+	                                           "color_background"));
+	gtk_widget_set_sensitive(widget, !use_root_background);
+
+	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+	                                           "background_button"));
+	gtk_widget_set_sensitive(widget, !use_root_background);
+	
+	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder,
+	                                           "background_x"));
+	gtk_widget_set_sensitive(widget, !use_root_background);
+
+	widget = GTK_WIDGET(gtk_builder_get_object(self->priv->builder, 
+	                                           "background_y"));
+	gtk_widget_set_sensitive(widget, !use_root_background);
+
+	if (use_root_background)
+	{
+		GdkAtom	prop_type;
+		union 
+		{
+			Pixmap	*pixmap;
+			guchar  *data;
+		} prop_data;
+		GdkDisplay* display = gdk_display_get_default();
+		GdkScreen* screen = gdk_display_get_screen(display, 
+		                                           self->priv->screen_num);
+		GdkWindow* root = gdk_screen_get_root_window(screen);
+		GdkAtom atom = gdk_atom_intern ("_XROOTPMAP_ID", FALSE);
+
+		gdk_property_get(root, atom, 0, 0, 10, FALSE, &prop_type, 
+			             NULL, NULL, &prop_data.data);
+
+		if (prop_type == GDK_TARGET_PIXMAP && prop_data.pixmap != NULL && 
+			prop_data.pixmap[0] != 0) 
+		{
+			GdkPixbuf* scaled;
+			GtkImage* image;
+			GdkColormap *colormap = NULL;
+			int width, height, rwidth, rheight, pwidth, pheight;
+			GdkPixmap* pixmap = gdk_pixmap_foreign_new(prop_data.pixmap[0]);
+			GdkPixbuf* pixbuf;
+		
+			gdk_drawable_get_size (GDK_DRAWABLE (pixmap), &pwidth, &pheight);
+			gdk_drawable_get_size (GDK_DRAWABLE (root), &rwidth, &rheight);
+			width = MIN(pwidth, rwidth);
+			height = MIN(pheight, rheight);
+
+			colormap = gdk_drawable_get_colormap(root);
+			pixbuf = gdk_pixbuf_get_from_drawable(NULL, pixmap, colormap, 
+				                                  0, 0, 0, 0, width, height);
+			g_object_unref(colormap);
+			
+			image = GTK_IMAGE(gtk_builder_get_object(self->priv->builder,
+					                                     "background_image"));
+			if (!image)
+			{
+				g_object_unref(pixbuf);
+				return;
+			}
+
+			gtk_widget_get_size_request(GTK_WIDGET(image), &width, &height);
+			if (gdk_pixbuf_get_width(pixbuf) > gdk_pixbuf_get_height(pixbuf))
+			{
+				height = (int)((float)gdk_pixbuf_get_height(pixbuf) * 
+					           ((float)width / (float)gdk_pixbuf_get_width(pixbuf)));
+			}
+			else
+			{
+				width = (int)((float)gdk_pixbuf_get_width(pixbuf) * 
+						      ((float)height / (float)gdk_pixbuf_get_height(pixbuf)));
+			}
+
+			scaled = gdk_pixbuf_scale_simple(pixbuf, width, height, 
+				                             GDK_INTERP_BILINEAR);
+			g_object_unref(pixbuf);
+			
+			gtk_image_set_from_pixbuf(image, scaled);
+		}
+	}
+	else
+		ccm_preferences_page_on_background_changed(self,
+		                                           self->priv->screen_options[CCM_SCREEN_BACKGROUND]);
+}
+
+static void
 ccm_preferences_page_load_config(CCMPreferencesPage* self)
 {
 	g_return_if_fail(self != NULL);
@@ -293,15 +362,23 @@ ccm_preferences_page_load_config(CCMPreferencesPage* self)
 			ccm_config_new(self->priv->screen_num, NULL, CCMScreenOptions[cpt]);
 
 		if (cpt == CCM_SCREEN_USE_ROOT_BACKGROUND)
+		{
+			ccm_preferences_page_on_use_root_background_changed(self,
+			                                                    self->priv->screen_options[cpt]);
 			g_signal_connect_swapped(self->priv->screen_options[cpt],
 			                         "changed",
 			                         G_CALLBACK(ccm_preferences_page_on_use_root_background_changed),
 			                         self);
+		}
 		if (cpt == CCM_SCREEN_BACKGROUND)
+		{
+			ccm_preferences_page_on_background_changed(self,
+			                                           self->priv->screen_options[cpt]);
 			g_signal_connect_swapped(self->priv->screen_options[cpt],
 			                         "changed",
 			                         G_CALLBACK(ccm_preferences_page_on_background_changed),
 			                         self);
+		}
 	}
 }
 
@@ -982,8 +1059,8 @@ impl_ccm_preferences_page_init_desktop_section(CCMPreferencesPagePlugin* plugin,
 	                                           "background_y"));
 		gtk_widget_set_sensitive(GTK_WIDGET(widget), !use_root);
 	}
-	ccm_preferences_page_plugin_init_desktop_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT(plugin),
-													  self, desktop_section);
+	
+	ccm_preferences_page_section_p(self,CCM_PREFERENCES_PAGE_SECTION_DESKTOP);
 }
 
 static void
