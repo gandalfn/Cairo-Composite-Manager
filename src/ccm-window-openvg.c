@@ -30,8 +30,9 @@
 #include "ccm-screen.h"
 #include "ccm-display.h"
 #include "ccm-window-openvg.h"
+#include "ccm-object.h"
 
-G_DEFINE_TYPE (CCMWindowOpenVG, ccm_window_openvg, CCM_TYPE_WINDOW);
+CCM_DEFINE_TYPE (CCMWindowOpenVG, ccm_window_openvg, CCM_TYPE_WINDOW);
 
 struct _CCMWindowOpenVGPrivate
 {

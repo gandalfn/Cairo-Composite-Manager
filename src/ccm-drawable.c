@@ -24,6 +24,7 @@
 #include "ccm-debug.h"
 #include "ccm-drawable.h"
 #include "ccm-display.h"
+#include "ccm-object.h"
 
 #define CCM_TYPE_DRAWABLE_MATRIX             (ccm_drawable_matrix_get_type ())
 
@@ -74,7 +75,7 @@ enum
 
 static guint signals[N_SIGNALS] = { 0 };
 
-G_DEFINE_TYPE (CCMDrawable, ccm_drawable, G_TYPE_OBJECT);
+CCM_DEFINE_TYPE (CCMDrawable, ccm_drawable, G_TYPE_OBJECT);
 
 struct _CCMDrawablePrivate
 {

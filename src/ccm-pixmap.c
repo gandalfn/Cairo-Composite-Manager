@@ -33,8 +33,9 @@
 #include "ccm-window.h"
 #include "ccm-screen.h"
 #include "ccm-display.h"
+#include "ccm-object.h"
 
-G_DEFINE_TYPE (CCMPixmap, ccm_pixmap, CCM_TYPE_DRAWABLE);
+CCM_DEFINE_TYPE (CCMPixmap, ccm_pixmap, CCM_TYPE_DRAWABLE);
 
 enum
 {

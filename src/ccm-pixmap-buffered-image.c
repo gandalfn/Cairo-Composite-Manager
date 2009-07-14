@@ -29,8 +29,9 @@
 #include "ccm-screen.h"
 #include "ccm-display.h"
 #include "ccm-debug.h"
+#include "ccm-object.h"
 
-G_DEFINE_TYPE (CCMPixmapBufferedImage, ccm_pixmap_buffered_image, CCM_TYPE_PIXMAP_IMAGE);
+CCM_DEFINE_TYPE (CCMPixmapBufferedImage, ccm_pixmap_buffered_image, CCM_TYPE_PIXMAP_IMAGE);
 
 enum
 {

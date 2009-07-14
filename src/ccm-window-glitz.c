@@ -33,8 +33,9 @@
 #include "ccm-display.h"
 #include "ccm-pixmap.h"
 #include "ccm-window-glitz.h"
+#include "ccm-object.h"
 
-G_DEFINE_TYPE (CCMWindowGlitz, ccm_window_glitz, CCM_TYPE_WINDOW);
+CCM_DEFINE_TYPE (CCMWindowGlitz, ccm_window_glitz, CCM_TYPE_WINDOW);
 
 struct _CCMWindowGlitzPrivate
 {
