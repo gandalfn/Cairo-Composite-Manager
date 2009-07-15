@@ -831,7 +831,6 @@
     <property name="upper">100</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
-    <property name="page_size">10</property>
     <property name="key">background_x</property>
     <property name="screen">0</property>
   </object>
@@ -839,7 +838,6 @@
     <property name="upper">100</property>
     <property name="step_increment">1</property>
     <property name="page_increment">10</property>
-    <property name="page_size">10</property>
     <property name="key">background_y</property>
     <property name="screen">0</property>
   </object>
