@@ -176,7 +176,7 @@ struct _CCMScreenPrivate
 };
 
 #define CCM_SCREEN_GET_PRIVATE(o)  \
-   ((CCMScreenPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SCREEN, CCMScreenClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SCREEN, CCMScreenPrivate))
 
 static gboolean impl_ccm_screen_paint(CCMScreenPlugin* plugin, CCMScreen* self,
 									  cairo_t* ctx);

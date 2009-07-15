@@ -91,7 +91,7 @@ struct _CCMOpacityPrivate
 };
 
 #define CCM_OPACITY_GET_PRIVATE(o)  \
-   ((CCMOpacityPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_OPACITY, CCMOpacityClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_OPACITY, CCMOpacityPrivate))
 
 static CCMPluginOptions*
 ccm_opacity_options_init(CCMPlugin* plugin)

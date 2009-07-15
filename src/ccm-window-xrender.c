@@ -40,7 +40,7 @@ struct _CCMWindowXRenderPrivate
 };
 
 #define CCM_WINDOW_XRENDER_GET_PRIVATE(o)  \
-   ((CCMWindowXRenderPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_X_RENDER, CCMWindowXRenderClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_X_RENDER, CCMWindowXRenderPrivate))
 
 static cairo_surface_t* ccm_window_xrender_get_surface(CCMDrawable* drawable);
 static void ccm_window_xrender_flush(CCMDrawable* drawable);

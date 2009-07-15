@@ -87,7 +87,7 @@ enum
 static guint signals[LAST_SIGNAL] = { 0 };
 
 #define CCM_TIMELINE_GET_PRIVATE(o)  \
-   ((CCMTimelinePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMELINE, CCMTimelineClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMELINE, CCMTimelinePrivate))
 
 static CCMTimeoutPool *timeline_pool = NULL;
 

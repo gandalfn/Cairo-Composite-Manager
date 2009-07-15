@@ -121,7 +121,7 @@ struct _CCMMagnifierPrivate
 };
 
 #define CCM_MAGNIFIER_GET_PRIVATE(o)  \
-   ((CCMMagnifierPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MAGNIFIER, CCMMagnifierClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MAGNIFIER, CCMMagnifierPrivate))
 
 static CCMPluginOptions*
 ccm_magnifier_options_init(CCMPlugin* plugin)

@@ -121,7 +121,7 @@ struct _CCMShadowPrivate
 };
 
 #define CCM_SHADOW_GET_PRIVATE(o)  \
-   ((CCMShadowPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SHADOW, CCMShadowClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SHADOW, CCMShadowPrivate))
 
 
 static CCMPluginOptions*

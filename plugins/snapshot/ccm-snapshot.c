@@ -91,7 +91,7 @@ struct _CCMSnapshotPrivate
 };
 
 #define CCM_SNAPSHOT_GET_PRIVATE(o)  \
-   ((CCMSnapshotPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT, CCMSnapshotClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT, CCMSnapshotPrivate))
 
 static CCMPluginOptions*
 ccm_snapshot_options_init(CCMPlugin* plugin)

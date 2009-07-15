@@ -119,7 +119,7 @@ struct _CCMDisplayPrivate
 static gint   CCMLastXError = 0;
 
 #define CCM_DISPLAY_GET_PRIVATE(o)  \
-   ((CCMDisplayPrivate *)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayPrivate))
 
 static void
 ccm_display_set_property(GObject *object,

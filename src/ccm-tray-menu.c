@@ -69,7 +69,7 @@ struct _CCMTrayMenuPrivate
 };
 
 #define CCM_TRAY_MENU_GET_PRIVATE(o) \
-	((CCMTrayMenuPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TRAY_MENU, CCMTrayMenuClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TRAY_MENU, CCMTrayMenuPrivate))
 
 static void
 ccm_tray_menu_init (CCMTrayMenu *self)

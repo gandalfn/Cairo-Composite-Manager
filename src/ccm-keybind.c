@@ -61,7 +61,7 @@ struct _CCMKeybindPrivate
 };
 
 #define CCM_KEYBIND_GET_PRIVATE(o) \
-	((CCMKeybindPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_KEYBIND, CCMKeybindClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_KEYBIND, CCMKeybindPrivate))
 
 static void ccm_keybind_ungrab (CCMKeybind* self);
 static void ccm_keybind_on_event(CCMKeybind* self, XEvent* xevent);

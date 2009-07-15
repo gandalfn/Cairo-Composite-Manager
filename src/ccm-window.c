@@ -186,7 +186,7 @@ struct _CCMWindowPrivate
 };
 
 #define CCM_WINDOW_GET_PRIVATE(o)  \
-   ((CCMWindowPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW, CCMWindowClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW, CCMWindowPrivate))
 
 static void
 ccm_window_set_gobject_property(GObject *object,

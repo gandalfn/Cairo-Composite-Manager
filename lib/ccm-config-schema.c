@@ -42,7 +42,7 @@ const gchar* CCM_CONFIG_VALUE_TYPE_NAME[] = {
 };
 
 #define CCM_CONFIG_SCHEMA_GET_PRIVATE(o)  \
-	((CCMConfigSchemaPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_SCHEMA, CCMConfigSchemaClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_SCHEMA, CCMConfigSchemaPrivate))
 
 G_DEFINE_TYPE (CCMConfigSchema, ccm_config_schema, G_TYPE_OBJECT);
 

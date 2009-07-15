@@ -102,7 +102,7 @@ struct _CCMMenuAnimationPrivate
 };
 
 #define CCM_MENU_ANIMATION_GET_PRIVATE(o)  \
-   ((CCMMenuAnimationPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationPrivate))
 
 static CCMPluginOptions*
 ccm_menu_animation_options_init(CCMPlugin* plugin)

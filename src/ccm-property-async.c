@@ -46,7 +46,7 @@ struct _CCMPropertyASyncPrivate
 };
 
 #define CCM_PROPERTY_ASYNC_GET_PRIVATE(o)  \
-   ((CCMPropertyASyncPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PROPERTY_ASYNC, CCMPropertyASyncClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PROPERTY_ASYNC, CCMPropertyASyncPrivate))
 
 G_DEFINE_TYPE (CCMPropertyASync, ccm_property_async, G_TYPE_OBJECT);
 

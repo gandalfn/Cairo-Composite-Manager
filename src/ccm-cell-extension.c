@@ -40,7 +40,7 @@ G_DEFINE_TYPE_EXTENDED (CCMCellExtension, ccm_cell_extension,
 											  ccm_cell_extension_iface_init));
 
 #define CCM_CELL_EXTENSION_GET_PRIVATE(o) \
-	((CCMCellExtensionPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CELL_EXTENSION, CCMCellExtensionClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CELL_EXTENSION, CCMCellExtensionPrivate))
 
 static void
 ccm_cell_extension_init (CCMCellExtension *self)

@@ -94,7 +94,7 @@ struct _CCMDecorationPrivate
 };
 
 #define CCM_DECORATION_GET_PRIVATE(o)  \
-   ((CCMDecorationPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DECORATION, CCMDecorationClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DECORATION, CCMDecorationPrivate))
 
 static CCMPluginOptions*
 ccm_decoration_options_init (CCMPlugin* plugin)

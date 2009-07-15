@@ -87,7 +87,7 @@ struct _CCMFreezePrivate
 };
 
 #define CCM_FREEZE_GET_PRIVATE(o)  \
-   ((CCMFreezePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FREEZE, CCMFreezeClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FREEZE, CCMFreezePrivate))
 
 static CCMPluginOptions*
 ccm_freeze_options_init(CCMPlugin* plugin)

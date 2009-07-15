@@ -88,7 +88,7 @@ struct _CCMFadePrivate
 };
 
 #define CCM_FADE_GET_PRIVATE(o)  \
-   ((CCMFadePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FADE, CCMFadeClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FADE, CCMFadePrivate))
 
 static CCMPluginOptions*
 ccm_fade_options_init(CCMPlugin* plugin)

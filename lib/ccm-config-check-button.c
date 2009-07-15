@@ -39,7 +39,7 @@ struct _CCMConfigCheckButtonPrivate
 };
 
 #define CCM_CONFIG_CHECK_BUTTON_GET_PRIVATE(o)  \
-   ((CCMConfigCheckButtonPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_CHECK_BUTTON, CCMConfigCheckButtonClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_CHECK_BUTTON, CCMConfigCheckButtonPrivate))
 
 static void ccm_config_check_button_on_changed (CCMConfigCheckButton* self, 
                                                 CCMConfig* config);

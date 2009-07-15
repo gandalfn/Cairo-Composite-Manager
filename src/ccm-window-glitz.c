@@ -45,7 +45,7 @@ struct _CCMWindowGlitzPrivate
 };
 
 #define CCM_WINDOW_GLITZ_GET_PRIVATE(o)  \
-   ((CCMWindowGlitzPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_GLITZ, CCMWindowGlitzClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_GLITZ, CCMWindowGlitzPrivate))
 
 static cairo_surface_t* ccm_window_glitz_get_surface(CCMDrawable* drawable);
 static void ccm_window_glitz_flush(CCMDrawable* drawable);

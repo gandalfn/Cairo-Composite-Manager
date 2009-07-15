@@ -46,8 +46,7 @@
 G_DEFINE_TYPE (CCMTimedDialog, ccm_timed_dialog, GTK_TYPE_DIALOG);
 
 #define CCM_TIMED_DIALOG_GET_PRIVATE(o) \
-	((CCMTimedDialogPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMED_DIALOG, \
-														  CCMTimedDialogPrivate))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMED_DIALOG, CCMTimedDialogPrivate))
 
 struct _CCMTimedDialogPrivate
 {

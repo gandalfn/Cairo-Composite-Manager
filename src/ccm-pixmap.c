@@ -53,7 +53,7 @@ struct _CCMPixmapPrivate
 };
 
 #define CCM_PIXMAP_GET_PRIVATE(o)  \
-   ((CCMPixmapPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP, CCMPixmapClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP, CCMPixmapPrivate))
 
 static void ccm_pixmap_bind (CCMPixmap* self);
 static void ccm_pixmap_release (CCMPixmap* self);

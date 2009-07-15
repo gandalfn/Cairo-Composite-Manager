@@ -69,7 +69,7 @@ struct _CCMConfigEntryShortcutPrivate
 };
 
 #define CCM_CONFIG_ENTRY_SHORTCUT_GET_PRIVATE(o) \
-	((CCMConfigEntryShortcutPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_ENTRY_SHORTCUT, CCMConfigEntryShortcutClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_ENTRY_SHORTCUT, CCMConfigEntryShortcutPrivate))
 
 static void ccm_config_entry_shortcut_on_changed(CCMConfigEntryShortcut* self, 
                                                  CCMConfig* config);

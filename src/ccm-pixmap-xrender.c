@@ -40,7 +40,7 @@ struct _CCMPixmapXRenderPrivate
 };
 
 #define CCM_PIXMAP_XRENDER_GET_PRIVATE(o) \
-	((CCMPixmapXRenderPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRenderClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRenderPrivate))
 
 static cairo_surface_t* ccm_pixmap_xrender_get_surface	(CCMDrawable* drawable);
 static void		  		ccm_pixmap_xrender_bind 		(CCMPixmap* self);

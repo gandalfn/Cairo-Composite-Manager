@@ -220,13 +220,13 @@ ccm_plugin_options_init(CCMPlugin* self)
 
 	if (self->priv->screen >= klass->options_size)
 	{
-		klass->options_size++;
-		if (klass->options_size == 1)
-			klass->options = g_new0(CCMPluginOptions*, klass->options_size);
+		if (klass->options == NULL)
+			klass->options = g_new0(CCMPluginOptions*, self->priv->screen + 1);
 		else
 			klass->options = g_renew(CCMPluginOptions*, klass->options,
-			                         klass->options_size);
+			                         self->priv->screen + 1);
 		klass->options[self->priv->screen] = NULL;
+		klass->options_size = self->priv->screen + 1;
 	}
 	
 	if (klass->options[self->priv->screen] == NULL)

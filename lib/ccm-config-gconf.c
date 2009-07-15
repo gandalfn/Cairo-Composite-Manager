@@ -54,7 +54,7 @@ static void ccm_config_gconf_set_integer_list(CCMConfig* config, GSList * value,
 											  GError** error);
 
 #define CCM_CONFIG_GCONF_GET_PRIVATE(o)  \
-   ((CCMConfigGConfPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_GCONF, CCMConfigGConfClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_GCONF, CCMConfigGConfPrivate))
 
 G_DEFINE_TYPE (CCMConfigGConf, ccm_config_gconf, CCM_TYPE_CONFIG);
 

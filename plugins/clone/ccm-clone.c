@@ -77,7 +77,7 @@ struct _CCMClonePrivate
 };
 
 #define CCM_CLONE_GET_PRIVATE(o)  \
-   ((CCMClonePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CLONE, CCMCloneClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CLONE, CCMClonePrivate))
 
 static void
 ccm_clone_init (CCMClone* self)

@@ -55,7 +55,7 @@ struct _CCMConfigPrivate
 };
 
 #define CCM_CONFIG_GET_PRIVATE(o)  \
-   ((CCMConfigPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG, CCMConfigClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG, CCMConfigPrivate))
 
 static void
 ccm_config_set_property(GObject *object,

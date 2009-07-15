@@ -40,7 +40,7 @@ struct _CCMWindowOpenVGPrivate
 };
 
 #define CCM_WINDOW_OPENVG_GET_PRIVATE(o)  \
-   ((CCMWindowOpenVGPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_OPENVG, CCMWindowOpenVGClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_OPENVG, CCMWindowOpenVGPrivate))
 
 static cairo_surface_t* ccm_window_openvg_get_surface(CCMDrawable* drawable);
 static Visual*	ccm_window_openvg_get_visual(CCMDrawable* drawable);

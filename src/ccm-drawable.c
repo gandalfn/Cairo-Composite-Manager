@@ -94,7 +94,7 @@ struct _CCMDrawablePrivate
 };
 
 #define CCM_DRAWABLE_GET_PRIVATE(o)  \
-   ((CCMDrawablePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DRAWABLE, CCMDrawableClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DRAWABLE, CCMDrawablePrivate))
 
 static void __ccm_drawable_query_geometry (CCMDrawable* self);
 static void __ccm_drawable_move		      (CCMDrawable* self, int x, int y);

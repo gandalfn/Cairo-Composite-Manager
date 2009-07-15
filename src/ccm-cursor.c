@@ -42,7 +42,7 @@ struct _CCMCursorPrivate
 };
 
 #define CCM_CURSOR_GET_PRIVATE(o) \
-	((CCMCursorPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CURSOR, CCMCursorClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CURSOR, CCMCursorPrivate))
 
 
 static void

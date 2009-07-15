@@ -93,7 +93,7 @@ struct _CCMMosaicPrivate
 };
 
 #define CCM_MOSAIC_GET_PRIVATE(o)  \
-   ((CCMMosaicPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MOSAIC, CCMMosaicClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MOSAIC, CCMMosaicPrivate))
 
 static CCMPluginOptions*
 ccm_mosaic_options_init (CCMPlugin* plugin)

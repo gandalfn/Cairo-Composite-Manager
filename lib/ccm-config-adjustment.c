@@ -39,7 +39,7 @@ struct _CCMConfigAdjustmentPrivate
 };
 
 #define CCM_CONFIG_ADJUSTMENT_GET_PRIVATE(o)  \
-   ((CCMConfigAdjustmentPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_ADJUSTMENT, CCMConfigAdjustmentClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_ADJUSTMENT, CCMConfigAdjustmentPrivate))
 
 static void ccm_config_adjustment_on_changed (CCMConfigAdjustment* self, 
                                               CCMConfig* config);

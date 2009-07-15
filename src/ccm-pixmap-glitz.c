@@ -45,7 +45,7 @@ struct _CCMPixmapGlitzPrivate
 };
 
 #define CCM_PIXMAP_GLITZ_GET_PRIVATE(o) \
-	((CCMPixmapGlitzPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_GLITZ, CCMPixmapGlitzClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_GLITZ, CCMPixmapGlitzPrivate))
 
 static cairo_surface_t* ccm_pixmap_glitz_get_surface	(CCMDrawable* drawable);
 static void		  		ccm_pixmap_glitz_bind 		  	(CCMPixmap* self);

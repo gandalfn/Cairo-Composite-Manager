@@ -47,7 +47,7 @@ struct _CCMPixmapBufferedImagePrivate
 };
 
 #define CCM_PIXMAP_BUFFERED_IMAGE_GET_PRIVATE(o) \
-	((CCMPixmapBufferedImagePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_BUFFERED_IMAGE, CCMPixmapBufferedImageClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_BUFFERED_IMAGE, CCMPixmapBufferedImagePrivate))
 
 static gboolean ccm_pixmap_buffered_image_repair (CCMDrawable* drawable, CCMRegion* area);
 static cairo_surface_t* ccm_pixmap_buffered_image_get_surface (CCMDrawable* drawable);

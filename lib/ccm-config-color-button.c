@@ -42,7 +42,7 @@ struct _CCMConfigColorButtonPrivate
 };
 
 #define CCM_CONFIG_COLOR_BUTTON_GET_PRIVATE(o) \
-	((CCMConfigColorButtonPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_COLOR_BUTTON, CCMConfigColorButtonClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_COLOR_BUTTON, CCMConfigColorButtonPrivate))
 
 static void ccm_config_color_button_on_changed (CCMConfigColorButton* self, 
                                                 CCMConfig* config);

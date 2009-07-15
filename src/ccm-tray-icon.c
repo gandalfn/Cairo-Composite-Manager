@@ -64,7 +64,7 @@ struct _CCMTrayIconPrivate
 };
 
 #define CCM_TRAY_ICON_GET_PRIVATE(o) \
-	((CCMTrayIconPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TRAY_ICON, CCMTrayIconClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TRAY_ICON, CCMTrayIconPrivate))
 
 static void
 ccm_tray_icon_init (CCMTrayIcon *self)

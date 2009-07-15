@@ -42,7 +42,7 @@ struct _CCMPixmapImagePrivate
 };
 
 #define CCM_PIXMAP_IMAGE_GET_PRIVATE(o) \
-	((CCMPixmapImagePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_IMAGE, CCMPixmapImageClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_IMAGE, CCMPixmapImagePrivate))
 
 static cairo_surface_t* ccm_pixmap_image_get_surface	(CCMDrawable* drawable);
 static gboolean	  		ccm_pixmap_image_repair 		(CCMDrawable* drawable,

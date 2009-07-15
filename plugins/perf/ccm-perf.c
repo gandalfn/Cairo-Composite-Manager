@@ -101,7 +101,7 @@ struct _CCMPerfPrivate
 };
 
 #define CCM_PERF_GET_PRIVATE(o)  \
-   ((CCMPerfPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PERF, CCMPerfClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PERF, CCMPerfPrivate))
 
 static CCMPluginOptions*
 ccm_perf_options_init (CCMPlugin* plugin)

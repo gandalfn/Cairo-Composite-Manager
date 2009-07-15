@@ -38,7 +38,7 @@ struct _CCMSnapshotDialogPrivate
 };
 
 #define CCM_SNAPSHOT_DIALOG_GET_PRIVATE(o)  \
-   ((CCMSnapshotDialogPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT_DIALOG, CCMSnapshotDialogClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT_DIALOG, CCMSnapshotDialogPrivate))
 
 static void
 ccm_snapshot_dialog_init (CCMSnapshotDialog *self)

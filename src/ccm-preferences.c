@@ -39,8 +39,7 @@ static guint signals[N_SIGNALS] = { 0 };
 G_DEFINE_TYPE (CCMPreferences, ccm_preferences, G_TYPE_OBJECT);
 
 #define CCM_PREFERENCES_GET_PRIVATE(o)  \
-   ((CCMPreferencesPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PREFERENCES, \
-														 CCMPreferencesClass))
+   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PREFERENCES, CCMPreferencesPrivate))
 
 typedef struct
 {

@@ -41,7 +41,7 @@ G_DEFINE_TYPE (CCMCellRendererExtension, ccm_cell_renderer_extension,
 			   GTK_TYPE_CELL_RENDERER_TEXT);
 
 #define CCM_CELL_RENDERER_EXTENSION_GET_PRIVATE(o) \
-	((CCMCellRendererExtensionPrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CELL_RENDERER_EXTENSION, CCMCellRendererExtensionClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CELL_RENDERER_EXTENSION, CCMCellRendererExtensionPrivate))
 
 static GtkCellEditable*
 ccm_cell_renderer_extension_start_editing (GtkCellRenderer *cell, 

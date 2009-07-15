@@ -126,7 +126,7 @@ G_DEFINE_TYPE_EXTENDED (CCMPreferencesPage, ccm_preferences_page, G_TYPE_OBJECT,
 												 ccm_preferences_page_iface_init));
 
 #define CCM_PREFERENCES_PAGE_GET_PRIVATE(o)  \
-	((CCMPreferencesPagePrivate*)G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PREFERENCES_PAGE, CCMPreferencesPageClass))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PREFERENCES_PAGE, CCMPreferencesPagePrivate))
 
 static void
 ccm_preferences_page_init (CCMPreferencesPage *self)
