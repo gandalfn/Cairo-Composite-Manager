@@ -123,7 +123,7 @@ namespace CCM
 	{
 		public GLib.Object parent { get; set; }
 
-		protected abstract weak PluginOptions options_init();
+		protected abstract PluginOptions options_init();
 		protected abstract void options_finalize(PluginOptions options);
 		protected abstract void option_changed(Config config);
 

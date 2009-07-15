@@ -43,8 +43,6 @@ namespace CCM
 	
 	class WindowAnimation : CCM.Plugin, CCM.WindowPlugin
 	{
-		static WindowAnimationOptions options = null;
-		
 		private weak CCM.Window	window;
 		private CCM.WindowType	type;
 		private bool			desktop_changed;
@@ -56,20 +54,19 @@ namespace CCM
 			options_unload();
 		}
 
-		protected override weak PluginOptions
+		protected override PluginOptions
 		options_init()
 		{
-			options = new WindowAnimationOptions();
+			WindowAnimationOptions options = new WindowAnimationOptions();
 
 			options.duration = 0.4;
-			return (PluginOptions)options;
+			return options;
 		}
 		
 		protected override void
 		options_finalize(PluginOptions opts)
 		{
-			if ((WindowAnimationOptions)opts == options)
-				options = null;
+			
 		}
 
 		protected override void

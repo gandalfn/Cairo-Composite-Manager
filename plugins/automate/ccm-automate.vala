@@ -44,8 +44,6 @@ namespace CCM
 	
 	class Automate : CCM.Plugin, CCM.ScreenPlugin
 	{
-		static AutomateOptions options = null;
-			
 		private weak CCM.Screen screen;
 		
 		private bool enable = false;
@@ -57,24 +55,19 @@ namespace CCM
 			options_unload();
 		}
 		
-		protected override weak PluginOptions
+		protected override PluginOptions
 		options_init()
 		{
-			options = new AutomateOptions();
+			AutomateOptions options = new AutomateOptions();
 
 			options.show_keybind = null;
 
-			return (PluginOptions)options;
+			return options;
 		}
 
 		protected override void
 		options_finalize(PluginOptions opts)
 		{
-			if (opts == options)
-			{
-				options.show_keybind = null;
-				options = null;
-			}
 		}
 		
 		protected override void
@@ -108,8 +101,8 @@ namespace CCM
 		    {
 		        CCM.log("Error on get show shortcut config get default");
 		    }
-		    options.show_keybind = new CCM.Keybind(screen, shortcut, true);
-		    options.show_keybind.key_press += on_show_shortcut_pressed;
+		    ((AutomateOptions)get_option()).show_keybind = new CCM.Keybind(screen, shortcut, true);
+		    ((AutomateOptions)get_option()).show_keybind.key_press += on_show_shortcut_pressed;
 		}
 		
 		protected void

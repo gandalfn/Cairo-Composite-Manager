@@ -43,8 +43,6 @@ namespace CCM
 	
 	private class ValaWindowPlugin : CCM.Plugin, CCM.WindowPlugin
 	{
-		static ValaWindowOptions options = null;
-		
 		private weak CCM.Window window;
 		
 		private uint counter = 0;
@@ -54,10 +52,10 @@ namespace CCM
 			options_unload();
 		}
 
-		protected override weak PluginOptions
+		protected override PluginOptions
 		options_init()
 		{
-			options = new ValaWindowOptions();
+			ValaWindowOptions options = new ValaWindowOptions();
 
 			options.enabled = false;
 
@@ -67,8 +65,6 @@ namespace CCM
 		protected override void
 		options_finalize(PluginOptions opts)
 		{
-			if ((ValaWindowOptions)opts == options)
-				options = null;
 		}
 		
 		protected override void
