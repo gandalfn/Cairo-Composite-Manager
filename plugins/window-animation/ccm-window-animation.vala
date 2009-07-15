@@ -38,7 +38,7 @@ namespace CCM
 
 	class WindowAnimationOptions : PluginOptions
 	{
-		public double duration;
+		public double duration = 0.4;
 	}
 	
 	class WindowAnimation : CCM.Plugin, CCM.WindowPlugin
@@ -58,15 +58,14 @@ namespace CCM
 		options_init()
 		{
 			WindowAnimationOptions options = new WindowAnimationOptions();
-
-			options.duration = 0.4;
 			return options;
 		}
 		
 		protected override void
 		options_finalize(PluginOptions opts)
 		{
-			
+			WindowAnimationOptions* options = (WindowAnimationOptions*)opts;
+			delete options;
 		}
 
 		protected override void

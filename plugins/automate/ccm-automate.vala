@@ -68,6 +68,9 @@ namespace CCM
 		protected override void
 		options_finalize(PluginOptions opts)
 		{
+			AutomateOptions* options = (AutomateOptions*)opts;
+
+			delete options;
 		}
 		
 		protected override void

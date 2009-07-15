@@ -65,6 +65,8 @@ namespace CCM
 		protected override void
 		options_finalize(PluginOptions opts)
 		{
+			ValaWindowOptions* options = (ValaWindowOptions*)opts;
+			delete options;
 		}
 		
 		protected override void
