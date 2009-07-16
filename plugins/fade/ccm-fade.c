@@ -85,6 +85,9 @@ struct _CCMFadePrivate
 	gboolean		force_disable;
 
 	GtkBuilder*		builder;
+
+	gulong			id_event;
+	gulong			id_property_changed;
 };
 
 #define CCM_FADE_GET_PRIVATE(o)  \
@@ -110,6 +113,8 @@ ccm_fade_init (CCMFade *self)
 	self->priv->timeline = NULL;
 	self->priv->force_disable = FALSE;
 	self->priv->builder = NULL;
+	self->priv->id_event = 0;
+	self->priv->id_property_changed = 0;
 }
 
 static void
@@ -117,21 +122,24 @@ ccm_fade_finalize (GObject *object)
 {
 	CCMFade* self = CCM_FADE(object);
 
-	if (self->priv->screen)
+	if (CCM_IS_WINDOW(self->priv->screen) && 
+		G_OBJECT(self->priv->screen)->ref_count &&
+	    self->priv->id_event)
 	{
 		CCMDisplay* display = ccm_screen_get_display(self->priv->screen);
 		
-		g_signal_handlers_disconnect_by_func(display, 
-											 ccm_fade_on_event, 
-											 self);	
+		g_signal_handler_disconnect(display, self->priv->id_event);	
+		self->priv->id_event = 0;
 	}
 	self->priv->screen = NULL;
 	
-	if (self->priv->window)
+	if (CCM_IS_WINDOW(self->priv->window) && 
+		G_OBJECT(self->priv->window)->ref_count &&
+	    self->priv->id_property_changed)
 	{
-		g_signal_handlers_disconnect_by_func(self->priv->window, 
-											 ccm_fade_on_property_changed, 
-											 self);	
+		g_signal_handler_disconnect(self->priv->window, 
+									self->priv->id_property_changed);
+		self->priv->id_property_changed = 0;
 	}
 	
 	ccm_plugin_options_unload(CCM_PLUGIN(self));
@@ -416,8 +424,9 @@ ccm_fade_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	self->priv->screen = screen;
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
-	g_signal_connect_swapped(display, "event", 
-							 G_CALLBACK(ccm_fade_on_event), self);
+	self->priv->id_event = g_signal_connect_swapped(display, "event", 
+													G_CALLBACK(ccm_fade_on_event), 
+													self);
 }
 
 static void
@@ -435,9 +444,10 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	ccm_fade_create_atoms(self);
 	
-	g_signal_connect_swapped(window, "property-changed",
-							 G_CALLBACK(ccm_fade_on_property_changed), 
-							 self);
+	self->priv->id_property_changed = 
+			g_signal_connect_swapped(self->priv->window, "property-changed",
+									 G_CALLBACK(ccm_fade_on_property_changed), 
+									 self);
 	
 	ccm_fade_query_force_disable(self);
 }

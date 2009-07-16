@@ -20,6 +20,7 @@
  * 	Boston, MA  02110-1301, USA.
  */
 
+#include "ccm-debug.h"
 #include "ccm-plugin.h"
 
 enum
@@ -44,6 +45,7 @@ struct _CCMPluginPrivate
 {
 	GObject* 	parent;
 	guint	    screen;
+	gulong*		id_options_changed;
 };
 
 #define CCMPLuginLockTable g_quark_from_static_string ("CCMPluginLockTable")
@@ -181,8 +183,55 @@ ccm_plugin_class_init (CCMPluginClass *klass)
 }
 
 static void
-ccm_plugin_options_finalize (CCMPluginClass *klass)
+ccm_plugin_options_init(CCMPlugin* self)
 {
+	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
+
+	if (self->priv->screen >= klass->options_size)
+	{
+		if (klass->options == NULL)
+		{
+			ccm_debug("%s CREATE OPTIONS TAB: %i", G_OBJECT_TYPE_NAME(self),
+			        self->priv->screen + 1);
+			klass->options = g_new0(CCMPluginOptions*, self->priv->screen + 1);
+		}
+		else
+		{
+			ccm_debug("%s RESIZE OPTIONS TAB: %i", G_OBJECT_TYPE_NAME(self),
+			        self->priv->screen + 1);
+			klass->options = g_renew(CCMPluginOptions*, klass->options,
+				                      self->priv->screen + 1);
+		}
+		klass->options[self->priv->screen] = NULL;
+		klass->options_size = self->priv->screen + 1;
+	}
+	
+	if (klass->options[self->priv->screen] == NULL)
+	{
+		if (klass->options_init)
+		{
+			ccm_debug("%s INIT OPTIONS[%i]", G_OBJECT_TYPE_NAME(self),
+			        self->priv->screen);
+			klass->options[self->priv->screen] = klass->options_init(self);
+		}
+		else
+		{
+			ccm_debug("%s NEW OPTIONS[%i]", G_OBJECT_TYPE_NAME(self),
+			        self->priv->screen);
+			klass->options[self->priv->screen] = g_new0(CCMPluginOptions, 1);
+		}
+
+		klass->options[self->priv->screen]->initialized = FALSE;
+		klass->options[self->priv->screen]->configs = NULL;
+		klass->options[self->priv->screen]->configs_size = 0;
+	}
+}
+
+static void
+ccm_plugin_options_finalize (CCMPlugin* self)
+{
+	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
+
 	if (klass->options != NULL)
 	{ 
 		gint i, j;
@@ -194,51 +243,36 @@ ccm_plugin_options_finalize (CCMPluginClass *klass)
 				if (klass->options[i]->configs)
 				{
 					for (j = 0; j < klass->options[i]->configs_size; j++)
+					{
+						ccm_debug("%s FINALIZE OPTIONS[%i].CONFIG[%i]", 
+						        G_OBJECT_TYPE_NAME(self), i, j);
 						g_object_unref(klass->options[i]->configs[j]);
+					}
+					ccm_debug("%s FINALIZE OPTIONS[%i].CONFIG TAB", 
+						        G_OBJECT_TYPE_NAME(self), i);
 					g_free(klass->options[i]->configs);
 					klass->options[i]->configs = NULL;
 				}
 			
 				if (klass->options_finalize)
-					klass->options_finalize(NULL, klass->options[i]);
+				{
+					ccm_debug("%s FINALIZE OPTIONS[%i]", 
+					        G_OBJECT_TYPE_NAME(self), i);
+					klass->options_finalize(self, klass->options[i]);
+				}
 				else
+				{
+					ccm_debug("%s FREE OPTIONS[%i]", 
+					        G_OBJECT_TYPE_NAME(self), i);
 					g_free(klass->options[i]);
+				}
 				klass->options[i] = NULL;
 			}
 		}
+		ccm_debug("%s FINALIZE OPTIONS TAB", G_OBJECT_TYPE_NAME(self));
 		g_free(klass->options);
 		klass->options = NULL;
 		klass->options_size = 0;
-	}
-}
-
-
-static void
-ccm_plugin_options_init(CCMPlugin* self)
-{
-	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
-
-	if (self->priv->screen >= klass->options_size)
-	{
-		if (klass->options == NULL)
-			klass->options = g_new0(CCMPluginOptions*, self->priv->screen + 1);
-		else
-			klass->options = g_renew(CCMPluginOptions*, klass->options,
-			                         self->priv->screen + 1);
-		klass->options[self->priv->screen] = NULL;
-		klass->options_size = self->priv->screen + 1;
-	}
-	
-	if (klass->options[self->priv->screen] == NULL)
-	{
-		if (klass->options_init)
-			klass->options[self->priv->screen] = klass->options_init(self);
-		else
-			klass->options[self->priv->screen] = g_new0(CCMPluginOptions, 1);
-
-		klass->options[self->priv->screen]->initialized = FALSE;
-		klass->options[self->priv->screen]->configs = NULL;
-		klass->options[self->priv->screen]->configs_size = 0;
 	}
 }
 
@@ -362,19 +396,34 @@ ccm_plugin_options_load(CCMPlugin* self, gchar* plugin_name,
 	gint cpt;
 	CCMPluginClass* klass = CCM_PLUGIN_GET_CLASS(self);
 
+	ccm_debug("%s LOAD OPTIONS[%i] : %i", 
+	        G_OBJECT_TYPE_NAME(self), self->priv->screen, klass->count);
+
 	klass->count++;
+	
 	ccm_plugin_options_init (self);
 	if (klass->options[self->priv->screen]->configs == NULL)
 	{
+		ccm_debug("%s CREATE OPTIONS[%i].CONFIG TAB", G_OBJECT_TYPE_NAME(self),
+		        self->priv->screen);
 		klass->options[self->priv->screen]->configs = 
 			g_new0(CCMConfig*, nb_options);
 		klass->options[self->priv->screen]->configs_size = nb_options;
 	}
+	
+	if (self->priv->id_options_changed == NULL)
+		self->priv->id_options_changed = g_new0(gulong, nb_options);
+			
 	for (cpt = 0; cpt < nb_options; cpt++)
 	{
 		if (klass->options[self->priv->screen]->configs[cpt] == NULL)
+		{
+			ccm_debug("%s CREATE OPTIONS[%i].CONFIG[%i]", 
+			        G_OBJECT_TYPE_NAME(self), self->priv->screen, cpt);
+
 			klass->options[self->priv->screen]->configs[cpt] = 
 			ccm_config_new(self->priv->screen, plugin_name, (gchar*)options_key[cpt]);
+		}
 
 		if (klass->options[self->priv->screen]->configs[cpt] != NULL)
 		{
@@ -383,9 +432,11 @@ ccm_plugin_options_load(CCMPlugin* self, gchar* plugin_name,
 				if (klass->options[self->priv->screen]->initialized == FALSE) 
 					klass->option_changed(self, klass->options[self->priv->screen]->configs[cpt]);
 
-				g_signal_connect_swapped(G_OBJECT(klass->options[self->priv->screen]->configs[cpt]), "changed",
-				                         G_CALLBACK(klass->option_changed), 
-				                         self);
+				self->priv->id_options_changed[cpt] =
+					g_signal_connect_swapped(G_OBJECT(klass->options[self->priv->screen]->configs[cpt]), 
+											 "changed",
+				                     		 G_CALLBACK(klass->option_changed), 
+				                     		 self);
 			}
 		}
 	}
@@ -401,19 +452,25 @@ ccm_plugin_options_unload(CCMPlugin* self)
 
 	if (klass->count > 0)
 	{
+		ccm_debug("%s UNLOAD OPTIONS[%i] : %i", 
+			        G_OBJECT_TYPE_NAME(self), self->priv->screen, klass->count);
+		
 		if (klass->options && klass->option_changed &&
 			self->priv->screen < klass->options_size &&
-			klass->options[self->priv->screen] != NULL)
+			klass->options[self->priv->screen] != NULL &&
+		    self->priv->id_options_changed != NULL)
 		{
 			gint cpt; 
 
 			for (cpt = 0; cpt < klass->options[self->priv->screen]->configs_size; cpt++)
-				g_signal_handlers_disconnect_by_func(G_OBJECT(klass->options[self->priv->screen]->configs[cpt]),
-									 				 klass->option_changed, self);
+				g_signal_handler_disconnect(klass->options[self->priv->screen]->configs[cpt],
+											self->priv->id_options_changed[cpt]);
+			g_free(self->priv->id_options_changed);
+			self->priv->id_options_changed = NULL;
 		}
 
 		klass->count--;
-		if (klass->count == 0) ccm_plugin_options_finalize (klass);
+		if (klass->count == 0) ccm_plugin_options_finalize (self);
 	}	
 }
 

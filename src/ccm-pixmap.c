@@ -50,6 +50,8 @@ struct _CCMPixmapPrivate
 	
 	gboolean			y_invert;
 	gboolean			freeze;
+
+	gulong				id_damage;
 };
 
 #define CCM_PIXMAP_GET_PRIVATE(o)  \
@@ -114,6 +116,7 @@ ccm_pixmap_init (CCMPixmap *self)
 	self->priv->damage = 0;
 	self->priv->y_invert = FALSE;
 	self->priv->freeze = FALSE;
+	self->priv->id_damage = 0;
 }
 
 static void
@@ -127,7 +130,7 @@ ccm_pixmap_finalize (GObject *object)
 	if (self->priv->damage)
 	{
 		XDamageDestroy(CCM_DISPLAY_XDISPLAY(display), self->priv->damage);
-		g_signal_handlers_disconnect_by_func(display, ccm_pixmap_on_damage, self);
+		g_signal_handler_disconnect(display, self->priv->id_damage);
 		self->priv->damage = None;
 	}
 	self->priv->y_invert = FALSE;
@@ -248,8 +251,9 @@ ccm_pixmap_register_damage(CCMPixmap* self)
     	XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
 						 None, None);
 	
-		g_signal_connect_swapped(display, "damage-event", 
-								 G_CALLBACK(ccm_pixmap_on_damage), self);
+		self->priv->id_damage =
+			g_signal_connect_swapped(display, "damage-event", 
+									 G_CALLBACK(ccm_pixmap_on_damage), self);
 	}
 	else
 		self->priv->damage = None;

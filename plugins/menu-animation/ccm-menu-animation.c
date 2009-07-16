@@ -99,6 +99,10 @@ struct _CCMMenuAnimationPrivate
 	gboolean	   forced_animation;
 	
 	GtkBuilder*	   builder;
+
+	gulong		   id_event;
+	gulong		   id_property_changed;
+	gulong		   id_error;
 };
 
 #define CCM_MENU_ANIMATION_GET_PRIVATE(o)  \
@@ -125,6 +129,9 @@ ccm_menu_animation_init (CCMMenuAnimation *self)
 	self->priv->y_pos = CCM_MENU_ANIMATION_TOP;
 	self->priv->forced_animation = FALSE;
 	self->priv->builder = NULL;
+	self->priv->id_event = 0;
+	self->priv->id_property_changed = 0;
+	self->priv->id_error = 0;
 }
 
 static void
@@ -132,24 +139,21 @@ ccm_menu_animation_finalize (GObject *object)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(object);
 	
-	if (self->priv->screen)
+	if (CCM_IS_WINDOW(self->priv->screen) && 
+		G_OBJECT(self->priv->screen)->ref_count)
 	{
 		CCMDisplay* display = ccm_screen_get_display(self->priv->screen);
 		
-		g_signal_handlers_disconnect_by_func(display, 
-											 ccm_menu_animation_on_event, 
-											 self);	
+		g_signal_handler_disconnect(display, self->priv->id_event);	
 	}
 
-	if (self->priv->window)
+	if (CCM_IS_WINDOW(self->priv->window) && 
+		G_OBJECT(self->priv->window)->ref_count)
 	{
-		g_signal_handlers_disconnect_by_func(self->priv->window, 
-											 ccm_menu_animation_on_property_changed, 
-											 self);	
+		g_signal_handler_disconnect(self->priv->window, 
+									self->priv->id_property_changed);	
 	
-		g_signal_handlers_disconnect_by_func(self->priv->window, 
-											 ccm_menu_animation_on_error, 
-											 self);	
+		g_signal_handler_disconnect(self->priv->window, self->priv->id_error);	
 	}
 	
 	ccm_plugin_options_unload(CCM_PLUGIN(self));
@@ -573,7 +577,7 @@ ccm_menu_animation_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* scree
 	
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
 	self->priv->screen = screen;
-	g_signal_connect_swapped(display, "event", 
+	self->priv->id_event = g_signal_connect_swapped(display, "event", 
 							 G_CALLBACK(ccm_menu_animation_on_event), self);
 }
 
@@ -593,10 +597,12 @@ ccm_menu_animation_window_load_options(CCMWindowPlugin* plugin, CCMWindow* windo
 	
 	ccm_menu_animation_create_atoms(self);
 	
-	g_signal_connect_swapped(window, "property-changed",
+	self->priv->id_property_changed = 
+		g_signal_connect_swapped(window, "property-changed",
 							 G_CALLBACK(ccm_menu_animation_on_property_changed), 
 							 self);
-	g_signal_connect_swapped(window, "error",
+	self->priv->id_error = 
+		g_signal_connect_swapped(window, "error",
 							 G_CALLBACK(ccm_menu_animation_on_error), 
 							 self);	
 }

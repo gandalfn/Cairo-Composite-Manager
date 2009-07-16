@@ -88,6 +88,8 @@ struct _CCMOpacityPrivate
 	CCMWindow*	window;
 
 	GtkBuilder* builder;
+
+	gulong		id_property_changed;
 };
 
 #define CCM_OPACITY_GET_PRIVATE(o)  \
@@ -125,6 +127,7 @@ ccm_opacity_init (CCMOpacity *self)
 	self->priv->screen = NULL;
 	self->priv->window = NULL;
 	self->priv->builder = NULL;
+	self->priv->id_property_changed = 0;
 }
 
 static void
@@ -132,11 +135,13 @@ ccm_opacity_finalize (GObject *object)
 {
 	CCMOpacity* self = CCM_OPACITY(object);
 	
-	if (self->priv->window)
-		g_signal_handlers_disconnect_by_func(self->priv->window, 
-											 ccm_opacity_on_property_changed, 
-											 self);	
+	if (CCM_IS_WINDOW(self->priv->window) && 
+		G_OBJECT(self->priv->window)->ref_count &&
+	    self->priv->id_property_changed)
+			g_signal_handler_disconnect(self->priv->window, 
+										self->priv->id_property_changed);	
 	self->priv->window = NULL;
+	self->priv->id_property_changed = 0;
 	
 	ccm_plugin_options_unload(CCM_PLUGIN(self));
 	
@@ -419,8 +424,10 @@ ccm_opacity_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	                        CCM_OPACITY_OPTION_N);
 	ccm_window_plugin_load_options(CCM_WINDOW_PLUGIN_PARENT(plugin), window);
 	
-	g_signal_connect_swapped(window, "property-changed",
-							 G_CALLBACK(ccm_opacity_on_property_changed), self);
+	self->priv->id_property_changed = 
+		g_signal_connect_swapped(self->priv->window, "property-changed",
+								 G_CALLBACK(ccm_opacity_on_property_changed), 
+								 self);
 	ccm_opacity_on_property_changed (self, CCM_PROPERTY_HINT_TYPE, window);
 }
 

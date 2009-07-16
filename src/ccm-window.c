@@ -183,6 +183,9 @@ struct _CCMWindowPrivate
 	gint				mask_width;
 	gint				mask_height;
 	gboolean			mask_y_invert;
+
+	gulong				id_plugins_changed;
+	gulong				id_transient_transform_changed;
 };
 
 #define CCM_WINDOW_GET_PRIVATE(o)  \
@@ -334,6 +337,8 @@ ccm_window_init (CCMWindow *self)
 	self->priv->mask_width = 0;
 	self->priv->mask_height = 0;
 	self->priv->mask_y_invert = FALSE;
+	self->priv->id_plugins_changed = 0;
+	self->priv->id_transient_transform_changed = 0;
 }
 
 static void
@@ -343,9 +348,8 @@ ccm_window_finalize (GObject *object)
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 	
 	ccm_debug_window(self, "FINALIZE");
-	g_signal_handlers_disconnect_by_func (screen, 
-										  ccm_window_on_plugins_changed, 
-										  self);
+	if (self->priv->id_plugins_changed)
+		g_signal_handler_disconnect (screen, self->priv->id_plugins_changed);
 	ccm_window_unredirect_input(self);
 	
 	if (self->priv->transient_for)
@@ -354,9 +358,8 @@ ccm_window_finalize (GObject *object)
 		
 		if (transient)
 		{
-			g_signal_handlers_disconnect_by_func(transient,
-									ccm_window_on_transient_transform_changed,
-									self);
+			g_signal_handler_disconnect(transient, 
+			    self->priv->id_transient_transform_changed);
 			transient->priv->transients = 
 				g_slist_remove(transient->priv->transients, self);
 		}
@@ -1682,9 +1685,8 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 											"CCMWindowTranslate");
 					ccm_drawable_pop_matrix(CCM_DRAWABLE(self), 
 											"CCMWindowTransient");
-					g_signal_handlers_disconnect_by_func(transient,
-									ccm_window_on_transient_transform_changed,
-									self);
+					g_signal_handler_disconnect(transient,
+												self->priv->id_transient_transform_changed);
 					transient->priv->transients = 
 						g_slist_remove(transient->priv->transients, self);
 				}
@@ -1698,7 +1700,8 @@ ccm_window_on_get_property_async(CCMWindow* self, guint n_items, gchar* result,
 				{
 					ccm_window_on_transient_transform_changed(self, NULL,
 															  transient);
-					g_signal_connect_swapped(transient, "notify::transform", 
+					self->priv->id_transient_transform_changed =
+						g_signal_connect_swapped(transient, "notify::transform", 
 						G_CALLBACK(ccm_window_on_transient_transform_changed),  
 						self);
 					transient->priv->transients = 
@@ -2058,7 +2061,8 @@ ccm_window_new (CCMScreen* screen, Window xwindow)
 	
 	g_signal_connect(self, "notify::transform", 
 					 G_CALLBACK(ccm_window_on_transform_changed),  NULL);
-	g_signal_connect_swapped(screen, "plugins-changed", 
+	self->priv->id_plugins_changed = 
+		g_signal_connect_swapped(screen, "plugins-changed", 
 							 G_CALLBACK(ccm_window_on_plugins_changed), self);
 	
 	ccm_window_set_opacity(self, 1.0f);
