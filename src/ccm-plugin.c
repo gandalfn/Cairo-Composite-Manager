@@ -143,7 +143,11 @@ static void
 ccm_plugin_finalize (GObject *object)
 {
 	CCMPlugin* self = CCM_PLUGIN(object);
-	
+
+	if (self->priv->id_options_changed != NULL)
+		g_free(self->priv->id_options_changed);
+	self->priv->id_options_changed = NULL;
+
 	if (self->priv->parent && CCM_IS_PLUGIN(self->priv->parent)) 
 	{
 		g_object_unref(self->priv->parent);
@@ -465,10 +469,8 @@ ccm_plugin_options_unload(CCMPlugin* self)
 			for (cpt = 0; cpt < klass->options[self->priv->screen]->configs_size; cpt++)
 				g_signal_handler_disconnect(klass->options[self->priv->screen]->configs[cpt],
 											self->priv->id_options_changed[cpt]);
-			g_free(self->priv->id_options_changed);
-			self->priv->id_options_changed = NULL;
 		}
-
+		
 		klass->count--;
 		if (klass->count == 0) ccm_plugin_options_finalize (self);
 	}	
