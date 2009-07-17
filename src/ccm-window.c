@@ -348,7 +348,9 @@ ccm_window_finalize (GObject *object)
 	CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE(self));
 	
 	ccm_debug_window(self, "FINALIZE");
-	if (self->priv->id_plugins_changed)
+	if (CCM_IS_SCREEN(screen) &&
+	    G_OBJECT(screen)->ref_count &&
+	    self->priv->id_plugins_changed)
 		g_signal_handler_disconnect (screen, self->priv->id_plugins_changed);
 	ccm_window_unredirect_input(self);
 	
