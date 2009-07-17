@@ -130,7 +130,7 @@ ccm_fade_finalize (GObject *object)
 {
 	CCMFade* self = CCM_FADE(object);
 
-	if (CCM_IS_WINDOW(self->priv->screen) && 
+	if (CCM_IS_SCREEN(self->priv->screen) && 
 		G_OBJECT(self->priv->screen)->ref_count &&
 	    self->priv->id_event)
 	{

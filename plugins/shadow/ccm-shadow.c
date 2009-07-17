@@ -177,7 +177,7 @@ ccm_shadow_finalize (GObject *object)
 	
 	ccm_plugin_options_unload(CCM_PLUGIN(self));
 	
-	if (CCM_IS_WINDOW(self->priv->screen) && 
+	if (CCM_IS_SCREEN(self->priv->screen) && 
 		G_OBJECT(self->priv->screen)->ref_count)
 	{
 		CCMDisplay* display = ccm_screen_get_display(self->priv->screen);

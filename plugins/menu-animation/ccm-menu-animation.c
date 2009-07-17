@@ -147,7 +147,7 @@ ccm_menu_animation_finalize (GObject *object)
 {
 	CCMMenuAnimation* self = CCM_MENU_ANIMATION(object);
 	
-	if (CCM_IS_WINDOW(self->priv->screen) && 
+	if (CCM_IS_SCREEN(self->priv->screen) && 
 		G_OBJECT(self->priv->screen)->ref_count)
 	{
 		CCMDisplay* display = ccm_screen_get_display(self->priv->screen);
