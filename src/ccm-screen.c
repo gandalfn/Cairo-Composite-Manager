@@ -987,9 +987,8 @@ ccm_screen_find_window_or_child(CCMScreen* self, Window xwindow)
 			return CCM_WINDOW(item->data);
 		else if (CCM_IS_WINDOW(item->data))
 		{
-			Window xchild = None;
-			g_object_get(G_OBJECT(item->data), "child", &xchild, NULL);
-			if (xchild == xwindow) child = CCM_WINDOW(item->data);
+			if (_ccm_window_get_child(item->data) == xwindow) 
+				child = CCM_WINDOW(item->data);
 		}
 	}
 	

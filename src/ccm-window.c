@@ -2018,6 +2018,14 @@ _ccm_window_get_plugin(CCMWindow *self, GType type)
 	return NULL;
 }
 
+Window
+_ccm_window_get_child(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, None);
+
+	return self->priv->child;
+}
+
 /**
  * ccm_window_new:
  * @screen: #CCMScreen of window
