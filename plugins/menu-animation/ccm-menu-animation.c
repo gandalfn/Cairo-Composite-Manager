@@ -111,11 +111,19 @@ struct _CCMMenuAnimationPrivate
 static CCMPluginOptions*
 ccm_menu_animation_options_init(CCMPlugin* plugin)
 {
-	CCMMenuAnimationOptions* options = g_new0(CCMMenuAnimationOptions, 1);
+	CCMMenuAnimationOptions* options = g_slice_new0(CCMMenuAnimationOptions);
 	
 	options->duration = 0.1f;
 
 	return (CCMPluginOptions*)options;
+}
+
+static void
+ccm_menu_animation_options_finalize(CCMPlugin* plugin, CCMPluginOptions* opts)
+{
+	CCMMenuAnimationOptions* options = (CCMMenuAnimationOptions*)opts;
+	
+	g_slice_free(CCMMenuAnimationOptions, options);
 }
 
 static void
@@ -177,6 +185,7 @@ ccm_menu_animation_class_init (CCMMenuAnimationClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMMenuAnimationPrivate));
 
 	CCM_PLUGIN_CLASS(klass)->options_init = ccm_menu_animation_options_init;
+	CCM_PLUGIN_CLASS(klass)->options_finalize = ccm_menu_animation_options_finalize;
 	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_menu_animation_on_option_changed;
 	
 	object_class->finalize = ccm_menu_animation_finalize;

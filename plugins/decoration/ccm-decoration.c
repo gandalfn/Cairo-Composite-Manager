@@ -102,12 +102,20 @@ struct _CCMDecorationPrivate
 static CCMPluginOptions*
 ccm_decoration_options_init (CCMPlugin* plugin)
 {	
-	CCMDecorationOptions* options = g_new0(CCMDecorationOptions, 1);
+	CCMDecorationOptions* options = g_slice_new0(CCMDecorationOptions);
 	
 	options->gradiant = TRUE;
 	options->opacity = 1.0;
 
 	return (CCMPluginOptions*)options;
+}
+
+static void
+ccm_decoration_options_finalize (CCMPlugin* plugin, CCMPluginOptions* opts)
+{
+	CCMDecorationOptions* options = (CCMDecorationOptions*)opts;
+	
+	g_slice_free(CCMDecorationOptions, options);
 }
 
 static void
@@ -164,6 +172,7 @@ ccm_decoration_class_init (CCMDecorationClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMDecorationPrivate));
 
 	CCM_PLUGIN_CLASS(klass)->options_init = ccm_decoration_options_init;
+	CCM_PLUGIN_CLASS(klass)->options_finalize = ccm_decoration_options_finalize;
 	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_decoration_on_option_changed;
 	
 	object_class->finalize = ccm_decoration_finalize;

@@ -98,7 +98,7 @@ struct _CCMOpacityPrivate
 static CCMPluginOptions*
 ccm_opacity_options_init(CCMPlugin* plugin)
 {
-	CCMOpacityOptions* options = g_new0(CCMOpacityOptions, 1);
+	CCMOpacityOptions* options = g_slice_new0(CCMOpacityOptions);
 	
 	options->increase = NULL;
 	options->decrease = NULL;
@@ -117,7 +117,7 @@ ccm_opacity_options_finalize(CCMPlugin* plugin, CCMPluginOptions* opts)
 	options->increase = NULL;
 	if (options->decrease) g_object_unref(options->decrease);
 	options->decrease = NULL;
-	g_free(options);
+	g_slice_free(CCMOpacityOptions, options);
 }
 
 static void

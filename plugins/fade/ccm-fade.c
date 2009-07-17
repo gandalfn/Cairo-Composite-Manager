@@ -96,11 +96,19 @@ struct _CCMFadePrivate
 static CCMPluginOptions*
 ccm_fade_options_init(CCMPlugin* plugin)
 {
-	CCMFadeOptions* options = g_new0(CCMFadeOptions, 1);
+	CCMFadeOptions* options = g_slice_new0(CCMFadeOptions);
 	
 	options->duration = 1.0f;
 
 	return (CCMPluginOptions*)options;
+}
+
+static void
+ccm_fade_options_finalize(CCMPlugin* plugin, CCMPluginOptions* opts)
+{
+	CCMFadeOptions* options = (CCMFadeOptions*)opts;
+	
+	g_slice_free(CCMFadeOptions, options);
 }
 
 static void
@@ -160,6 +168,7 @@ ccm_fade_class_init (CCMFadeClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMFadePrivate));
 
 	CCM_PLUGIN_CLASS(klass)->options_init = ccm_fade_options_init;
+	CCM_PLUGIN_CLASS(klass)->options_finalize = ccm_fade_options_finalize;
 	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_fade_on_option_changed;
 	
 	object_class->finalize = ccm_fade_finalize;
@@ -448,8 +457,6 @@ ccm_fade_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 			g_signal_connect_swapped(self->priv->window, "property-changed",
 									 G_CALLBACK(ccm_fade_on_property_changed), 
 									 self);
-	
-	ccm_fade_query_force_disable(self);
 }
 
 static CCMRegion*

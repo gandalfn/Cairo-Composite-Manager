@@ -96,7 +96,7 @@ struct _CCMSnapshotPrivate
 static CCMPluginOptions*
 ccm_snapshot_options_init(CCMPlugin* plugin)
 {
-	CCMSnapshotOptions* options = g_new0(CCMSnapshotOptions, 1);
+	CCMSnapshotOptions* options = g_slice_new0(CCMSnapshotOptions);
 	
 	options->area_keybind = NULL;
 	options->window_keybind = NULL;
@@ -117,7 +117,7 @@ ccm_snapshot_options_finalize(CCMPlugin* plugin, CCMPluginOptions* opts)
 	if (options->window_keybind) g_object_unref(options->window_keybind);
 	options->window_keybind = NULL;
 
-	g_free(options);
+	g_slice_free(CCMSnapshotOptions, options);
 }
 
 static void

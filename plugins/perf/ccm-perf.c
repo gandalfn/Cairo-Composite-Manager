@@ -106,7 +106,7 @@ struct _CCMPerfPrivate
 static CCMPluginOptions*
 ccm_perf_options_init (CCMPlugin* plugin)
 {
-	CCMPerfOptions* options = g_new0(CCMPerfOptions, 1);
+	CCMPerfOptions* options = g_slice_new0(CCMPerfOptions);
 	
 	options->keybind = NULL;
 
@@ -122,7 +122,7 @@ ccm_perf_options_finalize (CCMPlugin* plugin, CCMPluginOptions* opts)
 	
 	if (options->keybind) g_object_unref(options->keybind);
 	options->keybind = NULL;
-	g_free(options);
+	g_slice_free(CCMPerfOptions, options);
 }
 
 static void

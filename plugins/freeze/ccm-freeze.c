@@ -92,7 +92,7 @@ struct _CCMFreezePrivate
 static CCMPluginOptions*
 ccm_freeze_options_init(CCMPlugin* plugin)
 {
-	CCMFreezeOptions* options = g_new0(CCMFreezeOptions, 1);
+	CCMFreezeOptions* options = g_slice_new0(CCMFreezeOptions);
 	
 	options->delay = 3;
 	options->duration = 0.3f;
@@ -108,7 +108,7 @@ ccm_freeze_options_finalize(CCMPlugin* plugin, CCMPluginOptions* opts)
 	
 	if (options->color) g_free(options->color);
 	options->color = NULL;
-	g_free(options);
+	g_slice_free(CCMFreezeOptions, options);
 }
 
 static void

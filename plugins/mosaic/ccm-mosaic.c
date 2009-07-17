@@ -98,7 +98,7 @@ struct _CCMMosaicPrivate
 static CCMPluginOptions*
 ccm_mosaic_options_init (CCMPlugin* plugin)
 {
-	CCMMosaicOptions* options = g_new0(CCMMosaicOptions, 1);
+	CCMMosaicOptions* options = g_slice_new0(CCMMosaicOptions);
 	
 	options->spacing = 5;
 	options->keybind = NULL;
@@ -112,8 +112,7 @@ ccm_mosaic_options_finalize (CCMPlugin* plugin, CCMPluginOptions* opts)
 	CCMMosaicOptions* options = (CCMMosaicOptions*)opts;
 	
 	if (options->keybind) g_object_unref(options->keybind);
-	options->keybind = NULL;
-	g_free(options);
+	g_slice_free(CCMMosaicOptions, options);
 }
 
 static void

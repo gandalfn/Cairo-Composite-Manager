@@ -118,6 +118,9 @@ struct _CCMShadowPrivate
 	CCMRegion* 			geometry;
 
 	GtkBuilder*			builder;
+
+	gulong				id_event;
+	gulong				id_property_changed;
 };
 
 #define CCM_SHADOW_GET_PRIVATE(o)  \
@@ -127,7 +130,7 @@ struct _CCMShadowPrivate
 static CCMPluginOptions*
 ccm_shadow_options_init (CCMPlugin* self)
 {
-	CCMShadowOptions* options = g_new0(CCMShadowOptions, 1);
+	CCMShadowOptions* options = g_slice_new0(CCMShadowOptions);
 	
 	options->real_blur = FALSE;
 	options->offset = 0;
@@ -146,7 +149,7 @@ ccm_shadow_options_finalize (CCMPlugin* self, CCMPluginOptions* opts)
 	
 	if (options->color) g_free(options->color);
 	options->color = NULL;
-	g_free(options);
+	g_slice_free(CCMShadowOptions, options);
 }
 
 static void
@@ -163,6 +166,8 @@ ccm_shadow_init (CCMShadow *self)
 	self->priv->shadow_image = NULL;
 	self->priv->geometry = NULL;
 	self->priv->builder = NULL;
+	self->priv->id_event = 0;
+	self->priv->id_property_changed = 0;
 }
 
 static void
@@ -172,20 +177,19 @@ ccm_shadow_finalize (GObject *object)
 	
 	ccm_plugin_options_unload(CCM_PLUGIN(self));
 	
-	if (self->priv->screen)
+	if (CCM_IS_WINDOW(self->priv->screen) && 
+		G_OBJECT(self->priv->screen)->ref_count)
 	{
 		CCMDisplay* display = ccm_screen_get_display(self->priv->screen);
 		
-		g_signal_handlers_disconnect_by_func(display, 
-											 ccm_shadow_on_event, 
-											 self);	
+		g_signal_handler_disconnect(display, self->priv->id_event);	
 	}
 	self->priv->screen = NULL;
 	
-	if (self->priv->window)
-		g_signal_handlers_disconnect_by_func(self->priv->window, 
-											 ccm_shadow_on_property_changed, 
-											 self);	
+	if (CCM_IS_WINDOW(self->priv->window) && 
+		G_OBJECT(self->priv->window)->ref_count)
+		g_signal_handler_disconnect(self->priv->window, 
+									self->priv->id_property_changed);	
 	self->priv->window = NULL;
 	
 	if (self->priv->id_check) g_source_remove (self->priv->id_check);
@@ -825,8 +829,9 @@ ccm_shadow_screen_load_options(CCMScreenPlugin* plugin, CCMScreen* screen)
 	
 	self->priv->screen = screen;
 	ccm_screen_plugin_load_options(CCM_SCREEN_PLUGIN_PARENT(plugin), screen);
-	g_signal_connect_swapped(display, "event", 
-							 G_CALLBACK(ccm_shadow_on_event), self);
+	self->priv->id_event = 
+		g_signal_connect_swapped(display, "event", 
+								 G_CALLBACK(ccm_shadow_on_event), self);
 }
 
 static void
@@ -951,8 +956,10 @@ ccm_shadow_window_load_options(CCMWindowPlugin* plugin, CCMWindow* window)
 	
 	ccm_shadow_create_atoms(self);
 	
-	g_signal_connect_swapped(window, "property-changed",
-							 G_CALLBACK(ccm_shadow_on_property_changed), self);
+	self->priv->id_property_changed = 
+		g_signal_connect_swapped(window, "property-changed",
+								 G_CALLBACK(ccm_shadow_on_property_changed), 
+								 self);
 }
 
 static CCMRegion*

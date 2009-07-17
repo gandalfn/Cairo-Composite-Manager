@@ -126,7 +126,7 @@ struct _CCMMagnifierPrivate
 static CCMPluginOptions*
 ccm_magnifier_options_init(CCMPlugin* plugin)
 {
-	CCMMagnifierOptions* options = g_new0(CCMMagnifierOptions, 1);
+	CCMMagnifierOptions* options = g_slice_new0(CCMMagnifierOptions);
 	
 	options->enabled = FALSE;
 	options->shade = TRUE;
@@ -136,6 +136,14 @@ ccm_magnifier_options_init(CCMPlugin* plugin)
 	options->border = 0;
 
 	return (CCMPluginOptions*)options;
+}
+
+static void
+ccm_magnifier_options_finalize(CCMPlugin* plugin, CCMPluginOptions* opts)
+{
+	CCMMagnifierOptions* options = (CCMMagnifierOptions*)opts;
+	
+	g_slice_free(CCMMagnifierOptions, options);
 }
 
 static void
@@ -190,6 +198,7 @@ ccm_magnifier_class_init (CCMMagnifierClass *klass)
 	g_type_class_add_private (klass, sizeof (CCMMagnifierPrivate));
 
 	CCM_PLUGIN_CLASS(klass)->options_init = ccm_magnifier_options_init;
+	CCM_PLUGIN_CLASS(klass)->options_finalize = ccm_magnifier_options_finalize;
 	CCM_PLUGIN_CLASS(klass)->option_changed = ccm_magnifier_on_option_changed;
 	
 	object_class->finalize = ccm_magnifier_finalize;
