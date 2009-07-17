@@ -41,11 +41,14 @@ enum
 {
     PROP_0,
 	PROP_Y_INVERT,
-	PROP_FREEZE
+	PROP_FREEZE,
+	PROP_FOREIGN,
 };
 
 struct _CCMPixmapPrivate
 {
+	gboolean			foreign;
+	
 	Damage				damage;
 	
 	gboolean			y_invert;
@@ -80,6 +83,10 @@ ccm_pixmap_set_property(GObject *object, guint prop_id,
 			self->priv->freeze = g_value_get_boolean (value);
 		}
 		break;
+		case PROP_FOREIGN:
+		{
+			self->priv->foreign = g_value_get_boolean (value);
+		}			
 		default:
 		break;
     }
@@ -103,6 +110,11 @@ ccm_pixmap_get_property(GObject *object, guint prop_id,
 			g_value_set_boolean (value, self->priv->freeze);
 		}
 		break;
+		case PROP_FOREIGN:
+		{
+			g_value_set_boolean (value, self->priv->foreign);
+		}			
+		break;
 		default:
 		break;
     }
@@ -112,7 +124,8 @@ static void
 ccm_pixmap_init (CCMPixmap *self)
 {
 	self->priv = CCM_PIXMAP_GET_PRIVATE(self);
-	
+
+	self->priv->foreign = FALSE;
 	self->priv->damage = 0;
 	self->priv->y_invert = FALSE;
 	self->priv->freeze = FALSE;
@@ -127,7 +140,9 @@ ccm_pixmap_finalize (GObject *object)
 	
 	ccm_pixmap_release(self);
 	
-	if (self->priv->damage)
+	if (CCM_IS_DISPLAY(display) &&
+	    G_OBJECT(display)->ref_count &&
+	    self->priv->damage)
 	{
 		XDamageDestroy(CCM_DISPLAY_XDISPLAY(display), self->priv->damage);
 		g_signal_handler_disconnect(display, self->priv->id_damage);
@@ -135,8 +150,9 @@ ccm_pixmap_finalize (GObject *object)
 	}
 	self->priv->y_invert = FALSE;
 	self->priv->freeze = FALSE;
-	
-	XFreePixmap(CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self));
+
+	if (!self->priv->foreign)
+		XFreePixmap(CCM_DISPLAY_XDISPLAY(display), CCM_PIXMAP_XPIXMAP(self));
 	
 	G_OBJECT_CLASS (ccm_pixmap_parent_class)->finalize (object);
 }
@@ -175,6 +191,18 @@ ccm_pixmap_class_init (CCMPixmapClass *klass)
 							 FALSE,
 			     			 G_PARAM_READABLE | G_PARAM_WRITABLE));
 	
+	/**
+	 * CCMPixmap:foreign:
+	 *
+	 * This property indicate the object doesn't owned XPixmap if true.
+	 */
+	g_object_class_install_property(object_class, PROP_FOREIGN,
+		g_param_spec_boolean("foreign",
+		 					 "Foreign",
+			     			 "Foreign pixmap",
+							 FALSE,
+			     			 G_PARAM_READABLE | G_PARAM_WRITABLE));
+
 	object_class->finalize = ccm_pixmap_finalize;
 }
 

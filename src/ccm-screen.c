@@ -593,6 +593,7 @@ ccm_screen_update_background (CCMScreen* self)
 		{
 			self->priv->background = ccm_pixmap_new (CCM_DRAWABLE(self->priv->root),
 			                                         (Pixmap)*data);
+			g_object_set(G_OBJECT(self->priv->background), "foreign", TRUE, NULL);
 			g_free(data);
 		}
 	}
@@ -1731,9 +1732,7 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 			}
 			cairo_rectangle_t* rects;
 			gint cpt, nb_rects;
-			cairo_surface_t* surface = 
-			 ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->background));
-				
+
 			cairo_save(self->priv->ctx);
 			ccm_region_get_rectangles (self->priv->root_damage, 
 				                           &rects, &nb_rects);
@@ -1745,6 +1744,9 @@ ccm_screen_paint(CCMScreen* self, int num_frame, CCMTimeline* timeline)
 				
 			if (self->priv->background)
 			{
+				cairo_surface_t* surface = 
+				 ccm_drawable_get_surface(CCM_DRAWABLE(self->priv->background));
+				
 				cairo_set_source_surface (self->priv->ctx, surface, 0, 0);
 				cairo_paint(self->priv->ctx);
 				cairo_surface_destroy (surface);
