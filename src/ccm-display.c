@@ -98,7 +98,7 @@ struct _CCMDisplayPrivate
 	gboolean			shm_shared_pixmap;
 	CCMExtension		fixes;
 	CCMExtension		input;
-	
+
 	GSList*  			pointers;
 	int					type_button_press;
 	int					type_button_release;
@@ -213,7 +213,7 @@ ccm_display_finalize (GObject *object)
 	gint cpt;
 	
 	ccm_debug("DISPLAY FINALIZE");
-
+	
 	if (self->priv->cursors)
 		g_hash_table_destroy (self->priv->cursors);
 	
@@ -225,7 +225,7 @@ ccm_display_finalize (GObject *object)
 			XCloseDevice(self->priv->xdisplay, item->data);
 		g_slist_free(self->priv->pointers);
 	}
-	
+			
 	if (self->priv->nb_screens) 
 	{
 		for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
@@ -794,12 +794,12 @@ ccm_display_report_device_event(CCMDisplay* self, CCMScreen* screen,
 	for (item = self->priv->pointers; item; item = item->next)
 	{
 		XDevice* pointer = (XDevice*)item->data;
-		XEventClass event[10];
 		gint cpt, nb = 0;
 		
 		if (report)
 		{
 			XInputClassInfo* class;
+			XEventClass* event = g_new0(XEventClass, 9 * pointer->num_classes);
 			
 			for (class = pointer->classes, cpt = 0; 
 				 cpt < pointer->num_classes; class++, ++cpt) 
@@ -829,13 +829,26 @@ ccm_display_report_device_event(CCMDisplay* self, CCMScreen* screen,
 						break;
 				}
 			}
+			if (XSelectExtensionEvent(self->priv->xdisplay, 
+									  CCM_WINDOW_XWINDOW(root), event, nb)) 
+			{
+				g_free(event);
+				return FALSE;
+			}
+			g_free(event);
 		}
 		else
+		{
+			XEventClass* event = g_new0(XEventClass, 1);;
 			NoExtensionEvent(pointer, 0, event[nb++]);
-		
-		if (XSelectExtensionEvent(self->priv->xdisplay, 
-								  CCM_WINDOW_XWINDOW(root), event, nb)) 
-			return FALSE;
+			if (XSelectExtensionEvent(self->priv->xdisplay, 
+									  CCM_WINDOW_XWINDOW(root), event, nb)) 
+			{
+				g_free(event);
+				return FALSE;
+			}
+			g_free(event);
+		}
 	}
 	
 	return TRUE;
