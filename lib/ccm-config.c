@@ -194,8 +194,13 @@ ccm_config_new (int screen, gchar* extension, gchar* key)
 {
 	g_return_val_if_fail(key != NULL, NULL);
 	
-	CCMConfig* self = g_object_new(backend_type, "screen", screen,
-	                               "extension", extension, "key", key, NULL);
+	CCMConfig* self;
+
+	if (extension)
+		self = g_object_new(backend_type, "screen", screen,
+							"extension", extension, "key", key, NULL);
+	else
+		self = g_object_new(backend_type, "screen", screen, "key", key, NULL);
 	
 	if (!CCM_CONFIG_GET_CLASS(self)->initialize ||
 		!CCM_CONFIG_GET_CLASS(self)->initialize(self, screen, extension, key))
