@@ -2,7 +2,8 @@ PLUGIN = ccm-clone
 PLUGIN_UI = 
 PLUGIN_SCHEMA = 
 
-PLUGIN_SOURCES = ccm-clone.c ccm-clone.h
+PLUGIN_SOURCES = 
+PLUGIN_VALA_SOURCES = ccm-clone.vala
 
 include $(top_srcdir)/plugin.make
 
