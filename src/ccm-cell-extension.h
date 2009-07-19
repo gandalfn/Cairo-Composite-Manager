@@ -24,38 +24,39 @@
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_CELL_EXTENSION             (ccm_cell_extension_get_type ())
 #define CCM_CELL_EXTENSION(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_CELL_EXTENSION, CCMCellExtension))
 #define CCM_CELL_EXTENSION_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_CELL_EXTENSION, CCMCellExtensionClass))
 #define CCM_IS_CELL_EXTENSION(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_CELL_EXTENSION))
 #define CCM_IS_CELL_EXTENSION_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_CELL_EXTENSION))
 #define CCM_CELL_EXTENSION_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_CELL_EXTENSION, CCMCellExtensionClass))
-
 typedef struct _CCMCellExtensionClass CCMCellExtensionClass;
 typedef struct _CCMCellExtensionPrivate CCMCellExtensionPrivate;
 typedef struct _CCMCellExtension CCMCellExtension;
 
 struct _CCMCellExtensionClass
 {
-	GtkEventBoxClass parent_class;
+    GtkEventBoxClass parent_class;
 };
 
 struct _CCMCellExtension
 {
-	GtkEventBox parent_instance;
-    
-    CCMCellExtensionPrivate* priv;
+    GtkEventBox parent_instance;
+
+    CCMCellExtensionPrivate *priv;
 };
 
-GType               ccm_cell_extension_get_type  (void) G_GNUC_CONST;
-CCMCellExtension*   ccm_cell_extension_new       (const gchar* path,
-                                                  int width);
-void                ccm_cell_extension_set_active(CCMCellExtension* self, 
-                                                  gboolean enable);
-const gchar*        ccm_cell_extension_get_path  (CCMCellExtension* self);
-gboolean            ccm_cell_extension_get_active(CCMCellExtension* self);
+GType
+ccm_cell_extension_get_type (void)
+    G_GNUC_CONST;
+CCMCellExtension *
+ccm_cell_extension_new (const gchar * path, int width);
+void
+ccm_cell_extension_set_active (CCMCellExtension * self, gboolean enable);
+const gchar *
+ccm_cell_extension_get_path (CCMCellExtension * self);
+gboolean
+ccm_cell_extension_get_active (CCMCellExtension * self);
 
 G_END_DECLS
-
-#endif /* _CCM_CELL_EXTENSION_H_ */
+#endif                          /* _CCM_CELL_EXTENSION_H_ */

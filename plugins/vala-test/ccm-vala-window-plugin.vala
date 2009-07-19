@@ -26,123 +26,121 @@ using CCM;
 
 namespace CCM
 {
-	enum Options
-	{
-		ENABLED,
-		N
-	}
-	
-	const string[Options.N] options_key =  {
-		"enabled"
-	};
-	
-	class ValaWindowOptions : PluginOptions
-	{
-		public bool enabled;
-	}
-	
-	private class ValaWindowPlugin : CCM.Plugin, CCM.WindowPlugin
-	{
-		private weak CCM.Window window;
-		
-		private uint counter = 0;
-		
-		~ValaWindowPlugin()
-		{
-			options_unload();
-		}
+    enum Options
+    {
+        ENABLED,
+        N
+    }
 
-		protected override PluginOptions
-		options_init()
-		{
-			ValaWindowOptions options = new ValaWindowOptions();
+    const string[Options.N] options_key = {
+        "enabled"
+    };
 
-			options.enabled = false;
+    class ValaWindowOptions : PluginOptions
+    {
+        public bool enabled;
+    }
 
-			return options;
-		}
-		
-		protected override void
-		options_finalize(PluginOptions opts)
-		{
-			ValaWindowOptions* options = (ValaWindowOptions*)opts;
-			delete options;
-		}
-		
-		protected override void
-		option_changed(CCM.Config config)
-		{
-			((ValaWindowOptions)get_option()).enabled = config.get_boolean();
-			if (!((ValaWindowOptions)get_option()).enabled) window.get_screen().damage_all();
-		}
-		
-		/**
+    private class ValaWindowPlugin : CCM.Plugin, CCM.WindowPlugin
+    {
+        private weak CCM.Window window;
+
+        private uint counter = 0;
+
+        ~ValaWindowPlugin ()
+        {
+            options_unload ();
+        }
+
+        protected override PluginOptions options_init ()
+        {
+            ValaWindowOptions options = new ValaWindowOptions ();
+
+            options.enabled = false;
+
+            return options;
+        }
+
+        protected override void options_finalize (PluginOptions opts)
+        {
+            ValaWindowOptions *options = (ValaWindowOptions *) opts;
+            delete options;
+        }
+
+        protected override void option_changed (CCM.Config config)
+        {
+            ((ValaWindowOptions) get_option ()).enabled = config.get_boolean ();
+            if (!((ValaWindowOptions) get_option ()).enabled)
+                window.get_screen ().damage_all ();
+        }
+
+        /**
 		 * Implement load_options window plugin interface
 		 **/
-		protected void
-		window_load_options(CCM.Window window)
-		{
-			this.window = window;
-			
-			options_load("vala-window-plugin", options_key);
-			
-			/* Chain call to next plugin */
-			((CCM.WindowPlugin)parent).window_load_options(window);
-		}
-		
-		/**
+        protected void window_load_options (CCM.Window window)
+        {
+            this.window = window;
+
+            options_load ("vala-window-plugin", options_key);
+
+            /* Chain call to next plugin */
+            ((CCM.WindowPlugin) parent).window_load_options (window);
+        }
+
+        /**
 		 * Implement paint window plugin interface
 		 **/
-		protected bool
-		window_paint(CCM.Window window, Cairo.Context ctx, 
-					 Cairo.Surface surface, bool y_invert)
-		{
-			bool ret = false;
-			
-			/* Chain call to next plugin */
-			ret = ((CCM.WindowPlugin)parent).window_paint(window, ctx, 
-														  surface, y_invert);
-			
-			/* Paint damaged area */
-			if (((ValaWindowOptions)get_option()).enabled)
-			{
-				CCM.Region damaged = window.get_damaged().copy();
-			
-				if (damaged != null)
-				{
-					unowned Cairo.Rectangle[] rectangles;
-				
-					damaged.get_rectangles(out rectangles);
-				
-					switch (counter)
-					{
-						case 0:
-							ctx.set_source_rgba(1, 0, 0, 0.5);
-							break;
-						case 1:
-							ctx.set_source_rgba(0, 1, 0, 0.5);
-							break;
-						case 2:
-							ctx.set_source_rgba(0, 0, 1, 0.5);
-							break;
-						default:
-							break;
-					}
-					if (++counter > 2) counter = 0;
-					
-					foreach (Cairo.Rectangle rectangle in rectangles)
-					{
-						ctx.rectangle(rectangle.x, rectangle.y,
-									  rectangle.width, rectangle.height);
-					}
-					ctx.fill();
-					rectangles_free(rectangles);
-				}
-			}
-			
-			return ret;
-		}
-	}
+        protected bool window_paint (CCM.Window window, Cairo.Context ctx,
+                                     Cairo.Surface surface, bool y_invert)
+        {
+            bool ret = false;
+
+            /* Chain call to next plugin */
+            ret =
+                ((CCM.WindowPlugin) parent).window_paint (window, ctx, surface,
+                                                          y_invert);
+
+            /* Paint damaged area */
+            if (((ValaWindowOptions) get_option ()).enabled)
+            {
+                CCM.Region damaged = window.get_damaged ().copy ();
+
+                if (damaged != null)
+                {
+                    unowned Cairo.Rectangle[] rectangles;
+
+                    damaged.get_rectangles (out rectangles);
+
+                    switch (counter)
+                    {
+                        case 0:
+                            ctx.set_source_rgba (1, 0, 0, 0.5);
+                            break;
+                        case 1:
+                            ctx.set_source_rgba (0, 1, 0, 0.5);
+                            break;
+                        case 2:
+                            ctx.set_source_rgba (0, 0, 1, 0.5);
+                            break;
+                        default:
+                            break;
+                    }
+                    if (++counter > 2)
+                        counter = 0;
+
+                    foreach (Cairo.Rectangle rectangle in rectangles)
+                    {
+                        ctx.rectangle (rectangle.x, rectangle.y,
+                                       rectangle.width, rectangle.height);
+                    }
+                    ctx.fill ();
+                    rectangles_free (rectangles);
+                }
+            }
+
+            return ret;
+        }
+    }
 }
 
 /**
@@ -150,8 +148,7 @@ namespace CCM
  **/
 [ModuleInit]
 public Type
-ccm_vala_window_plugin_get_plugin_type(TypeModule module)
+ccm_vala_window_plugin_get_plugin_type (TypeModule module)
 {
-	return typeof (ValaWindowPlugin);
+    return typeof (ValaWindowPlugin);
 }
-		

@@ -24,33 +24,33 @@
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_CONFIG_ADJUSTMENT             (ccm_config_adjustment_get_type ())
 #define CCM_CONFIG_ADJUSTMENT(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_CONFIG_ADJUSTMENT, CCMConfigAdjustment))
 #define CCM_CONFIG_ADJUSTMENT_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_CONFIG_ADJUSTMENT, CCMConfigAdjustmentClass))
 #define CCM_IS_CONFIG_ADJUSTMENT(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_CONFIG_ADJUSTMENT))
 #define CCM_IS_CONFIG_ADJUSTMENT_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_CONFIG_ADJUSTMENT))
 #define CCM_CONFIG_ADJUSTMENT_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_CONFIG_ADJUSTMENT, CCMConfigAdjustmentClass))
-
 typedef struct _CCMConfigAdjustmentClass CCMConfigAdjustmentClass;
 typedef struct _CCMConfigAdjustmentPrivate CCMConfigAdjustmentPrivate;
 typedef struct _CCMConfigAdjustment CCMConfigAdjustment;
 
 struct _CCMConfigAdjustmentClass
 {
-	GtkAdjustmentClass parent_class;
+    GtkAdjustmentClass parent_class;
 };
 
 struct _CCMConfigAdjustment
 {
-	GtkAdjustment parent_instance;
+    GtkAdjustment parent_instance;
 
-	CCMConfigAdjustmentPrivate* priv;
+    CCMConfigAdjustmentPrivate *priv;
 };
 
-GType ccm_config_adjustment_get_type (void) G_GNUC_CONST;
-GtkAdjustment* ccm_config_adjustment_new (int screen, gchar* plugin, gchar* key);
+GType
+ccm_config_adjustment_get_type (void)
+    G_GNUC_CONST;
+GtkAdjustment *
+ccm_config_adjustment_new (int screen, gchar * plugin, gchar * key);
 
 G_END_DECLS
-
-#endif /* _CCM_CONFIG_ADJUSTMENT_H_ */
+#endif                          /* _CCM_CONFIG_ADJUSTMENT_H_ */

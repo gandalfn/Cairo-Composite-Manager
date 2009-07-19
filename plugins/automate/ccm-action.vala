@@ -24,16 +24,16 @@ using GLib;
 
 namespace CCM
 {
-	errordomain ActionError
-	{
-		WINDOW_IGNORE,
-		WINDOW_NOT_FOUND
-	}
+    errordomain ActionError
+    {
+        WINDOW_IGNORE, 
+        WINDOW_NOT_FOUND
+    }
 
     abstract class Action : Object
     {
-		public long time { get; set; }
-		
-		public abstract string to_string(string format = "%ccma");
+        public long time { get; set; }
+
+        public abstract string to_string (string format = "%ccma");
     }
 }

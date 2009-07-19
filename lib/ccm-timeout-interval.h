@@ -22,9 +22,7 @@
 
 #include <glib.h>
 
-G_BEGIN_DECLS
-
-typedef struct _CCMTimeoutInterval CCMTimeoutInterval;
+G_BEGIN_DECLS typedef struct _CCMTimeoutInterval CCMTimeoutInterval;
 
 struct _CCMTimeoutInterval
 {
@@ -32,19 +30,18 @@ struct _CCMTimeoutInterval
     guint frame_count, fps;
 };
 
-void _ccm_timeout_interval_init (CCMTimeoutInterval *self, guint fps);
+void _ccm_timeout_interval_init (CCMTimeoutInterval * self, guint fps);
 
-gboolean _ccm_timeout_interval_prepare (const GTimeVal *current_time,
-                                        CCMTimeoutInterval *self,
-                                        gint *delay);
+gboolean _ccm_timeout_interval_prepare (const GTimeVal * current_time,
+                                        CCMTimeoutInterval * self,
+                                        gint * delay);
 
-gboolean _ccm_timeout_interval_dispatch (CCMTimeoutInterval *self,
-                                         GSourceFunc        callback,
-                                         gpointer           user_data);
+gboolean _ccm_timeout_interval_dispatch (CCMTimeoutInterval * self,
+                                         GSourceFunc callback,
+                                         gpointer user_data);
 
-gint _ccm_timeout_interval_compare_expiration (const CCMTimeoutInterval *a,
-                                               const CCMTimeoutInterval *b);
+gint _ccm_timeout_interval_compare_expiration (const CCMTimeoutInterval * a,
+                                               const CCMTimeoutInterval * b);
 
 G_END_DECLS
-
-#endif /* __CCM_TIMEOUT_INTERVAL_H__ */
+#endif                          /* __CCM_TIMEOUT_INTERVAL_H__ */

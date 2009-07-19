@@ -28,32 +28,31 @@
 #include "ccm-pixmap.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_PIXMAP_IMAGE             (ccm_pixmap_image_get_type ())
 #define CCM_PIXMAP_IMAGE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PIXMAP_IMAGE, CCMPixmapImage))
 #define CCM_PIXMAP_IMAGE_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PIXMAP_IMAGE, CCMPixmapImageClass))
 #define CCM_IS_PIXMAP_IMAGE(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PIXMAP_IMAGE))
 #define CCM_IS_PIXMAP_IMAGE_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PIXMAP_IMAGE))
 #define CCM_PIXMAP_IMAGE_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PIXMAP_IMAGE, CCMPixmapImageClass))
-
 typedef struct _CCMPixmapImageClass CCMPixmapImageClass;
 typedef struct _CCMPixmapImagePrivate CCMPixmapImagePrivate;
 typedef struct _CCMPixmapImage CCMPixmapImage;
 
 struct _CCMPixmapImageClass
 {
-	CCMPixmapClass parent_class;
+    CCMPixmapClass parent_class;
 };
 
 struct _CCMPixmapImage
 {
-	CCMPixmap parent_instance;
-	
-	CCMPixmapImagePrivate* priv;
+    CCMPixmap parent_instance;
+
+    CCMPixmapImagePrivate *priv;
 };
 
-GType ccm_pixmap_image_get_type (void) G_GNUC_CONST;
+GType
+ccm_pixmap_image_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_PIXMAP_IMAGE_H_ */
+#endif                          /* _CCM_PIXMAP_IMAGE_H_ */

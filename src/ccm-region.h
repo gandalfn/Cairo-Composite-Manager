@@ -19,7 +19,7 @@
  * 	51 Franklin Street, Fifth Floor
  * 	Boston, MA  02110-1301, USA.
  */
- 
+
 #ifndef _CCM_REGION_H
 #define _CCM_REGION_H
 
@@ -27,8 +27,6 @@
 
 #include "ccm.h"
 
-void _ccm_region_print(CCMRegion *self);
+void _ccm_region_print (CCMRegion * self);
 
-#endif /* _CCM_REGION_H */
-
- 
+#endif                          /* _CCM_REGION_H */

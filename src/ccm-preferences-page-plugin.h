@@ -30,11 +30,9 @@
 #include "ccm-preferences-page.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_PREFERENCES_PAGE_PLUGIN             		(ccm_preferences_page_plugin_get_type ())
 #define CCM_IS_PREFERENCES_PAGE_PLUGIN(obj)          		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PREFERENCES_PAGE_PLUGIN))
 #define CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(obj)   	(G_TYPE_INSTANCE_GET_INTERFACE ((obj), CCM_TYPE_PREFERENCES_PAGE_PLUGIN, CCMPreferencesPagePluginClass))
-
 #define CCM_PREFERENCES_PAGE_PLUGIN_PARENT(obj)	   		    ((CCMPreferencesPagePlugin*)ccm_plugin_get_parent((CCMPlugin*)obj))
 #define CCM_PREFERENCES_PAGE_PLUGIN_ROOT(obj)	   	    	((CCMPreferencesPagePlugin*)_ccm_preferences_page_plugin_get_root((CCMPreferencesPagePlugin*)obj))
 #define CCM_PREFERENCES_PAGE_PLUGIN_LOCK_ROOT_METHOD(plugin, func, callback, data) \
@@ -46,7 +44,6 @@ G_BEGIN_DECLS
 		_ccm_plugin_lock_method ((GObject*)r, CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func, \
 								 callback, data); \
 }
-
 #define CCM_PREFERENCES_PAGE_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func) \
 { \
 	CCMPreferencesPagePlugin* r = (CCMPreferencesPagePlugin*)_ccm_preferences_page_plugin_get_root((CCMPreferencesPagePlugin*)plugin); \
@@ -55,65 +52,78 @@ G_BEGIN_DECLS
 		CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func) \
 		_ccm_plugin_unlock_method ((GObject*)r, CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func); \
 }
-
 typedef struct _CCMPreferencesPagePluginClass CCMPreferencesPagePluginClass;
 typedef struct _CCMPreferencesPagePlugin CCMPreferencesPagePlugin;
 
 struct _CCMPreferencesPagePluginClass
 {
-	GTypeInterface    base_iface;
-	
-	void    	      (*init_general_section) (CCMPreferencesPagePlugin* self,
-                                               CCMPreferencesPage* preferences,
-                                               GtkWidget* general_section);
-    void    	      (*init_desktop_section) (CCMPreferencesPagePlugin* self,
-                                               CCMPreferencesPage* preferences,
-                                               GtkWidget* desktop_section);
-    void    	      (*init_windows_section) (CCMPreferencesPagePlugin* self,
-                                               CCMPreferencesPage* preferences,
-                                               GtkWidget* windows_section);
-    void    	      (*init_effects_section) (CCMPreferencesPagePlugin* self,
-                                               CCMPreferencesPage* preferences,
-                                               GtkWidget* effects_section);
-    void    	      (*init_accessibility_section) (CCMPreferencesPagePlugin* self,
-                                                     CCMPreferencesPage* preferences,
-                                                     GtkWidget* accessibility_section);
-    void    	      (*init_utilities_section) (CCMPreferencesPagePlugin* self,
-                                                 CCMPreferencesPage* preferences,
-                                                 GtkWidget* utilities_section);
+    GTypeInterface base_iface;
+
+    void (*init_general_section) (CCMPreferencesPagePlugin * self,
+                                  CCMPreferencesPage * preferences,
+                                  GtkWidget * general_section);
+    void (*init_desktop_section) (CCMPreferencesPagePlugin * self,
+                                  CCMPreferencesPage * preferences,
+                                  GtkWidget * desktop_section);
+    void (*init_windows_section) (CCMPreferencesPagePlugin * self,
+                                  CCMPreferencesPage * preferences,
+                                  GtkWidget * windows_section);
+    void (*init_effects_section) (CCMPreferencesPagePlugin * self,
+                                  CCMPreferencesPage * preferences,
+                                  GtkWidget * effects_section);
+    void (*init_accessibility_section) (CCMPreferencesPagePlugin * self,
+                                        CCMPreferencesPage * preferences,
+                                        GtkWidget * accessibility_section);
+    void (*init_utilities_section) (CCMPreferencesPagePlugin * self,
+                                    CCMPreferencesPage * preferences,
+                                    GtkWidget * utilities_section);
 };
 
 GType
-ccm_preferences_page_plugin_get_type (void) G_GNUC_CONST;
+ccm_preferences_page_plugin_get_type (void)
+    G_GNUC_CONST;
 
-CCMPreferencesPagePlugin* 
-_ccm_preferences_page_plugin_get_root (CCMPreferencesPagePlugin* self);
+CCMPreferencesPagePlugin *
+_ccm_preferences_page_plugin_get_root (CCMPreferencesPagePlugin * self);
 
 void
-ccm_preferences_page_plugin_init_general_section (CCMPreferencesPagePlugin* self, 
-                                                  CCMPreferencesPage* preferences,
-                                                  GtkWidget* general_section);
+ccm_preferences_page_plugin_init_general_section (CCMPreferencesPagePlugin *
+                                                  self,
+                                                  CCMPreferencesPage *
+                                                  preferences,
+                                                  GtkWidget * general_section);
 void
-ccm_preferences_page_plugin_init_desktop_section (CCMPreferencesPagePlugin* self, 
-                                                  CCMPreferencesPage* preferences,
-                                                  GtkWidget* desktop_section);
+ccm_preferences_page_plugin_init_desktop_section (CCMPreferencesPagePlugin *
+                                                  self,
+                                                  CCMPreferencesPage *
+                                                  preferences,
+                                                  GtkWidget * desktop_section);
 void
-ccm_preferences_page_plugin_init_windows_section (CCMPreferencesPagePlugin* self, 
-                                                  CCMPreferencesPage* preferences,
-                                                  GtkWidget* windows_section);
+ccm_preferences_page_plugin_init_windows_section (CCMPreferencesPagePlugin *
+                                                  self,
+                                                  CCMPreferencesPage *
+                                                  preferences,
+                                                  GtkWidget * windows_section);
 void
-ccm_preferences_page_plugin_init_effects_section (CCMPreferencesPagePlugin* self, 
-                                                  CCMPreferencesPage* preferences,
-                                                  GtkWidget* effects_section);
+ccm_preferences_page_plugin_init_effects_section (CCMPreferencesPagePlugin *
+                                                  self,
+                                                  CCMPreferencesPage *
+                                                  preferences,
+                                                  GtkWidget * effects_section);
 void
-ccm_preferences_page_plugin_init_accessibility_section (CCMPreferencesPagePlugin* self,
-                                                        CCMPreferencesPage* preferences,
-                                                        GtkWidget* accessibility_section);
+ccm_preferences_page_plugin_init_accessibility_section (CCMPreferencesPagePlugin
+                                                        * self,
+                                                        CCMPreferencesPage *
+                                                        preferences,
+                                                        GtkWidget *
+                                                        accessibility_section);
 void
-ccm_preferences_page_plugin_init_utilities_section (CCMPreferencesPagePlugin* self,
-                                                    CCMPreferencesPage* preferences,
-                                                    GtkWidget* utilities_section);
+ccm_preferences_page_plugin_init_utilities_section (CCMPreferencesPagePlugin *
+                                                    self,
+                                                    CCMPreferencesPage *
+                                                    preferences,
+                                                    GtkWidget *
+                                                    utilities_section);
 
 G_END_DECLS
-
-#endif /* _CCM_PREFERENCES_PAGE_PLUGIN_H_ */
+#endif                          /* _CCM_PREFERENCES_PAGE_PLUGIN_H_ */

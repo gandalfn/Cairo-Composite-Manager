@@ -26,43 +26,44 @@
 #include "eggsmclient-private.h"
 
 static void egg_sm_client_debug_handler (const char *log_domain,
-					 GLogLevelFlags log_level,
-					 const char *message,
-					 gpointer user_data);
+                                         GLogLevelFlags log_level,
+                                         const char *message,
+                                         gpointer user_data);
 
-enum {
-  SAVE_STATE,
-  QUIT_REQUESTED,
-  QUIT_CANCELLED,
-  QUIT,
-  LAST_SIGNAL
+enum
+{
+    SAVE_STATE,
+    QUIT_REQUESTED,
+    QUIT_CANCELLED,
+    QUIT,
+    LAST_SIGNAL
 };
 
 static guint signals[LAST_SIGNAL];
 
-struct _EggSMClientPrivate {
-  GKeyFile *state_file;
+struct _EggSMClientPrivate
+{
+    GKeyFile *state_file;
 };
 
 #define EGG_SM_CLIENT_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), EGG_TYPE_SM_CLIENT, EggSMClientPrivate))
 
 G_DEFINE_TYPE (EggSMClient, egg_sm_client, G_TYPE_OBJECT)
-
 static EggSMClient *global_client;
 static EggSMClientMode global_client_mode = EGG_SM_CLIENT_MODE_NORMAL;
 
 static void
-egg_sm_client_init (EggSMClient *client)
+egg_sm_client_init (EggSMClient * client)
 {
-  ;
+    ;
 }
 
 static void
-egg_sm_client_class_init (EggSMClientClass *klass)
+egg_sm_client_class_init (EggSMClientClass * klass)
 {
-  GObjectClass *object_class = G_OBJECT_CLASS (klass);
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-  g_type_class_add_private (klass, sizeof (EggSMClientPrivate));
+    g_type_class_add_private (klass, sizeof (EggSMClientPrivate));
 
   /**
    * EggSMClient::save_state:
@@ -86,15 +87,12 @@ egg_sm_client_class_init (EggSMClientClass *klass)
    * egg_sm_client_set_restart_command() during the processing of this
    * signal (eg, to include a list of files to open).
    **/
-  signals[SAVE_STATE] =
-    g_signal_new ("save_state",
-                  G_OBJECT_CLASS_TYPE (object_class),
-                  G_SIGNAL_RUN_LAST,
-                  G_STRUCT_OFFSET (EggSMClientClass, save_state),
-                  NULL, NULL,
-                  g_cclosure_marshal_VOID__POINTER,
-                  G_TYPE_NONE,
-                  1, G_TYPE_POINTER);
+    signals[SAVE_STATE] =
+        g_signal_new ("save_state", G_OBJECT_CLASS_TYPE (object_class),
+                      G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (EggSMClientClass,
+                                                          save_state), NULL,
+                      NULL, g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1,
+                      G_TYPE_POINTER);
 
   /**
    * EggSMClient::quit_requested:
@@ -120,15 +118,11 @@ egg_sm_client_class_init (EggSMClientClass *klass)
    * If the application agrees to quit, it should then wait for either
    * the ::quit_cancelled or ::quit signals to be emitted.
    **/
-  signals[QUIT_REQUESTED] =
-    g_signal_new ("quit_requested",
-                  G_OBJECT_CLASS_TYPE (object_class),
-                  G_SIGNAL_RUN_LAST,
-                  G_STRUCT_OFFSET (EggSMClientClass, quit_requested),
-                  NULL, NULL,
-                  g_cclosure_marshal_VOID__VOID,
-                  G_TYPE_NONE,
-                  0);
+    signals[QUIT_REQUESTED] =
+        g_signal_new ("quit_requested", G_OBJECT_CLASS_TYPE (object_class),
+                      G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (EggSMClientClass,
+                                                          quit_requested), NULL,
+                      NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
   /**
    * EggSMClient::quit_cancelled:
@@ -139,15 +133,11 @@ egg_sm_client_class_init (EggSMClientClass *klass)
    * signal, the application can go back to what it was doing before
    * receiving the ::quit_requested signal.
    **/
-  signals[QUIT_CANCELLED] =
-    g_signal_new ("quit_cancelled",
-                  G_OBJECT_CLASS_TYPE (object_class),
-                  G_SIGNAL_RUN_LAST,
-                  G_STRUCT_OFFSET (EggSMClientClass, quit_cancelled),
-                  NULL, NULL,
-                  g_cclosure_marshal_VOID__VOID,
-                  G_TYPE_NONE,
-                  0);
+    signals[QUIT_CANCELLED] =
+        g_signal_new ("quit_cancelled", G_OBJECT_CLASS_TYPE (object_class),
+                      G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (EggSMClientClass,
+                                                          quit_cancelled), NULL,
+                      NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
   /**
    * EggSMClient::quit:
@@ -164,15 +154,11 @@ egg_sm_client_class_init (EggSMClientClass *klass)
    * may decide to end the session without giving applications a
    * chance to object.
    **/
-  signals[QUIT] =
-    g_signal_new ("quit",
-                  G_OBJECT_CLASS_TYPE (object_class),
-                  G_SIGNAL_RUN_LAST,
-                  G_STRUCT_OFFSET (EggSMClientClass, quit),
-                  NULL, NULL,
-                  g_cclosure_marshal_VOID__VOID,
-                  G_TYPE_NONE,
-                  0);
+    signals[QUIT] =
+        g_signal_new ("quit", G_OBJECT_CLASS_TYPE (object_class),
+                      G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (EggSMClientClass,
+                                                          quit), NULL, NULL,
+                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 }
 
 static gboolean sm_client_disable = FALSE;
@@ -181,30 +167,28 @@ static char *sm_client_id = NULL;
 static char *sm_config_prefix = NULL;
 
 static gboolean
-sm_client_post_parse_func (GOptionContext  *context,
-			   GOptionGroup    *group,
-			   gpointer         data,
-			   GError         **error)
+sm_client_post_parse_func (GOptionContext * context, GOptionGroup * group,
+                           gpointer data, GError ** error)
 {
-  EggSMClient *client = egg_sm_client_get ();
+    EggSMClient *client = egg_sm_client_get ();
 
-  if (sm_client_id == NULL)
+    if (sm_client_id == NULL)
     {
-      const gchar *desktop_autostart_id;
+        const gchar *desktop_autostart_id;
 
-      desktop_autostart_id = g_getenv ("DESKTOP_AUTOSTART_ID");
+        desktop_autostart_id = g_getenv ("DESKTOP_AUTOSTART_ID");
 
-      if (desktop_autostart_id != NULL)
-        sm_client_id = g_strdup (desktop_autostart_id);
+        if (desktop_autostart_id != NULL)
+            sm_client_id = g_strdup (desktop_autostart_id);
     }
 
-  /* Unset DESKTOP_AUTOSTART_ID in order to avoid child processes to
-   * use the same client id. */
-  g_unsetenv ("DESKTOP_AUTOSTART_ID");
+    /* Unset DESKTOP_AUTOSTART_ID in order to avoid child processes to
+     * use the same client id. */
+    g_unsetenv ("DESKTOP_AUTOSTART_ID");
 
-  if (EGG_SM_CLIENT_GET_CLASS (client)->startup)
-    EGG_SM_CLIENT_GET_CLASS (client)->startup (client, sm_client_id);
-  return TRUE;
+    if (EGG_SM_CLIENT_GET_CLASS (client)->startup)
+        EGG_SM_CLIENT_GET_CLASS (client)->startup (client, sm_client_id);
+    return TRUE;
 }
 
 /**
@@ -219,43 +203,42 @@ sm_client_post_parse_func (GOptionContext  *context,
 GOptionGroup *
 egg_sm_client_get_option_group (void)
 {
-  const GOptionEntry entries[] = {
-    { "sm-client-disable", 0, 0,
-      G_OPTION_ARG_NONE, &sm_client_disable,
-      N_("Disable connection to session manager"), NULL },
-    { "sm-client-state-file", 0, 0,
-      G_OPTION_ARG_FILENAME, &sm_client_state_file,
-      N_("Specify file containing saved configuration"), N_("FILE") },
-    { "sm-client-id", 0, 0,
-      G_OPTION_ARG_STRING, &sm_client_id,
-      N_("Specify session management ID"), N_("ID") },
-    /* GnomeClient compatibility option */
-    { "sm-disable", 0, G_OPTION_FLAG_HIDDEN,
-      G_OPTION_ARG_NONE, &sm_client_disable,
-      NULL, NULL },
-    /* GnomeClient compatibility option. This is a dummy option that only
-     * exists so that sessions saved by apps with GnomeClient can be restored
-     * later when they've switched to EggSMClient. See bug #575308.
-     */
-    { "sm-config-prefix", 0, G_OPTION_FLAG_HIDDEN,
-      G_OPTION_ARG_STRING, &sm_config_prefix,
-      NULL, NULL },
-    { NULL }
-  };
-  GOptionGroup *group;
+    const GOptionEntry entries[] = {
+        {"sm-client-disable", 0, 0,
+         G_OPTION_ARG_NONE, &sm_client_disable,
+         N_("Disable connection to session manager"), NULL},
+        {"sm-client-state-file", 0, 0,
+         G_OPTION_ARG_FILENAME, &sm_client_state_file,
+         N_("Specify file containing saved configuration"), N_("FILE")},
+        {"sm-client-id", 0, 0,
+         G_OPTION_ARG_STRING, &sm_client_id,
+         N_("Specify session management ID"), N_("ID")},
+        /* GnomeClient compatibility option */
+        {"sm-disable", 0, G_OPTION_FLAG_HIDDEN,
+         G_OPTION_ARG_NONE, &sm_client_disable,
+         NULL, NULL},
+        /* GnomeClient compatibility option. This is a dummy option that only
+         * exists so that sessions saved by apps with GnomeClient can be restored
+         * later when they've switched to EggSMClient. See bug #575308.
+         */
+        {"sm-config-prefix", 0, G_OPTION_FLAG_HIDDEN,
+         G_OPTION_ARG_STRING, &sm_config_prefix,
+         NULL, NULL},
+        {NULL}
+    };
+    GOptionGroup *group;
 
-  /* Use our own debug handler for the "EggSMClient" domain. */
-  g_log_set_handler (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
-		     egg_sm_client_debug_handler, NULL);
+    /* Use our own debug handler for the "EggSMClient" domain. */
+    g_log_set_handler (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,
+                       egg_sm_client_debug_handler, NULL);
 
-  group = g_option_group_new ("sm-client",
-			      _("Session management options:"),
-			      _("Show session management options"),
-			      NULL, NULL);
-  g_option_group_add_entries (group, entries);
-  g_option_group_set_parse_hooks (group, NULL, sm_client_post_parse_func);
+    group =
+        g_option_group_new ("sm-client", _("Session management options:"),
+                            _("Show session management options"), NULL, NULL);
+    g_option_group_add_entries (group, entries);
+    g_option_group_set_parse_hooks (group, NULL, sm_client_post_parse_func);
 
-  return group;
+    return group;
 }
 
 /**
@@ -282,7 +265,7 @@ egg_sm_client_get_option_group (void)
 void
 egg_sm_client_set_mode (EggSMClientMode mode)
 {
-  global_client_mode = mode;
+    global_client_mode = mode;
 }
 
 /**
@@ -296,7 +279,7 @@ egg_sm_client_set_mode (EggSMClientMode mode)
 EggSMClientMode
 egg_sm_client_get_mode (void)
 {
-  return global_client_mode;
+    return global_client_mode;
 }
 
 /**
@@ -315,38 +298,38 @@ egg_sm_client_get_mode (void)
 EggSMClient *
 egg_sm_client_get (void)
 {
-  if (!global_client)
+    if (!global_client)
     {
-      if (global_client_mode != EGG_SM_CLIENT_MODE_DISABLED &&
-	  !sm_client_disable)
-	{
+        if (global_client_mode != EGG_SM_CLIENT_MODE_DISABLED
+            && !sm_client_disable)
+        {
 #if defined (GDK_WINDOWING_WIN32)
-	  global_client = egg_sm_client_win32_new ();
+            global_client = egg_sm_client_win32_new ();
 #elif defined (GDK_WINDOWING_QUARTZ)
-	  global_client = egg_sm_client_osx_new ();
+            global_client = egg_sm_client_osx_new ();
 #else
-	  /* If both D-Bus and XSMP are compiled in, try XSMP first
-	   * (since it supports state saving) and fall back to D-Bus
-	   * if XSMP isn't available.
-	   */
+            /* If both D-Bus and XSMP are compiled in, try XSMP first
+             * (since it supports state saving) and fall back to D-Bus
+             * if XSMP isn't available.
+             */
 # ifdef EGG_SM_CLIENT_BACKEND_XSMP
-	  global_client = egg_sm_client_xsmp_new ();
+            global_client = egg_sm_client_xsmp_new ();
 # endif
 # ifdef EGG_SM_CLIENT_BACKEND_DBUS
-	  if (!global_client)
-	    global_client = egg_sm_client_dbus_new ();
+            if (!global_client)
+                global_client = egg_sm_client_dbus_new ();
 # endif
 #endif
-	}
+        }
 
-      /* Fallback: create a dummy client, so that callers don't have
-       * to worry about a %NULL return value.
-       */
-      if (!global_client)
-	global_client = g_object_new (EGG_TYPE_SM_CLIENT, NULL);
+        /* Fallback: create a dummy client, so that callers don't have
+         * to worry about a %NULL return value.
+         */
+        if (!global_client)
+            global_client = g_object_new (EGG_TYPE_SM_CLIENT, NULL);
     }
 
-  return global_client;
+    return global_client;
 }
 
 /**
@@ -361,11 +344,11 @@ egg_sm_client_get (void)
  * Return value: %TRUE if the session has been resumed
  **/
 gboolean
-egg_sm_client_is_resumed (EggSMClient *client)
+egg_sm_client_is_resumed (EggSMClient * client)
 {
-  g_return_val_if_fail (client == global_client, FALSE);
+    g_return_val_if_fail (client == global_client, FALSE);
 
-  return sm_client_state_file != NULL;
+    return sm_client_state_file != NULL;
 }
 
 /**
@@ -388,36 +371,37 @@ egg_sm_client_is_resumed (EggSMClient *client)
  * is owned by @client.
  **/
 GKeyFile *
-egg_sm_client_get_state_file (EggSMClient *client)
+egg_sm_client_get_state_file (EggSMClient * client)
 {
-  EggSMClientPrivate *priv = EGG_SM_CLIENT_GET_PRIVATE (client);
-  char *state_file_path;
-  GError *err = NULL;
+    EggSMClientPrivate *priv = EGG_SM_CLIENT_GET_PRIVATE (client);
+    char *state_file_path;
+    GError *err = NULL;
 
-  g_return_val_if_fail (client == global_client, NULL);
+    g_return_val_if_fail (client == global_client, NULL);
 
-  if (!sm_client_state_file)
-    return NULL;
-  if (priv->state_file)
-    return priv->state_file;
+    if (!sm_client_state_file)
+        return NULL;
+    if (priv->state_file)
+        return priv->state_file;
 
-  if (!strncmp (sm_client_state_file, "file://", 7))
-    state_file_path = g_filename_from_uri (sm_client_state_file, NULL, NULL);
-  else
-    state_file_path = g_strdup (sm_client_state_file);
+    if (!strncmp (sm_client_state_file, "file://", 7))
+        state_file_path =
+            g_filename_from_uri (sm_client_state_file, NULL, NULL);
+    else
+        state_file_path = g_strdup (sm_client_state_file);
 
-  priv->state_file = g_key_file_new ();
-  if (!g_key_file_load_from_file (priv->state_file, state_file_path, 0, &err))
+    priv->state_file = g_key_file_new ();
+    if (!g_key_file_load_from_file (priv->state_file, state_file_path, 0, &err))
     {
-      g_warning ("Could not load SM state file '%s': %s",
-		 sm_client_state_file, err->message);
-      g_clear_error (&err);
-      g_key_file_free (priv->state_file);
-      priv->state_file = NULL;
+        g_warning ("Could not load SM state file '%s': %s",
+                   sm_client_state_file, err->message);
+        g_clear_error (&err);
+        g_key_file_free (priv->state_file);
+        priv->state_file = NULL;
     }
 
-  g_free (state_file_path);
-  return priv->state_file;
+    g_free (state_file_path);
+    return priv->state_file;
 }
 
 /**
@@ -434,14 +418,14 @@ egg_sm_client_get_state_file (EggSMClient *client)
  * a list of filenames to open when the application is resumed.)
  **/
 void
-egg_sm_client_set_restart_command (EggSMClient  *client,
-				   int           argc,
-				   const char  **argv)
+egg_sm_client_set_restart_command (EggSMClient * client, int argc,
+                                   const char **argv)
 {
-  g_return_if_fail (EGG_IS_SM_CLIENT (client));
+    g_return_if_fail (EGG_IS_SM_CLIENT (client));
 
-  if (EGG_SM_CLIENT_GET_CLASS (client)->set_restart_command)
-    EGG_SM_CLIENT_GET_CLASS (client)->set_restart_command (client, argc, argv);
+    if (EGG_SM_CLIENT_GET_CLASS (client)->set_restart_command)
+        EGG_SM_CLIENT_GET_CLASS (client)->set_restart_command (client, argc,
+                                                               argv);
 }
 
 /**
@@ -463,13 +447,12 @@ egg_sm_client_set_restart_command (EggSMClient  *client,
  * either ::quit_cancelled or ::quit.
  **/
 void
-egg_sm_client_will_quit (EggSMClient *client,
-			 gboolean     will_quit)
+egg_sm_client_will_quit (EggSMClient * client, gboolean will_quit)
 {
-  g_return_if_fail (EGG_IS_SM_CLIENT (client));
+    g_return_if_fail (EGG_IS_SM_CLIENT (client));
 
-  if (EGG_SM_CLIENT_GET_CLASS (client)->will_quit)
-    EGG_SM_CLIENT_GET_CLASS (client)->will_quit (client, will_quit);
+    if (EGG_SM_CLIENT_GET_CLASS (client)->will_quit)
+        EGG_SM_CLIENT_GET_CLASS (client)->will_quit (client, will_quit);
 }
 
 /**
@@ -489,101 +472,100 @@ egg_sm_client_will_quit (EggSMClient *client,
  * be (eg, because it could not connect to the session manager).
  **/
 gboolean
-egg_sm_client_end_session (EggSMClientEndStyle  style,
-			   gboolean             request_confirmation)
+egg_sm_client_end_session (EggSMClientEndStyle style,
+                           gboolean request_confirmation)
 {
-  EggSMClient *client = egg_sm_client_get ();
+    EggSMClient *client = egg_sm_client_get ();
 
-  g_return_val_if_fail (EGG_IS_SM_CLIENT (client), FALSE);
+    g_return_val_if_fail (EGG_IS_SM_CLIENT (client), FALSE);
 
-  if (EGG_SM_CLIENT_GET_CLASS (client)->end_session)
+    if (EGG_SM_CLIENT_GET_CLASS (client)->end_session)
     {
-      return EGG_SM_CLIENT_GET_CLASS (client)->end_session (client, style,
-							    request_confirmation);
+        return EGG_SM_CLIENT_GET_CLASS (client)->end_session (client, style,
+                                                              request_confirmation);
     }
-  else
-    return FALSE;
+    else
+        return FALSE;
 }
 
 /* Signal-emitting callbacks from platform-specific code */
 
 GKeyFile *
-egg_sm_client_save_state (EggSMClient *client)
+egg_sm_client_save_state (EggSMClient * client)
 {
-  GKeyFile *state_file;
-  char *group;
+    GKeyFile *state_file;
+    char *group;
 
-  g_return_val_if_fail (client == global_client, NULL);
+    g_return_val_if_fail (client == global_client, NULL);
 
-  state_file = g_key_file_new ();
+    state_file = g_key_file_new ();
 
-  g_debug ("Emitting save_state");
-  g_signal_emit (client, signals[SAVE_STATE], 0, state_file);
-  g_debug ("Done emitting save_state");
+    g_debug ("Emitting save_state");
+    g_signal_emit (client, signals[SAVE_STATE], 0, state_file);
+    g_debug ("Done emitting save_state");
 
-  group = g_key_file_get_start_group (state_file);
-  if (group)
+    group = g_key_file_get_start_group (state_file);
+    if (group)
     {
-      g_free (group);
-      return state_file;
+        g_free (group);
+        return state_file;
     }
-  else
+    else
     {
-      g_key_file_free (state_file);
-      return NULL;
+        g_key_file_free (state_file);
+        return NULL;
     }
 }
 
 void
-egg_sm_client_quit_requested (EggSMClient *client)
+egg_sm_client_quit_requested (EggSMClient * client)
 {
-  g_return_if_fail (client == global_client);
+    g_return_if_fail (client == global_client);
 
-  if (!g_signal_has_handler_pending (client, signals[QUIT_REQUESTED], 0, FALSE))
+    if (!g_signal_has_handler_pending
+        (client, signals[QUIT_REQUESTED], 0, FALSE))
     {
-      g_debug ("Not emitting quit_requested because no one is listening");
-      egg_sm_client_will_quit (client, TRUE);
-      return;
+        g_debug ("Not emitting quit_requested because no one is listening");
+        egg_sm_client_will_quit (client, TRUE);
+        return;
     }
 
-  g_debug ("Emitting quit_requested");
-  g_signal_emit (client, signals[QUIT_REQUESTED], 0);
-  g_debug ("Done emitting quit_requested");
+    g_debug ("Emitting quit_requested");
+    g_signal_emit (client, signals[QUIT_REQUESTED], 0);
+    g_debug ("Done emitting quit_requested");
 }
 
 void
-egg_sm_client_quit_cancelled (EggSMClient *client)
+egg_sm_client_quit_cancelled (EggSMClient * client)
 {
-  g_return_if_fail (client == global_client);
+    g_return_if_fail (client == global_client);
 
-  g_debug ("Emitting quit_cancelled");
-  g_signal_emit (client, signals[QUIT_CANCELLED], 0);
-  g_debug ("Done emitting quit_cancelled");
+    g_debug ("Emitting quit_cancelled");
+    g_signal_emit (client, signals[QUIT_CANCELLED], 0);
+    g_debug ("Done emitting quit_cancelled");
 }
 
 void
-egg_sm_client_quit (EggSMClient *client)
+egg_sm_client_quit (EggSMClient * client)
 {
-  g_return_if_fail (client == global_client);
+    g_return_if_fail (client == global_client);
 
-  g_debug ("Emitting quit");
-  g_signal_emit (client, signals[QUIT], 0);
-  g_debug ("Done emitting quit");
+    g_debug ("Emitting quit");
+    g_signal_emit (client, signals[QUIT], 0);
+    g_debug ("Done emitting quit");
 
-  /* FIXME: should we just call gtk_main_quit() here? */
+    /* FIXME: should we just call gtk_main_quit() here? */
 }
 
 static void
-egg_sm_client_debug_handler (const char *log_domain,
-			     GLogLevelFlags log_level,
-			     const char *message,
-			     gpointer user_data)
+egg_sm_client_debug_handler (const char *log_domain, GLogLevelFlags log_level,
+                             const char *message, gpointer user_data)
 {
-  static int debug = -1;
+    static int debug = -1;
 
-  if (debug < 0)
-    debug = (g_getenv ("EGG_SM_CLIENT_DEBUG") != NULL);
+    if (debug < 0)
+        debug = (g_getenv ("EGG_SM_CLIENT_DEBUG") != NULL);
 
-  if (debug)
-    g_log_default_handler (log_domain, log_level, message, NULL);
+    if (debug)
+        g_log_default_handler (log_domain, log_level, message, NULL);
 }

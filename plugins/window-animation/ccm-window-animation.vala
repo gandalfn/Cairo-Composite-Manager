@@ -26,242 +26,241 @@ using CCM;
 
 namespace CCM
 {
-	enum Options
-	{
-		DURATION,
-		N
-	}
-	
-	const string[Options.N] options_key =  {
-		"duration"
-	};
+    enum Options
+    {
+        DURATION,
+        N
+    }
 
-	class WindowAnimationOptions : PluginOptions
-	{
-		public double duration = 0.4;
-	}
-	
-	class WindowAnimation : CCM.Plugin, CCM.WindowPlugin
-	{
-		private weak CCM.Window	window;
-		private CCM.WindowType	type;
-		private bool			desktop_changed;
-		private CCM.Timeline	timeline;
-		private Cairo.Rectangle geometry;
+    const string[Options.N] options_key = {
+        "duration"
+    };
 
-		~WindowAnimation ()
-		{
-			options_unload();
-		}
+    class WindowAnimationOptions : PluginOptions
+    {
+        public double duration = 0.4;
+    }
 
-		protected override PluginOptions
-		options_init()
-		{
-			WindowAnimationOptions options = new WindowAnimationOptions();
-			return options;
-		}
-		
-		protected override void
-		options_finalize(PluginOptions opts)
-		{
-			WindowAnimationOptions* options = (WindowAnimationOptions*)opts;
-			delete options;
-		}
+    class WindowAnimation : CCM.Plugin, CCM.WindowPlugin
+    {
+        private weak CCM.Window window;
+        private CCM.WindowType type;
+        private bool desktop_changed;
+        private CCM.Timeline timeline;
+        private Cairo.Rectangle geometry;
 
-		protected override void
-		option_changed (CCM.Config config)
-		{
-			if (config == get_config(Options.DURATION))
-			{
-				var real_duration = 0.4;
-				real_duration = get_config(Options.DURATION).get_float();
-				var duration = double.min (2.0, real_duration);
-				duration = double.max (0.1, duration);
-				
-				((WindowAnimationOptions)get_option()).duration = duration;
-				if (duration != real_duration)
-				{
-					try
-					{
-						config.set_float((float)duration);
-					}
-					catch (GLib.Error err)
-					{
-						CCM.log("Error on set duration config: %s", err.message);
-					}					
-				}
-				
-				if (timeline != null) timeline = null;
-			}
-		}
+        ~WindowAnimation ()
+        {
+            options_unload ();
+        }
 
-		private void
-		on_property_changed (CCM.Window window, CCM.PropertyType property_type)
-		{
-			if (property_type == CCM.PropertyType.HINT_TYPE)
-				this.type = window.get_hint_type();
-		}
+        protected override PluginOptions options_init ()
+        {
+            WindowAnimationOptions options = new WindowAnimationOptions ();
+            return options;
+        }
 
-		private void
-		on_unlock ()
-		{
-			window.pop_matrix("CCMWindowAnimation");
-		}
+        protected override void options_finalize (PluginOptions opts)
+        {
+            WindowAnimationOptions *options = (WindowAnimationOptions *) opts;
+            delete options;
+        }
 
-		private void
-		on_desktop_changed(int desktop)
-		{
-			desktop_changed = true;
-		}
+        protected override void option_changed (CCM.Config config)
+        {
+            if (config == get_config (Options.DURATION))
+            {
+                var real_duration = 0.4;
+                real_duration = get_config (Options.DURATION).get_float ();
+                var duration = double.min (2.0, real_duration);
+                duration = double.max (0.1, duration);
 
-		private void
-		on_new_frame(int frame)
-		{
-			double progress = timeline.get_progress();
-			double x0 = (geometry.width / 2.0) * (1.0 - progress),
-				   y0 = (geometry.height / 2.0) * (1.0 - progress);
-			Cairo.Matrix matrix;
+                ((WindowAnimationOptions) get_option ()).duration = duration;
+                if (duration != real_duration)
+                {
+                    try
+                    {
+                        config.set_float ((float) duration);
+                    }
+                    catch (GLib.Error err)
+                    {
+                        CCM.log ("Error on set duration config: %s",
+                                 err.message);
+                    }
+                }
 
-			window.damage();
-			if (timeline.get_direction() == CCM.TimelineDirection.FORWARD)
-				matrix = Cairo.Matrix(progress, 0, 0, progress, x0, y0);
-			else 
-				matrix = Cairo.Matrix(progress, 0, 0, 1, x0, 0);
-			window.push_matrix("CCMWindowAnimation", matrix);
-			window.damage();
-		}
-		
-		private void
-		on_finish ()
-		{
-			if (timeline.get_direction() == CCM.TimelineDirection.FORWARD)
-			{
-				unlock_map();
-				((CCM.WindowPlugin)window).map(window);
-			}
-			else
-			{
-				unlock_unmap();
-				((CCM.WindowPlugin)window).unmap(window);
-			}
-		}
-		
-		protected new void
-		window_load_options (CCM.Window window)
-		{
-			this.window = window;
-			this.type = CCM.WindowType.UNKNOWN;
-			this.window.property_changed += on_property_changed;
-			
-			options_load("window-animation", options_key);
-			
-			window.get_screen().desktop_changed += on_desktop_changed;
-			desktop_changed = false;
-			
-			((CCM.WindowPlugin)parent).window_load_options(window);
-		}
+                if (timeline != null)
+                    timeline = null;
+            }
+        }
 
-		protected CCM.Region
-		query_geometry (CCM.Window window)
-		{
-			CCM.Region region;
+        private void on_property_changed (CCM.Window window,
+                                          CCM.PropertyType property_type)
+        {
+            if (property_type == CCM.PropertyType.HINT_TYPE)
+                this.type = window.get_hint_type ();
+        }
 
-			region = ((CCM.WindowPlugin)parent).query_geometry(window);
-			if (region != null)
-				region.get_clipbox(out geometry);
+        private void on_unlock ()
+        {
+            window.pop_matrix ("CCMWindowAnimation");
+        }
 
-			return region;
-		}
-		
-		protected void
-		map (CCM.Window window)
-		{
-			if (type == CCM.WindowType.UNKNOWN)
-			    type = window.get_hint_type();
-			
-			if (!desktop_changed && 
-			    (type == CCM.WindowType.NORMAL || 
-			     type == CCM.WindowType.DIALOG))
-			{
-				int current_frame = 0;
+        private void on_desktop_changed (int desktop)
+        {
+            desktop_changed = true;
+        }
 
-				if (timeline == null)
-				{
-					timeline = new CCM.Timeline.for_duration((uint)(((WindowAnimationOptions)get_option()).duration * 1000.0)); 
-					timeline.new_frame += on_new_frame;
-					timeline.completed += on_finish;
-				}
-				
-				if (timeline.is_playing())
-				{
-					current_frame = timeline.get_current_frame();
-					timeline.stop();
-					on_finish();
-				}
-				else
-				{
-					Cairo.Matrix matrix = Cairo.Matrix.identity();
-					Cairo.Rectangle area;
-				
-					window.get_geometry_clipbox(out area);
-				
-					matrix.scale(0.0, 0.0);
-					matrix.translate(area.width / 2.0, 
-						             area.height / 2.0);
-					window.push_matrix("CCMWindowAnimation", matrix);
-				}
-			
-				lock_map(on_unlock);
-			
-				timeline.set_direction(CCM.TimelineDirection.FORWARD);
-				timeline.rewind();
-				timeline.start();
-				if (current_frame > 0) timeline.advance(current_frame);
-			}
-			desktop_changed = false;
-			
-			((CCM.WindowPlugin)parent).map(window);
-		}
+        private void on_new_frame (int frame)
+        {
+            double progress = timeline.get_progress ();
+            double x0 = (geometry.width / 2.0) * (1.0 - progress), y0 =
+                (geometry.height / 2.0) * (1.0 - progress);
+            Cairo.Matrix matrix;
 
-		protected void
-		unmap (CCM.Window window)
-		{
-			if (!desktop_changed && 
-			    (type == CCM.WindowType.NORMAL || 
-			     type == CCM.WindowType.DIALOG))
-			{
-				int current_frame = 0;
-			
-				if (timeline == null)
-				{
-					timeline = new CCM.Timeline.for_duration((uint)(((WindowAnimationOptions)get_option()).duration * 1000.0)); 
-					timeline.new_frame += on_new_frame;
-					timeline.completed += on_finish;
-				}
+            window.damage ();
+            if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
+                matrix = Cairo.Matrix (progress, 0, 0, progress, x0, y0);
+            else
+                matrix = Cairo.Matrix (progress, 0, 0, 1, x0, 0);
+            window.push_matrix ("CCMWindowAnimation", matrix);
+            window.damage ();
+        }
 
-				if (timeline.is_playing())
-				{
-					current_frame = timeline.get_current_frame();
-					timeline.stop();
-					on_finish();
-				}
-				else
-					window.pop_matrix("CCMWindowAnimation");
-			
-				lock_unmap(on_unlock);
+        private void on_finish ()
+        {
+            if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
+            {
+                unlock_map ();
+                ((CCM.WindowPlugin) window).map (window);
+            }
+            else
+            {
+                unlock_unmap ();
+                ((CCM.WindowPlugin) window).unmap (window);
+            }
+        }
 
-				timeline.set_direction(CCM.TimelineDirection.BACKWARD);
-				timeline.rewind();
-				timeline.start();
-				if (current_frame > 0) 
-					timeline.advance(timeline.get_n_frames() - current_frame);
-			}
+        protected new void window_load_options (CCM.Window window)
+        {
+            this.window = window;
+            this.type = CCM.WindowType.UNKNOWN;
+            this.window.property_changed += on_property_changed;
 
-			desktop_changed = false;
-			
-			((CCM.WindowPlugin)parent).unmap(window);
-		}
-	}
+            options_load ("window-animation", options_key);
+
+            window.get_screen ().desktop_changed += on_desktop_changed;
+            desktop_changed = false;
+
+            ((CCM.WindowPlugin) parent).window_load_options (window);
+        }
+
+        protected CCM.Region query_geometry (CCM.Window window)
+        {
+            CCM.Region region;
+
+            region = ((CCM.WindowPlugin) parent).query_geometry (window);
+            if (region != null)
+                region.get_clipbox (out geometry);
+
+            return region;
+        }
+
+        protected void map (CCM.Window window)
+        {
+            if (type == CCM.WindowType.UNKNOWN)
+                type = window.get_hint_type ();
+
+            if (!desktop_changed
+                && (type == CCM.WindowType.NORMAL
+                    || type == CCM.WindowType.DIALOG))
+            {
+                int current_frame = 0;
+
+                if (timeline == null)
+                {
+                    timeline =
+                        new CCM.Timeline.
+                        for_duration ((uint)
+                                      (((WindowAnimationOptions) get_option ()).
+                                       duration * 1000.0));
+                    timeline.new_frame += on_new_frame;
+                    timeline.completed += on_finish;
+                }
+
+                if (timeline.is_playing ())
+                {
+                    current_frame = timeline.get_current_frame ();
+                    timeline.stop ();
+                    on_finish ();
+                }
+                else
+                {
+                    Cairo.Matrix matrix = Cairo.Matrix.identity ();
+                    Cairo.Rectangle area;
+
+                    window.get_geometry_clipbox (out area);
+
+                    matrix.scale (0.0, 0.0);
+                    matrix.translate (area.width / 2.0, area.height / 2.0);
+                    window.push_matrix ("CCMWindowAnimation", matrix);
+                }
+
+                lock_map (on_unlock);
+
+                timeline.set_direction (CCM.TimelineDirection.FORWARD);
+                timeline.rewind ();
+                timeline.start ();
+                if (current_frame > 0)
+                    timeline.advance (current_frame);
+            }
+            desktop_changed = false;
+
+            ((CCM.WindowPlugin) parent).map (window);
+        }
+
+        protected void unmap (CCM.Window window)
+        {
+            if (!desktop_changed
+                && (type == CCM.WindowType.NORMAL
+                    || type == CCM.WindowType.DIALOG))
+            {
+                int current_frame = 0;
+
+                if (timeline == null)
+                {
+                    timeline =
+                        new CCM.Timeline.
+                        for_duration ((uint)
+                                      (((WindowAnimationOptions) get_option ()).
+                                       duration * 1000.0));
+                    timeline.new_frame += on_new_frame;
+                    timeline.completed += on_finish;
+                }
+
+                if (timeline.is_playing ())
+                {
+                    current_frame = timeline.get_current_frame ();
+                    timeline.stop ();
+                    on_finish ();
+                }
+                else
+                    window.pop_matrix ("CCMWindowAnimation");
+
+                lock_unmap (on_unlock);
+
+                timeline.set_direction (CCM.TimelineDirection.BACKWARD);
+                timeline.rewind ();
+                timeline.start ();
+                if (current_frame > 0)
+                    timeline.advance (timeline.get_n_frames () - current_frame);
+            }
+
+            desktop_changed = false;
+
+            ((CCM.WindowPlugin) parent).unmap (window);
+        }
+    }
 }
 
 /**
@@ -269,8 +268,7 @@ namespace CCM
  **/
 [ModuleInit]
 public Type
-ccm_window_animation_get_plugin_type(TypeModule module)
+ccm_window_animation_get_plugin_type (TypeModule module)
 {
-	return typeof (WindowAnimation);
+    return typeof (WindowAnimation);
 }
-		

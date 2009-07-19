@@ -27,35 +27,35 @@
 #include <glib-object.h>
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_SNAPSHOT_DIALOG             (ccm_snapshot_dialog_get_type ())
 #define CCM_SNAPSHOT_DIALOG(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_SNAPSHOT_DIALOG, CCMSnapshotDialog))
 #define CCM_SNAPSHOT_DIALOG_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_SNAPSHOT_DIALOG, CCMSnapshotDialogClass))
 #define CCM_IS_SNAPSHOT_DIALOG(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_SNAPSHOT_DIALOG))
 #define CCM_IS_SNAPSHOT_DIALOG_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_SNAPSHOT_DIALOG))
 #define CCM_SNAPSHOT_DIALOG_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_SNAPSHOT_DIALOG, CCMSnapshotDialogClass))
-
 typedef struct _CCMSnapshotDialogClass CCMSnapshotDialogClass;
 typedef struct _CCMSnapshotDialogPrivate CCMSnapshotDialogPrivate;
 typedef struct _CCMSnapshotDialog CCMSnapshotDialog;
 
 struct _CCMSnapshotDialogClass
 {
-	GObjectClass parent_class;
-	
-	gint nb;
+    GObjectClass parent_class;
+
+    gint nb;
 };
 
 struct _CCMSnapshotDialog
 {
-	GObject 			parent_instance;
-	
-	CCMSnapshotDialogPrivate*	priv;
+    GObject parent_instance;
+
+    CCMSnapshotDialogPrivate *priv;
 };
 
-GType ccm_snapshot_dialog_get_type (void) G_GNUC_CONST;
-CCMSnapshotDialog* ccm_snapshot_dialog_new (cairo_surface_t* surface, CCMScreen* screen);
+GType
+ccm_snapshot_dialog_get_type (void)
+    G_GNUC_CONST;
+CCMSnapshotDialog *
+ccm_snapshot_dialog_new (cairo_surface_t * surface, CCMScreen * screen);
 
 G_END_DECLS
-
-#endif /* _CCM_SNAPSHOT_DIALOG_H_ */
+#endif                          /* _CCM_SNAPSHOT_DIALOG_H_ */

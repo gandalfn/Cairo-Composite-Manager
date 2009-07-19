@@ -32,33 +32,32 @@
 #include "ccm-screen-plugin.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_MAGNIFIER              (ccm_magnifier_get_type ())
 #define CCM_MAGNIFIER(obj)              (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_MAGNIFIER, CCMMagnifier))
 #define CCM_MAGNIFIER_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_MAGNIFIER, CCMMagnifierClass))
 #define CCM_IS_MAGNIFIER(obj)           (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_MAGNIFIER))
 #define CCM_IS_MAGNIFIER_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_MAGNIFIER))
 #define CCM_MAGNIFIER_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_MAGNIFIER, CCMMagnifierClass))
-
 typedef struct _CCMMagnifierClass CCMMagnifierClass;
 typedef struct _CCMMagnifier CCMMagnifier;
 
 struct _CCMMagnifierClass
 {
-	CCMPluginClass parent_class;
+    CCMPluginClass parent_class;
 };
 
 typedef struct _CCMMagnifierPrivate CCMMagnifierPrivate;
 
 struct _CCMMagnifier
 {
-	CCMPlugin parent_instance;
-	
-	CCMMagnifierPrivate* priv;
+    CCMPlugin parent_instance;
+
+    CCMMagnifierPrivate *priv;
 };
 
-GType ccm_magnifier_get_type (void) G_GNUC_CONST;
+GType
+ccm_magnifier_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_MAGNIFIER_H_ */
+#endif                          /* _CCM_MAGNIFIER_H_ */

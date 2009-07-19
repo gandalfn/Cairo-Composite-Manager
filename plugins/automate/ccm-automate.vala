@@ -26,106 +26,101 @@ using CCM;
 
 namespace CCM
 {
-	enum Options
-	{
-	    SHOW_SHORTCUT,
-		N
-	}
-	
-	const string[Options.N] options_key =  
-	{
-	    "show"
-	};
+    enum Options
+    {
+        SHOW_SHORTCUT,
+        N
+    }
 
-	class AutomateOptions : PluginOptions
-	{
-		public CCM.Keybind show_keybind;
-	}
-	
-	class Automate : CCM.Plugin, CCM.ScreenPlugin
-	{
-		private weak CCM.Screen screen;
-		
-		private bool enable = false;
-		
-		private CCM.AutomateDialog dialog;
+    const string[Options.N] options_key = {
+        "show"
+    };
 
-		~Automate()
-		{
-			options_unload();
-		}
-		
-		protected override PluginOptions
-		options_init()
-		{
-			AutomateOptions options = new AutomateOptions();
+    class AutomateOptions : PluginOptions
+    {
+        public CCM.Keybind show_keybind;
+    }
 
-			options.show_keybind = null;
+    class Automate : CCM.Plugin, CCM.ScreenPlugin
+    {
+        private weak CCM.Screen screen;
 
-			return options;
-		}
+        private bool enable = false;
 
-		protected override void
-		options_finalize(PluginOptions opts)
-		{
-			AutomateOptions* options = (AutomateOptions*)opts;
+        private CCM.AutomateDialog dialog;
 
-			delete options;
-		}
-		
-		protected override void
-		option_changed(Config config)
-		{
-			// Reload show shortcut
-			get_show_shortcut();
-		}
-		
-		private void
-		on_show_shortcut_pressed()
-		{
-			enable = !enable;
-			
-			if (enable)
-				dialog.show();
-			else 
-				dialog.hide();
-		}
-		
-		private void
-		get_show_shortcut()
-		{
-		    string shortcut = "<Super>a";
-			
-		    try
-		    {
-		        shortcut = get_config(Options.SHOW_SHORTCUT).get_string();
-		    }
-		    catch (GLib.Error ex)
-		    {
-		        CCM.log("Error on get show shortcut config get default");
-		    }
-		    ((AutomateOptions)get_option()).show_keybind = new CCM.Keybind(screen, shortcut, true);
-		    ((AutomateOptions)get_option()).show_keybind.key_press += on_show_shortcut_pressed;
-		}
-		
-		protected void
-		screen_load_options(CCM.Screen screen)
-		{
-			this.screen = screen;
-			
-			this.dialog = new CCM.AutomateDialog(screen);
-			
-			// load options
-			options_load("automate", options_key);
-			
-			((CCM.ScreenPlugin)parent).screen_load_options(screen);
-		}
-    }		
+        ~Automate ()
+        {
+            options_unload ();
+        }
+
+        protected override PluginOptions options_init ()
+        {
+            AutomateOptions options = new AutomateOptions ();
+
+            options.show_keybind = null;
+
+            return options;
+        }
+
+        protected override void options_finalize (PluginOptions opts)
+        {
+            AutomateOptions *options = (AutomateOptions *) opts;
+
+            delete options;
+        }
+
+        protected override void option_changed (Config config)
+        {
+            // Reload show shortcut
+            get_show_shortcut ();
+        }
+
+        private void on_show_shortcut_pressed ()
+        {
+            enable = !enable;
+
+            if (enable)
+                dialog.show ();
+            else
+                dialog.hide ();
+        }
+
+        private void get_show_shortcut ()
+        {
+            string shortcut = "<Super>a";
+
+            try
+            {
+                shortcut = get_config (Options.SHOW_SHORTCUT).get_string ();
+            }
+            catch (GLib.Error ex)
+            {
+                CCM.log ("Error on get show shortcut config get default");
+            }
+            ((AutomateOptions) get_option ()).show_keybind =
+                new CCM.Keybind (screen, shortcut, true);
+            ((AutomateOptions) get_option ()).show_keybind.key_press +=
+                on_show_shortcut_pressed;
+        }
+
+        protected void screen_load_options (CCM.Screen screen)
+        {
+            this.screen = screen;
+
+            this.dialog = new CCM.AutomateDialog (screen);
+
+            // load options
+            options_load ("automate", options_key);
+
+            ((CCM.ScreenPlugin) parent).screen_load_options (screen);
+        }
+    }
 }
 
 [ModuleInit]
 public Type
-ccm_automate_get_plugin_type(TypeModule module)
+ccm_automate_get_plugin_type (TypeModule module)
 {
-	return typeof (Automate);
+    return typeof (Automate);
 }

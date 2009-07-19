@@ -30,30 +30,30 @@ namespace CCM
 {
     class ActionPointerMotion : CCM.ActionPointer
     {
-		public X.Event* event {
-			set 
-			{
-				this.button = (uint)value->xmotion.state >> 8;
-				this.x = value->xmotion.y_root;
-				this.y = value->xmotion.x_root;
-			}
-		}
-		
-		public ActionPointerMotion(CCM.Screen screen, X.Event event, 
-								   long time)
-		{			
-			this.event = &event;
-			this.time = (int)((double)time / (double)1000);
-		}
-		
-        public override string 
-		to_string(string format = "%ccma")
-		{
-			string val = "<pointer-motion button=\"" + button.to_string() + 
-				         "\" x=\"" + x.to_string() + "\" y=\""+ y.to_string() + 
-				         "\" time=\"" + time.to_string() + "\"/>";
-			
-			return val;
-		}
+        public X.Event *event
+        {
+            set
+            {
+                this.button = (uint) value->xmotion.state >> 8;
+                this.x = value->xmotion.y_root;
+                this.y = value->xmotion.x_root;
+            }
+        }
+
+        public ActionPointerMotion (CCM.Screen screen, X.Event event, long time)
+        {
+            this.event = &event;
+            this.time = (int) ((double) time / (double) 1000);
+        }
+
+        public override string to_string (string format = "%ccma")
+        {
+            string val =
+                "<pointer-motion button=\"" + button.to_string () + "\" x=\"" +
+                x.to_string () + "\" y=\"" + y.to_string () + "\" time=\"" +
+                time.to_string () + "\"/>";
+
+            return val;
+        }
     }
 }

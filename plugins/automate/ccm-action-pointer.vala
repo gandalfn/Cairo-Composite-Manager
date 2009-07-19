@@ -26,8 +26,8 @@ namespace CCM
 {
     abstract class ActionPointer : Action
     {
-    	public uint button { get; set; }
+        public uint button { get; set; }
         public int x { get; set; }
         public int y { get; set; }
-	}	
+    }
 }

@@ -30,33 +30,32 @@
 #include "ccm-window-plugin.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_SNAPSHOT             (ccm_snapshot_get_type ())
 #define CCM_SNAPSHOT(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_SNAPSHOT, CCMSnapshot))
 #define CCM_SNAPSHOT_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_SNAPSHOT, CCMSnapshotClass))
 #define CCM_IS_SNAPSHOT(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_SNAPSHOT))
 #define CCM_IS_SNAPSHOT_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_SNAPSHOT))
 #define CCM_SNAPSHOT_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_SNAPSHOT, CCMSnapshotClass))
-
 typedef struct _CCMSnapshotClass CCMSnapshotClass;
 typedef struct _CCMSnapshot CCMSnapshot;
 
 struct _CCMSnapshotClass
 {
-	CCMPluginClass parent_class;
+    CCMPluginClass parent_class;
 };
 
 typedef struct _CCMSnapshotPrivate CCMSnapshotPrivate;
 
 struct _CCMSnapshot
 {
-	CCMPlugin parent_instance;
-	
-	CCMSnapshotPrivate* priv;
+    CCMPlugin parent_instance;
+
+    CCMSnapshotPrivate *priv;
 };
 
-GType ccm_snapshot_get_type (void) G_GNUC_CONST;
+GType
+ccm_snapshot_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_SNAPSHOT_H_ */
+#endif                          /* _CCM_SNAPSHOT_H_ */

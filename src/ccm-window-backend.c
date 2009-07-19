@@ -24,28 +24,28 @@
 #include "ccm.h"
 
 GType
-ccm_window_backend_get_type(CCMScreen* screen)
+ccm_window_backend_get_type (CCMScreen * screen)
 {
-	gchar* backend;
+    gchar *backend;
 #ifndef DISABLE_XRENDER_BACKEND
-	GType type = ccm_window_xrender_get_type();
+    GType type = ccm_window_xrender_get_type ();
 #else
-	GType type = 0;
+    GType type = 0;
 #endif
-	
-	g_object_get(G_OBJECT(screen), "backend", &backend, NULL);
-	if (backend)
-	{
+
+    g_object_get (G_OBJECT (screen), "backend", &backend, NULL);
+    if (backend)
+    {
 #ifndef DISABLE_GLITZ_BACKEND
-		if (!g_ascii_strcasecmp(backend, "glitz"))
-			type = ccm_window_glitz_get_type();
+        if (!g_ascii_strcasecmp (backend, "glitz"))
+            type = ccm_window_glitz_get_type ();
 #endif
 #ifndef DISABLE_OPENVG_BACKEND
-		if (!g_ascii_strcasecmp(backend, "openvg"))
-			type = ccm_window_openvg_get_type();
+        if (!g_ascii_strcasecmp (backend, "openvg"))
+            type = ccm_window_openvg_get_type ();
 #endif
-		g_free(backend);
-	}
-	
-	return type;
+        g_free (backend);
+    }
+
+    return type;
 }

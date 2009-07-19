@@ -27,51 +27,56 @@ namespace CCM
 {
     class ActionPointerRelease : CCM.ActionPointer
     {
-   		public ActionPointerRelease(CCM.Screen screen, X.Event event, 
-									long time, List<weak CCM.Window> ignore) throws CCM.ActionError
-		{
-			CCM.Window window = screen.find_window_at_pos(event.xbutton.y_root, 
-														  event.xbutton.x_root);
-			if (window != null)
-			{
-				bool found = false;
-							
-				foreach (CCM.Window item in ignore)
-					found |= item.get_xwindow() == window.get_xwindow();
-				
-				if (!found)
-				{
-					this.button = (uint)event.xbutton.state >> 8;
-					this.x = event.xbutton.y_root;
-					this.y = event.xbutton.x_root;
-					this.time = (long)((double)time / (double)1000);
-				}
-				else
-				{
-					this.unref();
-					throw new CCM.ActionError.WINDOW_IGNORE("Window is ignored at pos %i,%i", 
-															event.xbutton.y_root,
-															event.xbutton.x_root);
-				}
-			}
-			else
-			{
-				this.unref();
-				throw new CCM.ActionError.WINDOW_NOT_FOUND("Window not found at pos %i,%i", 
-														   event.xbutton.y_root,
-														   event.xbutton.x_root);
-			}
-		}
+        public ActionPointerRelease (CCM.Screen screen, X.Event event,
+                                     long time,
+                                     List < weak CCM.Window >
+                                     ignore) throws CCM.ActionError
+        {
+            CCM.Window window =
+                screen.find_window_at_pos (event.xbutton.y_root,
+                                           event.xbutton.x_root);
+            if (window != null)
+            {
+                bool found = false;
 
-		
-		public override string 
-		to_string(string format = "%ccma")
-		{
-			string val = "<pointer-release button=\"" + button.to_string() + 
-				         "\" x=\"" + x.to_string() + "\" y=\""+ y.to_string() + 
-				         "\" time=\"" + time.to_string() + "\"/>";
-			
-			return val;
-		}
+                 foreach (CCM.Window item in ignore) found |=
+                    item.get_xwindow () == window.get_xwindow ();
+
+                if (!found)
+                {
+                    this.button = (uint) event.xbutton.state >> 8;
+                    this.x = event.xbutton.y_root;
+                    this.y = event.xbutton.x_root;
+                    this.time = (long) ((double) time / (double) 1000);
+                }
+                else
+                {
+                    this.unref ();
+                    throw new CCM.ActionError.
+                        WINDOW_IGNORE ("Window is ignored at pos %i,%i",
+                                       event.xbutton.y_root,
+                                       event.xbutton.x_root);
+                }
+            }
+            else
+            {
+                this.unref ();
+                throw new CCM.ActionError.
+                    WINDOW_NOT_FOUND ("Window not found at pos %i,%i",
+                                      event.xbutton.y_root,
+                                      event.xbutton.x_root);
+            }
+        }
+
+
+        public override string to_string (string format = "%ccma")
+        {
+            string val =
+                "<pointer-release button=\"" + button.to_string () + "\" x=\"" +
+                x.to_string () + "\" y=\"" + y.to_string () + "\" time=\"" +
+                time.to_string () + "\"/>";
+
+            return val;
+        }
     }
 }

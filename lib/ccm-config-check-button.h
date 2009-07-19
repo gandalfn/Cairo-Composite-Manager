@@ -24,33 +24,33 @@
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_CONFIG_CHECK_BUTTON             (ccm_config_check_button_get_type ())
 #define CCM_CONFIG_CHECK_BUTTON(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_CONFIG_CHECK_BUTTON, CCMConfigCheckButton))
 #define CCM_CONFIG_CHECK_BUTTON_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_CONFIG_CHECK_BUTTON, CCMConfigCheckButtonClass))
 #define CCM_IS_CONFIG_CHECK_BUTTON(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_CONFIG_CHECK_BUTTON))
 #define CCM_IS_CONFIG_CHECK_BUTTON_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_CONFIG_CHECK_BUTTON))
 #define CCM_CONFIG_CHECK_BUTTON_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_CONFIG_CHECK_BUTTON, CCMConfigCheckButtonClass))
-
 typedef struct _CCMConfigCheckButtonClass CCMConfigCheckButtonClass;
 typedef struct _CCMConfigCheckButtonPrivate CCMConfigCheckButtonPrivate;
 typedef struct _CCMConfigCheckButton CCMConfigCheckButton;
 
 struct _CCMConfigCheckButtonClass
 {
-	GtkCheckButtonClass parent_class;
+    GtkCheckButtonClass parent_class;
 };
 
 struct _CCMConfigCheckButton
 {
-	GtkCheckButton parent_instance;
+    GtkCheckButton parent_instance;
 
-	CCMConfigCheckButtonPrivate* priv;
+    CCMConfigCheckButtonPrivate *priv;
 };
 
-GType ccm_config_check_button_get_type (void) G_GNUC_CONST;
-GtkWidget* ccm_config_check_button_new (int screen, gchar* plugin, gchar* key);
+GType
+ccm_config_check_button_get_type (void)
+    G_GNUC_CONST;
+GtkWidget *
+ccm_config_check_button_new (int screen, gchar * plugin, gchar * key);
 
 G_END_DECLS
-
-#endif /* _CCM_CONFIG_CHECK_BUTTON_H_ */
+#endif                          /* _CCM_CONFIG_CHECK_BUTTON_H_ */

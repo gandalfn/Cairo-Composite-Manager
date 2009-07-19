@@ -28,32 +28,31 @@
 #include "ccm-pixmap.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_PIXMAP_GLITZ             (ccm_pixmap_glitz_get_type ())
 #define CCM_PIXMAP_GLITZ(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PIXMAP_GLITZ, CCMPixmapGlitz))
 #define CCM_PIXMAP_GLITZ_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PIXMAP_GLITZ, CCMPixmapGlitzClass))
 #define CCM_IS_PIXMAP_GLITZ(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PIXMAP_GLITZ))
 #define CCM_IS_PIXMAP_GLITZ_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PIXMAP_GLITZ))
 #define CCM_PIXMAP_GLITZ_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PIXMAP_GLITZ, CCMPixmapGlitzClass))
-
 typedef struct _CCMPixmapGlitzClass CCMPixmapGlitzClass;
 typedef struct _CCMPixmapGlitzPrivate CCMPixmapGlitzPrivate;
 typedef struct _CCMPixmapGlitz CCMPixmapGlitz;
 
 struct _CCMPixmapGlitzClass
 {
-	CCMPixmapClass parent_class;
+    CCMPixmapClass parent_class;
 };
 
 struct _CCMPixmapGlitz
 {
-	CCMPixmap parent_instance;
-	
-	CCMPixmapGlitzPrivate* priv;
+    CCMPixmap parent_instance;
+
+    CCMPixmapGlitzPrivate *priv;
 };
 
-GType ccm_pixmap_glitz_get_type (void) G_GNUC_CONST;
+GType
+ccm_pixmap_glitz_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_PIXMAP_GLITZ_H_ */
+#endif                          /* _CCM_PIXMAP_GLITZ_H_ */

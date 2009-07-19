@@ -31,33 +31,32 @@
 #include "ccm-screen-plugin.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_PERF              (ccm_perf_get_type ())
 #define CCM_PERF(obj)              (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PERF, CCMPerf))
 #define CCM_PERF_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PERF, CCMPerfClass))
 #define CCM_IS_PERF(obj)           (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PERF))
 #define CCM_IS_PERF_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PERF))
 #define CCM_PERF_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PERF, CCMPerfClass))
-
 typedef struct _CCMPerfClass CCMPerfClass;
 typedef struct _CCMPerf CCMPerf;
 
 struct _CCMPerfClass
 {
-	CCMPluginClass parent_class;
+    CCMPluginClass parent_class;
 };
 
 typedef struct _CCMPerfPrivate CCMPerfPrivate;
 
 struct _CCMPerf
 {
-	CCMPlugin parent_instance;
-	
-	CCMPerfPrivate* priv;
+    CCMPlugin parent_instance;
+
+    CCMPerfPrivate *priv;
 };
 
-GType ccm_perf_get_type (void) G_GNUC_CONST;
+GType
+ccm_perf_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_PERF_H_ */
+#endif                          /* _CCM_PERF_H_ */

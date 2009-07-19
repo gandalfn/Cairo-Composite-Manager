@@ -28,33 +28,32 @@
 #include "ccm-window.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_WINDOW_OPENVG             (ccm_window_openvg_get_type ())
 #define CCM_WINDOW_OPENVG(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_WINDOW_OPENVG, CCMWindowOpenVG))
 #define CCM_WINDOW_OPENVG_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_WINDOW_OPENVG, CCMWindowOpenVGClass))
 #define CCM_IS_WINDOW_OPENVG(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_WINDOW_OPENVG))
 #define CCM_IS_WINDOW_OPENVG_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_WINDOW_OPENVG))
 #define CCM_WINDOW_OPENVG_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_WINDOW_OPENVG, CCMWindowOpenVGClass))
-
 typedef struct _CCMWindowOpenVGClass CCMWindowOpenVGClass;
 typedef struct _CCMWindowOpenVG CCMWindowOpenVG;
 
 struct _CCMWindowOpenVGClass
 {
-	CCMWindowClass parent_class;
+    CCMWindowClass parent_class;
 };
 
 typedef struct _CCMWindowOpenVGPrivate CCMWindowOpenVGPrivate;
 
 struct _CCMWindowOpenVG
 {
-	CCMWindow parent_instance;
-	
-	CCMWindowOpenVGPrivate* priv;
+    CCMWindow parent_instance;
+
+    CCMWindowOpenVGPrivate *priv;
 };
 
-GType ccm_window_openvg_get_type (void) G_GNUC_CONST;
+GType
+ccm_window_openvg_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_WINDOW_OPENVG_H_ */
+#endif                          /* _CCM_WINDOW_OPENVG_H_ */

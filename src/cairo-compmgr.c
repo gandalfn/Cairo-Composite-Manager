@@ -64,38 +64,38 @@
 gboolean crashed = FALSE;
 
 static void
-crash(int signum)
+crash (int signum)
 {
-	if (!crashed)
-	{
-		crashed = TRUE;
-		ccm_log_print_backtrace();
-		exit(0);
-	}
+    if (!crashed)
+    {
+        crashed = TRUE;
+        ccm_log_print_backtrace ();
+        exit (0);
+    }
 }
 
 static void
-log_func(const gchar *log_domain, GLogLevelFlags log_level,
-		 const gchar *message, gpointer user_data)
+log_func (const gchar * log_domain, GLogLevelFlags log_level,
+          const gchar * message, gpointer user_data)
 {
-	ccm_log("");
-	ccm_log(message);
-	ccm_log_print_backtrace();
+    ccm_log ("");
+    ccm_log (message);
+    ccm_log_print_backtrace ();
 }
 
 static void
-on_preferences_closed(CCMPreferences* pref, gpointer data)
+on_preferences_closed (CCMPreferences * pref, gpointer data)
 {
-    gtk_main_quit();
+    gtk_main_quit ();
 }
 
 int
-main(gint argc, gchar **argv)
+main (gint argc, gchar ** argv)
 {
-	CCMTrayIcon* trayicon;
-    GError* error = NULL;
-    gchar* user_plugin_path = NULL;
-    EggDesktopFile* desktop;
+    CCMTrayIcon *trayicon;
+    GError *error = NULL;
+    gchar *user_plugin_path = NULL;
+    EggDesktopFile *desktop;
     EggSMClient *client;
 
     static gboolean configure = FALSE;
@@ -104,55 +104,57 @@ main(gint argc, gchar **argv)
     static gboolean use_gconf = FALSE;
 #endif
 #ifdef ENABLE_GOBJECT_INTROSPECTION
-    static gchar* gir_output = NULL;
+    static gchar *gir_output = NULL;
 #endif
-    
-    GOptionContext* option_context; 
-    GOptionEntry options[] = 
-    {
-        { "restart", 'r', 0, G_OPTION_ARG_NONE, &restart,
- 		  N_("Always restart cairo composite manager"),
- 		  NULL },
-        { "configure", 'c', 0, G_OPTION_ARG_NONE, &configure,
- 		  N_("Start cairo composite manager configuration tools"),
- 		  NULL },
+
+    GOptionContext *option_context;
+    GOptionEntry options[] = {
+        {"restart", 'r', 0, G_OPTION_ARG_NONE, &restart,
+         N_("Always restart cairo composite manager"),
+         NULL},
+        {"configure", 'c', 0, G_OPTION_ARG_NONE, &configure,
+         N_("Start cairo composite manager configuration tools"),
+         NULL},
 #ifdef ENABLE_GCONF
-        { "use-gconf", 'g', 0, G_OPTION_ARG_NONE, &use_gconf,
- 		  N_("Force use gconf for configuration files"),
- 		  NULL },
+        {"use-gconf", 'g', 0, G_OPTION_ARG_NONE, &use_gconf,
+         N_("Force use gconf for configuration files"),
+         NULL},
 #endif
 #ifdef ENABLE_GOBJECT_INTROSPECTION
-		{ "introspect-dump", 'i', 0, G_OPTION_ARG_STRING, &gir_output,
- 		  N_("Dump gobject introspection file"),
- 		  N_("types.txt,out.xml") },
+        {"introspect-dump", 'i', 0, G_OPTION_ARG_STRING, &gir_output,
+         N_("Dump gobject introspection file"),
+         N_("types.txt,out.xml")},
 #endif
-		{ NULL, '\0', 0, 0, NULL, NULL, NULL }
- 	};
+        {NULL, '\0', 0, 0, NULL, NULL, NULL}
+    };
 
 #ifdef ENABLE_NLS
-	bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
-	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-	textdomain (GETTEXT_PACKAGE);
+    bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
+    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+    textdomain (GETTEXT_PACKAGE);
 #endif
-    
-    signal(SIGSEGV, crash);
 
-    g_type_init (); 
-    
-    egg_set_desktop_file(PACKAGE_DATA_DIR "/applications/cairo-compmgr.desktop");
+    signal (SIGSEGV, crash);
+
+    g_type_init ();
+
+    egg_set_desktop_file (PACKAGE_DATA_DIR
+                          "/applications/cairo-compmgr.desktop");
 
     option_context = g_option_context_new (_("- Cairo composite manager"));
     g_option_context_add_group (option_context, gtk_get_option_group (TRUE));
-    g_option_context_add_group (option_context, egg_sm_client_get_option_group ());
-    g_option_context_add_main_entries(option_context, options, GETTEXT_PACKAGE);
-        
-    if (!g_option_context_parse (option_context, &argc, &argv, &error)) 
-    {
-		g_print ("%s\n", error->message);
-		return 1;
-	}
+    g_option_context_add_group (option_context,
+                                egg_sm_client_get_option_group ());
+    g_option_context_add_main_entries (option_context, options,
+                                       GETTEXT_PACKAGE);
 
-    g_log_set_default_handler(log_func, NULL);
+    if (!g_option_context_parse (option_context, &argc, &argv, &error))
+    {
+        g_print ("%s\n", error->message);
+        return 1;
+    }
+
+    g_log_set_default_handler (log_func, NULL);
 
 #ifdef ENABLE_GCONF
     if (use_gconf)
@@ -160,34 +162,34 @@ main(gint argc, gchar **argv)
     else
 #endif
         ccm_config_set_backend ("key");
-    
-    ccm_extension_loader_add_plugin_path(PACKAGE_PLUGIN_DIR);
-    
-    user_plugin_path = g_strdup_printf("%s/%s/plugins", g_get_user_data_dir(),
-                                       PACKAGE);
+
+    ccm_extension_loader_add_plugin_path (PACKAGE_PLUGIN_DIR);
+
+    user_plugin_path =
+        g_strdup_printf ("%s/%s/plugins", g_get_user_data_dir (), PACKAGE);
     ccm_extension_loader_add_plugin_path (user_plugin_path);
-    g_free(user_plugin_path);
-    
+    g_free (user_plugin_path);
+
     if (configure)
     {
-        CCMPreferences* pref = ccm_preferences_new();
+        CCMPreferences *pref = ccm_preferences_new ();
         if (pref)
         {
-            g_signal_connect(pref, "closed", 
-                             G_CALLBACK(on_preferences_closed), NULL);
-            
-            ccm_preferences_show(pref);
-            gtk_main();
+            g_signal_connect (pref, "closed",
+                              G_CALLBACK (on_preferences_closed), NULL);
+
+            ccm_preferences_show (pref);
+            gtk_main ();
             return 0;
         }
     }
 
     desktop = egg_get_desktop_file ();
     egg_desktop_file_set_boolean (desktop, "X-GNOME-AutoRestart", restart);
-    
+
     client = egg_sm_client_get ();
     egg_sm_client_set_mode (EGG_SM_CLIENT_MODE_NORMAL);
-    
+
 #ifdef ENABLE_GOBJECT_INTROSPECTION
     if (gir_output)
     {
@@ -199,9 +201,9 @@ main(gint argc, gchar **argv)
         return 0;
     }
 #endif
-    
-	trayicon = ccm_tray_icon_new ();
-	gtk_main();
-	g_object_unref(trayicon);
-	return 0;
+
+    trayicon = ccm_tray_icon_new ();
+    gtk_main ();
+    g_object_unref (trayicon);
+    return 0;
 }

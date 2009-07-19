@@ -30,7 +30,6 @@
 #include "ccm.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_DRAWABLE             (ccm_drawable_get_type ())
 #define CCM_TYPE_DRAWABLE_MATRIX      (ccm_drawable_matrix_get_type ())
 #define CCM_DRAWABLE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_DRAWABLE, CCMDrawable))
@@ -38,37 +37,35 @@ G_BEGIN_DECLS
 #define CCM_IS_DRAWABLE(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_DRAWABLE))
 #define CCM_IS_DRAWABLE_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_DRAWABLE))
 #define CCM_DRAWABLE_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_DRAWABLE, CCMDrawableClass))
-
-struct _CCMDrawableClass
+    struct _CCMDrawableClass
 {
-	GObjectClass parent_class;
-	
-	cairo_t*          (*create_context)		    (CCMDrawable* self);
-	cairo_surface_t*  (*get_surface) 		    (CCMDrawable* self);
-	void    		  (*query_geometry)		    (CCMDrawable* self);
-	void			  (*move)				    (CCMDrawable* self, 
-											     int x, int y);
-	void			  (*resize)				    (CCMDrawable* self, 
-											     int width, int height);
-	gboolean		  (*repair)				    (CCMDrawable* self,
-											     CCMRegion* damaged);
-	void			  (*flush)				    (CCMDrawable* self);
-	void			  (*flush_region)		    (CCMDrawable* self,
-											     CCMRegion* region);
+    GObjectClass parent_class;
+
+    cairo_t *(*create_context) (CCMDrawable * self);
+    cairo_surface_t *(*get_surface) (CCMDrawable * self);
+    void (*query_geometry) (CCMDrawable * self);
+    void (*move) (CCMDrawable * self, int x, int y);
+    void (*resize) (CCMDrawable * self, int width, int height);
+     gboolean (*repair) (CCMDrawable * self, CCMRegion * damaged);
+    void (*flush) (CCMDrawable * self);
+    void (*flush_region) (CCMDrawable * self, CCMRegion * region);
 };
 
 typedef struct _CCMDrawablePrivate CCMDrawablePrivate;
 
 struct _CCMDrawable
 {
-	GObject 			parent_instance;
-	
-	CCMDrawablePrivate*	priv;
+    GObject parent_instance;
+
+    CCMDrawablePrivate *priv;
 };
 
-GType ccm_drawable_get_type (void) G_GNUC_CONST;
-GType ccm_drawable_matrix_get_type(void) G_GNUC_CONST;
+GType
+ccm_drawable_get_type (void)
+    G_GNUC_CONST;
+GType
+ccm_drawable_matrix_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_DRAWABLE_H_ */
+#endif                          /* _CCM_DRAWABLE_H_ */

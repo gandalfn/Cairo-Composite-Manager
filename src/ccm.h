@@ -21,7 +21,7 @@
  * License along with main.c; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor Boston, MA 02110-1301,  USA
  */
- 
+
 #ifndef _CCM_H
 #define _CCM_H
 
@@ -33,29 +33,28 @@
 #include <X11/Xlib.h>
 
 G_BEGIN_DECLS
-
 /********************************** Cursor ************************************/
 typedef struct _CCMCursorClass CCMCursorClass;
 typedef struct _CCMCursor CCMCursor;
 /******************************************************************************/
 
 /********************************** Display ***********************************/
-typedef struct _CCMDisplayClass  CCMDisplayClass;
-typedef struct _CCMDisplay       CCMDisplay;
+typedef struct _CCMDisplayClass CCMDisplayClass;
+typedef struct _CCMDisplay CCMDisplay;
 /******************************************************************************/
 
 /********************************** Screen ************************************/
-typedef struct _CCMScreenClass 	 CCMScreenClass;
-typedef struct _CCMScreen 	 CCMScreen;
+typedef struct _CCMScreenClass CCMScreenClass;
+typedef struct _CCMScreen CCMScreen;
 /******************************************************************************/
 
 /****************************** Drawable **************************************/
 typedef struct _CCMDrawableClass CCMDrawableClass;
-typedef struct _CCMDrawable 	 CCMDrawable;
+typedef struct _CCMDrawable CCMDrawable;
 /******************************************************************************/
 
 /******************************** Window **************************************/
-typedef enum 
+typedef enum
 {
     CCM_WINDOW_TYPE_UNKNOWN,
     CCM_WINDOW_TYPE_DESKTOP,
@@ -74,7 +73,7 @@ typedef enum
     CCM_WINDOW_TYPE_DOCK
 } CCMWindowType;
 
-typedef enum 
+typedef enum
 {
     CCM_PROPERTY_HINT_TYPE,
     CCM_PROPERTY_TRANSIENT,
@@ -85,70 +84,55 @@ typedef enum
     CCM_PROPERTY_FRAME_EXTENDS
 } CCMPropertyType;
 
-typedef struct _CCMWindowClass   CCMWindowClass;
-typedef struct _CCMWindow        CCMWindow;
+typedef struct _CCMWindowClass CCMWindowClass;
+typedef struct _CCMWindow CCMWindow;
 /******************************************************************************/
 
 /******************************** Pixmap **************************************/
-typedef struct _CCMPixmapClass   CCMPixmapClass;
-typedef struct _CCMPixmap        CCMPixmap;
+typedef struct _CCMPixmapClass CCMPixmapClass;
+typedef struct _CCMPixmap CCMPixmap;
 /******************************************************************************/
 
 /******************************** Region **************************************/
-typedef struct _CCMRegion 	 CCMRegion;
-typedef struct _CCMRegionBox	 CCMRegionBox;
+typedef struct _CCMRegion CCMRegion;
+typedef struct _CCMRegionBox CCMRegionBox;
 
-struct _CCMRegionBox {
+struct _CCMRegionBox
+{
     short x1, y1, x2, y2;
 };
 
-CCMRegion*      ccm_region_new             (void);
-CCMRegion*      ccm_region_copy            (CCMRegion          *self);
-CCMRegion*   	ccm_region_rectangle       (cairo_rectangle_t  *rectangle);
-CCMRegion*	    ccm_region_xrectangle 	   (XRectangle         *rectangle);
-CCMRegion*      ccm_region_create          (int x, int y, 
-                                            int width, int height);
-void		    ccm_region_destroy         (CCMRegion          *self);
-void		    ccm_region_get_clipbox     (CCMRegion          *self,
-					                        cairo_rectangle_t  *clipbox);
-void         	ccm_region_get_rectangles  (CCMRegion          *self,
-					                        cairo_rectangle_t **rectangles,
-					                        gint 	           *n_rectangles);
-CCMRegionBox* 	ccm_region_get_boxes       (CCMRegion          *self,
-					                        gint               *n_box);
-void            ccm_region_get_xrectangles (CCMRegion          *self,
-                                            XRectangle        **rectangles,
-                                            gint               *n_rectangles);
-gboolean      	ccm_region_empty           (CCMRegion          *self);
-void          	ccm_region_offset          (CCMRegion          *self,
-					                        int                 dx,
-					                        int                 dy);
-void		    ccm_region_resize   	   (CCMRegion          *self,
-				                    	    int                 width,
-					                        int                 height);
-void            ccm_region_scale           (CCMRegion         *self,
-                                            gdouble            scale_width,
-                                            gdouble            scale_height);
-void          	ccm_region_union_with_rect (CCMRegion         *self,
-					                        cairo_rectangle_t *rect);
-void		    ccm_region_union_with_xrect(CCMRegion         *self,
-					                        XRectangle        *rect);
-void          	ccm_region_intersect       (CCMRegion         *self,
-					                        CCMRegion         *other);
-void          	ccm_region_union           (CCMRegion         *self,
-					                        CCMRegion         *other);
-void          	ccm_region_subtract        (CCMRegion         *self,
-					                        CCMRegion         *other);
-void            ccm_region_transform       (CCMRegion         *self, 
-                                            cairo_matrix_t    *matrix);
-gboolean        ccm_region_transform_invert(CCMRegion         *self, 
-                                            cairo_matrix_t    *matrix);
-void            ccm_region_device_transform(CCMRegion         *self, 
-                                            cairo_matrix_t    *matrix);
-gboolean        ccm_region_device_transform_invert (CCMRegion         *self, 
-                                                    cairo_matrix_t    *matrix);
-gboolean        ccm_region_point_in         (CCMRegion* self, int x, int y);
-gboolean        ccm_region_is_shaped        (CCMRegion* self);
+CCMRegion *ccm_region_new (void);
+CCMRegion *ccm_region_copy (CCMRegion * self);
+CCMRegion *ccm_region_rectangle (cairo_rectangle_t * rectangle);
+CCMRegion *ccm_region_xrectangle (XRectangle * rectangle);
+CCMRegion *ccm_region_create (int x, int y, int width, int height);
+void ccm_region_destroy (CCMRegion * self);
+void ccm_region_get_clipbox (CCMRegion * self, cairo_rectangle_t * clipbox);
+void ccm_region_get_rectangles (CCMRegion * self,
+                                cairo_rectangle_t ** rectangles,
+                                gint * n_rectangles);
+CCMRegionBox *ccm_region_get_boxes (CCMRegion * self, gint * n_box);
+void ccm_region_get_xrectangles (CCMRegion * self, XRectangle ** rectangles,
+                                 gint * n_rectangles);
+gboolean ccm_region_empty (CCMRegion * self);
+void ccm_region_offset (CCMRegion * self, int dx, int dy);
+void ccm_region_resize (CCMRegion * self, int width, int height);
+void ccm_region_scale (CCMRegion * self, gdouble scale_width,
+                       gdouble scale_height);
+void ccm_region_union_with_rect (CCMRegion * self, cairo_rectangle_t * rect);
+void ccm_region_union_with_xrect (CCMRegion * self, XRectangle * rect);
+void ccm_region_intersect (CCMRegion * self, CCMRegion * other);
+void ccm_region_union (CCMRegion * self, CCMRegion * other);
+void ccm_region_subtract (CCMRegion * self, CCMRegion * other);
+void ccm_region_transform (CCMRegion * self, cairo_matrix_t * matrix);
+gboolean ccm_region_transform_invert (CCMRegion * self,
+                                      cairo_matrix_t * matrix);
+void ccm_region_device_transform (CCMRegion * self, cairo_matrix_t * matrix);
+gboolean ccm_region_device_transform_invert (CCMRegion * self,
+                                             cairo_matrix_t * matrix);
+gboolean ccm_region_point_in (CCMRegion * self, int x, int y);
+gboolean ccm_region_is_shaped (CCMRegion * self);
 
 #define cairo_rectangles_free(c, nb) ({if (c) g_slice_free1(sizeof(cairo_rectangle_t) * nb, c); })
 #define x_rectangles_free(c, nb) ({if (c) g_slice_free1(sizeof(XRectangle) * nb, c);})
@@ -156,202 +140,157 @@ gboolean        ccm_region_is_shaped        (CCMRegion* self);
 /******************************************************************************/
 
 /********************************** Cursor ************************************/
-void            ccm_cursor_paint            (CCMCursor* self, cairo_t* ctx, 
-                                             double x, double y);
-double          ccm_cursor_get_width        (CCMCursor* self);
-double          ccm_cursor_get_height       (CCMCursor* self);
+void ccm_cursor_paint (CCMCursor * self, cairo_t * ctx, double x, double y);
+double ccm_cursor_get_width (CCMCursor * self);
+double ccm_cursor_get_height (CCMCursor * self);
 /******************************************************************************/
 
 /********************************** Display ***********************************/
-CCMDisplay* 	ccm_display_new        			          (gchar* display);
-Display*        ccm_display_get_xdisplay		          (CCMDisplay* self);
-CCMScreen*	    ccm_display_get_screen 			          (CCMDisplay* self, 
-				                    			           guint number);
-int		        ccm_display_get_shape_notify_event_type   (CCMDisplay* self);
-void            ccm_display_flush                         (CCMDisplay* self);
-void		    ccm_display_sync			              (CCMDisplay* self);
-void		    ccm_display_grab			              (CCMDisplay* self);
-void		    ccm_display_ungrab			              (CCMDisplay* self);
-void		    ccm_display_trap_error			          (CCMDisplay* self);
-gint		    ccm_display_pop_error			          (CCMDisplay* self);
-gboolean        ccm_display_report_device_event           (CCMDisplay* self, 
-                                                           CCMScreen* screen,
-                                                           gboolean report);
-const CCMCursor* ccm_display_get_current_cursor           (CCMDisplay* self,
-                                                           gboolean initiate);
+CCMDisplay *ccm_display_new (gchar * display);
+Display *ccm_display_get_xdisplay (CCMDisplay * self);
+CCMScreen *ccm_display_get_screen (CCMDisplay * self, guint number);
+int ccm_display_get_shape_notify_event_type (CCMDisplay * self);
+void ccm_display_flush (CCMDisplay * self);
+void ccm_display_sync (CCMDisplay * self);
+void ccm_display_grab (CCMDisplay * self);
+void ccm_display_ungrab (CCMDisplay * self);
+void ccm_display_trap_error (CCMDisplay * self);
+gint ccm_display_pop_error (CCMDisplay * self);
+gboolean ccm_display_report_device_event (CCMDisplay * self, CCMScreen * screen,
+                                          gboolean report);
+const CCMCursor *ccm_display_get_current_cursor (CCMDisplay * self,
+                                                 gboolean initiate);
 /******************************************************************************/
 
 /********************************** Screen ************************************/
-CCMScreen* 	    ccm_screen_new                      (CCMDisplay* display, 
-					           	                     guint number);
-CCMDisplay*	    ccm_screen_get_display	            (CCMScreen* self);
-Screen*         ccm_screen_get_xscreen 	            (CCMScreen* self);
-guint           ccm_screen_get_number  	            (CCMScreen* self);
-guint    		ccm_screen_get_refresh_rate         (CCMScreen* self);
-CCMWindow* 	    ccm_screen_get_root_window         	(CCMScreen* self);
-CCMWindow* 	    ccm_screen_get_overlay_window      	(CCMScreen* self);
-gboolean	    ccm_screen_add_window          		(CCMScreen* self, 
-						                             CCMWindow* window);
-void		    ccm_screen_remove_window           	(CCMScreen* self, 
-						                             CCMWindow* window);
-void            ccm_screen_damage       	        (CCMScreen* self);
-void            ccm_screen_damage_region	        (CCMScreen* self, 
-                                         	         const CCMRegion* region);
-void            ccm_screen_undamage_region          (CCMScreen* self, 
-                                                     const CCMRegion* area);
-GList*          ccm_screen_get_windows              (CCMScreen *self);
-CCMRegion*      ccm_screen_get_damaged              (CCMScreen *self);
-void            ccm_screen_add_damaged_region       (CCMScreen *self, 
-                                                     CCMRegion* region);
-void            ccm_screen_remove_damaged_region    (CCMScreen *self, 
-                                                     CCMRegion* region);
-CCMWindow*      ccm_screen_find_window              (CCMScreen* self, 
-                                                     Window xwindow);
-CCMWindow*      ccm_screen_find_window_or_child     (CCMScreen* self, 
-                                                     Window xwindow);
-CCMWindow*      ccm_screen_find_window_at_pos       (CCMScreen* self, 
-                                                     int x, int y);
-gboolean        ccm_screen_query_pointer            (CCMScreen* self, 
-                                                     CCMWindow** below, 
-                                                     gint *x, gint *y);
-void            ccm_screen_manage_cursors           (CCMScreen* self);
-void            ccm_screen_unmanage_cursors         (CCMScreen* self);
-Visual*         ccm_screen_get_visual_for_depth     (CCMScreen* self, 
-                                                     int depth);
+CCMScreen *ccm_screen_new (CCMDisplay * display, guint number);
+CCMDisplay *ccm_screen_get_display (CCMScreen * self);
+Screen *ccm_screen_get_xscreen (CCMScreen * self);
+guint ccm_screen_get_number (CCMScreen * self);
+guint ccm_screen_get_refresh_rate (CCMScreen * self);
+CCMWindow *ccm_screen_get_root_window (CCMScreen * self);
+CCMWindow *ccm_screen_get_overlay_window (CCMScreen * self);
+gboolean ccm_screen_add_window (CCMScreen * self, CCMWindow * window);
+void ccm_screen_remove_window (CCMScreen * self, CCMWindow * window);
+void ccm_screen_damage (CCMScreen * self);
+void ccm_screen_damage_region (CCMScreen * self, const CCMRegion * region);
+void ccm_screen_undamage_region (CCMScreen * self, const CCMRegion * area);
+GList *ccm_screen_get_windows (CCMScreen * self);
+CCMRegion *ccm_screen_get_damaged (CCMScreen * self);
+void ccm_screen_add_damaged_region (CCMScreen * self, CCMRegion * region);
+void ccm_screen_remove_damaged_region (CCMScreen * self, CCMRegion * region);
+CCMWindow *ccm_screen_find_window (CCMScreen * self, Window xwindow);
+CCMWindow *ccm_screen_find_window_or_child (CCMScreen * self, Window xwindow);
+CCMWindow *ccm_screen_find_window_at_pos (CCMScreen * self, int x, int y);
+gboolean ccm_screen_query_pointer (CCMScreen * self, CCMWindow ** below,
+                                   gint * x, gint * y);
+void ccm_screen_manage_cursors (CCMScreen * self);
+void ccm_screen_unmanage_cursors (CCMScreen * self);
+Visual *ccm_screen_get_visual_for_depth (CCMScreen * self, int depth);
 /******************************************************************************/
 
 /****************************** Drawable **************************************/
-CCMScreen*	     ccm_drawable_get_screen            (CCMDrawable* self);
-CCMDisplay*	     ccm_drawable_get_display    	    (CCMDrawable* self);
-XID		         ccm_drawable_get_xid    		    (CCMDrawable* self);
-Visual*		     ccm_drawable_get_visual	        (CCMDrawable* self);
-cairo_format_t   ccm_drawable_get_format            (CCMDrawable* self);
-guint            ccm_drawable_get_depth             (CCMDrawable* self);
-void     	     ccm_drawable_query_geometry 	    (CCMDrawable* self);
-const CCMRegion* ccm_drawable_get_geometry	        (CCMDrawable* self);
-const CCMRegion* ccm_drawable_get_device_geometry   (CCMDrawable* self);
-gboolean 	     ccm_drawable_get_geometry_clipbox  (CCMDrawable* self, 
-						                             cairo_rectangle_t* area);
-gboolean 	     ccm_drawable_get_device_geometry_clipbox(CCMDrawable* self, 
-                                                     cairo_rectangle_t* area);
-gboolean         ccm_drawable_is_damaged            (CCMDrawable* self);
-void             ccm_drawable_damage_region 	    (CCMDrawable* self, 
-						                             const CCMRegion* area);
-void 	         ccm_drawable_damage_region_silently(CCMDrawable* self, 
-						                             const CCMRegion* area);
-void 		     ccm_drawable_damage                (CCMDrawable* self);
-void		     ccm_drawable_undamage_region       (CCMDrawable* self, 
-						                             CCMRegion* region);
-void		     ccm_drawable_repair                (CCMDrawable* self);
-void		     ccm_drawable_move                  (CCMDrawable* self, 
-						                             int x, int y);
-void		     ccm_drawable_resize                (CCMDrawable* self, 
-					                                 int width, int height);
-void		     ccm_drawable_flush                 (CCMDrawable* self);
-void             ccm_drawable_flush_region          (CCMDrawable* self, 
-                                                     CCMRegion* region);
-cairo_surface_t* ccm_drawable_get_surface           (CCMDrawable* self);
-cairo_t*	     ccm_drawable_create_context        (CCMDrawable* self);
-cairo_path_t*	 ccm_drawable_get_geometry_path     (CCMDrawable* self, 
-													 cairo_t* context);
-void        	 ccm_drawable_get_damage_path       (CCMDrawable* self, 
-						                             cairo_t* context);
-void             ccm_drawable_push_matrix           (CCMDrawable* self,
-                                                     gchar* key,
-                                                     cairo_matrix_t* matrix);
-void             ccm_drawable_pop_matrix            (CCMDrawable* self,
-                                                     gchar* key);
-cairo_matrix_t   ccm_drawable_get_transform         (CCMDrawable* self);
+CCMScreen *ccm_drawable_get_screen (CCMDrawable * self);
+CCMDisplay *ccm_drawable_get_display (CCMDrawable * self);
+XID ccm_drawable_get_xid (CCMDrawable * self);
+Visual *ccm_drawable_get_visual (CCMDrawable * self);
+cairo_format_t ccm_drawable_get_format (CCMDrawable * self);
+guint ccm_drawable_get_depth (CCMDrawable * self);
+void ccm_drawable_query_geometry (CCMDrawable * self);
+const CCMRegion *ccm_drawable_get_geometry (CCMDrawable * self);
+const CCMRegion *ccm_drawable_get_device_geometry (CCMDrawable * self);
+gboolean ccm_drawable_get_geometry_clipbox (CCMDrawable * self,
+                                            cairo_rectangle_t * area);
+gboolean ccm_drawable_get_device_geometry_clipbox (CCMDrawable * self,
+                                                   cairo_rectangle_t * area);
+gboolean ccm_drawable_is_damaged (CCMDrawable * self);
+void ccm_drawable_damage_region (CCMDrawable * self, const CCMRegion * area);
+void ccm_drawable_damage_region_silently (CCMDrawable * self,
+                                          const CCMRegion * area);
+void ccm_drawable_damage (CCMDrawable * self);
+void ccm_drawable_undamage_region (CCMDrawable * self, CCMRegion * region);
+void ccm_drawable_repair (CCMDrawable * self);
+void ccm_drawable_move (CCMDrawable * self, int x, int y);
+void ccm_drawable_resize (CCMDrawable * self, int width, int height);
+void ccm_drawable_flush (CCMDrawable * self);
+void ccm_drawable_flush_region (CCMDrawable * self, CCMRegion * region);
+cairo_surface_t *ccm_drawable_get_surface (CCMDrawable * self);
+cairo_t *ccm_drawable_create_context (CCMDrawable * self);
+cairo_path_t *ccm_drawable_get_geometry_path (CCMDrawable * self,
+                                              cairo_t * context);
+void ccm_drawable_get_damage_path (CCMDrawable * self, cairo_t * context);
+void ccm_drawable_push_matrix (CCMDrawable * self, gchar * key,
+                               cairo_matrix_t * matrix);
+void ccm_drawable_pop_matrix (CCMDrawable * self, gchar * key);
+cairo_matrix_t ccm_drawable_get_transform (CCMDrawable * self);
 /******************************************************************************/
 
 /******************************** Window **************************************/
-CCMWindow*  	 ccm_window_new                     (CCMScreen* screen, 
-	                			                     Window xwindow);
-gboolean         ccm_window_is_viewable             (CCMWindow* self);
-gboolean         ccm_window_is_input_only           (CCMWindow* self);
-gboolean         ccm_window_is_managed		        (CCMWindow* self);
-void    		 ccm_window_make_output_only	    (CCMWindow* self);
-void             ccm_window_make_input_output       (CCMWindow* self);
-void	    	 ccm_window_redirect 		        (CCMWindow* self);
-void	    	 ccm_window_redirect_subwindows	    (CCMWindow* self);
-void	    	 ccm_window_unredirect 		        (CCMWindow* self);
-void	    	 ccm_window_unredirect_subwindows   (CCMWindow* self);
-void             ccm_window_redirect_input          (CCMWindow* self);
-void             ccm_window_unredirect_input        (CCMWindow* self);
-CCMPixmap*  	 ccm_window_get_pixmap		        (CCMWindow* self);
-CCMPixmap*       ccm_window_create_pixmap           (CCMWindow* self, 
-                                                     int width, int height,
-                                                     int depth);
-gboolean	     ccm_window_paint        		    (CCMWindow* self,
-                                                     cairo_t* ctx,
-                                                     gboolean buffered);
-void		     ccm_window_map	        		    (CCMWindow* self);
-void		     ccm_window_unmap       		    (CCMWindow* self);
-void 		     ccm_window_query_opacity   	    (CCMWindow* self,
-                                                     gboolean deleted);
-void             ccm_window_query_transient_for     (CCMWindow* self);
-void             ccm_window_query_wm_hints          (CCMWindow* self);
-void             ccm_window_query_hint_type         (CCMWindow* self);
-CCMWindowType	 ccm_window_get_hint_type	        (CCMWindow* self);
-const gchar*	 ccm_window_get_name		        (CCMWindow* self);
-void             ccm_window_set_alpha               (CCMWindow* self);
-void             ccm_window_set_opaque              (CCMWindow* self);
-const CCMRegion* ccm_window_get_opaque_region       (CCMWindow* self);
-gboolean         ccm_window_get_opaque_clipbox      (CCMWindow* self, 
-                                                     cairo_rectangle_t* clipbox);
-void             ccm_window_set_opaque_region       (CCMWindow* self, 
-                                                     const CCMRegion* region);
-gfloat		     ccm_window_get_opacity      	    (CCMWindow* self);
-void		     ccm_window_set_opacity 	        (CCMWindow* self, 
-						                             gfloat opacity);
-void             ccm_window_query_state             (CCMWindow* self);
-gboolean         ccm_window_set_state               (CCMWindow* self, 
-                                                     Atom state_atom);
-void             ccm_window_unset_state             (CCMWindow* self, 
-                                                     Atom state_atom);
-void             ccm_window_switch_state            (CCMWindow* self, 
-                                                     Atom state_atom);
-gboolean         ccm_window_is_shaded               (CCMWindow* self);
-gboolean         ccm_window_is_fullscreen           (CCMWindow* self);
-void             ccm_window_query_mwm_hints         (CCMWindow* self);
-gboolean         ccm_window_is_decorated            (CCMWindow* self);
-gboolean         ccm_window_skip_taskbar            (CCMWindow* self);
-gboolean         ccm_window_skip_pager              (CCMWindow* self);
-gboolean         ccm_window_keep_above              (CCMWindow* self);
-gboolean         ccm_window_keep_below              (CCMWindow* self);
-CCMWindow*       ccm_window_transient_for           (CCMWindow* self);
-CCMWindow*       ccm_window_get_group_leader        (CCMWindow* self);
-const cairo_rectangle_t* ccm_window_get_area        (CCMWindow* self);
-CCMRegion*       ccm_window_get_area_geometry       (CCMWindow* self);
-void		     ccm_window_query_frame_extends	    (CCMWindow* self);
-void	         ccm_window_get_frame_extends       (CCMWindow* self, 
-                                                     int* left_frame, 
-                                                     int* right_frame, 
-                                                     int* top_frame, 
-                                                     int* bottom_frame);
-gboolean         ccm_window_transform               (CCMWindow* self, 
-                                                     cairo_t* ctx, 
-                                                     gboolean y_invert);
-guint32 *        ccm_window_get_property            (CCMWindow* self, 
-                                                     Atom property_atom, 
-                                                     Atom req_type, 
-                                                     guint *n_items);
-guint32 *        ccm_window_get_child_property      (CCMWindow* self, 
-                                                     Atom property_atom, 
-                                                     Atom req_type, 
-                                                     guint *n_items);
-Window           ccm_window_redirect_event          (CCMWindow* self, 
-                                                     XEvent* event,
-                                                     Window over);
-void             ccm_window_activate                (CCMWindow* self, 
-                                                     Time timestamp);
-GSList*          ccm_window_get_transients          (CCMWindow* self);
-gboolean         ccm_window_undamage_sibling        (CCMWindow* self);
-gboolean         ccm_window_has_redirect_input      (CCMWindow* self);
+CCMWindow *ccm_window_new (CCMScreen * screen, Window xwindow);
+gboolean ccm_window_is_viewable (CCMWindow * self);
+gboolean ccm_window_is_input_only (CCMWindow * self);
+gboolean ccm_window_is_managed (CCMWindow * self);
+void ccm_window_make_output_only (CCMWindow * self);
+void ccm_window_make_input_output (CCMWindow * self);
+void ccm_window_redirect (CCMWindow * self);
+void ccm_window_redirect_subwindows (CCMWindow * self);
+void ccm_window_unredirect (CCMWindow * self);
+void ccm_window_unredirect_subwindows (CCMWindow * self);
+void ccm_window_redirect_input (CCMWindow * self);
+void ccm_window_unredirect_input (CCMWindow * self);
+CCMPixmap *ccm_window_get_pixmap (CCMWindow * self);
+CCMPixmap *ccm_window_create_pixmap (CCMWindow * self, int width, int height,
+                                     int depth);
+gboolean ccm_window_paint (CCMWindow * self, cairo_t * ctx, gboolean buffered);
+void ccm_window_map (CCMWindow * self);
+void ccm_window_unmap (CCMWindow * self);
+void ccm_window_query_opacity (CCMWindow * self, gboolean deleted);
+void ccm_window_query_transient_for (CCMWindow * self);
+void ccm_window_query_wm_hints (CCMWindow * self);
+void ccm_window_query_hint_type (CCMWindow * self);
+CCMWindowType ccm_window_get_hint_type (CCMWindow * self);
+const gchar *ccm_window_get_name (CCMWindow * self);
+void ccm_window_set_alpha (CCMWindow * self);
+void ccm_window_set_opaque (CCMWindow * self);
+const CCMRegion *ccm_window_get_opaque_region (CCMWindow * self);
+gboolean ccm_window_get_opaque_clipbox (CCMWindow * self,
+                                        cairo_rectangle_t * clipbox);
+void ccm_window_set_opaque_region (CCMWindow * self, const CCMRegion * region);
+gfloat ccm_window_get_opacity (CCMWindow * self);
+void ccm_window_set_opacity (CCMWindow * self, gfloat opacity);
+void ccm_window_query_state (CCMWindow * self);
+gboolean ccm_window_set_state (CCMWindow * self, Atom state_atom);
+void ccm_window_unset_state (CCMWindow * self, Atom state_atom);
+void ccm_window_switch_state (CCMWindow * self, Atom state_atom);
+gboolean ccm_window_is_shaded (CCMWindow * self);
+gboolean ccm_window_is_fullscreen (CCMWindow * self);
+void ccm_window_query_mwm_hints (CCMWindow * self);
+gboolean ccm_window_is_decorated (CCMWindow * self);
+gboolean ccm_window_skip_taskbar (CCMWindow * self);
+gboolean ccm_window_skip_pager (CCMWindow * self);
+gboolean ccm_window_keep_above (CCMWindow * self);
+gboolean ccm_window_keep_below (CCMWindow * self);
+CCMWindow *ccm_window_transient_for (CCMWindow * self);
+CCMWindow *ccm_window_get_group_leader (CCMWindow * self);
+const cairo_rectangle_t *ccm_window_get_area (CCMWindow * self);
+CCMRegion *ccm_window_get_area_geometry (CCMWindow * self);
+void ccm_window_query_frame_extends (CCMWindow * self);
+void ccm_window_get_frame_extends (CCMWindow * self, int *left_frame,
+                                   int *right_frame, int *top_frame,
+                                   int *bottom_frame);
+gboolean ccm_window_transform (CCMWindow * self, cairo_t * ctx,
+                               gboolean y_invert);
+guint32 *ccm_window_get_property (CCMWindow * self, Atom property_atom,
+                                  Atom req_type, guint * n_items);
+guint32 *ccm_window_get_child_property (CCMWindow * self, Atom property_atom,
+                                        Atom req_type, guint * n_items);
+Window ccm_window_redirect_event (CCMWindow * self, XEvent * event,
+                                  Window over);
+void ccm_window_activate (CCMWindow * self, Time timestamp);
+GSList *ccm_window_get_transients (CCMWindow * self);
+gboolean ccm_window_undamage_sibling (CCMWindow * self);
+gboolean ccm_window_has_redirect_input (CCMWindow * self);
 /******************************************************************************/
 
 G_END_DECLS
-
-#endif /* _CCM_H */
-
- 
+#endif                          /* _CCM_H */

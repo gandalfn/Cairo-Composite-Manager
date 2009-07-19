@@ -28,34 +28,33 @@
 #include "ccm-screen.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_KEYBIND             (ccm_keybind_get_type ())
 #define CCM_KEYBIND(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_KEYBIND, CCMKeybind))
 #define CCM_KEYBIND_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_KEYBIND, CCMKeybindClass))
 #define CCM_IS_KEYBIND(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_KEYBIND))
 #define CCM_IS_KEYBIND_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_KEYBIND))
 #define CCM_KEYBIND_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_KEYBIND, CCMKeybindClass))
-
 typedef struct _CCMKeybindClass CCMKeybindClass;
 typedef struct _CCMKeybindPrivate CCMKeybindPrivate;
 typedef struct _CCMKeybind CCMKeybind;
 
 struct _CCMKeybindClass
 {
-	GObjectClass parent_class;
+    GObjectClass parent_class;
 };
 
 struct _CCMKeybind
 {
-	GObject parent_instance;
-	
-	CCMKeybindPrivate* priv;
+    GObject parent_instance;
+
+    CCMKeybindPrivate *priv;
 };
 
-GType ccm_keybind_get_type (void) G_GNUC_CONST;
-CCMKeybind* ccm_keybind_new (CCMScreen* screen, gchar* keystring, 
-							 gboolean exclusive);
+GType
+ccm_keybind_get_type (void)
+    G_GNUC_CONST;
+CCMKeybind *
+ccm_keybind_new (CCMScreen * screen, gchar * keystring, gboolean exclusive);
 
 G_END_DECLS
-
-#endif /* _CCM_KEYBIND_H_ */
+#endif                          /* _CCM_KEYBIND_H_ */

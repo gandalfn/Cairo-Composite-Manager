@@ -28,44 +28,44 @@
 #include "ccm-drawable.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_PIXMAP             (ccm_pixmap_get_type ())
 #define CCM_PIXMAP(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PIXMAP, CCMPixmap))
 #define CCM_PIXMAP_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PIXMAP, CCMPixmapClass))
 #define CCM_IS_PIXMAP(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PIXMAP))
 #define CCM_IS_PIXMAP_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PIXMAP))
 #define CCM_PIXMAP_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PIXMAP, CCMPixmapClass))
-
 #define CCM_PIXMAP_XPIXMAP(obj)     (ccm_drawable_get_xid(CCM_DRAWABLE(obj)))
-
-struct _CCMPixmapClass
+    struct _CCMPixmapClass
 {
-	CCMDrawableClass parent_class;
-	
-	void	   (*bind)    (CCMPixmap* self);
-	void	   (*release) (CCMPixmap* self);
+    CCMDrawableClass parent_class;
+
+    void (*bind) (CCMPixmap * self);
+    void (*release) (CCMPixmap * self);
 };
 
 typedef struct _CCMPixmapPrivate CCMPixmapPrivate;
 
 struct _CCMPixmap
 {
-	CCMDrawable 		parent_instance;
-	
-	CCMPixmapPrivate* 	priv;
+    CCMDrawable parent_instance;
+
+    CCMPixmapPrivate *priv;
 };
 
-GType 	    ccm_pixmap_get_type 	    (void) G_GNUC_CONST;
-CCMPixmap*  ccm_pixmap_new      	    (CCMDrawable* drawable, 
-					                     Pixmap xpixmap);
-CCMPixmap*  ccm_pixmap_image_new   	    (CCMDrawable* drawable, 
-				                         Pixmap xpixmap);
-CCMPixmap*  ccm_pixmap_new_from_visual  (CCMScreen* screen, 
-                                         Visual* visual, 
-                                         Pixmap xpixmap);
-gboolean	ccm_pixmap_get_foreign		(CCMPixmap* self);
-void		ccm_pixmap_set_foreign	    (CCMPixmap* self, gboolean foreign);
-                                  
-G_END_DECLS
+GType
+ccm_pixmap_get_type (void)
+    G_GNUC_CONST;
+CCMPixmap *
+ccm_pixmap_new (CCMDrawable * drawable, Pixmap xpixmap);
+CCMPixmap *
+ccm_pixmap_image_new (CCMDrawable * drawable, Pixmap xpixmap);
+CCMPixmap *
+ccm_pixmap_new_from_visual (CCMScreen * screen, Visual * visual,
+                            Pixmap xpixmap);
+gboolean
+ccm_pixmap_get_foreign (CCMPixmap * self);
+void
+ccm_pixmap_set_foreign (CCMPixmap * self, gboolean foreign);
 
-#endif /* _CCM_PIXMAP_H_ */
+G_END_DECLS
+#endif                          /* _CCM_PIXMAP_H_ */

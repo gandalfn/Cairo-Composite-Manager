@@ -26,35 +26,34 @@
 #include "ccm.h"
 
 GType
-ccm_pixmap_backend_get_type(CCMScreen* screen)
+ccm_pixmap_backend_get_type (CCMScreen * screen)
 {
-	GType type = 0;
-	gboolean use_buffered, native_pixmap_bind;
-	gchar* backend;
-	
-	g_object_get(G_OBJECT(screen), 
-				 "backend", &backend,
-				 "buffered_pixmap", &use_buffered, 
-				 "native_pixmap_bind", &native_pixmap_bind, 
-				 NULL);
-	
-	if (use_buffered)
-		type = ccm_pixmap_buffered_image_get_type();
-	else
-		type = ccm_pixmap_image_get_type();
-	
-	if (native_pixmap_bind && backend)
-	{
+    GType type = 0;
+    gboolean use_buffered, native_pixmap_bind;
+    gchar *backend;
+
+    g_object_get (G_OBJECT (screen), "backend", &backend, "buffered_pixmap",
+                  &use_buffered, "native_pixmap_bind", &native_pixmap_bind,
+                  NULL);
+
+    if (use_buffered)
+        type = ccm_pixmap_buffered_image_get_type ();
+    else
+        type = ccm_pixmap_image_get_type ();
+
+    if (native_pixmap_bind && backend)
+    {
 #ifndef DISABLE_XRENDER_BACKEND
-		if (!g_ascii_strcasecmp(backend, "xrender"))
-			type = ccm_pixmap_xrender_get_type();
+        if (!g_ascii_strcasecmp (backend, "xrender"))
+            type = ccm_pixmap_xrender_get_type ();
 #endif
 #ifdef ENABLE_GLITZ_TFP_BACKEND
-		if (!g_ascii_strcasecmp(backend, "glitz"))
-			type = ccm_pixmap_glitz_get_type();
+        if (!g_ascii_strcasecmp (backend, "glitz"))
+            type = ccm_pixmap_glitz_get_type ();
 #endif
-	}
-	if (backend) g_free(backend);
-	
-	return type;
+    }
+    if (backend)
+        g_free (backend);
+
+    return type;
 }

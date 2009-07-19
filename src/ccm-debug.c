@@ -29,120 +29,123 @@
 #include "ccm-window.h"
 #include "ccm-display.h"
 
-static GTimer* timer = NULL;
+static GTimer *timer = NULL;
 
 static void
-ccm_print_log(const char* format, ...)
+ccm_print_log (const char *format, ...)
 {
-	va_list args;
-	gchar* formatted;
+    va_list args;
+    gchar *formatted;
 
-	if (!timer) timer = g_timer_new ();
-	
-	va_start (args, format);
-	formatted = g_strdup_vprintf (format, args);
-	va_end (args);
-	
-	g_print("%f: %s", g_timer_elapsed (timer, NULL), formatted);
-	g_free (formatted);
+    if (!timer)
+        timer = g_timer_new ();
+
+    va_start (args, format);
+    formatted = g_strdup_vprintf (format, args);
+    va_end (args);
+
+    g_print ("%f: %s", g_timer_elapsed (timer, NULL), formatted);
+    g_free (formatted);
 }
-		 
+
 void
 ccm_log (const char *format, ...)
 {
-	va_list args;
-	gchar* formatted;
+    va_list args;
+    gchar *formatted;
 
-	va_start (args, format);
-	formatted = g_strdup_vprintf (format, args);
-	va_end (args);
-	
-	ccm_print_log("%s\n", formatted);
-	g_free(formatted);
-} 
+    va_start (args, format);
+    formatted = g_strdup_vprintf (format, args);
+    va_end (args);
 
-void
-ccm_log_window (CCMWindow* window, const char *format, ...)
-{
-	va_list args;
-	gchar* formatted;
-
-	va_start (args, format);
-	formatted = g_strdup_vprintf (format, args);
-	va_end (args);
-	
-	ccm_print_log("%s: 0x%lx\n", formatted, CCM_WINDOW_XWINDOW(window));
-	g_free(formatted);
-} 
+    ccm_print_log ("%s\n", formatted);
+    g_free (formatted);
+}
 
 void
-ccm_log_atom (CCMDisplay* display, Atom atom, const char *format, ...)
+ccm_log_window (CCMWindow * window, const char *format, ...)
 {
-	va_list args;
-	gchar* formatted;
+    va_list args;
+    gchar *formatted;
 
-	va_start (args, format);
-	formatted = g_strdup_vprintf (format, args);
-	va_end (args);
-	
-	ccm_print_log("%s: %s\n", formatted, 
-				  XGetAtomName (CCM_DISPLAY_XDISPLAY(display), atom));
-	g_free(formatted);
-} 
+    va_start (args, format);
+    formatted = g_strdup_vprintf (format, args);
+    va_end (args);
 
-void
-ccm_log_region (CCMDrawable* drawable, const char *format, ...)
-{
-	va_list args;
-	gchar* formatted;
-	const CCMRegion* damaged,* geometry;
-	va_start (args, format);
-	formatted = g_strdup_vprintf (format, args);
-	va_end (args);
-	cairo_rectangle_t* rects;
-	gint cpt, nb_rects;
-	
-	ccm_print_log("%s: 0x%lx\n", formatted, ccm_drawable_get_xid(drawable));
-	geometry = ccm_drawable_get_geometry (drawable);
-	if (geometry)
-	{
-		ccm_log("-> geometry : ");
-		ccm_region_get_rectangles ((CCMRegion*)geometry, &rects, &nb_rects);
-	
-		for (cpt = 0; cpt < nb_rects; ++cpt)
-			ccm_log("--> %i, %i, %i, %i", (int)rects[cpt].x, (int)rects[cpt].y,
-					(int)rects[cpt].width, (int)rects[cpt].height);
-		cairo_rectangles_free(rects, nb_rects);
-	}	
-	
-	g_object_get (drawable, "damaged", &damaged, NULL);
-	if (damaged)
-	{
-		ccm_log("-> damaged : ");
-		ccm_region_get_rectangles ((CCMRegion*)damaged, &rects, &nb_rects);
-		
-		for (cpt = 0; cpt < nb_rects; ++cpt)
-			ccm_log("--> %i, %i, %i, %i", (int)rects[cpt].x, (int)rects[cpt].y,
-					(int)rects[cpt].width, (int)rects[cpt].height);
-		cairo_rectangles_free(rects, nb_rects);
-	}
-	
-	g_free(formatted);
-} 
+    ccm_print_log ("%s: 0x%lx\n", formatted, CCM_WINDOW_XWINDOW (window));
+    g_free (formatted);
+}
 
 void
-ccm_log_print_backtrace()
+ccm_log_atom (CCMDisplay * display, Atom atom, const char *format, ...)
 {
-	void * array[10];
+    va_list args;
+    gchar *formatted;
+
+    va_start (args, format);
+    formatted = g_strdup_vprintf (format, args);
+    va_end (args);
+
+    ccm_print_log ("%s: %s\n", formatted,
+                   XGetAtomName (CCM_DISPLAY_XDISPLAY (display), atom));
+    g_free (formatted);
+}
+
+void
+ccm_log_region (CCMDrawable * drawable, const char *format, ...)
+{
+    va_list args;
+    gchar *formatted;
+    const CCMRegion *damaged, *geometry;
+    va_start (args, format);
+    formatted = g_strdup_vprintf (format, args);
+    va_end (args);
+    cairo_rectangle_t *rects;
+    gint cpt, nb_rects;
+
+    ccm_print_log ("%s: 0x%lx\n", formatted, ccm_drawable_get_xid (drawable));
+    geometry = ccm_drawable_get_geometry (drawable);
+    if (geometry)
+    {
+        ccm_log ("-> geometry : ");
+        ccm_region_get_rectangles ((CCMRegion *) geometry, &rects, &nb_rects);
+
+        for (cpt = 0; cpt < nb_rects; ++cpt)
+            ccm_log ("--> %i, %i, %i, %i", (int) rects[cpt].x,
+                     (int) rects[cpt].y, (int) rects[cpt].width,
+                     (int) rects[cpt].height);
+        cairo_rectangles_free (rects, nb_rects);
+    }
+
+    g_object_get (drawable, "damaged", &damaged, NULL);
+    if (damaged)
+    {
+        ccm_log ("-> damaged : ");
+        ccm_region_get_rectangles ((CCMRegion *) damaged, &rects, &nb_rects);
+
+        for (cpt = 0; cpt < nb_rects; ++cpt)
+            ccm_log ("--> %i, %i, %i, %i", (int) rects[cpt].x,
+                     (int) rects[cpt].y, (int) rects[cpt].width,
+                     (int) rects[cpt].height);
+        cairo_rectangles_free (rects, nb_rects);
+    }
+
+    g_free (formatted);
+}
+
+void
+ccm_log_print_backtrace ()
+{
+    void *array[10];
     int size;
-    char ** strings;
+    char **strings;
     int i;
 
     size = backtrace (array, 10);
     strings = backtrace_symbols (array, size);
 
     for (i = 0; i < size; i++)
-        ccm_log(strings[i]);
-    
-	g_free (strings);
+        ccm_log (strings[i]);
+
+    g_free (strings);
 }

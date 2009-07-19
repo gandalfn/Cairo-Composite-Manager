@@ -26,26 +26,22 @@
 #include "ccm-display.h"
 #include "ccm-pixmap.h"
 
-G_BEGIN_DECLS
+G_BEGIN_DECLS typedef struct _CCMImage CCMImage;
 
-typedef struct _CCMImage CCMImage;
-
-CCMImage* ccm_image_new				(CCMDisplay* display, Visual* visual, 
-									 cairo_format_t format, 
-									 int width, int height, int depth);
-void 	  ccm_image_destroy			(CCMImage* image);
-gboolean  ccm_image_get_image		(CCMImage* image, CCMPixmap* pixmap, 
-								 	 int x, int y);
-gboolean  ccm_image_get_sub_image	(CCMImage* image, CCMPixmap* pixmap, 
-								 	 int x, int y, int width, int height);
-gboolean  ccm_image_put_image       (CCMImage* image, CCMPixmap* pixmap, 
-                                     int x_src, int y_src,
-                                     int x, int y, int width, int height);
-guchar*   ccm_image_get_data		(CCMImage* image);
-gint 	  ccm_image_get_width		(CCMImage* image);
-gint	  ccm_image_get_height		(CCMImage* image);
-gint 	  ccm_image_get_stride		(CCMImage* image);
+CCMImage *ccm_image_new (CCMDisplay * display, Visual * visual,
+                         cairo_format_t format, int width, int height,
+                         int depth);
+void ccm_image_destroy (CCMImage * image);
+gboolean ccm_image_get_image (CCMImage * image, CCMPixmap * pixmap, int x,
+                              int y);
+gboolean ccm_image_get_sub_image (CCMImage * image, CCMPixmap * pixmap, int x,
+                                  int y, int width, int height);
+gboolean ccm_image_put_image (CCMImage * image, CCMPixmap * pixmap, int x_src,
+                              int y_src, int x, int y, int width, int height);
+guchar *ccm_image_get_data (CCMImage * image);
+gint ccm_image_get_width (CCMImage * image);
+gint ccm_image_get_height (CCMImage * image);
+gint ccm_image_get_stride (CCMImage * image);
 
 G_END_DECLS
-
-#endif /* _CCM_IMAGE_H_ */
+#endif                          /* _CCM_IMAGE_H_ */

@@ -23,35 +23,37 @@
 #include <glib-object.h>
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_PREFERENCES             (ccm_preferences_get_type ())
 #define CCM_PREFERENCES(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PREFERENCES, CCMPreferences))
 #define CCM_PREFERENCES_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PREFERENCES, CCMPreferencesClass))
 #define CCM_IS_PREFERENCES(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PREFERENCES))
 #define CCM_IS_PREFERENCES_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PREFERENCES))
 #define CCM_PREFERENCES_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PREFERENCES, CCMPreferencesClass))
-
 typedef struct _CCMPreferencesClass CCMPreferencesClass;
 typedef struct _CCMPreferencesPrivate CCMPreferencesPrivate;
 typedef struct _CCMPreferences CCMPreferences;
 
 struct _CCMPreferencesClass
 {
-	GObjectClass parent_class;
+    GObjectClass parent_class;
 };
 
 struct _CCMPreferences
 {
-	GObject parent_instance;
-	
-	CCMPreferencesPrivate* priv;
+    GObject parent_instance;
+
+    CCMPreferencesPrivate *priv;
 };
 
-GType           ccm_preferences_get_type    (void) G_GNUC_CONST;
-CCMPreferences* ccm_preferences_new         (void);
-void            ccm_preferences_show        (CCMPreferences* self);
-void            ccm_preferences_hide        (CCMPreferences* self);
+GType
+ccm_preferences_get_type (void)
+    G_GNUC_CONST;
+CCMPreferences *
+ccm_preferences_new (void);
+void
+ccm_preferences_show (CCMPreferences * self);
+void
+ccm_preferences_hide (CCMPreferences * self);
 
 G_END_DECLS
-
-#endif /* _CCM_PREFERENCES_H_ */
+#endif                          /* _CCM_PREFERENCES_H_ */

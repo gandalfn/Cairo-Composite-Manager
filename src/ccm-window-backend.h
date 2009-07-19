@@ -19,7 +19,7 @@
  * 	51 Franklin Street, Fifth Floor
  * 	Boston, MA  02110-1301, USA.
  */
- 
+
 #ifndef _CCM_WINDOW_BACKEND_H
 #define _CCM_WINDOW_BACKEND_H
 
@@ -39,9 +39,7 @@
 #include "ccm-window-xrender.h"
 #endif
 
-G_BEGIN_DECLS
-
-typedef union _CCMWindowBackend CCMWindowBackend;
+G_BEGIN_DECLS typedef union _CCMWindowBackend CCMWindowBackend;
 typedef union _CCMWindowBackendClass CCMWindowBackendClass;
 
 #define CCM_TYPE_WINDOW_BACKEND(screen)     (ccm_window_backend_get_type (screen))
@@ -54,33 +52,32 @@ typedef union _CCMWindowBackendClass CCMWindowBackendClass;
 union _CCMWindowBackendClass
 {
 #ifndef DISABLE_GLITZ_BACKEND
-	CCMWindowGlitzClass glitz_class;
+    CCMWindowGlitzClass glitz_class;
 #endif
 #ifndef DISABLE_OPENVG_BACKEND
-	CCMWindowOpenVGClass openvg_class;
+    CCMWindowOpenVGClass openvg_class;
 #endif
 #ifndef DISABLE_XRENDER_BACKEND
-	CCMWindowXRenderClass xrender_class;
+    CCMWindowXRenderClass xrender_class;
 #endif
-}; 
+};
 
 union _CCMWindowBackend
 {
 #ifndef DISABLE_GLITZ_BACKEND
-	CCMWindowGlitz glitz;
+    CCMWindowGlitz glitz;
 #endif
 #ifndef DISABLE_OPENVG_BACKEND
-	CCMWindowOpenVG openvg;
+    CCMWindowOpenVG openvg;
 #endif
 #ifndef DISABLE_XRENDER_BACKEND
-	CCMWindowXRender xrender;
+    CCMWindowXRender xrender;
 #endif
 };
 
-GType ccm_window_backend_get_type (CCMScreen* screen) G_GNUC_CONST;
+GType
+ccm_window_backend_get_type (CCMScreen * screen)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_WINDOW_BACKEND_H */
-
- 
+#endif                          /* _CCM_WINDOW_BACKEND_H */

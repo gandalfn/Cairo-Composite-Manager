@@ -49,15 +49,16 @@ struct _CCMTimelinePrivate
     gint skipped_frames;
 
     GTimeVal prev_frame_timeval;
-    guint  msecs_delta;
+    guint msecs_delta;
 
     GHashTable *markers_by_frame;
     GHashTable *markers_by_name;
 
-    guint loop : 1;
+    guint loop:1;
 };
 
-typedef struct {
+typedef struct
+{
     gchar *name;
     guint frame_num;
     GQuark quark;
@@ -95,13 +96,9 @@ static guint signals[LAST_SIGNAL] = { 0 };
 static CCMTimeoutPool *timeline_pool = NULL;
 
 static guint
-timeout_add (guint          fps, 
-             GSourceFunc    func,
-             gpointer       data,
-             GDestroyNotify notify)
+timeout_add (guint fps, GSourceFunc func, gpointer data, GDestroyNotify notify)
 {
-    return ccm_timeout_pool_add (timeline_pool, fps, 
-                                 func, data, notify);
+    return ccm_timeout_pool_add (timeline_pool, fps, func, data, notify);
 }
 
 static void
@@ -117,8 +114,7 @@ timeout_set_master (guint tag)
 }
 
 static TimelineMarker *
-timeline_marker_new (const gchar *name,
-                     guint        frame_num)
+timeline_marker_new (const gchar * name, guint frame_num)
 {
     TimelineMarker *marker = g_slice_new0 (TimelineMarker);
 
@@ -142,11 +138,11 @@ timeline_marker_free (gpointer data)
 }
 
 static void
-ccm_timeline_set_property (GObject* object, guint prop_id,
-                           const GValue *value, GParamSpec *pspec)
+ccm_timeline_set_property (GObject * object, guint prop_id,
+                           const GValue * value, GParamSpec * pspec)
 {
     CCMTimeline *self = CCM_TIMELINE (object);
-    
+
     switch (prop_id)
     {
         case PROP_FPS:
@@ -177,11 +173,11 @@ ccm_timeline_set_property (GObject* object, guint prop_id,
 }
 
 static void
-ccm_timeline_get_property (GObject *object, guint prop_id,
-                           GValue *value, GParamSpec *pspec)
+ccm_timeline_get_property (GObject * object, guint prop_id, GValue * value,
+                           GParamSpec * pspec)
 {
-    CCMTimeline *self= CCM_TIMELINE (object);
-    
+    CCMTimeline *self = CCM_TIMELINE (object);
+
     switch (prop_id)
     {
         case PROP_FPS:
@@ -212,10 +208,10 @@ ccm_timeline_get_property (GObject *object, guint prop_id,
 }
 
 static void
-ccm_timeline_finalize (GObject *object)
+ccm_timeline_finalize (GObject * object)
 {
-    CCMTimeline* self = CCM_TIMELINE(object);
-    
+    CCMTimeline *self = CCM_TIMELINE (object);
+
     g_hash_table_destroy (self->priv->markers_by_frame);
     g_hash_table_destroy (self->priv->markers_by_name);
 
@@ -223,10 +219,10 @@ ccm_timeline_finalize (GObject *object)
 }
 
 static void
-ccm_timeline_dispose (GObject *object)
+ccm_timeline_dispose (GObject * object)
 {
-    CCMTimeline *self = CCM_TIMELINE(object);
-    
+    CCMTimeline *self = CCM_TIMELINE (object);
+
     if (self->priv->delay_id)
     {
         timeout_remove (self->priv->delay_id);
@@ -243,60 +239,47 @@ ccm_timeline_dispose (GObject *object)
 }
 
 static void
-ccm_timeline_class_init (CCMTimelineClass *klass)
+ccm_timeline_class_init (CCMTimelineClass * klass)
 {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     timeline_pool = ccm_timeout_pool_new (CCM_TIMELINE_PRIORITY);
-    
+
     g_type_class_add_private (klass, sizeof (CCMTimelinePrivate));
 
     object_class->set_property = ccm_timeline_set_property;
     object_class->get_property = ccm_timeline_get_property;
-    object_class->finalize     = ccm_timeline_finalize;
-    object_class->dispose      = ccm_timeline_dispose;
-    
-    g_object_class_install_property (object_class,
-                                     PROP_FPS,
+    object_class->finalize = ccm_timeline_finalize;
+    object_class->dispose = ccm_timeline_dispose;
+
+    g_object_class_install_property (object_class, PROP_FPS,
                                      g_param_spec_uint ("fps",
                                                         "Frames Per Second",
                                                         "Timeline frames per second",
-                                                        1, 1000,
-                                                        60,
+                                                        1, 1000, 60,
                                                         G_PARAM_READWRITE));
-    g_object_class_install_property (object_class,
-                                     PROP_NUM_FRAMES,
+    g_object_class_install_property (object_class, PROP_NUM_FRAMES,
                                      g_param_spec_uint ("num-frames",
                                                         "Total number of frames",
                                                         "Timelines total number of frames",
-                                                        1, G_MAXUINT,
-                                                        1,
+                                                        1, G_MAXUINT, 1,
                                                         G_PARAM_READWRITE));
-    g_object_class_install_property (object_class,
-                                     PROP_LOOP,
-                                     g_param_spec_boolean ("loop",
-                                                           "Loop",
+    g_object_class_install_property (object_class, PROP_LOOP,
+                                     g_param_spec_boolean ("loop", "Loop",
                                                            "Should the timeline automatically restart",
                                                            FALSE,
                                                            G_PARAM_READWRITE));
-    g_object_class_install_property (object_class,
-                                     PROP_DELAY,
-                                     g_param_spec_uint ("delay",
-                                                        "Delay",
-                                                        "Delay before start",
-                                                        0, G_MAXUINT,
-                                                        0,
+    g_object_class_install_property (object_class, PROP_DELAY,
+                                     g_param_spec_uint ("delay", "Delay",
+                                                        "Delay before start", 0,
+                                                        G_MAXUINT, 0,
                                                         G_PARAM_READWRITE));
-    g_object_class_install_property (object_class,
-                                     PROP_DURATION,
-                                     g_param_spec_uint ("duration",
-                                                        "Duration",
+    g_object_class_install_property (object_class, PROP_DURATION,
+                                     g_param_spec_uint ("duration", "Duration",
                                                         "Duration of the timeline in milliseconds",
-                                                        0, G_MAXUINT,
-                                                        1000,
+                                                        0, G_MAXUINT, 1000,
                                                         G_PARAM_READWRITE));
-    g_object_class_install_property (object_class,
-                                     PROP_DIRECTION,
+    g_object_class_install_property (object_class, PROP_DIRECTION,
                                      g_param_spec_uint ("direction",
                                                         "Direction",
                                                         "Direction of the timeline",
@@ -304,113 +287,100 @@ ccm_timeline_class_init (CCMTimelineClass *klass)
                                                         CCM_TIMELINE_BACKWARD,
                                                         CCM_TIMELINE_FORWARD,
                                                         G_PARAM_READWRITE));
-    g_object_class_install_property (object_class,
-                                     PROP_MASTER,
-                                     g_param_spec_boolean ("master",
-                                                           "Master",
+    g_object_class_install_property (object_class, PROP_MASTER,
+                                     g_param_spec_boolean ("master", "Master",
                                                            "Should the timeline is master timeout",
                                                            FALSE,
                                                            G_PARAM_READWRITE));
 
-    signals[NEW_FRAME] = g_signal_new ("new-frame",
-                                       G_TYPE_FROM_CLASS (object_class),
-                                       G_SIGNAL_RUN_LAST,
-                                       G_STRUCT_OFFSET (CCMTimelineClass, new_frame),
-                                       NULL, NULL,
-                                       g_cclosure_marshal_VOID__INT,
-                                       G_TYPE_NONE, 1, G_TYPE_INT);
-    signals[COMPLETED] = g_signal_new ("completed",     
-                                       G_TYPE_FROM_CLASS (object_class),
-                                       G_SIGNAL_RUN_LAST,
-                                       G_STRUCT_OFFSET (CCMTimelineClass, completed),
-                                       NULL, NULL,
-                                       g_cclosure_marshal_VOID__VOID,
-                                       G_TYPE_NONE, 0);
-    signals[STARTED] = g_signal_new ("started",
-                                     G_TYPE_FROM_CLASS (object_class),
-                                     G_SIGNAL_RUN_LAST,
-                                     G_STRUCT_OFFSET (CCMTimelineClass, started),
-                                     NULL, NULL,
-                                     g_cclosure_marshal_VOID__VOID,
-                                     G_TYPE_NONE, 0);
-    signals[PAUSED] = g_signal_new ("paused",
-                                    G_TYPE_FROM_CLASS (object_class),
-                                    G_SIGNAL_RUN_LAST,
-                                    G_STRUCT_OFFSET (CCMTimelineClass, paused),
-                                    NULL, NULL,
-                                    g_cclosure_marshal_VOID__VOID,
-                                    G_TYPE_NONE, 0);
-    signals[MARKER_REACHED] = g_signal_new ("marker-reached",
-                                            G_TYPE_FROM_CLASS (object_class),
-                                            G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE | 
-                                            G_SIGNAL_DETAILED | G_SIGNAL_NO_HOOKS,
-                                            G_STRUCT_OFFSET (CCMTimelineClass, marker_reached),
-                                            NULL, NULL,
-                                            g_cclosure_marshal_VOID__UINT_POINTER,
-                                            G_TYPE_NONE, 2, 
-                                            G_TYPE_UINT, G_TYPE_POINTER);
+    signals[NEW_FRAME] =
+        g_signal_new ("new-frame", G_TYPE_FROM_CLASS (object_class),
+                      G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (CCMTimelineClass,
+                                                          new_frame), NULL,
+                      NULL, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1,
+                      G_TYPE_INT);
+    signals[COMPLETED] =
+        g_signal_new ("completed", G_TYPE_FROM_CLASS (object_class),
+                      G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (CCMTimelineClass,
+                                                          completed), NULL,
+                      NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+    signals[STARTED] =
+        g_signal_new ("started", G_TYPE_FROM_CLASS (object_class),
+                      G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (CCMTimelineClass,
+                                                          started), NULL, NULL,
+                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+    signals[PAUSED] =
+        g_signal_new ("paused", G_TYPE_FROM_CLASS (object_class),
+                      G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (CCMTimelineClass,
+                                                          paused), NULL, NULL,
+                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+    signals[MARKER_REACHED] =
+        g_signal_new ("marker-reached", G_TYPE_FROM_CLASS (object_class),
+                      G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE |
+                      G_SIGNAL_DETAILED | G_SIGNAL_NO_HOOKS,
+                      G_STRUCT_OFFSET (CCMTimelineClass, marker_reached), NULL,
+                      NULL, g_cclosure_marshal_VOID__UINT_POINTER, G_TYPE_NONE,
+                      2, G_TYPE_UINT, G_TYPE_POINTER);
 }
 
 static void
-ccm_timeline_init (CCMTimeline *self)
+ccm_timeline_init (CCMTimeline * self)
 {
-    self->priv = CCM_TIMELINE_GET_PRIVATE(self);
+    self->priv = CCM_TIMELINE_GET_PRIVATE (self);
     self->priv->fps = 60;
     self->priv->n_frames = 0;
     self->priv->msecs_delta = 0;
     self->priv->master = FALSE;
 
     self->priv->markers_by_frame = g_hash_table_new (NULL, NULL);
-    self->priv->markers_by_name = g_hash_table_new_full (g_str_hash, 
-                                                         g_str_equal,
-                                                         NULL,
-                                                         timeline_marker_free);
+    self->priv->markers_by_name =
+        g_hash_table_new_full (g_str_hash, g_str_equal, NULL,
+                               timeline_marker_free);
 }
 
 static void
-emit_frame_signal (CCMTimeline *self)
+emit_frame_signal (CCMTimeline * self)
 {
-  gint i;
+    gint i;
 
-  g_signal_emit (self, signals[NEW_FRAME], 0,
-                 self->priv->current_frame_num);
+    g_signal_emit (self, signals[NEW_FRAME], 0, self->priv->current_frame_num);
 
-  if (self->priv->markers_by_name == NULL ||
-      self->priv->markers_by_frame == NULL)
-    return;
+    if (self->priv->markers_by_name == NULL
+        || self->priv->markers_by_frame == NULL)
+        return;
 
-  for (i = self->priv->skipped_frames; i >= 0; i--)
+    for (i = self->priv->skipped_frames; i >= 0; i--)
     {
-      gint frame_num;
-      GSList *markers, *l;
+        gint frame_num;
+        GSList *markers, *l;
 
-      frame_num = self->priv->current_frame_num
-                + (self->priv->direction == CCM_TIMELINE_FORWARD ? -i : i);
-      markers = g_hash_table_lookup (self->priv->markers_by_frame,
-                                     GUINT_TO_POINTER (frame_num));
-      for (l = markers; l; l = l->next)
-      {
-          TimelineMarker *marker = l->data;
+        frame_num =
+            self->priv->current_frame_num + (self->priv->direction ==
+                                             CCM_TIMELINE_FORWARD ? -i : i);
+        markers =
+            g_hash_table_lookup (self->priv->markers_by_frame,
+                                 GUINT_TO_POINTER (frame_num));
+        for (l = markers; l; l = l->next)
+        {
+            TimelineMarker *marker = l->data;
 
-          g_signal_emit (self, signals[MARKER_REACHED],
-                         marker->quark,
-                         marker->name,
-                         marker->frame_num);
+            g_signal_emit (self, signals[MARKER_REACHED], marker->quark,
+                           marker->name, marker->frame_num);
         }
     }
 }
 
 static gboolean
-is_complete (CCMTimeline *self)
+is_complete (CCMTimeline * self)
 {
-  return ((self->priv->direction == CCM_TIMELINE_FORWARD) &&
-          (self->priv->current_frame_num >= self->priv->n_frames)) ||
-         ((self->priv->direction == CCM_TIMELINE_BACKWARD) &&
-          (self->priv->current_frame_num <= 0));
+    return ((self->priv->direction == CCM_TIMELINE_FORWARD)
+            && (self->priv->current_frame_num >= self->priv->n_frames))
+        || ((self->priv->direction == CCM_TIMELINE_BACKWARD)
+            && (self->priv->current_frame_num <= 0));
 }
 
 static gboolean
-timeline_timeout_func (CCMTimeline *self)
+timeline_timeout_func (CCMTimeline * self)
 {
     GTimeVal timeval;
     guint n_frames;
@@ -422,11 +392,11 @@ timeline_timeout_func (CCMTimeline *self)
 
     if (!self->priv->prev_frame_timeval.tv_sec)
         self->priv->prev_frame_timeval = timeval;
-    
+
     msecs = (timeval.tv_sec - self->priv->prev_frame_timeval.tv_sec) * 1000;
     msecs += (timeval.tv_usec - self->priv->prev_frame_timeval.tv_usec) / 1000;
     self->priv->msecs_delta = msecs;
-    
+
     speed = MAX (1000 / self->priv->fps, 1);
     n_frames = msecs / speed;
     if (n_frames == 0)
@@ -450,7 +420,7 @@ timeline_timeout_func (CCMTimeline *self)
             g_object_unref (self);
             return FALSE;
         }
-        
+
         g_object_unref (self);
         return TRUE;
     }
@@ -459,11 +429,11 @@ timeline_timeout_func (CCMTimeline *self)
         CCMTimelineDirection saved_direction = self->priv->direction;
         guint overflow_frame_num = self->priv->current_frame_num;
         gint end_frame;
-  
+
         if (self->priv->direction == CCM_TIMELINE_FORWARD)
         {
-            self->priv->skipped_frames -= self->priv->current_frame_num - 
-                                          self->priv->n_frames;
+            self->priv->skipped_frames -=
+                self->priv->current_frame_num - self->priv->n_frames;
             self->priv->current_frame_num = self->priv->n_frames;
         }
         else if (self->priv->direction == CCM_TIMELINE_BACKWARD)
@@ -490,11 +460,12 @@ timeline_timeout_func (CCMTimeline *self)
 
         g_signal_emit (self, signals[COMPLETED], 0);
 
-        if (self->priv->current_frame_num != end_frame && 
-            !((self->priv->current_frame_num == 0 && 
-               end_frame == self->priv->n_frames) ||
-              (self->priv->current_frame_num == self->priv->n_frames && 
-               end_frame == 0)))
+        if (self->priv->current_frame_num != end_frame
+            &&
+            !((self->priv->current_frame_num == 0
+               && end_frame == self->priv->n_frames)
+              || (self->priv->current_frame_num == self->priv->n_frames
+                  && end_frame == 0)))
         {
             g_object_unref (self);
             return TRUE;
@@ -503,16 +474,16 @@ timeline_timeout_func (CCMTimeline *self)
         if (self->priv->loop)
         {
             if (saved_direction == CCM_TIMELINE_FORWARD)
-                self->priv->current_frame_num = overflow_frame_num - 
-                                                self->priv->n_frames;
+                self->priv->current_frame_num =
+                    overflow_frame_num - self->priv->n_frames;
             else
-                self->priv->current_frame_num = self->priv->n_frames +
-                                                overflow_frame_num;
+                self->priv->current_frame_num =
+                    self->priv->n_frames + overflow_frame_num;
 
             if (self->priv->direction != saved_direction)
             {
-                self->priv->current_frame_num = self->priv->n_frames -
-                                                self->priv->current_frame_num;
+                self->priv->current_frame_num =
+                    self->priv->n_frames - self->priv->current_frame_num;
             }
 
             g_object_unref (self);
@@ -532,36 +503,35 @@ timeline_timeout_func (CCMTimeline *self)
 }
 
 static guint
-timeline_timeout_add (CCMTimeline *self, guint fps, GSourceFunc func,
+timeline_timeout_add (CCMTimeline * self, guint fps, GSourceFunc func,
                       gpointer data, GDestroyNotify notify)
 {
     GTimeVal timeval;
     guint ret;
-    
+
     if (self->priv->prev_frame_timeval.tv_sec == 0)
     {
         g_get_current_time (&timeval);
         self->priv->prev_frame_timeval = timeval;
     }
-    self->priv->skipped_frames   = 0;
-    self->priv->msecs_delta      = 0;
+    self->priv->skipped_frames = 0;
+    self->priv->msecs_delta = 0;
 
     ret = timeout_add (fps, func, data, notify);
     if (ret && self->priv->master)
         timeout_set_master (ret);
-    
+
     return ret;
 }
 
 static gboolean
-delay_timeout_func (CCMTimeline* self)
+delay_timeout_func (CCMTimeline * self)
 {
     self->priv->delay_id = 0;
 
-    self->priv->timeout_id = timeline_timeout_add (self,
-                                                   self->priv->fps,
-                                                   (GSourceFunc)timeline_timeout_func,
-                                                   self, NULL);
+    self->priv->timeout_id =
+        timeline_timeout_add (self, self->priv->fps,
+                              (GSourceFunc) timeline_timeout_func, self, NULL);
 
     g_signal_emit (self, signals[STARTED], 0);
 
@@ -569,7 +539,7 @@ delay_timeout_func (CCMTimeline* self)
 }
 
 void
-ccm_timeline_start (CCMTimeline *self)
+ccm_timeline_start (CCMTimeline * self)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -581,25 +551,25 @@ ccm_timeline_start (CCMTimeline *self)
 
     if (self->priv->delay)
     {
-        self->priv->delay_id = timeout_add (self->priv->delay,
-                                            (GSourceFunc)delay_timeout_func,
-                                            self, NULL);
+        self->priv->delay_id =
+            timeout_add (self->priv->delay, (GSourceFunc) delay_timeout_func,
+                         self, NULL);
         if (self->priv->delay_id && self->priv->master)
             timeout_set_master (self->priv->delay_id);
     }
     else
     {
-        self->priv->timeout_id = timeline_timeout_add (self,
-                                                       self->priv->fps,
-                                                       (GSourceFunc)timeline_timeout_func,
-                                                       self, NULL);
+        self->priv->timeout_id =
+            timeline_timeout_add (self, self->priv->fps,
+                                  (GSourceFunc) timeline_timeout_func, self,
+                                  NULL);
 
         g_signal_emit (self, signals[STARTED], 0);
     }
 }
 
 void
-ccm_timeline_pause (CCMTimeline *self)
+ccm_timeline_pause (CCMTimeline * self)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -622,14 +592,14 @@ ccm_timeline_pause (CCMTimeline *self)
 }
 
 void
-ccm_timeline_stop (CCMTimeline *self)
+ccm_timeline_stop (CCMTimeline * self)
 {
     ccm_timeline_pause (self);
     ccm_timeline_rewind (self);
 }
 
 void
-ccm_timeline_set_loop (CCMTimeline *self, gboolean loop)
+ccm_timeline_set_loop (CCMTimeline * self, gboolean loop)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -642,7 +612,7 @@ ccm_timeline_set_loop (CCMTimeline *self, gboolean loop)
 }
 
 gboolean
-ccm_timeline_get_loop (CCMTimeline *self)
+ccm_timeline_get_loop (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), FALSE);
 
@@ -650,7 +620,7 @@ ccm_timeline_get_loop (CCMTimeline *self)
 }
 
 void
-ccm_timeline_rewind (CCMTimeline *self)
+ccm_timeline_rewind (CCMTimeline * self)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -661,9 +631,9 @@ ccm_timeline_rewind (CCMTimeline *self)
 }
 
 void
-ccm_timeline_skip (CCMTimeline *self, guint n_frames)
+ccm_timeline_skip (CCMTimeline * self, guint n_frames)
 {
-  g_return_if_fail (CCM_IS_TIMELINE (self));
+    g_return_if_fail (CCM_IS_TIMELINE (self));
 
     if (self->priv->direction == CCM_TIMELINE_FORWARD)
     {
@@ -682,7 +652,7 @@ ccm_timeline_skip (CCMTimeline *self, guint n_frames)
 }
 
 void
-ccm_timeline_advance (CCMTimeline *self, guint frame_num)
+ccm_timeline_advance (CCMTimeline * self, guint frame_num)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -690,7 +660,7 @@ ccm_timeline_advance (CCMTimeline *self, guint frame_num)
 }
 
 gint
-ccm_timeline_get_current_frame (CCMTimeline *self)
+ccm_timeline_get_current_frame (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), 0);
 
@@ -698,7 +668,7 @@ ccm_timeline_get_current_frame (CCMTimeline *self)
 }
 
 guint
-ccm_timeline_get_n_frames (CCMTimeline *self)
+ccm_timeline_get_n_frames (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), 0);
 
@@ -706,7 +676,7 @@ ccm_timeline_get_n_frames (CCMTimeline *self)
 }
 
 void
-ccm_timeline_set_n_frames (CCMTimeline *self, guint n_frames)
+ccm_timeline_set_n_frames (CCMTimeline * self, guint n_frames)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
     g_return_if_fail (n_frames > 0);
@@ -720,7 +690,7 @@ ccm_timeline_set_n_frames (CCMTimeline *self, guint n_frames)
 }
 
 void
-ccm_timeline_set_speed (CCMTimeline *self, guint fps)
+ccm_timeline_set_speed (CCMTimeline * self, guint fps)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
     g_return_if_fail (fps > 0);
@@ -735,10 +705,10 @@ ccm_timeline_set_speed (CCMTimeline *self, guint fps)
         {
             timeout_remove (self->priv->timeout_id);
 
-            self->priv->timeout_id = timeline_timeout_add (self,
-                                                           self->priv->fps,
-                                                           (GSourceFunc)timeline_timeout_func,
-                                                           self, NULL);
+            self->priv->timeout_id =
+                timeline_timeout_add (self, self->priv->fps,
+                                      (GSourceFunc) timeline_timeout_func, self,
+                                      NULL);
         }
 
         g_object_notify (G_OBJECT (self), "fps");
@@ -747,7 +717,7 @@ ccm_timeline_set_speed (CCMTimeline *self, guint fps)
 }
 
 guint
-ccm_timeline_get_speed (CCMTimeline *self)
+ccm_timeline_get_speed (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), 0);
 
@@ -755,7 +725,7 @@ ccm_timeline_get_speed (CCMTimeline *self)
 }
 
 gboolean
-ccm_timeline_is_playing (CCMTimeline *self)
+ccm_timeline_is_playing (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), FALSE);
 
@@ -763,19 +733,18 @@ ccm_timeline_is_playing (CCMTimeline *self)
 }
 
 CCMTimeline *
-ccm_timeline_clone (CCMTimeline *self)
+ccm_timeline_clone (CCMTimeline * self)
 {
     CCMTimeline *copy;
 
     g_return_val_if_fail (CCM_IS_TIMELINE (self), NULL);
 
-    copy = g_object_new (CCM_TYPE_TIMELINE,
-                         "fps", ccm_timeline_get_speed (self),
-                         "num-frames", ccm_timeline_get_n_frames (self),
-                         "loop", ccm_timeline_get_loop (self),
-                         "delay", ccm_timeline_get_delay (self),
-                         "direction", ccm_timeline_get_direction (self),
-                         NULL);
+    copy =
+        g_object_new (CCM_TYPE_TIMELINE, "fps", ccm_timeline_get_speed (self),
+                      "num-frames", ccm_timeline_get_n_frames (self), "loop",
+                      ccm_timeline_get_loop (self), "delay",
+                      ccm_timeline_get_delay (self), "direction",
+                      ccm_timeline_get_direction (self), NULL);
 
     return copy;
 }
@@ -788,19 +757,18 @@ ccm_timeline_new_for_duration (guint msecs)
     return g_object_new (CCM_TYPE_TIMELINE, "duration", msecs, NULL);
 }
 
-CCMTimeline*
+CCMTimeline *
 ccm_timeline_new (guint n_frames, guint fps)
 {
     g_return_val_if_fail (n_frames > 0, NULL);
     g_return_val_if_fail (fps > 0, NULL);
 
-    return g_object_new (CCM_TYPE_TIMELINE, "fps", fps, 
-                         "num-frames", n_frames,
+    return g_object_new (CCM_TYPE_TIMELINE, "fps", fps, "num-frames", n_frames,
                          NULL);
 }
 
 guint
-ccm_timeline_get_delay (CCMTimeline *self)
+ccm_timeline_get_delay (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), 0);
 
@@ -808,7 +776,7 @@ ccm_timeline_get_delay (CCMTimeline *self)
 }
 
 void
-ccm_timeline_set_delay (CCMTimeline *self, guint msecs)
+ccm_timeline_set_delay (CCMTimeline * self, guint msecs)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -820,15 +788,15 @@ ccm_timeline_set_delay (CCMTimeline *self, guint msecs)
 }
 
 guint
-ccm_timeline_get_duration (CCMTimeline *self)
+ccm_timeline_get_duration (CCMTimeline * self)
 {
-  g_return_val_if_fail (CCM_IS_TIMELINE (self), 0);
+    g_return_val_if_fail (CCM_IS_TIMELINE (self), 0);
 
-  return self->priv->duration;
+    return self->priv->duration;
 }
 
 void
-ccm_timeline_set_duration (CCMTimeline *self, guint msecs)
+ccm_timeline_set_duration (CCMTimeline * self, guint msecs)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -851,7 +819,7 @@ ccm_timeline_set_duration (CCMTimeline *self, guint msecs)
 }
 
 gdouble
-ccm_timeline_get_progress (CCMTimeline *self)
+ccm_timeline_get_progress (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), 0.);
 
@@ -863,12 +831,12 @@ ccm_timeline_get_progress (CCMTimeline *self)
             return 1.0;
     }
 
-    return CLAMP ((gdouble)self->priv->current_frame_num /
-                  (gdouble)self->priv->n_frames, 0.0, 1.0);
+    return CLAMP ((gdouble) self->priv->current_frame_num /
+                  (gdouble) self->priv->n_frames, 0.0, 1.0);
 }
 
 CCMTimelineDirection
-ccm_timeline_get_direction (CCMTimeline *self)
+ccm_timeline_get_direction (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), CCM_TIMELINE_FORWARD);
 
@@ -876,7 +844,7 @@ ccm_timeline_get_direction (CCMTimeline *self)
 }
 
 void
-ccm_timeline_set_direction (CCMTimeline *self, CCMTimelineDirection direction)
+ccm_timeline_set_direction (CCMTimeline * self, CCMTimelineDirection direction)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -892,7 +860,7 @@ ccm_timeline_set_direction (CCMTimeline *self, CCMTimelineDirection direction)
 }
 
 guint
-ccm_timeline_get_delta (CCMTimeline *self, guint *msecs)
+ccm_timeline_get_delta (CCMTimeline * self, guint * msecs)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), 0);
 
@@ -911,9 +879,8 @@ ccm_timeline_get_delta (CCMTimeline *self, guint *msecs)
 }
 
 static inline void
-ccm_timeline_add_marker_internal (CCMTimeline *self,
-                                  const gchar *marker_name,
-                                  guint        frame_num)
+ccm_timeline_add_marker_internal (CCMTimeline * self, const gchar * marker_name,
+                                  guint frame_num)
 {
     TimelineMarker *marker;
     GSList *markers;
@@ -922,36 +889,33 @@ ccm_timeline_add_marker_internal (CCMTimeline *self,
     if (G_UNLIKELY (marker))
     {
         g_warning ("A marker named `%s' already exists on frame %d",
-                   marker->name,
-                   marker->frame_num);
+                   marker->name, marker->frame_num);
         return;
     }
 
     marker = timeline_marker_new (marker_name, frame_num);
     g_hash_table_insert (self->priv->markers_by_name, marker->name, marker);
 
-    markers = g_hash_table_lookup (self->priv->markers_by_frame,
-                                   GUINT_TO_POINTER (frame_num));
+    markers =
+        g_hash_table_lookup (self->priv->markers_by_frame,
+                             GUINT_TO_POINTER (frame_num));
     if (!markers)
     {
         markers = g_slist_prepend (NULL, marker);
         g_hash_table_insert (self->priv->markers_by_frame,
-                             GUINT_TO_POINTER (frame_num),
-                             markers);
+                             GUINT_TO_POINTER (frame_num), markers);
     }
     else
     {
         markers = g_slist_prepend (markers, marker);
         g_hash_table_replace (self->priv->markers_by_frame,
-                              GUINT_TO_POINTER (frame_num),
-                              markers);
+                              GUINT_TO_POINTER (frame_num), markers);
     }
 }
 
 void
-ccm_timeline_add_marker_at_frame (CCMTimeline *self,
-                                  const gchar *marker_name,
-                                  guint        frame_num)
+ccm_timeline_add_marker_at_frame (CCMTimeline * self, const gchar * marker_name,
+                                  guint frame_num)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
     g_return_if_fail (marker_name != NULL);
@@ -961,9 +925,8 @@ ccm_timeline_add_marker_at_frame (CCMTimeline *self,
 }
 
 void
-ccm_timeline_add_marker_at_time (CCMTimeline *self,
-                                 const gchar *marker_name,
-                                 guint        msecs)
+ccm_timeline_add_marker_at_time (CCMTimeline * self, const gchar * marker_name,
+                                 guint msecs)
 {
     guint frame_num;
 
@@ -977,21 +940,20 @@ ccm_timeline_add_marker_at_time (CCMTimeline *self,
 }
 
 gchar **
-ccm_timeline_list_markers (CCMTimeline *self,
-                           gint         frame_num,
-                           guint       *n_markers)
+ccm_timeline_list_markers (CCMTimeline * self, gint frame_num,
+                           guint * n_markers)
 {
     gchar **retval = NULL;
     gint i;
 
-	g_return_val_if_fail (CCM_IS_TIMELINE (self), NULL);
+    g_return_val_if_fail (CCM_IS_TIMELINE (self), NULL);
 
     if (frame_num < 0)
     {
         GList *markers, *l;
 
         markers = g_hash_table_get_keys (self->priv->markers_by_name);
-        retval = g_new0 (gchar*, g_list_length (markers) + 1);
+        retval = g_new0 (gchar *, g_list_length (markers) + 1);
 
         for (i = 0, l = markers; l != NULL; i++, l = l->next)
             retval[i] = g_strdup (l->data);
@@ -1002,9 +964,10 @@ ccm_timeline_list_markers (CCMTimeline *self,
     {
         GSList *markers, *l;
 
-        markers = g_hash_table_lookup (self->priv->markers_by_frame,
-                                       GUINT_TO_POINTER (frame_num));
-        retval = g_new0 (gchar*, g_slist_length (markers) + 1);
+        markers =
+            g_hash_table_lookup (self->priv->markers_by_frame,
+                                 GUINT_TO_POINTER (frame_num));
+        retval = g_new0 (gchar *, g_slist_length (markers) + 1);
 
         for (i = 0, l = markers; l != NULL; i++, l = l->next)
             retval[i] = g_strdup (l->data);
@@ -1017,7 +980,7 @@ ccm_timeline_list_markers (CCMTimeline *self,
 }
 
 void
-ccm_timeline_advance_to_marker (CCMTimeline *self, const gchar *marker_name)
+ccm_timeline_advance_to_marker (CCMTimeline * self, const gchar * marker_name)
 {
     TimelineMarker *marker;
 
@@ -1035,7 +998,7 @@ ccm_timeline_advance_to_marker (CCMTimeline *self, const gchar *marker_name)
 }
 
 void
-ccm_timeline_remove_marker (CCMTimeline *self, const gchar *marker_name)
+ccm_timeline_remove_marker (CCMTimeline * self, const gchar * marker_name)
 {
     TimelineMarker *marker;
     GSList *markers;
@@ -1050,8 +1013,9 @@ ccm_timeline_remove_marker (CCMTimeline *self, const gchar *marker_name)
         return;
     }
 
-    markers = g_hash_table_lookup (self->priv->markers_by_frame,
-                                   GUINT_TO_POINTER (marker->frame_num));
+    markers =
+        g_hash_table_lookup (self->priv->markers_by_frame,
+                             GUINT_TO_POINTER (marker->frame_num));
     if (G_LIKELY (markers))
     {
         markers = g_slist_remove (markers, marker);
@@ -1067,8 +1031,7 @@ ccm_timeline_remove_marker (CCMTimeline *self, const gchar *marker_name)
     }
     else
     {
-        g_warning ("Dangling marker %s at frame %d",
-                   marker->name,
+        g_warning ("Dangling marker %s at frame %d", marker->name,
                    marker->frame_num);
     }
 
@@ -1076,7 +1039,7 @@ ccm_timeline_remove_marker (CCMTimeline *self, const gchar *marker_name)
 }
 
 void
-ccm_timeline_set_master (CCMTimeline *self, gboolean master)
+ccm_timeline_set_master (CCMTimeline * self, gboolean master)
 {
     g_return_if_fail (CCM_IS_TIMELINE (self));
 
@@ -1089,7 +1052,7 @@ ccm_timeline_set_master (CCMTimeline *self, gboolean master)
 }
 
 gboolean
-ccm_timeline_get_master (CCMTimeline *self)
+ccm_timeline_get_master (CCMTimeline * self)
 {
     g_return_val_if_fail (CCM_IS_TIMELINE (self), FALSE);
 

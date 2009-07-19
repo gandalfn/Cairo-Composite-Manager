@@ -28,32 +28,31 @@
 #include "ccm-pixmap-image.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_PIXMAP_BUFFERED_IMAGE             (ccm_pixmap_buffered_image_get_type ())
 #define CCM_PIXMAP_BUFFERED_IMAGE(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PIXMAP_BUFFERED_IMAGE, CCMPixmapBufferedImage))
 #define CCM_PIXMAP_BUFFERED_IMAGE_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PIXMAP_BUFFERED_IMAGE, CCMPixmapBufferedImageClass))
 #define CCM_IS_PIXMAP_BUFFERED_IMAGE(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PIXMAP_BUFFERED_IMAGE))
 #define CCM_IS_PIXMAP_BUFFERED_IMAGE_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PIXMAP_BUFFERED_IMAGE))
 #define CCM_PIXMAP_BUFFERED_IMAGE_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PIXMAP_BUFFERED_IMAGE, CCMPixmapBufferedImageClass))
-
 typedef struct _CCMPixmapBufferedImageClass CCMPixmapBufferedImageClass;
 typedef struct _CCMPixmapBufferedImagePrivate CCMPixmapBufferedImagePrivate;
 typedef struct _CCMPixmapBufferedImage CCMPixmapBufferedImage;
 
 struct _CCMPixmapBufferedImageClass
 {
-	CCMPixmapImageClass parent_class;
+    CCMPixmapImageClass parent_class;
 };
 
 struct _CCMPixmapBufferedImage
 {
-	CCMPixmapImage parent_instance;
-	
-	CCMPixmapBufferedImagePrivate* priv;
+    CCMPixmapImage parent_instance;
+
+    CCMPixmapBufferedImagePrivate *priv;
 };
 
-GType ccm_pixmap_buffered_image_get_type (void) G_GNUC_CONST;
+GType
+ccm_pixmap_buffered_image_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_PIXMAP_BUFFERED_IMAGE_H_ */
+#endif                          /* _CCM_PIXMAP_BUFFERED_IMAGE_H_ */

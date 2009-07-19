@@ -36,84 +36,83 @@ CCM_DEFINE_TYPE (CCMPixmapXRender, ccm_pixmap_xrender, CCM_TYPE_PIXMAP);
 
 struct _CCMPixmapXRenderPrivate
 {
-	cairo_surface_t*    surface;
+    cairo_surface_t *surface;
 };
 
 #define CCM_PIXMAP_XRENDER_GET_PRIVATE(o) \
 	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRenderPrivate))
 
-static cairo_surface_t* ccm_pixmap_xrender_get_surface	(CCMDrawable* drawable);
-static void		  		ccm_pixmap_xrender_bind 		(CCMPixmap* self);
+static cairo_surface_t *ccm_pixmap_xrender_get_surface (CCMDrawable * drawable);
+static void ccm_pixmap_xrender_bind (CCMPixmap * self);
 
 static void
-ccm_pixmap_xrender_init (CCMPixmapXRender *self)
+ccm_pixmap_xrender_init (CCMPixmapXRender * self)
 {
-	self->priv = CCM_PIXMAP_XRENDER_GET_PRIVATE(self);
-	
-	self->priv->surface = NULL;
+    self->priv = CCM_PIXMAP_XRENDER_GET_PRIVATE (self);
+
+    self->priv->surface = NULL;
 }
 
 static void
-ccm_pixmap_xrender_finalize (GObject *object)
+ccm_pixmap_xrender_finalize (GObject * object)
 {
-	CCMPixmapXRender* self = CCM_PIXMAP_XRENDER(object);
+    CCMPixmapXRender *self = CCM_PIXMAP_XRENDER (object);
 
-	if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
-	
-	G_OBJECT_CLASS (ccm_pixmap_xrender_parent_class)->finalize (object);
+    if (self->priv->surface)
+        cairo_surface_destroy (self->priv->surface);
+
+    G_OBJECT_CLASS (ccm_pixmap_xrender_parent_class)->finalize (object);
 }
 
 static void
-ccm_pixmap_xrender_class_init (CCMPixmapXRenderClass *klass)
+ccm_pixmap_xrender_class_init (CCMPixmapXRenderClass * klass)
 {
-	GObjectClass* object_class = G_OBJECT_CLASS (klass);
-	
-	g_type_class_add_private (klass, sizeof (CCMPixmapXRenderPrivate));
+    GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
-	CCM_DRAWABLE_CLASS(klass)->get_surface = ccm_pixmap_xrender_get_surface;
-	CCM_PIXMAP_CLASS(klass)->bind = ccm_pixmap_xrender_bind;
-	
-	object_class->finalize = ccm_pixmap_xrender_finalize;
+    g_type_class_add_private (klass, sizeof (CCMPixmapXRenderPrivate));
+
+    CCM_DRAWABLE_CLASS (klass)->get_surface = ccm_pixmap_xrender_get_surface;
+    CCM_PIXMAP_CLASS (klass)->bind = ccm_pixmap_xrender_bind;
+
+    object_class->finalize = ccm_pixmap_xrender_finalize;
 }
 
 static void
-ccm_pixmap_xrender_bind (CCMPixmap* pixmap)
+ccm_pixmap_xrender_bind (CCMPixmap * pixmap)
 {
-	g_return_if_fail(pixmap != NULL);
-	
-	CCMPixmapXRender* self = CCM_PIXMAP_XRENDER(pixmap);
-	
-	Visual* visual = ccm_drawable_get_visual (CCM_DRAWABLE(self));
-	cairo_rectangle_t geometry;
-	
-	if (!self->priv->surface && visual &&
-		ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
-	{
-		CCMPixmapXRender* self = CCM_PIXMAP_XRENDER(pixmap);
-		CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-	
-		self->priv->surface = cairo_xlib_surface_create (
-									CCM_DISPLAY_XDISPLAY(display),
-									CCM_PIXMAP_XPIXMAP(self), 
-									visual,
-									geometry.width, 
-									geometry.height);
-	}
+    g_return_if_fail (pixmap != NULL);
+
+    CCMPixmapXRender *self = CCM_PIXMAP_XRENDER (pixmap);
+
+    Visual *visual = ccm_drawable_get_visual (CCM_DRAWABLE (self));
+    cairo_rectangle_t geometry;
+
+    if (!self->priv->surface && visual
+        && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
+    {
+        CCMPixmapXRender *self = CCM_PIXMAP_XRENDER (pixmap);
+        CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
+
+        self->priv->surface =
+            cairo_xlib_surface_create (CCM_DISPLAY_XDISPLAY (display),
+                                       CCM_PIXMAP_XPIXMAP (self), visual,
+                                       geometry.width, geometry.height);
+    }
 }
 
-static cairo_surface_t*
-ccm_pixmap_xrender_get_surface (CCMDrawable* drawable)
+static cairo_surface_t *
+ccm_pixmap_xrender_get_surface (CCMDrawable * drawable)
 {
-	g_return_val_if_fail(drawable != NULL, NULL);
-	
-	CCMPixmapXRender *self = CCM_PIXMAP_XRENDER(drawable);
-	cairo_surface_t* surface = NULL;
-	
-	if (self->priv->surface)
-	{
-		cairo_surface_reference (self->priv->surface);
-		surface = self->priv->surface;
-	}
-	
-	return surface;
+    g_return_val_if_fail (drawable != NULL, NULL);
+
+    CCMPixmapXRender *self = CCM_PIXMAP_XRENDER (drawable);
+    cairo_surface_t *surface = NULL;
+
+    if (self->priv->surface)
+    {
+        cairo_surface_reference (self->priv->surface);
+        surface = self->priv->surface;
+    }
+
+    return surface;
 }

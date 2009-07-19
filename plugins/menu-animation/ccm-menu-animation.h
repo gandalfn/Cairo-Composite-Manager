@@ -31,35 +31,34 @@
 #include "ccm-screen-plugin.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_MENU_ANIMATION              (ccm_menu_animation_get_type ())
 #define CCM_MENU_ANIMATION(obj)              (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimation))
 #define CCM_MENU_ANIMATION_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationClass))
 #define CCM_IS_MENU_ANIMATION(obj)           (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_MENU_ANIMATION))
 #define CCM_IS_MENU_ANIMATION_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_MENU_ANIMATION))
 #define CCM_MENU_ANIMATION_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationClass))
-
 typedef struct _CCMMenuAnimationClass CCMMenuAnimationClass;
 typedef struct _CCMMenuAnimation CCMMenuAnimation;
 
 struct _CCMMenuAnimationClass
 {
-	CCMPluginClass parent_class;
+    CCMPluginClass parent_class;
 
-    Atom		   animation_atom;
+    Atom animation_atom;
 };
 
 typedef struct _CCMMenuAnimationPrivate CCMMenuAnimationPrivate;
 
 struct _CCMMenuAnimation
 {
-	CCMPlugin parent_instance;
-	
-	CCMMenuAnimationPrivate* priv;
+    CCMPlugin parent_instance;
+
+    CCMMenuAnimationPrivate *priv;
 };
 
-GType ccm_menu_animation_get_type (void) G_GNUC_CONST;
+GType
+ccm_menu_animation_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_MENU_ANIMATION_H_ */
+#endif                          /* _CCM_MENU_ANIMATION_H_ */

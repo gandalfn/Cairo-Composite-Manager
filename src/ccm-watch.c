@@ -24,11 +24,12 @@
 
 typedef struct CCMWatch CCMWatch;
 
-struct CCMWatch {
+struct CCMWatch
+{
     GSource source;
     GPollFD poll_fd;
     gboolean removed;
-    
+
     CCMWatchCallback read_callback;
     CCMWatchCallback write_callback;
     CCMWatchCallback hangup_callback;
@@ -36,7 +37,7 @@ struct CCMWatch {
     CCMWatchCallback priority_callback;
 
     CCMWatchCallback poll_callback;
-    
+
     gpointer data;
 };
 
@@ -53,55 +54,54 @@ static CCMWatch *
 lookup_watch (gint fd)
 {
     init ();
-    
+
     return g_hash_table_lookup (watched_fds, &fd);
 }
 
 static void
-internal_add_watch (CCMWatch *watch)
+internal_add_watch (CCMWatch * watch)
 {
     gpointer fd = &(watch->poll_fd.fd);
-    
+
     init ();
-    
+
     g_hash_table_insert (watched_fds, fd, watch);
-    g_source_add_poll ((GSource *)watch, &(watch->poll_fd));
+    g_source_add_poll ((GSource *) watch, &(watch->poll_fd));
 }
 
 static void
-internal_remove_watch (CCMWatch *watch)
+internal_remove_watch (CCMWatch * watch)
 {
     gpointer fd = &(watch->poll_fd.fd);
-    
+
     init ();
-    
+
     watch->removed = TRUE;
-    g_source_remove_poll ((GSource *)watch, &(watch->poll_fd)); 
-    g_source_destroy ((GSource *)watch);
-    g_source_unref((GSource *)watch);
+    g_source_remove_poll ((GSource *) watch, &(watch->poll_fd));
+    g_source_destroy ((GSource *) watch);
+    g_source_unref ((GSource *) watch);
     g_hash_table_remove (watched_fds, fd);
 }
 
 static gboolean
-watch_prepare (GSource *source,
-               gint    *timeout)
+watch_prepare (GSource * source, gint * timeout)
 {
-    CCMWatch *watch = (CCMWatch *)source;
+    CCMWatch *watch = (CCMWatch *) source;
 
     if (watch->poll_callback)
         watch->poll_callback (watch->data);
-    
+
     *timeout = -1;
 
     return FALSE;
 }
 
 static gboolean
-watch_check (GSource *source)
+watch_check (GSource * source)
 {
-    CCMWatch *watch = (CCMWatch *)source;
+    CCMWatch *watch = (CCMWatch *) source;
     gint revents = watch->poll_fd.revents;
-    
+
     if (revents & (G_IO_NVAL))
     {
         /* This can happen if the user closes the file descriptor
@@ -111,96 +111,93 @@ watch_check (GSource *source)
         g_source_unref (source);
         return FALSE;
     }
-    
+
     if ((revents & G_IO_HUP) && watch->hangup_callback)
         return TRUE;
-    
+
     if ((revents & G_IO_IN) && watch->read_callback)
         return TRUE;
-    
+
     if ((revents & G_IO_PRI) && watch->priority_callback)
         return TRUE;
-    
+
     if ((revents & G_IO_ERR) && watch->error_callback)
         return TRUE;
-    
+
     if ((revents & G_IO_OUT) && watch->write_callback)
         return TRUE;
-    
+
     return FALSE;
 }
 
 static gboolean
-watch_dispatch (GSource     *source,
-                GSourceFunc  callback,
-                gpointer     user_data)
+watch_dispatch (GSource * source, GSourceFunc callback, gpointer user_data)
 {
-    CCMWatch *watch = (CCMWatch *)source;
+    CCMWatch *watch = (CCMWatch *) source;
     gint revents = watch->poll_fd.revents;
     gboolean removed;
-    
+
     g_source_ref (source);
-    
-    if (!watch->removed && (revents & G_IO_IN)  && watch->read_callback)
+
+    if (!watch->removed && (revents & G_IO_IN) && watch->read_callback)
         watch->read_callback (watch->data);
-    
+
     if (!watch->removed && (revents & G_IO_PRI) && watch->priority_callback)
         watch->priority_callback (watch->data);
-    
+
     if (!watch->removed && (revents & G_IO_OUT) && watch->write_callback)
         watch->write_callback (watch->data);
-    
+
     if (!watch->removed && (revents & G_IO_ERR) && watch->error_callback)
         watch->error_callback (watch->data);
-    
+
     if (!watch->removed && (revents & G_IO_HUP) && watch->hangup_callback)
         watch->hangup_callback (watch->data);
-    
+
     removed = watch->removed;
-    
+
     g_source_unref (source);
-    
+
     if (removed)
         return FALSE;
-    
+
     return TRUE;
 }
 
 static void
-watch_finalize (GSource *source)
+watch_finalize (GSource * source)
 {
 }
 
 static void
-update_poll_mask (CCMWatch *watch)
+update_poll_mask (CCMWatch * watch)
 {
     gint events = 0;
-    
-    g_source_remove_poll ((GSource *)watch, &(watch->poll_fd));
-    
+
+    g_source_remove_poll ((GSource *) watch, &(watch->poll_fd));
+
     if (watch->read_callback)
         events |= G_IO_IN;
-    
+
     if (watch->write_callback)
         events |= G_IO_OUT;
-    
+
     if (watch->priority_callback)
         events |= G_IO_PRI;
-    
+
     if (watch->hangup_callback)
         events |= G_IO_HUP;
-    
+
     if (watch->error_callback)
         events |= G_IO_ERR;
-    
+
     watch->poll_fd.events = events;
-    
-    g_source_add_poll ((GSource *)watch, &(watch->poll_fd));
+
+    g_source_add_poll ((GSource *) watch, &(watch->poll_fd));
 }
 
 void
-fd_add_watch (gint     fd,
-              gpointer data)
+fd_add_watch (gint fd, gpointer data)
 {
     static GSourceFuncs watch_funcs = {
         watch_prepare,
@@ -209,38 +206,37 @@ fd_add_watch (gint     fd,
         watch_finalize,
     };
     CCMWatch *watch = lookup_watch (fd);
-    
+
     g_return_if_fail (fd > 0);
     g_return_if_fail (watch == NULL);
-    
-    watch = (CCMWatch *)g_source_new (&watch_funcs, sizeof (CCMWatch)); 
-    g_source_set_can_recurse ((GSource *)watch, TRUE);
-    g_source_attach ((GSource *)watch, NULL);
-    			  
+
+    watch = (CCMWatch *) g_source_new (&watch_funcs, sizeof (CCMWatch));
+    g_source_set_can_recurse ((GSource *) watch, TRUE);
+    g_source_attach ((GSource *) watch, NULL);
+
     watch->poll_fd.fd = fd;
     watch->poll_fd.events = 0;
     watch->removed = FALSE;
-    
+
     watch->read_callback = NULL;
     watch->write_callback = NULL;
     watch->hangup_callback = NULL;
     watch->error_callback = NULL;
     watch->priority_callback = NULL;
-    
+
     watch->data = data;
-    
+
     internal_add_watch (watch);
 }
 
 void
-fd_set_read_callback (gint             fd,
-                      CCMWatchCallback read_cb)
+fd_set_read_callback (gint fd, CCMWatchCallback read_cb)
 {
     CCMWatch *watch = lookup_watch (fd);
-    
+
     g_return_if_fail (fd > 0);
     g_return_if_fail (watch != NULL);
-    
+
     if (watch->read_callback != read_cb)
     {
         watch->read_callback = read_cb;
@@ -249,14 +245,13 @@ fd_set_read_callback (gint             fd,
 }
 
 void
-fd_set_write_callback (gint             fd,
-                       CCMWatchCallback write_cb)
+fd_set_write_callback (gint fd, CCMWatchCallback write_cb)
 {
     CCMWatch *watch = lookup_watch (fd);
-    
+
     g_return_if_fail (fd > 0);
     g_return_if_fail (watch != NULL);
-    
+
     if (watch->write_callback != write_cb)
     {
         watch->write_callback = write_cb;
@@ -265,14 +260,13 @@ fd_set_write_callback (gint             fd,
 }
 
 void
-fd_set_hangup_callback (gint             fd,
-                        CCMWatchCallback hangup_cb)
+fd_set_hangup_callback (gint fd, CCMWatchCallback hangup_cb)
 {
     CCMWatch *watch = lookup_watch (fd);
-    
+
     g_return_if_fail (fd > 0);
     g_return_if_fail (watch != NULL);
-    
+
     if (watch->hangup_callback != hangup_cb)
     {
         watch->hangup_callback = hangup_cb;
@@ -281,14 +275,13 @@ fd_set_hangup_callback (gint             fd,
 }
 
 void
-fd_set_error_callback (gint             fd,
-                       CCMWatchCallback error_cb)
+fd_set_error_callback (gint fd, CCMWatchCallback error_cb)
 {
     CCMWatch *watch = lookup_watch (fd);
-    
+
     g_return_if_fail (fd > 0);
     g_return_if_fail (watch != NULL);
-    
+
     if (watch->error_callback != error_cb)
     {
         watch->error_callback = error_cb;
@@ -297,14 +290,13 @@ fd_set_error_callback (gint             fd,
 }
 
 void
-fd_set_priority_callback (gint             fd,
-                          CCMWatchCallback priority_cb)
+fd_set_priority_callback (gint fd, CCMWatchCallback priority_cb)
 {
     CCMWatch *watch = lookup_watch (fd);
-    
+
     g_return_if_fail (fd > 0);
     g_return_if_fail (watch != NULL);
-    
+
     if (watch->priority_callback != priority_cb)
     {
         watch->priority_callback = priority_cb;
@@ -313,8 +305,7 @@ fd_set_priority_callback (gint             fd,
 }
 
 void
-fd_set_poll_callback (gint          fd,
-                      CCMWatchCallback poll_cb)
+fd_set_poll_callback (gint fd, CCMWatchCallback poll_cb)
 {
     CCMWatch *watch = lookup_watch (fd);
 
@@ -329,21 +320,21 @@ void
 fd_remove_watch (gint fd)
 {
     CCMWatch *watch = lookup_watch (fd);
-    
+
     g_return_if_fail (fd > 0);
-    
+
     if (!watch)
         return;
-    
+
     internal_remove_watch (watch);
-    g_source_unref ((GSource *)watch);
+    g_source_unref ((GSource *) watch);
 }
 
 gboolean
 fd_is_watched (gint fd)
 {
     g_return_val_if_fail (fd > 0, FALSE);
-    
+
     if (lookup_watch (fd))
         return TRUE;
     else

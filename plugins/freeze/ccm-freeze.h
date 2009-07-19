@@ -30,33 +30,32 @@
 #include "ccm-window-plugin.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_FREEZE              (ccm_freeze_get_type ())
 #define CCM_FREEZE(obj)              (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_FREEZE, CCMFreeze))
 #define CCM_FREEZE_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_FREEZE, CCMFreezeClass))
 #define CCM_IS_FREEZE(obj)           (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_FREEZE))
 #define CCM_IS_FREEZE_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_FREEZE))
 #define CCM_FREEZE_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_FREEZE, CCMFreezeClass))
-
 typedef struct _CCMFreezeClass CCMFreezeClass;
 typedef struct _CCMFreeze CCMFreeze;
 
 struct _CCMFreezeClass
 {
-	CCMPluginClass parent_class;
+    CCMPluginClass parent_class;
 };
 
 typedef struct _CCMFreezePrivate CCMFreezePrivate;
 
 struct _CCMFreeze
 {
-	CCMPlugin parent_instance;
-	
-	CCMFreezePrivate* priv;
+    CCMPlugin parent_instance;
+
+    CCMFreezePrivate *priv;
 };
 
-GType ccm_freeze_get_type (void) G_GNUC_CONST;
+GType
+ccm_freeze_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_FREEZE_H_ */
+#endif                          /* _CCM_FREEZE_H_ */

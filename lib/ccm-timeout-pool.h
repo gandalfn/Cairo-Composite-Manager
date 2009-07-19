@@ -32,21 +32,14 @@
 
 #include <glib.h>
 
-G_BEGIN_DECLS
+G_BEGIN_DECLS typedef struct _CCMTimeoutPool CCMTimeoutPool;
 
-typedef struct _CCMTimeoutPool    CCMTimeoutPool;
-
-CCMTimeoutPool*         ccm_timeout_pool_new    (gint                priority);
-guint                   ccm_timeout_pool_add    (CCMTimeoutPool *pool,
-                                                 guint               interval,
-                                                 GSourceFunc         func,
-                                                 gpointer            data,
-                                                 GDestroyNotify      notify);
-void                    ccm_timeout_pool_remove (CCMTimeoutPool *pool,
-                                                 guint               id);
-void                    ccm_timeout_set_master (CCMTimeoutPool *pool,
-                                                guint               id);
+CCMTimeoutPool *ccm_timeout_pool_new (gint priority);
+guint ccm_timeout_pool_add (CCMTimeoutPool * pool, guint interval,
+                            GSourceFunc func, gpointer data,
+                            GDestroyNotify notify);
+void ccm_timeout_pool_remove (CCMTimeoutPool * pool, guint id);
+void ccm_timeout_set_master (CCMTimeoutPool * pool, guint id);
 
 G_END_DECLS
-
-#endif /* __CCM_TIMEOUT_POOL_H__ */
+#endif                          /* __CCM_TIMEOUT_POOL_H__ */

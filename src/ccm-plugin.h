@@ -29,63 +29,63 @@
 #include "ccm-config.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_PLUGIN             (ccm_plugin_get_type ())
 #define CCM_PLUGIN(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PLUGIN, CCMPlugin))
 #define CCM_PLUGIN_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PLUGIN, CCMPluginClass))
 #define CCM_IS_PLUGIN(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PLUGIN))
 #define CCM_IS_PLUGIN_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PLUGIN))
 #define CCM_PLUGIN_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PLUGIN, CCMPluginClass))
-
 #define CCM_PLUGIN_PARENT(obj)      (ccm_plugin_get_parent(CCM_PLUGIN(obj)))
-
 typedef struct _CCMPluginPrivate CCMPluginPrivate;
 typedef struct _CCMPluginClass CCMPluginClass;
 typedef struct _CCMPlugin CCMPlugin;
 typedef struct _CCMPluginOptions CCMPluginOptions;
 
-typedef  void (*CCMPluginUnlockFunc) (gpointer data);
+typedef void (*CCMPluginUnlockFunc) (gpointer data);
 
 struct _CCMPluginClass
 {
-	GObjectClass		parent_class;
+    GObjectClass parent_class;
 
-	int					count;
-	CCMPluginOptions**  options;
-	int					options_size;
+    int count;
+    CCMPluginOptions **options;
+    int options_size;
 
-	CCMPluginOptions*   (*options_init)		(CCMPlugin* self);
-	void			    (*options_finalize) (CCMPlugin* self,
-				                             CCMPluginOptions* options);
-	void				(*option_changed)   (CCMPlugin* self, 
-					                         CCMConfig* config);
+    CCMPluginOptions *(*options_init) (CCMPlugin * self);
+    void (*options_finalize) (CCMPlugin * self, CCMPluginOptions * options);
+    void (*option_changed) (CCMPlugin * self, CCMConfig * config);
 };
 
 struct _CCMPlugin
 {
-	GObject				parent_instance;
+    GObject parent_instance;
 
-	CCMPluginPrivate*   priv;
+    CCMPluginPrivate *priv;
 };
 
 struct _CCMPluginOptions
 {
-	gboolean			initialized;
-	CCMConfig**			configs;
-	int					configs_size;
+    gboolean initialized;
+    CCMConfig **configs;
+    int configs_size;
 };
 
-GType				ccm_plugin_get_type			(void) G_GNUC_CONST;
-GObject*			ccm_plugin_get_parent		(CCMPlugin* self);
-void				ccm_plugin_set_parent	    (CCMPlugin* self, 
-					                              GObject* parent);
-void				ccm_plugin_options_load		(CCMPlugin* self, 
-						                         gchar* plugin_name, 
-				                    			 const gchar** options_key, 
-						                         int nb_options);
-void				ccm_plugin_options_unload	(CCMPlugin* self);
-CCMPluginOptions*   ccm_plugin_get_option	    (CCMPlugin* self);
-CCMConfig*			ccm_plugin_get_config	    (CCMPlugin* self, int index);
+GType
+ccm_plugin_get_type (void)
+    G_GNUC_CONST;
+GObject *
+ccm_plugin_get_parent (CCMPlugin * self);
+void
+ccm_plugin_set_parent (CCMPlugin * self, GObject * parent);
+void
+ccm_plugin_options_load (CCMPlugin * self, gchar * plugin_name,
+                         const gchar ** options_key, int nb_options);
+void
+ccm_plugin_options_unload (CCMPlugin * self);
+CCMPluginOptions *
+ccm_plugin_get_option (CCMPlugin * self);
+CCMConfig *
+ccm_plugin_get_config (CCMPlugin * self, int index);
 
 #define CCM_DEFINE_PLUGIN(class_name, prefix, parent_class_type, CODE) \
 \
@@ -157,12 +157,13 @@ prefix##_get_plugin_type (GTypeModule * plugin) \
   g_type_module_add_interface (plugin, prefix##_type, TYPE_IFACE, &g_implement_interface_info); \
 }
 
-gboolean			_ccm_plugin_method_locked	(GObject* obj, gpointer func);
-void				_ccm_plugin_lock_method		(GObject* obj, gpointer func, 
-			        			                 CCMPluginUnlockFunc callback, 
-			                			         gpointer data);
-void	 			_ccm_plugin_unlock_method	(GObject* obj, gpointer func);
+gboolean
+_ccm_plugin_method_locked (GObject * obj, gpointer func);
+void
+_ccm_plugin_lock_method (GObject * obj, gpointer func,
+                         CCMPluginUnlockFunc callback, gpointer data);
+void
+_ccm_plugin_unlock_method (GObject * obj, gpointer func);
 
 G_END_DECLS
-
-#endif /* _CCM_PLUGIN_H_ */
+#endif                          /* _CCM_PLUGIN_H_ */

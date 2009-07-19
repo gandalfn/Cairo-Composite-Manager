@@ -30,33 +30,32 @@
 #include "ccm-window-plugin.h"
 
 G_BEGIN_DECLS
-
 #define CCM_TYPE_DECORATION             (ccm_decoration_get_type ())
 #define CCM_DECORATION(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_DECORATION, CCMDecoration))
 #define CCM_DECORATION_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_DECORATION, CCMDecorationClass))
 #define CCM_IS_DECORATION(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_DECORATION))
 #define CCM_IS_DECORATION_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_DECORATION))
 #define CCM_DECORATION_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_DECORATION, CCMDecorationClass))
-
 typedef struct _CCMDecorationClass CCMDecorationClass;
 typedef struct _CCMDecoration CCMDecoration;
 
 struct _CCMDecorationClass
 {
-	CCMPluginClass parent_class;
+    CCMPluginClass parent_class;
 };
 
 typedef struct _CCMDecorationPrivate CCMDecorationPrivate;
 
 struct _CCMDecoration
 {
-	CCMPlugin parent_instance;
-	
-	CCMDecorationPrivate* priv;
+    CCMPlugin parent_instance;
+
+    CCMDecorationPrivate *priv;
 };
 
-GType ccm_decoration_get_type (void) G_GNUC_CONST;
+GType
+ccm_decoration_get_type (void)
+    G_GNUC_CONST;
 
 G_END_DECLS
-
-#endif /* _CCM_DECORATION_H_ */
+#endif                          /* _CCM_DECORATION_H_ */
