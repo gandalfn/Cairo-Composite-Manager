@@ -358,7 +358,8 @@ ccm_window_finalize (GObject *object)
 	{
 		CCMWindow* transient = ccm_window_transient_for(self);
 		
-		if (transient)
+		if (CCM_IS_WINDOW(transient) &&
+		    G_OBJECT(transient)->ref_count)
 		{
 			g_signal_handler_disconnect(transient, 
 			    self->priv->id_transient_transform_changed);
@@ -1269,7 +1270,7 @@ impl_ccm_window_resize(CCMWindowPlugin* plugin, CCMWindow* self,
 		
 		ccm_drawable_damage (CCM_DRAWABLE(self));
 		
-		if (old_geometry)
+		if (new_geometry && old_geometry)
 		{
 			ccm_region_subtract(old_geometry, new_geometry);
 			if (!ccm_region_empty(old_geometry))
