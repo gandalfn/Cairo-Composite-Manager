@@ -123,9 +123,9 @@ namespace CCM
 	{
 		public GLib.Object parent { get; set; }
 
-		protected abstract PluginOptions options_init();
-		protected abstract void options_finalize(PluginOptions options);
-		protected abstract void option_changed(Config config);
+		protected virtual PluginOptions options_init();
+		protected virtual void options_finalize(PluginOptions options);
+		protected virtual void option_changed(Config config);
 
 		public void options_load(string name, string[] options_keys);
 		public void options_unload();
@@ -174,11 +174,15 @@ namespace CCM
 		[CCode (cname = "_ccm_screen_plugin_get_root")]
 		protected weak CCM.ScreenPlugin get_root();
 
+		[CCode (cname = "ccm_screen_plugin_load_options", vfunc_name = "load_options")]
+		protected virtual void screen_load_options (CCM.Screen screen);
+
 		protected virtual bool add_window (CCM.Screen screen, CCM.Window window);
-		protected virtual void damage (CCM.Screen screen, CCM.Region area, CCM.Window window);
-		protected virtual void load_options (CCM.Screen screen);
-		protected virtual bool paint (CCM.Screen screen, Cairo.Context ctx);
 		protected virtual void remove_window (CCM.Screen screen, CCM.Window window);
+		
+		protected virtual void damage (CCM.Screen screen, CCM.Region area, CCM.Window window);
+		[CCode (cname = "ccm_screen_plugin_paint", vfunc_name = "paint")]
+		protected virtual bool screen_paint (CCM.Screen screen, Cairo.Context ctx);
 	}
 
 	[CCode (cheader_filename = "ccm.h,ccm-screen.h")]
@@ -202,7 +206,8 @@ namespace CCM
 		public weak CCM.Display get_display ();
 		public weak CCM.Window get_root_window ();
 		public weak CCM.Window get_overlay_window ();
-		public weak GLib.List get_windows ();
+		public weak GLib.List<CCM.Window> get_windows ();
+		public X.Visual* get_visual_for_depth (int depth);
 		
 		public bool add_window (CCM.Window window);
 		public void remove_window (CCM.Window window);
@@ -228,6 +233,8 @@ namespace CCM
 		public signal void window_destroyed ();
 		[HasEmitter]
 		public signal void desktop_changed (int desktop);
+		[HasEmitter]
+		public signal void composite_message (CCM.Window window, long l1, long l2, long l3);
 	}
 
 	[CCode (cheader_filename = "ccm.h,ccm-drawable.h")]
@@ -251,7 +258,7 @@ namespace CCM
 		public virtual Cairo.Surface get_surface ();
 		
 		public X.ID get_xid ();
-		public X.Visual get_visual ();
+		public X.Visual* get_visual ();
 		public weak CCM.Display get_display ();
 		public weak CCM.Screen get_screen ();
 		
@@ -273,7 +280,7 @@ namespace CCM
 		public void damage_region_silently (CCM.Region area);
 		public void undamage_region (CCM.Region region);
 		
-		public Cairo.Path get_damage_path (Cairo.Context context);
+		public void get_damage_path (Cairo.Context context);
 		public Cairo.Path get_geometry_path (Cairo.Context context);
 		
 		public virtual void query_geometry ();
@@ -289,6 +296,7 @@ namespace CCM
 	{
 		public bool freeze { get; set; }
 		public bool y_invert { get; set; }
+		public bool foreign { get; set; }
 
 		[CCode (has_construct_function = false)]
 		public Pixmap (CCM.Drawable drawable, X.Pixmap xpixmap);
@@ -305,10 +313,13 @@ namespace CCM
 	{
 		[CCode (cname = "_ccm_window_plugin_get_root")]
 		protected CCM.WindowPlugin get_root();
-		
-		protected virtual void load_options (CCM.Window window);
-		protected void lock_load_options(PluginUnlockFunc? func);
-		protected void unlock_load_options();
+
+		[CCode (cname = "ccm_window_plugin_load_options", vfunc_name = "load_options")]
+		protected virtual void window_load_options (CCM.Window window);
+		[CCode (cname = "ccm_window_plugin_lock_load_options")]
+		protected void lock_window_load_options(PluginUnlockFunc? func);
+		[CCode (cname = "ccm_window_plugin_unlock_load_options")]
+		protected void unlock_window_load_options();
 
 		protected virtual void map (CCM.Window window);
 		protected void lock_map(PluginUnlockFunc? func);
@@ -322,9 +333,12 @@ namespace CCM
 		protected void lock_move(PluginUnlockFunc? func);
 		protected void unlock_move();
 
-		protected virtual bool paint (CCM.Window window, Cairo.Context ctx, Cairo.Surface surface, bool y_invert);
-		protected void lock_paint(PluginUnlockFunc? func);
-		protected void unlock_paint();
+		[CCode (cname = "ccm_window_plugin_paint", vfunc_name = "paint")]
+		protected virtual bool window_paint (CCM.Window window, Cairo.Context ctx, Cairo.Surface surface, bool y_invert);
+		[CCode (cname = "ccm_window_plugin_lock_paint")]
+		protected void lock_window_paint(PluginUnlockFunc? func);
+		[CCode (cname = "ccm_window_plugin_unlock_paint")]
+		protected void unlock_window_paint();
 		
 		protected virtual CCM.Region query_geometry (CCM.Window window);
 		protected void lock_query_geometry(PluginUnlockFunc? func);
@@ -367,7 +381,10 @@ namespace CCM
 
 		[CCode (cname = "CCM_WINDOW_XWINDOW")]
 		public weak X.Window get_xwindow();
-		
+
+		[CCode (cname = "_ccm_window_get_plugin")]
+		public weak CCM.Plugin? get_plugin(GLib.Type type);
+				
 		public void activate (GLib.Time timestamp);
 		public virtual CCM.Pixmap create_pixmap (int width, int height, int depth);
 		public Cairo.Rectangle* get_area ();
