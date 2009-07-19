@@ -44,6 +44,8 @@ guint                   ccm_timeout_pool_add    (CCMTimeoutPool *pool,
                                                  GDestroyNotify      notify);
 void                    ccm_timeout_pool_remove (CCMTimeoutPool *pool,
                                                  guint               id);
+void                    ccm_timeout_set_master (CCMTimeoutPool *pool,
+                                                guint               id);
 
 G_END_DECLS
 

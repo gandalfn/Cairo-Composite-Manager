@@ -121,6 +121,9 @@ gchar **             ccm_timeline_list_markers        (CCMTimeline *timeline,
                                                        guint       *n_markers) G_GNUC_MALLOC;
 void                 ccm_timeline_advance_to_marker   (CCMTimeline *timeline,
                                                        const gchar *marker_name);
+void                 ccm_timeline_set_master          (CCMTimeline *self, 
+                                                       gboolean master);
+gboolean             ccm_timeline_get_master          (CCMTimeline *self);
 
 G_END_DECLS
 

@@ -35,7 +35,8 @@
 typedef struct _CCMTimeout  CCMTimeout;
 typedef enum {
 	CCM_TIMEOUT_NONE   = 0,
- 	CCM_TIMEOUT_READY  = 1 << 1
+ 	CCM_TIMEOUT_READY  = 1 << 1,
+    CCM_TIMEOUT_MASTER = 1 << 2
 } CCMTimeoutFlags;
 
 struct _CCMTimeout
@@ -65,6 +66,7 @@ struct _CCMTimeoutPool
 };
 
 #define TIMEOUT_READY(timeout)   (timeout->flags & CCM_TIMEOUT_READY)
+#define TIMEOUT_MASTER(timeout)  (timeout->flags & CCM_TIMEOUT_MASTER)
 
 static gboolean ccm_timeout_pool_prepare  (GSource     *source,
                                                gint        *next_timeout);
@@ -94,6 +96,13 @@ ccm_timeout_sort (gconstpointer a,
     return -1;
 
     if (TIMEOUT_READY (t_b))
+    return 1;
+
+    /* Keep 'master' timeouts at the front */
+    if (TIMEOUT_MASTER (t_a))
+    return -1;
+
+    if (TIMEOUT_MASTER (t_b))
     return 1;
 
     return _ccm_timeout_interval_compare_expiration (&t_a->interval,
@@ -403,4 +412,19 @@ ccm_timeout_pool_remove (CCMTimeoutPool *pool,
         pool->dispatched_timeouts = 
             g_list_delete_link (pool->dispatched_timeouts, l);
     }
+}
+
+void
+ccm_timeout_set_master (CCMTimeoutPool *pool,
+                        guint               id)
+{
+    GList *l;
+
+    if ((l = g_list_find_custom (pool->timeouts, GUINT_TO_POINTER (id),
+	           ccm_timeout_find_by_id)))
+        ((CCMTimeout*)(l->data))->flags |= CCM_TIMEOUT_MASTER;
+    else if ((l = g_list_find_custom (pool->dispatched_timeouts,
+                                      GUINT_TO_POINTER (id),
+                                      ccm_timeout_find_by_id)))
+        ((CCMTimeout*)(l->data))->flags |= CCM_TIMEOUT_MASTER;
 }

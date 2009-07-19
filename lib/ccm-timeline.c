@@ -34,6 +34,8 @@ struct _CCMTimelinePrivate
 {
     CCMTimelineDirection direction;
 
+    gboolean master;
+
     guint timeout_id;
     guint delay_id;
 
@@ -70,7 +72,8 @@ enum
     PROP_LOOP,
     PROP_DELAY,
     PROP_DURATION,
-    PROP_DIRECTION
+    PROP_DIRECTION,
+    PROP_MASTER
 };
 
 enum
@@ -105,6 +108,12 @@ static void
 timeout_remove (guint tag)
 {
     ccm_timeout_pool_remove (timeline_pool, tag);
+}
+
+static void
+timeout_set_master (guint tag)
+{
+    ccm_timeout_set_master (timeline_pool, tag);
 }
 
 static TimelineMarker *
@@ -158,6 +167,9 @@ ccm_timeline_set_property (GObject* object, guint prop_id,
         case PROP_DIRECTION:
             ccm_timeline_set_direction (self, g_value_get_enum (value));
             break;
+        case PROP_MASTER:
+            self->priv->master = g_value_get_boolean (value);
+            break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
             break;
@@ -189,6 +201,9 @@ ccm_timeline_get_property (GObject *object, guint prop_id,
             break;
         case PROP_DIRECTION:
             g_value_set_enum (value, self->priv->direction);
+            break;
+        case PROP_MASTER:
+            g_value_set_boolean (value, self->priv->master);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -289,6 +304,13 @@ ccm_timeline_class_init (CCMTimelineClass *klass)
                                                         CCM_TIMELINE_BACKWARD,
                                                         CCM_TIMELINE_FORWARD,
                                                         G_PARAM_READWRITE));
+    g_object_class_install_property (object_class,
+                                     PROP_MASTER,
+                                     g_param_spec_boolean ("master",
+                                                           "Master",
+                                                           "Should the timeline is master timeout",
+                                                           FALSE,
+                                                           G_PARAM_READWRITE));
 
     signals[NEW_FRAME] = g_signal_new ("new-frame",
                                        G_TYPE_FROM_CLASS (object_class),
@@ -336,6 +358,7 @@ ccm_timeline_init (CCMTimeline *self)
     self->priv->fps = 60;
     self->priv->n_frames = 0;
     self->priv->msecs_delta = 0;
+    self->priv->master = FALSE;
 
     self->priv->markers_by_frame = g_hash_table_new (NULL, NULL);
     self->priv->markers_by_name = g_hash_table_new_full (g_str_hash, 
@@ -513,7 +536,8 @@ timeline_timeout_add (CCMTimeline *self, guint fps, GSourceFunc func,
                       gpointer data, GDestroyNotify notify)
 {
     GTimeVal timeval;
-
+    guint ret;
+    
     if (self->priv->prev_frame_timeval.tv_sec == 0)
     {
         g_get_current_time (&timeval);
@@ -522,7 +546,11 @@ timeline_timeout_add (CCMTimeline *self, guint fps, GSourceFunc func,
     self->priv->skipped_frames   = 0;
     self->priv->msecs_delta      = 0;
 
-    return timeout_add (fps, func, data, notify);
+    ret = timeout_add (fps, func, data, notify);
+    if (ret && self->priv->master)
+        timeout_set_master (ret);
+    
+    return ret;
 }
 
 static gboolean
@@ -556,6 +584,8 @@ ccm_timeline_start (CCMTimeline *self)
         self->priv->delay_id = timeout_add (self->priv->delay,
                                             (GSourceFunc)delay_timeout_func,
                                             self, NULL);
+        if (self->priv->delay_id && self->priv->master)
+            timeout_set_master (self->priv->delay_id);
     }
     else
     {
@@ -1043,4 +1073,25 @@ ccm_timeline_remove_marker (CCMTimeline *self, const gchar *marker_name)
     }
 
     g_hash_table_remove (self->priv->markers_by_name, marker_name);
+}
+
+void
+ccm_timeline_set_master (CCMTimeline *self, gboolean master)
+{
+    g_return_if_fail (CCM_IS_TIMELINE (self));
+
+    if (self->priv->master != master)
+    {
+        self->priv->master = master;
+
+        g_object_notify (G_OBJECT (self), "master");
+    }
+}
+
+gboolean
+ccm_timeline_get_master (CCMTimeline *self)
+{
+    g_return_val_if_fail (CCM_IS_TIMELINE (self), FALSE);
+
+    return self->priv->master;
 }
