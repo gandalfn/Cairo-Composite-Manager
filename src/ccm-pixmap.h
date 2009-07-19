@@ -63,7 +63,9 @@ CCMPixmap*  ccm_pixmap_image_new   	    (CCMDrawable* drawable,
 CCMPixmap*  ccm_pixmap_new_from_visual  (CCMScreen* screen, 
                                          Visual* visual, 
                                          Pixmap xpixmap);
-                                         
+gboolean	ccm_pixmap_get_foreign		(CCMPixmap* self);
+void		ccm_pixmap_set_foreign	    (CCMPixmap* self, gboolean foreign);
+                                  
 G_END_DECLS
 
 #endif /* _CCM_PIXMAP_H_ */

@@ -414,3 +414,21 @@ ccm_pixmap_image_new (CCMDrawable* drawable, Pixmap xpixmap)
 	
 	return self;
 }
+
+gboolean
+ccm_pixmap_get_foreign(CCMPixmap* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+
+	return self->priv->foreign;
+}
+
+void
+ccm_pixmap_set_foreign(CCMPixmap* self, gboolean foreign)
+{
+	g_return_if_fail(self != NULL);
+
+	self->priv->foreign = foreign;
+
+	g_object_notify (G_OBJECT (self), "foreign");
+}
