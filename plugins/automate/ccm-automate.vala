@@ -109,7 +109,7 @@ namespace CCM
 		}
 		
 		protected void
-		load_options(CCM.Screen screen)
+		screen_load_options(CCM.Screen screen)
 		{
 			this.screen = screen;
 			
@@ -118,7 +118,7 @@ namespace CCM
 			// load options
 			options_load("automate", options_key);
 			
-			((CCM.ScreenPlugin)parent).load_options(screen);
+			((CCM.ScreenPlugin)parent).screen_load_options(screen);
 		}
     }		
 }

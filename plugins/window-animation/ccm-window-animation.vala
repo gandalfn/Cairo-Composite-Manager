@@ -147,7 +147,7 @@ namespace CCM
 		}
 		
 		protected new void
-		load_options (CCM.Window window)
+		window_load_options (CCM.Window window)
 		{
 			this.window = window;
 			this.type = CCM.WindowType.UNKNOWN;
@@ -158,7 +158,7 @@ namespace CCM
 			window.get_screen().desktop_changed += on_desktop_changed;
 			desktop_changed = false;
 			
-			((CCM.WindowPlugin)parent).load_options(window);
+			((CCM.WindowPlugin)parent).window_load_options(window);
 		}
 
 		protected CCM.Region
@@ -167,7 +167,8 @@ namespace CCM
 			CCM.Region region;
 
 			region = ((CCM.WindowPlugin)parent).query_geometry(window);
-			region.get_clipbox(out geometry);
+			if (region != null)
+				region.get_clipbox(out geometry);
 
 			return region;
 		}

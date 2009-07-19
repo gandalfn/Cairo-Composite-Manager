@@ -80,28 +80,28 @@ namespace CCM
 		 * Implement load_options window plugin interface
 		 **/
 		protected void
-		load_options(CCM.Window window)
+		window_load_options(CCM.Window window)
 		{
 			this.window = window;
 			
 			options_load("vala-window-plugin", options_key);
 			
 			/* Chain call to next plugin */
-			((CCM.WindowPlugin)parent).load_options(window);
+			((CCM.WindowPlugin)parent).window_load_options(window);
 		}
 		
 		/**
 		 * Implement paint window plugin interface
 		 **/
 		protected bool
-		paint(CCM.Window window, Cairo.Context ctx, 
-			  Cairo.Surface surface, bool y_invert)
+		window_paint(CCM.Window window, Cairo.Context ctx, 
+					 Cairo.Surface surface, bool y_invert)
 		{
 			bool ret = false;
 			
 			/* Chain call to next plugin */
-			ret = ((CCM.WindowPlugin)parent).paint(window, ctx, 
-												   surface, y_invert);
+			ret = ((CCM.WindowPlugin)parent).window_paint(window, ctx, 
+														  surface, y_invert);
 			
 			/* Paint damaged area */
 			if (((ValaWindowOptions)get_option()).enabled)
