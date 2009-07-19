@@ -88,6 +88,7 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         cairo >= $CAIRO_REQUIRED,
         pixman-1 >= $PIXMAN_REQUIRED,
         gtk+-2.0 >= $GTK_REQUIRED])
+CAIRO_COMPMGR_CFLAGS="$CAIRO_COMPMGR_CFLAGS -DG_DISABLE_ASSERT -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS"
 AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 
@@ -125,7 +126,7 @@ AM_CONDITIONAL(ENABLE_GCONF, [test x$gconf = xyes])
 dnl ****************************************************************************
 dnl Check for vala
 dnl ****************************************************************************
-PKG_CHECK_MODULES(VALA, [vala-1.0 >= $VALA_REQUIRED],
+PKG_CHECK_MODULES(CAIRO_COMPMGR_VALA, [vala-1.0 >= $VALA_REQUIRED],
                       [vala="yes"], [vala="no"])
 if test x"$vala" = xyes; then
     AC_PATH_PROG(VALAC, valac, no)
@@ -133,6 +134,8 @@ if test x"$vala" = xyes; then
         AC_MSG_ERROR([valac executable not found in your path - should be installed with vala])
     fi
     AC_SUBST(VALAC)
+    CAIRO_COMPMGR_CFLAGS="$CAIRO_COMPMGR_CFLAGS $CAIRO_COMPMGR_VALA_CFLAGS"
+    CAIRO_COMPMGR_LIBS="$CAIRO_COMPMGR_CFLAGS $CAIRO_COMPMGR_VALA_LIBS"
 fi
 AM_CONDITIONAL(HAVE_VALA, [test x$vala = xyes])
 
