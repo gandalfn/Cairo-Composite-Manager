@@ -540,7 +540,7 @@ ccm_screen_class_init (CCMScreenClass *klass)
 	                                           G_OBJECT_CLASS_TYPE (object_class),
 	                                           G_SIGNAL_RUN_LAST, 0, NULL, NULL,
 	                                           ccm_cclosure_marshal_VOID__OBJECT_LONG_LONG_LONG,
-	                                           G_TYPE_NONE, 4, CCM_TYPE_WINDOW, G_TYPE_LONG, G_TYPE_LONG, 
+	                                           G_TYPE_NONE, 4, CCM_TYPE_WINDOW, G_TYPE_LONG, 
 	                                           G_TYPE_LONG, G_TYPE_LONG);
 
 	signals[DESKTOP_CHANGED] = g_signal_new ("desktop-changed",
@@ -749,6 +749,7 @@ ccm_screen_update_refresh_rate(CCMScreen* self)
 		
 		g_signal_connect_swapped(self->priv->paint, "new-frame",
 								 G_CALLBACK(ccm_screen_paint), self);
+		ccm_timeline_set_master(self->priv->paint, TRUE);
 		ccm_timeline_set_loop (self->priv->paint, TRUE);
 		ccm_timeline_start (self->priv->paint);
 		g_signal_emit(self, signals[REFRESH_RATE_CHANGED], 0);
@@ -2887,4 +2888,19 @@ ccm_screen_unmanage_cursors(CCMScreen* self)
 		XFixesShowCursor(CCM_DISPLAY_XDISPLAY(self->priv->display), 
 			             CCM_WINDOW_XWINDOW(self->priv->root));
 	}
+}
+
+Visual*
+ccm_screen_get_visual_for_depth(CCMScreen* self, int depth)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+	g_return_val_if_fail(depth > 0, NULL);
+
+	XVisualInfo vinfo;
+	
+	if (!XMatchVisualInfo (CCM_DISPLAY_XDISPLAY(self->priv->display), 
+	                       CCM_SCREEN_NUMBER(self), depth, TrueColor, &vinfo))
+		return NULL;
+
+	return vinfo.visual;
 }

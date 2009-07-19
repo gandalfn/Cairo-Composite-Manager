@@ -216,6 +216,8 @@ gboolean        ccm_screen_query_pointer            (CCMScreen* self,
                                                      gint *x, gint *y);
 void            ccm_screen_manage_cursors           (CCMScreen* self);
 void            ccm_screen_unmanage_cursors         (CCMScreen* self);
+Visual*         ccm_screen_get_visual_for_depth     (CCMScreen* self, 
+                                                     int depth);
 /******************************************************************************/
 
 /****************************** Drawable **************************************/
