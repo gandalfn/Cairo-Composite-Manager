@@ -344,11 +344,12 @@ ccm_window_finalize (GObject * object)
     {
         CCMWindow *transient = ccm_window_transient_for (self);
 
-        if (CCM_IS_WINDOW (transient) && G_OBJECT (transient)->ref_count)
+        if (CCM_IS_WINDOW (transient) && G_OBJECT (transient)->ref_count &&
+            self->priv->id_transient_transform_changed)
         {
             g_signal_handler_disconnect (transient,
-                                         self->priv->
-                                         id_transient_transform_changed);
+                                         self->priv->id_transient_transform_changed);
+			self->priv->id_transient_transform_changed = 0;
             transient->priv->transients =
                 g_slist_remove (transient->priv->transients, self);
         }
@@ -1691,15 +1692,15 @@ ccm_window_on_get_property_async (CCMWindow * self, guint n_items,
             {
                 CCMWindow *transient = ccm_window_transient_for (self);
 
-                if (transient)
+                if (transient && self->priv->id_transient_transform_changed)
                 {
                     ccm_drawable_pop_matrix (CCM_DRAWABLE (self),
                                              "CCMWindowTranslate");
                     ccm_drawable_pop_matrix (CCM_DRAWABLE (self),
                                              "CCMWindowTransient");
                     g_signal_handler_disconnect (transient,
-                                                 self->priv->
-                                                 id_transient_transform_changed);
+                                                 self->priv->id_transient_transform_changed);
+					self->priv->id_transient_transform_changed = 0;
                     transient->priv->transients =
                         g_slist_remove (transient->priv->transients, self);
                 }
@@ -1716,8 +1717,7 @@ ccm_window_on_get_property_async (CCMWindow * self, guint n_items,
                     self->priv->id_transient_transform_changed =
                         g_signal_connect_swapped (transient,
                                                   "notify::transform",
-                                                  G_CALLBACK
-                                                  (ccm_window_on_transient_transform_changed),
+                                                  G_CALLBACK(ccm_window_on_transient_transform_changed),
                                                   self);
                     transient->priv->transients =
                         g_slist_prepend (transient->priv->transients, self);
