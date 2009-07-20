@@ -26,12 +26,14 @@
 #include "ccm-window.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_PROPERTY_ASYNC             (ccm_property_async_get_type ())
 #define CCM_PROPERTY_ASYNC(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PROPERTY_ASYNC, CCMPropertyASync))
 #define CCM_PROPERTY_ASYNC_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PROPERTY_ASYNC, CCMPropertyASyncClass))
 #define CCM_IS_PROPERTY_ASYNC(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PROPERTY_ASYNC))
 #define CCM_IS_PROPERTY_ASYNC_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PROPERTY_ASYNC))
 #define CCM_PROPERTY_ASYNC_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PROPERTY_ASYNC, CCMPropertyASyncClass))
+
 typedef struct _CCMPropertyASyncClass CCMPropertyASyncClass;
 typedef struct _CCMPropertyASyncPrivate CCMPropertyASyncPrivate;
 typedef struct _CCMPropertyASync CCMPropertyASync;
@@ -48,14 +50,12 @@ struct _CCMPropertyASync
     CCMPropertyASyncPrivate *priv;
 };
 
-GType
-ccm_property_async_get_type (void)
-    G_GNUC_CONST;
-CCMPropertyASync *
-ccm_property_async_new (CCMDisplay * display, Window window, Atom property,
-                        Atom req_type, long length);
-Atom
-ccm_property_async_get_property (CCMPropertyASync * self);
+GType ccm_property_async_get_type (void) G_GNUC_CONST;
+CCMPropertyASync* ccm_property_async_new (CCMDisplay* display, Window window, 
+                                          Atom property, Atom req_type, 
+                                          long length);
+Atom ccm_property_async_get_property (CCMPropertyASync * self);
 
 G_END_DECLS
+
 #endif                          /* _CCM_PROPERTY_ASYNC_H_ */

@@ -26,7 +26,9 @@
 #include <glib-object.h>
 
 G_BEGIN_DECLS
+
 #define CCM_OBJECT_PREFETCH 5
+
 #define CCM_DEFINE_TYPE_EXTENDED(class_name, prefix, parent_class_type, CODE) \
 \
 static void     prefix##_init              (class_name        *self); \
@@ -65,6 +67,9 @@ prefix##_get_type (void) \
   }					\
   return g_define_type_id__volatile;	\
 }
+
 #define CCM_DEFINE_TYPE(class_name, prefix, parent_class_type) CCM_DEFINE_TYPE_EXTENDED (class_name, prefix, parent_class_type, {})
-    G_END_DECLS
+
+G_END_DECLS
+
 #endif                          /* _CCM_OBJECT_H_ */

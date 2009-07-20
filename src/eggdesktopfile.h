@@ -22,7 +22,9 @@
 
 #include <glib.h>
 
-G_BEGIN_DECLS typedef struct EggDesktopFile EggDesktopFile;
+G_BEGIN_DECLS 
+
+typedef struct EggDesktopFile EggDesktopFile;
 
 typedef enum
 {
@@ -166,4 +168,5 @@ egg_get_desktop_file (void);
 
 
 G_END_DECLS
+
 #endif                          /* __EGG_DESKTOP_FILE_H__ */

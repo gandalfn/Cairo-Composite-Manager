@@ -179,11 +179,7 @@ namespace CCM
 
                 if (timeline == null)
                 {
-                    timeline =
-                        new CCM.Timeline.
-                        for_duration ((uint)
-                                      (((WindowAnimationOptions) get_option ()).
-                                       duration * 1000.0));
+                    timeline = new CCM.Timeline.for_duration ((uint)(((WindowAnimationOptions) get_option ()).duration * 1000.0));
                     timeline.new_frame += on_new_frame;
                     timeline.completed += on_finish;
                 }
@@ -229,11 +225,7 @@ namespace CCM
 
                 if (timeline == null)
                 {
-                    timeline =
-                        new CCM.Timeline.
-                        for_duration ((uint)
-                                      (((WindowAnimationOptions) get_option ()).
-                                       duration * 1000.0));
+                    timeline = new CCM.Timeline.for_duration ((uint)(((WindowAnimationOptions) get_option ()).duration * 1000.0));
                     timeline.new_frame += on_new_frame;
                     timeline.completed += on_finish;
                 }

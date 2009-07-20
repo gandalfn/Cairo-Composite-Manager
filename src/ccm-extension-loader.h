@@ -26,12 +26,14 @@
 #include <glib-object.h>
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_EXTENSION_LOADER             (ccm_extension_loader_get_type ())
 #define CCM_EXTENSION_LOADER(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_EXTENSION_LOADER, CCMExtensionLoader))
 #define CCM_EXTENSION_LOADER_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_EXTENSION_LOADER, CCMExtensionLoaderClass))
 #define CCM_IS_EXTENSION_LOADER(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_EXTENSION_LOADER))
 #define CCM_IS_EXTENSION_LOADER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_EXTENSION_LOADER))
 #define CCM_EXTENSION_LOADER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_EXTENSION_LOADER, CCMExtensionLoaderClass))
+
 typedef struct _CCMExtensionLoaderPrivate CCMExtensionLoaderPrivate;
 typedef struct _CCMExtensionLoaderClass CCMExtensionLoaderClass;
 typedef struct _CCMExtensionLoader CCMExtensionLoader;
@@ -48,24 +50,17 @@ struct _CCMExtensionLoader
     CCMExtensionLoaderPrivate *priv;
 };
 
-GType
-ccm_extension_loader_get_type (void)
-    G_GNUC_CONST;
-CCMExtensionLoader *
-ccm_extension_loader_new ();
+GType               ccm_extension_loader_get_type (void) G_GNUC_CONST;
 
-GSList *
-ccm_extension_loader_get_preferences_plugins (CCMExtensionLoader * self);
-GSList *
-ccm_extension_loader_get_screen_window_plugins (CCMExtensionLoader * self);
-GSList *
-ccm_extension_loader_get_screen_plugins (CCMExtensionLoader * self,
-                                         GSList * filter);
-GSList *
-ccm_extension_loader_get_window_plugins (CCMExtensionLoader * self,
-                                         GSList * filter);
-void
-ccm_extension_loader_add_plugin_path (gchar * path);
+CCMExtensionLoader* ccm_extension_loader_new      ();
+GSList*             ccm_extension_loader_get_preferences_plugins   (CCMExtensionLoader* self);
+GSList*             ccm_extension_loader_get_screen_window_plugins (CCMExtensionLoader* self);
+GSList*             ccm_extension_loader_get_screen_plugins        (CCMExtensionLoader* self,
+                                                                    GSList* filter);
+GSList*             ccm_extension_loader_get_window_plugins        (CCMExtensionLoader* self,
+                                                                    GSList* filter);
+void                ccm_extension_loader_add_plugin_path           (gchar * path);
 
 G_END_DECLS
+
 #endif                          /* _CCM_EXTENSION_LOADER_H_ */

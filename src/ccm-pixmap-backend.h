@@ -39,6 +39,7 @@
 #include "ccm-pixmap-buffered-image.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_PIXMAP_BACKEND             (ccm_pixmap_backend_get_type ())
 #define CCM_PIXMAP_BACKEND(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PIXMAP_BACKEND, CCMPixmapBackend))
 #define CCM_PIXMAP_BACKEND_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PIXMAP_BACKEND, CCMPixmapBackendClass))
@@ -46,6 +47,7 @@ G_BEGIN_DECLS
 #define CCM_IS_PIXMAP_BACKEND_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PIXMAP_BACKEND))
 #define CCM_PIXMAP_BACKEND_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PIXMAP_BACKEND, CCMPixmapBackendClass))
 #define CCM_IS_PIXMAP_BUFFERED(obj)			(CCM_IS_PIXMAP_BUFFERED_IMAGE (obj))
+
 typedef union _CCMPixmapBackendClass CCMPixmapBackendClass;
 typedef union _CCMPixmapBackend CCMPixmapBackend;
 
@@ -73,9 +75,8 @@ union _CCMPixmapBackend
 #endif
 };
 
-GType
-ccm_pixmap_backend_get_type (CCMScreen * screen)
-    G_GNUC_CONST;
+GType ccm_pixmap_backend_get_type (CCMScreen * screen) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_PIXMAP_BACKEND_H_ */

@@ -25,13 +25,15 @@
 #include "ccm.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_CURSOR             (ccm_cursor_get_type ())
 #define CCM_CURSOR(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_CURSOR, CCMCursor))
 #define CCM_CURSOR_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_CURSOR, CCMCursorClass))
 #define CCM_IS_CURSOR(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_CURSOR))
 #define CCM_IS_CURSOR_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_CURSOR))
 #define CCM_CURSOR_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_CURSOR, CCMCursorClass))
-    struct _CCMCursorClass
+
+struct _CCMCursorClass
 {
     GObjectClass parent_class;
 };
@@ -45,11 +47,11 @@ struct _CCMCursor
     CCMCursorPrivate *priv;
 };
 
-GType
-ccm_cursor_get_type (void)
-    G_GNUC_CONST;
-CCMCursor *
-ccm_cursor_new (CCMDisplay * diplay, XFixesCursorImage * cursor);
+GType      ccm_cursor_get_type (void) G_GNUC_CONST;
+
+CCMCursor* ccm_cursor_new      (CCMDisplay * diplay, 
+                                XFixesCursorImage * cursor);
 
 G_END_DECLS
+
 #endif                          /* _CCM_CURSOR_H_ */

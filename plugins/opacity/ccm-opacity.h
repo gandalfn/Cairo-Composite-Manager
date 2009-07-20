@@ -30,12 +30,14 @@
 #include "ccm-window-plugin.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_OPACITY             (ccm_opacity_get_type ())
 #define CCM_OPACITY(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_OPACITY, CCMOpacity))
 #define CCM_OPACITY_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_OPACITY, CCMOpacityClass))
 #define CCM_IS_OPACITY(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_OPACITY))
 #define CCM_IS_OPACITY_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_OPACITY))
 #define CCM_OPACITY_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_OPACITY, CCMOpacityClass))
+
 typedef struct _CCMOpacityClass CCMOpacityClass;
 typedef struct _CCMOpacity CCMOpacity;
 
@@ -53,9 +55,8 @@ struct _CCMOpacity
     CCMOpacityPrivate *priv;
 };
 
-GType
-ccm_opacity_get_type (void)
-    G_GNUC_CONST;
+GType ccm_opacity_get_type (void) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_OPACITY_H_ */

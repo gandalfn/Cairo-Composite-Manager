@@ -98,10 +98,8 @@ namespace CCM
             {
                 CCM.log ("Error on get show shortcut config get default");
             }
-            ((AutomateOptions) get_option ()).show_keybind =
-                new CCM.Keybind (screen, shortcut, true);
-            ((AutomateOptions) get_option ()).show_keybind.key_press +=
-                on_show_shortcut_pressed;
+            ((AutomateOptions) get_option ()).show_keybind = new CCM.Keybind (screen, shortcut, true);
+            ((AutomateOptions) get_option ()).show_keybind.key_press += on_show_shortcut_pressed;
         }
 
         protected void screen_load_options (CCM.Screen screen)

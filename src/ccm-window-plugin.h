@@ -30,12 +30,14 @@
 #include "ccm.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_WINDOW_PLUGIN                 (ccm_window_plugin_get_type ())
 #define CCM_WINDOW_PLUGIN(obj)                 (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_WINDOW_PLUGIN, CCMWindowPlugin))
 #define CCM_IS_WINDOW_PLUGIN(obj)              (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_WINDOW_PLUGIN))
 #define CCM_WINDOW_PLUGIN_GET_INTERFACE(obj)   (G_TYPE_INSTANCE_GET_INTERFACE ((obj), CCM_TYPE_WINDOW_PLUGIN, CCMWindowPluginClass))
 #define CCM_WINDOW_PLUGIN_PARENT(obj)	       ((CCMWindowPlugin*)ccm_plugin_get_parent((CCMPlugin*)obj))
 #define CCM_WINDOW_PLUGIN_ROOT(obj)	       ((CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)obj))
+
 #define CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, func, callback, data) \
 { \
 	CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
@@ -45,6 +47,7 @@ G_BEGIN_DECLS
 		_ccm_plugin_lock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func, \
 								 callback, data); \
 }
+
 #define CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func) \
 { \
 	CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
@@ -53,6 +56,7 @@ G_BEGIN_DECLS
 		CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
 		_ccm_plugin_unlock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func); \
 }
+
 typedef struct _CCMWindowPluginClass CCMWindowPluginClass;
 typedef struct _CCMWindowPluginClass CCMWindowPluginIface;
 typedef struct _CCMWindowPlugin CCMWindowPlugin;
@@ -61,32 +65,30 @@ struct _CCMWindowPluginClass
 {
     GTypeInterface base_iface;
 
-    void (*load_options) (CCMWindowPlugin * self, CCMWindow * window);
-    CCMRegion *(*query_geometry) (CCMWindowPlugin * self, CCMWindow * window);
-     gboolean (*paint) (CCMWindowPlugin * self, CCMWindow * window,
-                        cairo_t * ctx, cairo_surface_t * surface,
-                        gboolean y_invert);
-    void (*map) (CCMWindowPlugin * self, CCMWindow * window);
-    void (*unmap) (CCMWindowPlugin * self, CCMWindow * window);
-    void (*query_opacity) (CCMWindowPlugin * self, CCMWindow * window);
-    void (*move) (CCMWindowPlugin * self, CCMWindow * window, int x, int y);
-    void (*resize) (CCMWindowPlugin * self, CCMWindow * window, int width,
-                    int height);
-    void (*set_opaque_region) (CCMWindowPlugin * self, CCMWindow * window,
-                               const CCMRegion * area);
-    void (*get_origin) (CCMWindowPlugin * self, CCMWindow * window, int *x,
-                        int *y);
-    CCMPixmap *(*get_pixmap) (CCMWindowPlugin * self, CCMWindow * window);
+    void       (*load_options)     (CCMWindowPlugin* self, CCMWindow* window);
+    CCMRegion* (*query_geometry)   (CCMWindowPlugin* self, CCMWindow* window);
+    gboolean   (*paint)            (CCMWindowPlugin* self, CCMWindow* window,
+                                    cairo_t* ctx, cairo_surface_t* surface,
+                                    gboolean y_invert);
+    void       (*map)              (CCMWindowPlugin* self, CCMWindow* window);
+    void       (*unmap)            (CCMWindowPlugin* self, CCMWindow* window);
+    void       (*query_opacity)    (CCMWindowPlugin* self, CCMWindow* window);
+    void       (*move)             (CCMWindowPlugin* self, CCMWindow* window, 
+                                    int x, int y);
+    void       (*resize)           (CCMWindowPlugin* self, CCMWindow* window, 
+                                    int width, int height);
+    void       (*set_opaque_region) (CCMWindowPlugin* self, CCMWindow* window,
+                                     const CCMRegion* area);
+    void       (*get_origin)        (CCMWindowPlugin* self, CCMWindow* window, 
+                                     int* x, int* y);
+    CCMPixmap* (*get_pixmap)        (CCMWindowPlugin* self, CCMWindow* window);
 };
 
-GType
-ccm_window_plugin_get_type (void)
-    G_GNUC_CONST;
+GType ccm_window_plugin_get_type (void) G_GNUC_CONST;
 
-CCMWindowPlugin *
-_ccm_window_plugin_get_root (CCMWindowPlugin * self);
+CCMWindowPlugin* _ccm_window_plugin_get_root (CCMWindowPlugin* self);
 
-void
+void 
 ccm_window_plugin_load_options (CCMWindowPlugin * self, CCMWindow * window);
 #define		ccm_window_plugin_lock_load_options(plugin, callback) \
 	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, load_options, callback, plugin)
@@ -170,4 +172,5 @@ ccm_window_plugin_get_pixmap (CCMWindowPlugin * self, CCMWindow * window);
 	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, get_pixmap)
 
 G_END_DECLS
+
 #endif                          /* _CCM_WINDOW_PLUGIN_H_ */

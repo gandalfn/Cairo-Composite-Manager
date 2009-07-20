@@ -26,12 +26,14 @@
 #include <gconf/gconf-client.h>
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_CONFIG_GCONF             (ccm_config_gconf_get_type ())
 #define CCM_CONFIG_GCONF(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_CONFIG_GCONF, CCMConfigGConf))
 #define CCM_CONFIG_GCONF_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_CONFIG_GCONF, CCMConfigGConfClass))
 #define CCM_IS_CONFIG_GCONF(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_CONFIG_GCONF))
 #define CCM_IS_CONFIG_GCONF_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_CONFIG_GCONF))
 #define CCM_CONFIG_GCONF_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_CONFIG_GCONF, CCMConfigGConfClass))
+
 typedef struct _CCMConfigGConfClass CCMConfigGConfClass;
 typedef struct _CCMConfigGConfPrivate CCMConfigGConfPrivate;
 typedef struct _CCMConfigGConf CCMConfigGConf;
@@ -50,9 +52,8 @@ struct _CCMConfigGConf
     CCMConfigGConfPrivate *priv;
 };
 
-GType
-ccm_config_gconf_get_type (void)
-    G_GNUC_CONST;
+GType ccm_config_gconf_get_type (void) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_CONFIG_GCONF_H_ */

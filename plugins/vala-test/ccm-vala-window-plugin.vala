@@ -96,9 +96,8 @@ namespace CCM
             bool ret = false;
 
             /* Chain call to next plugin */
-            ret =
-                ((CCM.WindowPlugin) parent).window_paint (window, ctx, surface,
-                                                          y_invert);
+            ret = ((CCM.WindowPlugin) parent).window_paint (window, ctx, 
+                                                            surface, y_invert);
 
             /* Paint damaged area */
             if (((ValaWindowOptions) get_option ()).enabled)

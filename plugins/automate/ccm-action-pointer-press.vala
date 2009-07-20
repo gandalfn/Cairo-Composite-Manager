@@ -31,18 +31,16 @@ namespace CCM
     class ActionPointerPress : ActionPointer
     {
         public ActionPointerPress (CCM.Screen screen, X.Event event, long time,
-                                   List < weak CCM.Window >
-                                   ignore) throws CCM.ActionError
+                                   List <weak CCM.Window> ignore) throws CCM.ActionError
         {
-            CCM.Window window =
-                screen.find_window_at_pos (event.xbutton.y_root,
-                                           event.xbutton.x_root);
+            CCM.Window window = screen.find_window_at_pos (event.xbutton.y_root,
+                                                           event.xbutton.x_root);
             if (window != null)
             {
                 bool found = false;
 
-                 foreach (CCM.Window item in ignore) found |=
-                    item.get_xwindow () == window.get_xwindow ();
+                 foreach (CCM.Window item in ignore) 
+					found |= item.get_xwindow () == window.get_xwindow ();
 
                 if (!found)
                 {

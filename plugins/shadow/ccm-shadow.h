@@ -30,12 +30,14 @@
 #include "ccm-window-plugin.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_SHADOW             (ccm_shadow_get_type ())
 #define CCM_SHADOW(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_SHADOW, CCMShadow))
 #define CCM_SHADOW_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_SHADOW, CCMShadowClass))
 #define CCM_IS_SHADOW(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_SHADOW))
 #define CCM_IS_SHADOW_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_SHADOW))
 #define CCM_SHADOW_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_SHADOW, CCMShadowClass))
+
 typedef struct _CCMShadowClass CCMShadowClass;
 typedef struct _CCMShadow CCMShadow;
 
@@ -56,9 +58,8 @@ struct _CCMShadow
     CCMShadowPrivate *priv;
 };
 
-GType
-ccm_shadow_get_type (void)
-    G_GNUC_CONST;
+GType ccm_shadow_get_type (void) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_SHADOW_H_ */

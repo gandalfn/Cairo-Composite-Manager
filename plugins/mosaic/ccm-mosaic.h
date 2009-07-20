@@ -31,12 +31,14 @@
 #include "ccm-screen-plugin.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_MOSAIC              (ccm_mosaic_get_type ())
 #define CCM_MOSAIC(obj)              (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_MOSAIC, CCMMosaic))
 #define CCM_MOSAIC_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_MOSAIC, CCMMosaicClass))
 #define CCM_IS_MOSAIC(obj)           (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_MOSAIC))
 #define CCM_IS_MOSAIC_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_MOSAIC))
 #define CCM_MOSAIC_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_MOSAIC, CCMMosaicClass))
+
 typedef struct _CCMMosaicClass CCMMosaicClass;
 typedef struct _CCMMosaic CCMMosaic;
 
@@ -54,9 +56,8 @@ struct _CCMMosaic
     CCMMosaicPrivate *priv;
 };
 
-GType
-ccm_mosaic_get_type (void)
-    G_GNUC_CONST;
+GType ccm_mosaic_get_type (void) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_MOSAIC_H_ */

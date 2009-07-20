@@ -51,9 +51,9 @@ namespace CCM
         class X.Atom enable_atom;
         class X.Atom disable_atom;
 
-         CCM.Screen screen;
-         ArrayList < Output > screen_outputs = null;
-         ArrayList < Output > window_outputs = null;
+        CCM.Screen screen;
+        ArrayList < Output > screen_outputs = null;
+        ArrayList < Output > window_outputs = null;
 
         private void add_screen_output (Output output)
         {
@@ -172,18 +172,16 @@ namespace CCM
             bool ret = false;
 
             /* Chain call to next plugin */
-            ret =
-                ((CCM.WindowPlugin) parent).window_paint (window, context,
-                                                          surface, y_invert);
+            ret = ((CCM.WindowPlugin) parent).window_paint (window, context,
+                                                            surface, y_invert);
 
-            if (((window_outputs != null && window_outputs.size > 0)
-                 || (screen_outputs != null && screen_outputs.size > 0)) && ret)
+            if (((window_outputs != null && window_outputs.size > 0) ||
+                 (screen_outputs != null && screen_outputs.size > 0)) && ret)
             {
                 var area = window.get_area ();
                 Cairo.Rectangle geometry = Cairo.Rectangle ();
 
-                if (area != null
-                    && window.get_device_geometry_clipbox (out geometry))
+                if (area != null && window.get_device_geometry_clipbox (out geometry))
                 {
                     if (window_outputs != null)
                     {
@@ -205,13 +203,9 @@ namespace CCM
                                     window.get_damage_path (ctx);
                                     ctx.clip ();
                                     ctx.translate (area->x, area->y);
-                                    ctx.set_source_surface (surface,
-                                                            -(geometry.width -
-                                                              area->width) /
-                                                            2.0,
-                                                            -(geometry.height -
-                                                              area->height) /
-                                                            2.0);
+                                    ctx.set_source_surface (surface, 
+                                                            -(geometry.width - area->width) / 2.0,
+                                                            -(geometry.height - area->height) / 2.0);
                                     ctx.paint ();
                                 }
                             }
@@ -223,41 +217,29 @@ namespace CCM
                         foreach (Output output in screen_outputs)
                         {
                             Cairo.Rectangle clipbox = Cairo.Rectangle ();
-                            int width =
-                                window.get_screen ().get_xscreen ().width;
-                            int height =
-                                window.get_screen ().get_xscreen ().height;
+                            int width = window.get_screen ().get_xscreen ().width;
+                            int height = window.get_screen ().get_xscreen ().height;
 
-                            if (output.window != window
-                                && output.pixmap.
-                                get_device_geometry_clipbox (out clipbox))
+                            if (output.window != window && 
+                                output.pixmap.get_device_geometry_clipbox (out clipbox))
                             {
-                                Cairo.Context ctx =
-                                    output.pixmap.create_context ();
+                                Cairo.Context ctx = output.pixmap.create_context ();
 
                                 if (ctx != null)
                                 {
                                     Cairo.Matrix matrix;
-                                    matrix =
-                                        Cairo.Matrix (clipbox.width / width, 0,
-                                                      0,
-                                                      clipbox.height / height,
-                                                      -geometry.x * (1 -
-                                                                     clipbox.
-                                                                     width /
-                                                                     width),
-                                                      -geometry.y * (1 -
-                                                                     clipbox.
-                                                                     height /
-                                                                     height));
+									
+                                    matrix = Cairo.Matrix (clipbox.width / width, 0, 0,
+                                                           clipbox.height / height,
+                                                           -geometry.x * (1 - clipbox.width / width),
+                                                           -geometry.y * (1 - clipbox.height / height));
                                     ctx.set_matrix (matrix);
                                     window.get_damage_path (ctx);
                                     ctx.clip ();
                                     ctx.identity_matrix ();
                                     window.push_matrix ("CCMClone", matrix);
-                                    ((CCM.WindowPlugin) parent).
-                                        window_paint (window, ctx, surface,
-                                                      y_invert);
+                                    ((CCM.WindowPlugin) parent).window_paint (window, ctx, 
+                                                                              surface, y_invert);
                                     window.pop_matrix ("CCMClone");
                                 }
                             }

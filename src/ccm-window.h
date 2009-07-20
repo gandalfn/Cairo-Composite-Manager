@@ -114,13 +114,10 @@ struct _CCMWindow
     CCMWindowPrivate *priv;
 };
 
-GType
-ccm_window_get_type (void)
-    G_GNUC_CONST;
-CCMWindowPlugin *
-_ccm_window_get_plugin (CCMWindow * self, GType type);
-Window
-_ccm_window_get_child (CCMWindow * self);
+GType            ccm_window_get_type (void) G_GNUC_CONST;
+
+CCMWindowPlugin* _ccm_window_get_plugin (CCMWindow* self, GType type);
+Window           _ccm_window_get_child  (CCMWindow* self);
 
 G_END_DECLS
 

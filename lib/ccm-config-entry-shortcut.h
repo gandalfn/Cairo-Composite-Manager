@@ -24,12 +24,14 @@
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_CONFIG_ENTRY_SHORTCUT             (ccm_config_entry_shortcut_get_type ())
 #define CCM_CONFIG_ENTRY_SHORTCUT(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_CONFIG_ENTRY_SHORTCUT, CCMConfigEntryShortcut))
 #define CCM_CONFIG_ENTRY_SHORTCUT_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_CONFIG_ENTRY_SHORTCUT, CCMConfigEntryShortcutClass))
 #define CCM_IS_CONFIG_ENTRY_SHORTCUT(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_CONFIG_ENTRY_SHORTCUT))
 #define CCM_IS_CONFIG_ENTRY_SHORTCUT_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_CONFIG_ENTRY_SHORTCUT))
 #define CCM_CONFIG_ENTRY_SHORTCUT_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_CONFIG_ENTRY_SHORTCUT, CCMConfigEntryShortcutClass))
+
 typedef struct _CCMConfigEntryShortcutClass CCMConfigEntryShortcutClass;
 typedef struct _CCMConfigEntryShortcutPrivate CCMConfigEntryShortcutPrivate;
 typedef struct _CCMConfigEntryShortcut CCMConfigEntryShortcut;
@@ -46,12 +48,11 @@ struct _CCMConfigEntryShortcut
     CCMConfigEntryShortcutPrivate *priv;
 };
 
-GType
-ccm_config_entry_shortcut_get_type (void)
-    G_GNUC_CONST;
-GtkWidget *
-ccm_config_entry_shortcut_new (gboolean mouse, gint screen, gchar * plugin,
-                               gchar * key);
+GType ccm_config_entry_shortcut_get_type (void) G_GNUC_CONST;
+
+GtkWidget* ccm_config_entry_shortcut_new (gboolean mouse, gint screen, 
+                                          gchar* plugin, gchar* key);
 
 G_END_DECLS
+
 #endif                          /* _CCM_CONFIG_ENTRY_SHORTCUT_H_ */

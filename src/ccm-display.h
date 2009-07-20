@@ -29,6 +29,7 @@
 #include "ccm.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_DISPLAY             (ccm_display_get_type ())
 #define CCM_DISPLAY(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_DISPLAY, CCMDisplay))
 #define CCM_DISPLAY_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_DISPLAY, CCMDisplayClass))
@@ -36,7 +37,8 @@ G_BEGIN_DECLS
 #define CCM_IS_DISPLAY_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_DISPLAY))
 #define CCM_DISPLAY_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_DISPLAY, CCMDisplayClass))
 #define CCM_DISPLAY_XDISPLAY(obj)    (ccm_display_get_xdisplay (CCM_DISPLAY(obj)))
-    struct _CCMDisplayClass
+
+struct _CCMDisplayClass
 {
     GObjectClass parent_class;
 };
@@ -50,9 +52,8 @@ struct _CCMDisplay
     CCMDisplayPrivate *priv;
 };
 
-GType
-ccm_display_get_type (void)
-    G_GNUC_CONST;
+GType ccm_display_get_type (void) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_DISPLAY_H_ */

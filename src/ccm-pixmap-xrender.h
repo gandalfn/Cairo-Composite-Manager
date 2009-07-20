@@ -28,12 +28,14 @@
 #include "ccm-pixmap.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_PIXMAP_XRENDER             (ccm_pixmap_xrender_get_type ())
 #define CCM_PIXMAP_XRENDER(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRender))
 #define CCM_PIXMAP_XRENDER_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRenderClass))
 #define CCM_IS_PIXMAP_XRENDER(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PIXMAP_XRENDER))
 #define CCM_IS_PIXMAP_XRENDER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_PIXMAP_XRENDER))
 #define CCM_PIXMAP_XRENDER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRenderClass))
+
 typedef struct _CCMPixmapXRenderClass CCMPixmapXRenderClass;
 typedef struct _CCMPixmapXRenderPrivate CCMPixmapXRenderPrivate;
 typedef struct _CCMPixmapXRender CCMPixmapXRender;
@@ -50,9 +52,8 @@ struct _CCMPixmapXRender
     CCMPixmapXRenderPrivate *priv;
 };
 
-GType
-ccm_pixmap_xrender_get_type (void)
-    G_GNUC_CONST;
+GType ccm_pixmap_xrender_get_type (void) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_PIXMAP_XRENDER_H_ */

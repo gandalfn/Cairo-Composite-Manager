@@ -24,6 +24,7 @@
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_CONFIG_ADJUSTMENT             (ccm_config_adjustment_get_type ())
 #define CCM_CONFIG_ADJUSTMENT(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_CONFIG_ADJUSTMENT, CCMConfigAdjustment))
 #define CCM_CONFIG_ADJUSTMENT_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_CONFIG_ADJUSTMENT, CCMConfigAdjustmentClass))
@@ -46,11 +47,10 @@ struct _CCMConfigAdjustment
     CCMConfigAdjustmentPrivate *priv;
 };
 
-GType
-ccm_config_adjustment_get_type (void)
-    G_GNUC_CONST;
-GtkAdjustment *
-ccm_config_adjustment_new (int screen, gchar * plugin, gchar * key);
+GType ccm_config_adjustment_get_type (void) G_GNUC_CONST;
+GtkAdjustment* ccm_config_adjustment_new (int screen, gchar* plugin, 
+                                          gchar* key);
 
 G_END_DECLS
+
 #endif                          /* _CCM_CONFIG_ADJUSTMENT_H_ */

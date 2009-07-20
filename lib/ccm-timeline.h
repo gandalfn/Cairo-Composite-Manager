@@ -29,13 +29,15 @@
 #include <glib-object.h>
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_TIMELINE               (ccm_timeline_get_type ())
 #define CCM_TIMELINE(obj)               (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_TIMELINE, CCMTimeline))
 #define CCM_IS_TIMELINE(obj)            (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_TIMELINE))
 #define CCM_TIMELINE_CLASS(klass)       (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_TIMELINE, CCMTimelineClass))
 #define CCM_IS_TIMELINE_CLASS(klass)    (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_TIMELINE))
 #define CCM_TIMELINE_GET_CLASS(obj)     (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_TIMELINE, CCMTimelineClass))
-    typedef enum
+
+typedef enum
 {
     CCM_TIMELINE_FORWARD,
     CCM_TIMELINE_BACKWARD
@@ -66,9 +68,7 @@ struct _CCMTimelineClass
                             gint frame_num);
 };
 
-GType
-ccm_timeline_get_type (void)
-    G_GNUC_CONST;
+GType ccm_timeline_get_type (void) G_GNUC_CONST;
 
 CCMTimeline *
 ccm_timeline_new (guint n_frames, guint fps);
@@ -133,8 +133,7 @@ void
 ccm_timeline_remove_marker (CCMTimeline * timeline, const gchar * marker_name);
 gchar **
 ccm_timeline_list_markers (CCMTimeline * timeline, gint frame_num,
-                           guint * n_markers)
-    G_GNUC_MALLOC;
+                           guint * n_markers) G_GNUC_MALLOC;
 void
 ccm_timeline_advance_to_marker (CCMTimeline * timeline,
                                 const gchar * marker_name);
@@ -144,4 +143,5 @@ gboolean
 ccm_timeline_get_master (CCMTimeline * self);
 
 G_END_DECLS
+
 #endif                          /* _CCM_TIMELINE_H_ */

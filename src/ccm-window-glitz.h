@@ -28,12 +28,14 @@
 #include "ccm-window.h"
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_WINDOW_GLITZ             (ccm_window_glitz_get_type ())
 #define CCM_WINDOW_GLITZ(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_WINDOW_GLITZ, CCMWindowGlitz))
 #define CCM_WINDOW_GLITZ_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_WINDOW_GLITZ, CCMWindowGlitzClass))
 #define CCM_IS_WINDOW_GLITZ(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_WINDOW_GLITZ))
 #define CCM_IS_WINDOW_GLITZ_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_WINDOW_GLITZ))
 #define CCM_WINDOW_GLITZ_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_WINDOW_GLITZ, CCMWindowGlitzClass))
+
 typedef struct _CCMWindowGlitzClass CCMWindowGlitzClass;
 typedef struct _CCMWindowGlitz CCMWindowGlitz;
 
@@ -51,9 +53,8 @@ struct _CCMWindowGlitz
     CCMWindowGlitzPrivate *priv;
 };
 
-GType
-ccm_window_glitz_get_type (void)
-    G_GNUC_CONST;
+GType ccm_window_glitz_get_type (void) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_WINDOW_GLITZ_H_ */

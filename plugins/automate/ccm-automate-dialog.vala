@@ -91,10 +91,8 @@ namespace CCM
             uchar[]enable = { 1 };
 
             Gdk.property_change (main.window, atom_enable,
-                                 Gdk.x11_xatom_to_atom (Gdk.
-                                                        x11_get_xatom_by_name
-                                                        ("CARDINAL")), 32,
-                                 Gdk.PropMode.REPLACE, enable);
+                                 Gdk.x11_xatom_to_atom (Gdk.x11_get_xatom_by_name ("CARDINAL")), 
+                                 32, Gdk.PropMode.REPLACE, enable);
 
             main.window.get_size (out width, out height);
             main.window.set_override_redirect (true);

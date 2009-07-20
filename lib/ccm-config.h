@@ -27,15 +27,18 @@
 #include <gdk/gdk.h>
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_CONFIG             (ccm_config_get_type ())
 #define CCM_CONFIG(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_CONFIG, CCMConfig))
 #define CCM_CONFIG_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_CONFIG, CCMConfigClass))
 #define CCM_IS_CONFIG(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_CONFIG))
 #define CCM_IS_CONFIG_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_CONFIG))
 #define CCM_CONFIG_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_CONFIG, CCMConfigClass))
+
 typedef struct _CCMConfigClass CCMConfigClass;
 typedef struct _CCMConfigPrivate CCMConfigPrivate;
 typedef struct _CCMConfig CCMConfig;
+
 typedef enum _CCMConfigError CCMConfigError;
 typedef enum _CCMConfigValueType CCMConfigValueType;
 
@@ -43,18 +46,18 @@ struct _CCMConfigClass
 {
     GObjectClass parent_class;
 
-     gboolean (*initialize) (CCMConfig * config, int screen, gchar * extension,
-                             gchar * key);
+    gboolean (*initialize) (CCMConfig * config, int screen, gchar * extension,
+                            gchar * key);
 
-     CCMConfigValueType (*get_value_type) (CCMConfig * config, GError ** error);
+    CCMConfigValueType (*get_value_type) (CCMConfig * config, GError ** error);
 
-     gboolean (*get_boolean) (CCMConfig * config, GError ** error);
+    gboolean (*get_boolean) (CCMConfig * config, GError ** error);
     void (*set_boolean) (CCMConfig * config, gboolean value, GError ** error);
 
-     gint (*get_integer) (CCMConfig * config, GError ** error);
+    gint (*get_integer) (CCMConfig * config, GError ** error);
     void (*set_integer) (CCMConfig * config, gint value, GError ** error);
 
-     gfloat (*get_float) (CCMConfig * config, GError ** error);
+    gfloat (*get_float) (CCMConfig * config, GError ** error);
     void (*set_float) (CCMConfig * config, gfloat value, GError ** error);
 
     gchar *(*get_string) (CCMConfig * config, GError ** error);
@@ -99,45 +102,44 @@ enum _CCMConfigValueType
 
 GQuark ccm_config_error_quark ();
 
-GType
-ccm_config_get_type (void)
-    G_GNUC_CONST;
-CCMConfig *
-ccm_config_new (int screen, gchar * extension, gchar * key);
-void
-ccm_config_set_backend (const gchar * backend);
-void
-ccm_config_changed (CCMConfig * self);
-CCMConfigValueType
-ccm_config_get_value_type (CCMConfig * self, GError ** error);
-gboolean
-ccm_config_get_boolean (CCMConfig * self, GError ** error);
-void
-ccm_config_set_boolean (CCMConfig * self, gboolean value, GError ** error);
-gint
-ccm_config_get_integer (CCMConfig * self, GError ** error);
-void
-ccm_config_set_integer (CCMConfig * self, gint value, GError ** error);
-gfloat
-ccm_config_get_float (CCMConfig * self, GError ** error);
-void
-ccm_config_set_float (CCMConfig * self, gfloat value, GError ** error);
-gchar *
-ccm_config_get_string (CCMConfig * self, GError ** error);
-void
-ccm_config_set_string (CCMConfig * self, gchar * value, GError ** error);
-GSList *
-ccm_config_get_string_list (CCMConfig * self, GError ** error);
-void
-ccm_config_set_string_list (CCMConfig * self, GSList * value, GError ** error);
-GSList *
-ccm_config_get_integer_list (CCMConfig * self, GError ** error);
-void
-ccm_config_set_integer_list (CCMConfig * self, GSList * value, GError ** error);
-GdkColor *
-ccm_config_get_color (CCMConfig * self, GError ** error);
-void
-ccm_config_set_color (CCMConfig * self, GdkColor * color, GError ** error);
+GType ccm_config_get_type (void) G_GNUC_CONST;
+
+CCMConfig*         ccm_config_new              (int screen, gchar* extension, 
+                                                gchar* key);
+void               ccm_config_set_backend      (const gchar* backend);
+void               ccm_config_changed          (CCMConfig* self);
+CCMConfigValueType ccm_config_get_value_type   (CCMConfig* self, GError** error);
+
+gboolean           ccm_config_get_boolean      (CCMConfig* self, GError** error);
+void               ccm_config_set_boolean      (CCMConfig* self, gboolean value, 
+                                                GError** error);
+
+gint               ccm_config_get_integer      (CCMConfig* self, GError** error);
+void               ccm_config_set_integer      (CCMConfig* self, gint value, 
+                                                GError** error);
+
+gfloat             ccm_config_get_float        (CCMConfig* self, GError** error);
+void               ccm_config_set_float        (CCMConfig* self, gfloat value,
+                                                GError** error);
+
+gchar*             ccm_config_get_string       (CCMConfig* self, GError** error);
+void               ccm_config_set_string       (CCMConfig* self, gchar* value, 
+                                                GError** error);
+
+GSList*            ccm_config_get_string_list  (CCMConfig* self, GError** error);
+void               ccm_config_set_string_list  (CCMConfig* self, GSList* value, 
+                                                GError** error);
+
+GSList*            ccm_config_get_integer_list (CCMConfig* self, GError** error);
+void               ccm_config_set_integer_list (CCMConfig* self, GSList* value, 
+                                                GError** error);
+
+GdkColor*          ccm_config_get_color        (CCMConfig* self, 
+                                                GError** error);
+void               ccm_config_set_color        (CCMConfig* self, 
+                                                GdkColor* color, 
+                                                GError** error);
 
 G_END_DECLS
+
 #endif                          /* _CCM_CONFIG_H_ */

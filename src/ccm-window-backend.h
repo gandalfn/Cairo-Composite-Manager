@@ -75,9 +75,8 @@ union _CCMWindowBackend
 #endif
 };
 
-GType
-ccm_window_backend_get_type (CCMScreen * screen)
-    G_GNUC_CONST;
+GType ccm_window_backend_get_type (CCMScreen* screen) G_GNUC_CONST;
 
 G_END_DECLS
+
 #endif                          /* _CCM_WINDOW_BACKEND_H */

@@ -24,12 +24,14 @@
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS
+
 #define CCM_TYPE_TIMED_DIALOG             (ccm_timed_dialog_get_type ())
 #define CCM_TIMED_DIALOG(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_TIMED_DIALOG, CCMTimedDialog))
 #define CCM_TIMED_DIALOG_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), CCM_TYPE_TIMED_DIALOG, CCMTimedDialogClass))
 #define CCM_IS_TIMED_DIALOG(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_TIMED_DIALOG))
 #define CCM_IS_TIMED_DIALOG_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), CCM_TYPE_TIMED_DIALOG))
 #define CCM_TIMED_DIALOG_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), CCM_TYPE_TIMED_DIALOG, CCMTimedDialogClass))
+
 typedef struct _CCMTimedDialogClass CCMTimedDialogClass;
 typedef struct _CCMTimedDialogPrivate CCMTimedDialogPrivate;
 typedef struct _CCMTimedDialog CCMTimedDialog;
@@ -46,11 +48,10 @@ struct _CCMTimedDialog
     CCMTimedDialogPrivate *priv;
 };
 
-GType
-ccm_timed_dialog_get_type (void)
-    G_GNUC_CONST;
-GtkWidget *
-ccm_timed_dialog_new (GtkWidget * parent, guint seconds);
+GType      ccm_timed_dialog_get_type (void) G_GNUC_CONST;
+
+GtkWidget* ccm_timed_dialog_new      (GtkWidget* parent, guint seconds);
 
 G_END_DECLS
+
 #endif                          /* _CCM_TIMED_DIALOG_H_ */
