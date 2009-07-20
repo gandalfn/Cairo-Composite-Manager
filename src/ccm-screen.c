@@ -2111,572 +2111,531 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
     {
         case ButtonPress:
         case ButtonRelease:
+        {
+            XButtonEvent *button_event = ((XButtonEvent *) event);
+
+            if (button_event->root != CCM_WINDOW_XWINDOW (self->priv->root))
+                return;
+
+            if (self->priv->nb_redirect_input)
             {
-                XButtonEvent *button_event = ((XButtonEvent *) event);
+                CCMWindow *window = ccm_screen_find_window_at_pos (self,
+                                                                   button_event->x_root,
+                                                                   button_event->y_root);
 
-                if (button_event->root != CCM_WINDOW_XWINDOW (self->priv->root))
-                    return;
-
-                if (self->priv->nb_redirect_input)
+                if (window && ccm_window_has_redirect_input (window))
                 {
-                    CCMWindow *window = ccm_screen_find_window_at_pos (self,
-                                                                       button_event->
-                                                                       x_root,
-                                                                       button_event->
-                                                                       y_root);
-
-                    if (window && ccm_window_has_redirect_input (window))
-                    {
-                        Window input = None;
-                        g_object_get (G_OBJECT (window), "input", &input, NULL);
-                        if (input)
-                            self->priv->over_mouse =
-                                ccm_window_redirect_event (window, event,
-                                                           self->priv->
-                                                           over_mouse);
-                        else
-                            self->priv->over_mouse = None;
-                    }
+                    Window input = None;
+                    g_object_get (G_OBJECT (window), "input", &input, NULL);
+                    if (input)
+                        self->priv->over_mouse =
+                            ccm_window_redirect_event (window, event,
+                                                       self->priv->over_mouse);
                     else
                         self->priv->over_mouse = None;
                 }
                 else
                     self->priv->over_mouse = None;
             }
-            break;
+            else
+                self->priv->over_mouse = None;
+        }
+        break;
         case MotionNotify:
+        {
+            XMotionEvent *motion_event = ((XMotionEvent *) event);
+
+            if (motion_event->root != CCM_WINDOW_XWINDOW (self->priv->root))
+                return;
+
+            if (self->priv->manage_cursor)
+                ccm_screen_on_cursor_move (self, motion_event->x_root,
+                                           motion_event->y_root);
+
+            if (self->priv->nb_redirect_input)
             {
-                XMotionEvent *motion_event = ((XMotionEvent *) event);
-
-                if (motion_event->root != CCM_WINDOW_XWINDOW (self->priv->root))
-                    return;
-
-                if (self->priv->manage_cursor)
-                    ccm_screen_on_cursor_move (self, motion_event->x_root,
-                                               motion_event->y_root);
-
-                if (self->priv->nb_redirect_input)
+                CCMWindow *window = ccm_screen_find_window_at_pos (self,
+                                                                   motion_event->x_root,
+                                                                   motion_event->y_root);
+                if (window && ccm_window_has_redirect_input (window))
                 {
-                    CCMWindow *window = ccm_screen_find_window_at_pos (self,
-                                                                       motion_event->
-                                                                       x_root,
-                                                                       motion_event->
-                                                                       y_root);
-                    if (window && ccm_window_has_redirect_input (window))
+                    Window input = None;
+                    g_object_get (G_OBJECT (window), "input", &input, NULL);
+                    if (input)
                     {
-                        Window input = None;
-                        g_object_get (G_OBJECT (window), "input", &input, NULL);
-                        if (input)
-                        {
-                            self->priv->over_mouse =
-                                ccm_window_redirect_event (window, event,
-                                                           self->priv->
-                                                           over_mouse);
-                        }
-                        else
-                            self->priv->over_mouse = None;
-
-                        if (window != self->priv->sibling_mouse)
-                        {
-                            if (self->priv->sibling_mouse)
-                                g_signal_emit (self,
-                                               signals[LEAVE_WINDOW_NOTIFY], 0,
-                                               self->priv->sibling_mouse);
-                            self->priv->sibling_mouse = window;
-                            g_signal_emit (self, signals[ENTER_WINDOW_NOTIFY],
-                                           0, self->priv->sibling_mouse);
-                        }
-                    }
-                }
-            }
-            break;
-        case CreateNotify:
-            {
-                XCreateWindowEvent *create_event =
-                    ((XCreateWindowEvent *) event);
-                CCMWindow *window = ccm_screen_find_window (self,
-                                                            create_event->
-                                                            window);
-                ccm_debug ("CREATE 0x%lx", create_event->window);
-
-                if (!window)
-                {
-                    CCMWindow *root = ccm_screen_get_root_window (self);
-                    if (create_event->parent == CCM_WINDOW_XWINDOW (root))
-                    {
-                        window = ccm_window_new (self, create_event->window);
-                        if (window)
-                        {
-                            ccm_debug_window (window, "CREATE");
-                            if (!ccm_screen_add_window (self, window))
-                                g_object_unref (window);
-                        }
-                    }
-                }
-            }
-            break;
-        case DestroyNotify:
-            {
-                CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                     ((XDestroyWindowEvent *) event)->window);
-                ccm_debug ("REMOVE 0x%x",
-                           ((XDestroyWindowEvent *) event)->window);
-                if (window)
-                {
-                    ccm_debug_window (window, "EVENT REMOVE 0x%x",
-                                      ((XDestroyWindowEvent *) event)->window);
-                    ccm_screen_remove_window (self, window);
-                }
-            }
-            break;
-        case MapNotify:
-            {
-                CCMWindow *window, *parent;
-
-                parent =
-                    ccm_screen_find_window (self, ((XMapEvent *) event)->event);
-                window =
-                    ccm_screen_find_window (self,
-                                            ((XMapEvent *) event)->window);
-                if (window)
-                {
-                    ccm_debug_window (window, "MAP");
-                    ccm_window_map (window);
-                }
-                else if (((XMapEvent *) event)->event ==
-                         CCM_WINDOW_XWINDOW (self->priv->root))
-                {
-                    window =
-                        ccm_window_new (self, ((XMapEvent *) event)->window);
-                    if (window)
-                    {
-                        ccm_debug_window (window, "CREATE MAP");
-                        if (!ccm_screen_add_window (self, window))
-                        {
-                            g_object_unref (window);
-                            window = NULL;
-                        }
-                        else
-                            ccm_window_map (window);
-                    }
-                }
-                if (window)
-                {
-                    CCMWindow *transient = ccm_window_transient_for (window);
-
-                    if (transient)
-                        ccm_screen_restack (self, window, transient);
-                }
-            }
-            break;
-        case UnmapNotify:
-            {
-                CCMWindow *window;
-
-                window =
-                    ccm_screen_find_window (self,
-                                            ((XUnmapEvent *) event)->window);
-                if (window)
-                {
-                    ccm_debug_window (window, "UNMAP");
-                    ccm_window_unmap (window);
-                }
-            }
-            break;
-        case ReparentNotify:
-            {
-                CCMWindow *window = ccm_screen_find_window (self,
-                                                            ((XReparentEvent *)
-                                                             event)->window);
-                CCMWindow *parent = ccm_screen_find_window (self,
-                                                            ((XReparentEvent *)
-                                                             event)->parent);
-
-                ccm_debug ("REPARENT 0x%x, 0x%x",
-                           ((XReparentEvent *) event)->parent,
-                           ((XReparentEvent *) event)->window);
-
-                if (((XReparentEvent *) event)->parent ==
-                    CCM_WINDOW_XWINDOW (self->priv->root))
-                {
-                    if (!window)
-                    {
-                        window =
-                            ccm_window_new (self,
-                                            ((XReparentEvent *) event)->window);
-                        if (window)
-                        {
-                            ccm_debug_window (window, "REPARENT ADD");
-                            if (!ccm_screen_add_window (self, window))
-                                g_object_unref (window);
-                        }
-                    }
-                }
-                else if (parent && window)
-                {
-                    ccm_debug_window (window, "REPARENT REMOVE");
-                    ccm_screen_destroy_window (self, window);
-                    ccm_drawable_damage (CCM_DRAWABLE (parent));
-                }
-            }
-            break;
-        case CirculateNotify:
-            {
-                XCirculateEvent *circulate_event = (XCirculateEvent *) event;
-
-                CCMWindow *window = ccm_screen_find_window (self,
-                                                            circulate_event->
-                                                            window);
-
-                if (window)
-                {
-                    ccm_debug_window (window, "CIRCULATE");
-                    ccm_screen_add_check_pending (self);
-                }
-            }
-            break;
-        case ConfigureNotify:
-            {
-                XConfigureEvent *configure_event = (XConfigureEvent *) event;
-                CCMWindow *window;
-
-                window = ccm_screen_find_window (self, configure_event->window);
-
-                if (window)
-                {
-                    if (configure_event->above != None)
-                    {
-                        if (configure_event->above
-                            && configure_event->above !=
-                            CCM_WINDOW_XWINDOW (self->priv->root)
-                            && configure_event->above !=
-                            CCM_WINDOW_XWINDOW (self->priv->cow)
-                            && configure_event->above !=
-                            self->priv->selection_owner)
-                        {
-                            CCMWindow *above;
-                            above =
-                                ccm_screen_find_window (self,
-                                                        configure_event->above);
-                            if (above)
-                                ccm_screen_restack (self, window, above);
-                        }
-                    }
-
-                    ccm_drawable_move (CCM_DRAWABLE (window),
-                                       configure_event->x -
-                                       configure_event->border_width,
-                                       configure_event->y -
-                                       configure_event->border_width);
-
-                    ccm_drawable_resize (CCM_DRAWABLE (window),
-                                         configure_event->width +
-                                         configure_event->border_width * 2,
-                                         configure_event->height +
-                                         configure_event->border_width * 2);
-                }
-            }
-            break;
-        case PropertyNotify:
-            {
-                XPropertyEvent *property_event = (XPropertyEvent *) event;
-                CCMWindow *window;
-
-                ccm_debug_atom (self->priv->display, property_event->atom,
-                                "PROPERTY_NOTIFY");
-
-                if (property_event->atom ==
-                    CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom)
-                {
-                    guint32 *data;
-                    guint n_items;
-                    Window active;
-
-                    ccm_screen_add_check_pending (self);
-                    data =
-                        ccm_window_get_property (self->priv->root,
-                                                 CCM_WINDOW_GET_CLASS (self->
-                                                                       priv->
-                                                                       root)->
-                                                 active_atom, XA_WINDOW,
-                                                 &n_items);
-                    if (data)
-                    {
-                        active = (Window) * data;
-                        if (active)
-                            self->priv->active =
-                                ccm_screen_find_window_or_child (self,
-                                                                 (Window) *
-                                                                 data);
-                        else
-                            self->priv->active = NULL;
-                        g_free (data);
-                        if (self->priv->active)
-                            g_signal_emit (self,
-                                           signals[ACTIVATE_WINDOW_NOTIFY], 0,
-                                           self->priv->active);
-                    }
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         root_pixmap_atom)
-                {
-                    g_object_unref (self->priv->background);
-                    self->priv->background = NULL;
-                    ccm_screen_damage (self);
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         client_stacking_list_atom
-                         || property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         client_list_atom)
-                {
-                    ccm_screen_add_check_pending (self);
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         transient_for_atom)
-                {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->
-                                                         window);
-                    if (window)
-                        ccm_window_query_transient_for (window);
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
-                {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->
-                                                         window);
-                    if (window)
-                        ccm_window_query_opacity (window,
-                                                  property_event->state ==
-                                                  PropertyDelete);
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
-                {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->
-                                                         window);
-                    if (window)
-                        ccm_window_query_hint_type (window);
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         mwm_hints_atom)
-                {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->
-                                                         window);
-                    if (window)
-                        ccm_window_query_mwm_hints (window);
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
-                {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->
-                                                         window);
-                    if (window)
-                        ccm_window_query_state (window);
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         frame_extends_atom)
-                {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->
-                                                         window);
-                    if (window)
-                        ccm_window_query_frame_extends (window);
-                }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         current_desktop_atom)
-                {
-                    guint n_items;
-                    guint32 *desktop = NULL;
-
-                    desktop =
-                        ccm_window_get_property (self->priv->root,
-                                                 CCM_WINDOW_GET_CLASS (self->
-                                                                       priv->
-                                                                       root)->
-                                                 current_desktop_atom,
-                                                 XA_CARDINAL, &n_items);
-                    if (desktop)
-                    {
-                        g_signal_emit (self, signals[DESKTOP_CHANGED], 0,
-                                       *desktop + 1);
-                        g_free (desktop);
-                    }
-                }
-            }
-            break;
-        case Expose:
-            {
-                XExposeEvent *expose_event = (XExposeEvent *) event;
-                cairo_rectangle_t area;
-                CCMRegion *damaged;
-
-                ccm_debug ("EXPOSE");
-                area.x = expose_event->x;
-                area.y = expose_event->y;
-                area.width = expose_event->width;
-                area.height = expose_event->height;
-                damaged = ccm_region_rectangle (&area);
-                ccm_screen_damage_region (self, damaged);
-                ccm_region_destroy (damaged);
-            }
-            break;
-        case ClientMessage:
-            {
-                XClientMessageEvent *client_event =
-                    (XClientMessageEvent *) event;
-
-                ccm_debug_atom (self->priv->display, client_event->message_type,
-                                "CLIENT MESSAGE");
-
-                if (client_event->message_type ==
-                    CCM_WINDOW_GET_CLASS (self->priv->root)->ccm_atom)
-                {
-                    if (CCM_WINDOW_XWINDOW (self->priv->root) ==
-                        client_event->data.l[1])
-                    {
-
-                        CCMWindow *window =
-                            ccm_screen_find_window_or_child (self,
-                                                             client_event->data.
-                                                             l[4]);
-                        g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
-                                       window ? window : self->priv->root,
-                                       client_event->data.l[0],
-                                       client_event->data.l[2],
-                                       client_event->data.l[3]);
+                        self->priv->over_mouse =
+                            ccm_window_redirect_event (window, event,
+                                                       self->priv->over_mouse);
                     }
                     else
-                    {
-                        CCMWindow *window =
-                            ccm_screen_find_window_or_child (self,
-                                                             client_event->data.
-                                                             l[1]);
-                        if (window)
-                            g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
-                                           window, client_event->data.l[0],
-                                           client_event->data.l[2],
-                                           client_event->data.l[3]);
-                    }
-                }
-                else if (client_event->message_type ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
-                {
-                    CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                         client_event->
-                                                                         window);
-                    if (window)
-                    {
-                        gint cpt;
+                        self->priv->over_mouse = None;
 
-                        for (cpt = 1; cpt < 3; ++cpt)
-                        {
-                            switch (client_event->data.l[0])
-                            {
-                                case 0:
-                                    ccm_debug_atom (self->priv->display,
-                                                    client_event->data.l[cpt],
-                                                    "UNSET STATE");
-                                    ccm_window_unset_state (window,
-                                                            client_event->data.
-                                                            l[cpt]);
-                                    break;
-                                case 1:
-                                    ccm_debug_atom (self->priv->display,
-                                                    client_event->data.l[cpt],
-                                                    "SET STATE");
-                                    ccm_window_set_state (window,
-                                                          client_event->data.
-                                                          l[cpt]);
-                                    break;
-                                case 2:
-                                    ccm_debug_atom (self->priv->display,
-                                                    client_event->data.l[cpt],
-                                                    "SWITCH STATE");
-                                    ccm_window_switch_state (window,
-                                                             client_event->data.
-                                                             l[cpt]);
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
+                    if (window != self->priv->sibling_mouse)
+                    {
+                        if (self->priv->sibling_mouse)
+                            g_signal_emit (self,
+                                           signals[LEAVE_WINDOW_NOTIFY], 0,
+                                           self->priv->sibling_mouse);
+                        self->priv->sibling_mouse = window;
+                        g_signal_emit (self, signals[ENTER_WINDOW_NOTIFY],
+                                       0, self->priv->sibling_mouse);
                     }
-                }
-                else if (client_event->message_type ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
-                {
-                    CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                         client_event->
-                                                                         window);
-                    if (window)
-                        ccm_window_query_hint_type (window);
-                }
-                else if (client_event->message_type ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
-                {
-                    CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                         client_event->
-                                                                         window);
-                    if (window)
-                        ccm_window_query_opacity (window, FALSE);
-                }
-                else if (client_event->message_type ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         root_pixmap_atom)
-                {
-                    g_object_unref (self->priv->background);
-                    self->priv->background = NULL;
-                    ccm_screen_damage (self);
                 }
             }
-            break;
-        default:
+        }
+        break;
+        case CreateNotify:
+        {
+            XCreateWindowEvent *create_event = ((XCreateWindowEvent *) event);
+            CCMWindow *window = ccm_screen_find_window (self,
+                                                        create_event->window);
+            ccm_debug ("CREATE 0x%lx", create_event->window);
+
+            if (!window)
             {
-                // Check for shape notify
-                if (event->type ==
-                    ccm_display_get_shape_notify_event_type (self->priv->
-                                                             display))
+                CCMWindow *root = ccm_screen_get_root_window (self);
+                if (create_event->parent == CCM_WINDOW_XWINDOW (root))
                 {
-                    XShapeEvent *shape_event = (XShapeEvent *) event;
-
-                    CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                         shape_event->
-                                                                         window);
+                    window = ccm_window_new (self, create_event->window);
                     if (window)
                     {
-                        const CCMRegion *geometry =
-                            ccm_drawable_get_device_geometry (CCM_DRAWABLE
-                                                              (window));
+                        ccm_debug_window (window, "CREATE");
+                        if (!ccm_screen_add_window (self, window))
+                            g_object_unref (window);
+                    }
+                }
+            }
+        }
+        break;
+        case DestroyNotify:
+        {
+            CCMWindow *window = ccm_screen_find_window_or_child (self,
+                                                                 ((XDestroyWindowEvent *) event)->window);
+            ccm_debug ("REMOVE 0x%x",
+                       ((XDestroyWindowEvent *) event)->window);
+            if (window)
+            {
+                ccm_debug_window (window, "EVENT REMOVE 0x%x",
+                                  ((XDestroyWindowEvent *) event)->window);
+                ccm_screen_remove_window (self, window);
+            }
+        }
+        break;
+        case MapNotify:
+        {
+            CCMWindow *window, *parent;
 
-                        if (!geometry
-                            || !ccm_region_is_shaped ((CCMRegion *) geometry))
+            parent =
+                ccm_screen_find_window (self, ((XMapEvent *) event)->event);
+            window =
+                ccm_screen_find_window (self,
+                                        ((XMapEvent *) event)->window);
+            if (window)
+            {
+                ccm_debug_window (window, "MAP");
+                ccm_window_map (window);
+            }
+            else if (((XMapEvent *) event)->event ==
+                     CCM_WINDOW_XWINDOW (self->priv->root))
+            {
+                window =
+                    ccm_window_new (self, ((XMapEvent *) event)->window);
+                if (window)
+                {
+                    ccm_debug_window (window, "CREATE MAP");
+                    if (!ccm_screen_add_window (self, window))
+                    {
+                        g_object_unref (window);
+                        window = NULL;
+                    }
+                    else
+                        ccm_window_map (window);
+                }
+            }
+            if (window)
+            {
+                CCMWindow *transient = ccm_window_transient_for (window);
+
+                if (transient)
+                    ccm_screen_restack (self, window, transient);
+            }
+        }
+        break;
+        case UnmapNotify:
+        {
+            CCMWindow *window;
+
+            window =
+                ccm_screen_find_window (self,
+                                        ((XUnmapEvent *) event)->window);
+            if (window)
+            {
+                ccm_debug_window (window, "UNMAP");
+                ccm_window_unmap (window);
+            }
+        }
+        break;
+        case ReparentNotify:
+        {
+            CCMWindow *window = ccm_screen_find_window (self,
+                                                        ((XReparentEvent *)
+                                                         event)->window);
+            CCMWindow *parent = ccm_screen_find_window (self,
+                                                        ((XReparentEvent *)
+                                                         event)->parent);
+
+            ccm_debug ("REPARENT 0x%x, 0x%x",
+                       ((XReparentEvent *) event)->parent,
+                       ((XReparentEvent *) event)->window);
+
+            if (((XReparentEvent *) event)->parent ==
+                CCM_WINDOW_XWINDOW (self->priv->root))
+            {
+                if (!window)
+                {
+                    window =
+                        ccm_window_new (self,
+                                        ((XReparentEvent *) event)->window);
+                    if (window)
+                    {
+                        ccm_debug_window (window, "REPARENT ADD");
+                        if (!ccm_screen_add_window (self, window))
+                            g_object_unref (window);
+                    }
+                }
+            }
+            else if (parent && window)
+            {
+                ccm_debug_window (window, "REPARENT REMOVE");
+				_ccm_window_reparent(window, parent);
+                ccm_screen_destroy_window (self, window);
+                ccm_drawable_damage (CCM_DRAWABLE (parent));
+            }
+        }
+        break;
+        case CirculateNotify:
+        {
+            XCirculateEvent *circulate_event = (XCirculateEvent *) event;
+
+            CCMWindow *window = ccm_screen_find_window (self,
+                                                        circulate_event->window);
+
+            if (window)
+            {
+                ccm_debug_window (window, "CIRCULATE");
+                ccm_screen_add_check_pending (self);
+            }
+        }
+        break;
+        case ConfigureNotify:
+        {
+            XConfigureEvent *configure_event = (XConfigureEvent *) event;
+            CCMWindow *window;
+
+            window = ccm_screen_find_window (self, configure_event->window);
+
+            if (window)
+            {
+                if (configure_event->above != None)
+                {
+                    if (configure_event->above
+                        && configure_event->above !=
+                        CCM_WINDOW_XWINDOW (self->priv->root)
+                        && configure_event->above !=
+                        CCM_WINDOW_XWINDOW (self->priv->cow)
+                        && configure_event->above !=
+                        self->priv->selection_owner)
+                    {
+                        CCMWindow *above;
+                        above =
+                            ccm_screen_find_window (self,
+                                                    configure_event->above);
+                        if (above)
+                            ccm_screen_restack (self, window, above);
+                    }
+                }
+
+                ccm_drawable_move (CCM_DRAWABLE (window),
+                                   configure_event->x -
+                                   configure_event->border_width,
+                                   configure_event->y -
+                                   configure_event->border_width);
+
+                ccm_drawable_resize (CCM_DRAWABLE (window),
+                                     configure_event->width +
+                                     configure_event->border_width * 2,
+                                     configure_event->height +
+                                     configure_event->border_width * 2);
+            }
+        }
+        break;
+        case PropertyNotify:
+        {
+            XPropertyEvent *property_event = (XPropertyEvent *) event;
+            CCMWindow *window;
+
+            ccm_debug_atom (self->priv->display, property_event->atom,
+                            "PROPERTY_NOTIFY");
+
+            if (property_event->atom ==
+                CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom)
+            {
+                guint32 *data;
+                guint n_items;
+                Window active;
+
+                ccm_screen_add_check_pending (self);
+                data =
+                    ccm_window_get_property (self->priv->root,
+                                             CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom, 
+                                             XA_WINDOW, &n_items);
+                if (data)
+                {
+                    active = (Window) * data;
+                    if (active)
+                        self->priv->active =
+                            ccm_screen_find_window_or_child (self,
+                                                             (Window) * data);
+                    else
+                        self->priv->active = NULL;
+                    g_free (data);
+                    if (self->priv->active)
+                        g_signal_emit (self,
+                                       signals[ACTIVATE_WINDOW_NOTIFY], 0,
+                                       self->priv->active);
+                }
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom)
+            {
+                g_object_unref (self->priv->background);
+                self->priv->background = NULL;
+                ccm_screen_damage (self);
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->client_stacking_list_atom
+                     || property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->client_list_atom)
+            {
+                ccm_screen_add_check_pending (self);
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->transient_for_atom)
+            {
+                window =
+                    ccm_screen_find_window_or_child (self,
+                                                     property_event->window);
+                if (window)
+                    ccm_window_query_transient_for (window);
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
+            {
+                window =
+                    ccm_screen_find_window_or_child (self,
+                                                     property_event->window);
+                if (window)
+                    ccm_window_query_opacity (window,
+                                              property_event->state == PropertyDelete);
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
+            {
+                window =
+                    ccm_screen_find_window_or_child (self,
+                                                     property_event->window);
+                if (window)
+                    ccm_window_query_hint_type (window);
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->mwm_hints_atom)
+            {
+                window =
+                    ccm_screen_find_window_or_child (self,
+                                                     property_event->window);
+                if (window)
+                    ccm_window_query_mwm_hints (window);
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
+            {
+                window =
+                    ccm_screen_find_window_or_child (self,
+                                                     property_event->window);
+                if (window)
+                    ccm_window_query_state (window);
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->frame_extends_atom)
+            {
+                window =
+                    ccm_screen_find_window_or_child (self,
+                                                     property_event->window);
+                if (window)
+                    ccm_window_query_frame_extends (window);
+            }
+            else if (property_event->atom ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom)
+            {
+                guint n_items;
+                guint32 *desktop = NULL;
+
+                desktop =
+                    ccm_window_get_property (self->priv->root,
+                                             CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom,
+                                             XA_CARDINAL, &n_items);
+                if (desktop)
+                {
+                    g_signal_emit (self, signals[DESKTOP_CHANGED], 0,
+                                   *desktop + 1);
+                    g_free (desktop);
+                }
+            }
+        }
+        break;
+        case Expose:
+        {
+            XExposeEvent *expose_event = (XExposeEvent *) event;
+            cairo_rectangle_t area;
+            CCMRegion *damaged;
+
+            ccm_debug ("EXPOSE");
+            area.x = expose_event->x;
+            area.y = expose_event->y;
+            area.width = expose_event->width;
+            area.height = expose_event->height;
+            damaged = ccm_region_rectangle (&area);
+            ccm_screen_damage_region (self, damaged);
+            ccm_region_destroy (damaged);
+        }
+        break;
+        case ClientMessage:
+        {
+            XClientMessageEvent *client_event =
+                (XClientMessageEvent *) event;
+
+            ccm_debug_atom (self->priv->display, client_event->message_type,
+                            "CLIENT MESSAGE");
+
+            if (client_event->message_type ==
+                CCM_WINDOW_GET_CLASS (self->priv->root)->ccm_atom)
+            {
+                if (CCM_WINDOW_XWINDOW (self->priv->root) ==
+                    client_event->data.l[1])
+                {
+
+                    CCMWindow *window =
+                        ccm_screen_find_window_or_child (self,
+                                                         client_event->data.l[4]);
+                    g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
+                                   window ? window : self->priv->root,
+                                   client_event->data.l[0],
+                                   client_event->data.l[2],
+                                   client_event->data.l[3]);
+                }
+                else
+                {
+                    CCMWindow *window =
+                        ccm_screen_find_window_or_child (self,
+                                                         client_event->data.l[1]);
+                    if (window)
+                        g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
+                                       window, client_event->data.l[0],
+                                       client_event->data.l[2],
+                                       client_event->data.l[3]);
+                }
+            }
+            else if (client_event->message_type ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
+            {
+                CCMWindow *window = ccm_screen_find_window_or_child (self,
+                                                                     client_event->window);
+                if (window)
+                {
+                    gint cpt;
+
+                    for (cpt = 1; cpt < 3; ++cpt)
+                    {
+                        switch (client_event->data.l[0])
                         {
-                            ccm_drawable_damage (CCM_DRAWABLE (window));
-                            ccm_drawable_query_geometry (CCM_DRAWABLE (window));
-                            ccm_drawable_damage (CCM_DRAWABLE (window));
+                            case 0:
+                                ccm_debug_atom (self->priv->display,
+                                                client_event->data.l[cpt],
+                                                "UNSET STATE");
+                                ccm_window_unset_state (window,
+                                                        client_event->data.l[cpt]);
+                                break;
+                            case 1:
+                                ccm_debug_atom (self->priv->display,
+                                                client_event->data.l[cpt],
+                                                "SET STATE");
+                                ccm_window_set_state (window,
+                                                      client_event->data.l[cpt]);
+                                break;
+                            case 2:
+                                ccm_debug_atom (self->priv->display,
+                                                client_event->data.l[cpt],
+                                                "SWITCH STATE");
+                                ccm_window_switch_state (window,
+                                                         client_event->data.l[cpt]);
+                                break;
+                            default:
+                                break;
                         }
                     }
                 }
             }
-            break;
+            else if (client_event->message_type ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
+            {
+                CCMWindow *window = ccm_screen_find_window_or_child (self,
+                                                                     client_event->window);
+                if (window)
+                    ccm_window_query_hint_type (window);
+            }
+            else if (client_event->message_type ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
+            {
+                CCMWindow *window = ccm_screen_find_window_or_child (self,
+                                                                     client_event->window);
+                if (window)
+                    ccm_window_query_opacity (window, FALSE);
+            }
+            else if (client_event->message_type ==
+                     CCM_WINDOW_GET_CLASS (self->priv->root)->
+                     root_pixmap_atom)
+            {
+                g_object_unref (self->priv->background);
+                self->priv->background = NULL;
+                ccm_screen_damage (self);
+            }
+        }
+        break;
+        default:
+        {
+            // Check for shape notify
+            if (event->type ==
+                ccm_display_get_shape_notify_event_type (self->priv->display))
+            {
+                XShapeEvent *shape_event = (XShapeEvent *) event;
+
+                CCMWindow *window = ccm_screen_find_window_or_child (self,
+                                                                     shape_event->window);
+                if (window)
+                {
+                    const CCMRegion *geometry =
+                        ccm_drawable_get_device_geometry (CCM_DRAWABLE(window));
+
+                    if (!geometry || !ccm_region_is_shaped ((CCMRegion *) geometry))
+                    {
+                        ccm_drawable_damage (CCM_DRAWABLE (window));
+                        ccm_drawable_query_geometry (CCM_DRAWABLE (window));
+                        ccm_drawable_damage (CCM_DRAWABLE (window));
+                    }
+                }
+            }
+        }
+        break;
     }
 }
 

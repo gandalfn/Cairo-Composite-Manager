@@ -118,6 +118,7 @@ GType            ccm_window_get_type (void) G_GNUC_CONST;
 
 CCMWindowPlugin* _ccm_window_get_plugin (CCMWindow* self, GType type);
 Window           _ccm_window_get_child  (CCMWindow* self);
+void             _ccm_window_reparent   (CCMWindow* self, CCMWindow* parent);
 
 G_END_DECLS
 
