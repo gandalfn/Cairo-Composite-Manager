@@ -79,33 +79,22 @@ CCM_DEFINE_PLUGIN (CCMDecoration, ccm_decoration, CCM_TYPE_PLUGIN,
                                             ccm_decoration_preferences_page_iface_init))
 struct _CCMDecorationPrivate
 {
-    CCMWindow *
-        window;
+    CCMWindow* window;
 
-    int
-        top;
-    int
-        bottom;
-    int
-        left;
-    int
-        right;
+    int top;
+    int bottom;
+    int left;
+    int right;
 
-    CCMRegion *
-        geometry;
-    CCMRegion *
-        opaque;
+    CCMRegion* geometry;
+    CCMRegion* opaque;
 
-    gboolean
-        locked;
+    gboolean locked;
 
-    GtkBuilder *
-        builder;
+    GtkBuilder* builder;
 
-    gulong
-        id_property_changed;
-    gulong
-        id_opacity_changed;
+    gulong id_property_changed;
+    gulong id_opacity_changed;
 };
 
 #define CCM_DECORATION_GET_PRIVATE(o)  \
@@ -295,6 +284,8 @@ ccm_decoration_create_mask (CCMDecoration * self)
     g_return_if_fail (self != NULL);
 
     cairo_surface_t *mask = NULL;
+    cairo_surface_t *surface =
+            ccm_drawable_get_surface (CCM_DRAWABLE (self->priv->window));
 
     ccm_debug ("CREATE MASK");
 
@@ -309,8 +300,8 @@ ccm_decoration_create_mask (CCMDecoration * self)
                                   &self->priv->right, &self->priv->top,
                                   &self->priv->bottom);
 
-    if (self->priv->left || self->priv->right || self->priv->top
-        || self->priv->bottom)
+    if (surface && (self->priv->left || self->priv->right || 
+                    self->priv->top || self->priv->bottom))
     {
         cairo_t *ctx;
         cairo_pattern_t *pattern = NULL;
@@ -318,8 +309,6 @@ ccm_decoration_create_mask (CCMDecoration * self)
         gint cpt, nb_rects;
         gfloat opacity = ccm_window_get_opacity (self->priv->window);
         CCMRegion *decoration, *tmp;
-        cairo_surface_t *surface =
-            ccm_drawable_get_surface (CCM_DRAWABLE (self->priv->window));
         gboolean y_invert;
 
         g_object_get (self->priv->window, "mask_y_invert", &y_invert, NULL);
