@@ -970,13 +970,6 @@ ccm_window_get_plugins (CCMWindow * self)
 
     self->priv->plugin = (CCMWindowPlugin *) self;
 
-    if (CCM_WINDOW_XWINDOW (self) ==
-        RootWindowOfScreen (CCM_SCREEN_XSCREEN (screen)))
-        return;
-
-    if (self == ccm_screen_get_overlay_window (screen))
-        return;
-
     for (item = CCM_WINDOW_GET_CLASS (self)->plugins; item; item = item->next)
     {
         GType type = GPOINTER_TO_INT (item->data);
@@ -2572,15 +2565,12 @@ ccm_window_transient_for (CCMWindow * self)
     g_return_val_if_fail (self != NULL, NULL);
 
     CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
-    CCMWindow *root = ccm_screen_get_root_window (screen);
     CCMWindow *window = NULL;
 
     if (self->priv->transient_for)
         window = ccm_screen_find_window_or_child (screen, 
                                                   self->priv->transient_for);
-    else if (self->priv->transient_for == CCM_WINDOW_XWINDOW (root))
-        window = root;
-
+ 
     return window;
 }
 
