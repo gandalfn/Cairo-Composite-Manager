@@ -16,7 +16,6 @@ BUILT_SOURCES = \
     $(shell if [ ! "$(PLUGIN_VALA_SOURCES)" = "" ]; then echo $(PLUGIN).vala.stamp; fi)
 
 PLUGIN_SOURCES += \
-    $(BUILT_SOURCES) \
     $(PLUGIN_VALA_SOURCES:.vala=.c)
 
 $(PLUGIN).vala.stamp: $(PLUGIN_VALA_SOURCES)

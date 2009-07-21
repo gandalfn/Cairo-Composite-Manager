@@ -3,6 +3,7 @@ PLUGIN_UI = ccm-automate.ui
 PLUGIN_SCHEMA = ccm-automate.schema-key.in
 
 PLUGIN_SOURCES =
+
 PLUGIN_VALA_SOURCES = \
     ccm-action.vala \
     ccm-action-pointer.vala \
@@ -19,8 +20,7 @@ plugin_LTLIBRARIES = \
 	libccm_automate.la 
 
 libccm_automate_la_SOURCES = \
-    $(PLUGIN_SOURCES) \
-    $(PLUGIN_VALA_SOURCES)
+    $(PLUGIN_SOURCES)
     
 libccm_automate_la_LDFLAGS =  $(PLUGIN_LDFLAGS)
 
