@@ -226,7 +226,8 @@ cairo_matrix_t ccm_drawable_get_transform (CCMDrawable * self);
 /******************************************************************************/
 
 /******************************** Window **************************************/
-CCMWindow *ccm_window_new (CCMScreen * screen, Window xwindow);
+CCMWindow* ccm_window_new (CCMScreen * screen, Window xwindow);
+CCMWindow* ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow);
 gboolean ccm_window_is_viewable (CCMWindow * self);
 gboolean ccm_window_is_input_only (CCMWindow * self);
 gboolean ccm_window_is_managed (CCMWindow * self);

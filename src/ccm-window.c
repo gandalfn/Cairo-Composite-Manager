@@ -2158,6 +2158,65 @@ ccm_window_new (CCMScreen * screen, Window xwindow)
 }
 
 /**
+ * ccm_window_new_unmanaged:
+ * @screen: #CCMScreen of window
+ * @xwindow: window xid
+ *
+ * Create a new unmanaged #CCMWindow reference which point on @xwindow
+ *
+ * Returns: #CCMWindow
+ **/
+CCMWindow*
+ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow)
+{
+    g_return_val_if_fail (screen != NULL, NULL);
+    g_return_val_if_fail (xwindow != None, NULL);
+
+    CCMDisplay *display = ccm_screen_get_display (screen);
+    CCMWindow *self = g_object_new (CCM_TYPE_WINDOW_BACKEND (screen),
+                                    "screen", screen,
+                                    "drawable", xwindow,
+                                    NULL);
+
+    create_atoms (self);
+
+	self->priv->plugin = self;
+	
+    if (!ccm_window_get_attribs (self))
+    {
+        g_object_unref (self);
+        return NULL;
+    }
+
+    if (!self->priv->is_input_only)
+        ccm_drawable_query_geometry (CCM_DRAWABLE (self));
+
+    if (!self->priv->is_input_only)
+    {
+        ccm_window_query_child (self);
+        ccm_window_query_hint_type (self);
+        ccm_window_query_opacity (self, FALSE);
+        ccm_window_query_transient_for (self);
+        ccm_window_query_wm_hints (self);
+        ccm_window_query_mwm_hints (self);
+        ccm_window_query_state (self);
+        ccm_window_query_frame_extends (self);
+
+        XSelectInput (CCM_DISPLAY_XDISPLAY (display), CCM_WINDOW_XWINDOW (self),
+                      PropertyChangeMask | StructureNotifyMask |
+                      SubstructureNotifyMask);
+
+        XShapeSelectInput (CCM_DISPLAY_XDISPLAY (display),
+                           CCM_WINDOW_XWINDOW (self), ShapeNotifyMask);
+
+        ccm_display_flush (display);
+        ccm_display_sync (display);
+    }
+
+    return self;
+}
+
+/**
  * ccm_window_is_viewable:
  * @self: #CCMWindow
  *

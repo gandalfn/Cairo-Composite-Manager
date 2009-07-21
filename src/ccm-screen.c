@@ -843,7 +843,7 @@ ccm_screen_create_overlay_window (CCMScreen * self)
     if (!window)
         return FALSE;
 
-    self->priv->cow = ccm_window_new (self, window);
+    self->priv->cow = ccm_window_new_unmanaged (self, window);
     ccm_window_make_output_only (self->priv->cow);
 
     return self->priv->cow != NULL;
@@ -2769,7 +2769,7 @@ ccm_screen_get_root_window (CCMScreen * self)
     {
         Window root = RootWindowOfScreen (self->priv->xscreen);
 
-        self->priv->root = ccm_window_new (self, root);
+        self->priv->root = ccm_window_new_unmanaged (self, root);
         XSelectInput (CCM_DISPLAY_XDISPLAY (ccm_screen_get_display (self)),
                       root,
                       ExposureMask | PropertyChangeMask | StructureNotifyMask |
