@@ -325,37 +325,46 @@ ccm_region_transform (CCMRegion * self, cairo_matrix_t * matrix)
     int n_boxes, cpt;
     pixman_box32_t *extents = pixman_region32_extents (&self->reg);
     pixman_box32_t *boxes = pixman_region32_rectangles (&self->reg, &n_boxes);
-    double x, y;
+    double x1, y1, x2, y2;
 
-    x = pixman_fixed_to_double (extents->x1);
-    y = pixman_fixed_to_double (extents->y1);
-    cairo_matrix_transform_point (matrix, &x, &y);
-    extents->x1 = pixman_double_to_fixed (x);
-    extents->y1 = pixman_double_to_fixed (y);
+    x1 = pixman_fixed_to_double (extents->x1);
+    y1 = pixman_fixed_to_double (extents->y1);
+    cairo_matrix_transform_point (matrix, &x1, &y1);
 
-    x = pixman_fixed_to_double (extents->x2);
-    y = pixman_fixed_to_double (extents->y2);
-    cairo_matrix_transform_point (matrix, &x, &y);
-    extents->x2 = pixman_double_to_fixed (x);
-    extents->y2 = pixman_double_to_fixed (y);
+    x2 = pixman_fixed_to_double (extents->x2);
+    y2 = pixman_fixed_to_double (extents->y2);
+    cairo_matrix_transform_point (matrix, &x2, &y2);
+
+	if (pixman_double_to_fixed (x1) == pixman_double_to_fixed (x2) || 
+	    pixman_double_to_fixed (y1) == pixman_double_to_fixed (y2))
+	{
+		pixman_region32_fini(&self->reg);
+		pixman_region32_init(&self->reg);
+		return;
+	}
+	
+	extents->x1 = pixman_double_to_fixed (x1);
+    extents->y1 = pixman_double_to_fixed (y1);
+    extents->x2 = pixman_double_to_fixed (x2);
+    extents->y2 = pixman_double_to_fixed (y2);
 
     if (extents != boxes)
     {
         for (cpt = 0; cpt < n_boxes; ++cpt)
         {
-            x = pixman_fixed_to_double (boxes[cpt].x1);
-            y = pixman_fixed_to_double (boxes[cpt].y1);
-            cairo_matrix_transform_point (matrix, &x, &y);
-            boxes[cpt].x1 = pixman_double_to_fixed (x);
-            boxes[cpt].y1 = pixman_double_to_fixed (y);
+            x1 = pixman_fixed_to_double (boxes[cpt].x1);
+            y1 = pixman_fixed_to_double (boxes[cpt].y1);
+            cairo_matrix_transform_point (matrix, &x1, &y1);
+            boxes[cpt].x1 = pixman_double_to_fixed (x1);
+            boxes[cpt].y1 = pixman_double_to_fixed (y1);
 
-            x = pixman_fixed_to_double (boxes[cpt].x2);
-            y = pixman_fixed_to_double (boxes[cpt].y2);
-            cairo_matrix_transform_point (matrix, &x, &y);
-            boxes[cpt].x2 = pixman_double_to_fixed (x);
-            boxes[cpt].y2 = pixman_double_to_fixed (y);
+            x2 = pixman_fixed_to_double (boxes[cpt].x2);
+            y2 = pixman_fixed_to_double (boxes[cpt].y2);
+            cairo_matrix_transform_point (matrix, &x2, &y2);
+            boxes[cpt].x2 = pixman_double_to_fixed (x2);
+            boxes[cpt].y2 = pixman_double_to_fixed (y2);
         }
-    }
+    }	
 }
 
 gboolean
