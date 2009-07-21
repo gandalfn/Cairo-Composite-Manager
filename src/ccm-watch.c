@@ -77,10 +77,9 @@ internal_remove_watch (CCMWatch * watch)
     init ();
 
     watch->removed = TRUE;
-    g_source_remove_poll ((GSource *) watch, &(watch->poll_fd));
-    g_source_destroy ((GSource *) watch);
-    g_source_unref ((GSource *) watch);
     g_hash_table_remove (watched_fds, fd);
+    g_source_remove_poll ((GSource *) watch, &(watch->poll_fd));
+	g_source_destroy ((GSource *) watch);
 }
 
 static gboolean
