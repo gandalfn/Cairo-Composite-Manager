@@ -2180,7 +2180,7 @@ ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow)
 
     create_atoms (self);
 
-	self->priv->plugin = self;
+	self->priv->plugin = (CCMWindowPlugin*)self;
 	
     if (!ccm_window_get_attribs (self))
     {
