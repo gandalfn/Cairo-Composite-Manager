@@ -51,7 +51,7 @@ namespace CCM
         class X.Atom enable_atom;
         class X.Atom disable_atom;
 
-        CCM.Screen screen;
+        weak CCM.Screen screen;
         ArrayList < Output > screen_outputs = null;
         ArrayList < Output > window_outputs = null;
 
