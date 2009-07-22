@@ -75,7 +75,7 @@ struct _CCMScreenPluginClass
                                 CCMRegion * area, CCMWindow * window);
     void     (*on_cursor_move) (CCMScreenPlugin * self, CCMScreen * screen, 
                                 int x, int y);
-    void      (*paint_cursor)  (CCMScreenPlugin * self, CCMScreen * screen,
+    void     (*paint_cursor)   (CCMScreenPlugin * self, CCMScreen * screen,
                                 cairo_t * ctx, int x, int y);
 };
 
