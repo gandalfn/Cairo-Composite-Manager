@@ -384,7 +384,8 @@ ccm_screen_finalize (GObject * object)
 
     if (self->priv->stack)
     {
-        g_free (self->priv->stack);
+         g_slice_free1 (sizeof (Window) * self->priv->n_windows, 
+                        self->priv->stack);
         self->priv->stack = NULL;
         self->priv->n_windows = 0;
     }
@@ -1138,10 +1139,11 @@ ccm_screen_update_stack (CCMScreen * self)
          &w, &p, &stack, &n_windows) && stack && n_windows)
     {
         if (self->priv->stack)
-            g_free (self->priv->stack);
+            g_slice_free1 (sizeof (Window) * self->priv->n_windows, 
+                           self->priv->stack);
 
         self->priv->n_windows = n_windows;
-        self->priv->stack = g_memdup (stack, sizeof (Window) * n_windows);
+        self->priv->stack = g_slice_copy (sizeof (Window) * n_windows, stack);
         XFree (stack);
     }
 }
