@@ -626,7 +626,7 @@ ccm_drawable_get_geometry_clipbox (CCMDrawable * self, cairo_rectangle_t * area)
     g_return_val_if_fail (self != NULL, FALSE);
     g_return_val_if_fail (area != NULL, FALSE);
 
-    if (self->priv->geometry)
+    if (self->priv->geometry && !ccm_region_empty(self->priv->geometry))
     {
         ccm_region_get_clipbox (self->priv->geometry, area);
         return TRUE;
