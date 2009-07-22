@@ -421,7 +421,7 @@ ccm_window_class_init (CCMWindowClass * klass)
 
     klass->plugins = NULL;
 
-        /**
+    /**
 	 * CCMWindow:child:
 	 *
 	 * The main child of window, it is only set with decorated window and it 
@@ -432,7 +432,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                            "Child of window",
                                                            G_PARAM_READWRITE));
 
-        /**
+	/**
 	 * CCMWindow:no_undamage_sibling:
 	 *
 	 * This property indicate if the window don't clip damage area of 
@@ -445,7 +445,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                       "Get if window undamage sibling", FALSE,
                                       G_PARAM_READABLE | G_PARAM_WRITABLE));
 
-        /**
+	/**
 	 * CCMWindow:input:
 	 *
 	 * The input redirection window it is only set when window is transformed
@@ -456,7 +456,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                            "Window input",
                                                            G_PARAM_READABLE));
 
-        /**
+	/**
 	 * CCMWindow:redirect:
 	 *
 	 * If is unset the window isn't redirected when it have transformation.
@@ -468,7 +468,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                            TRUE,
                                                            G_PARAM_WRITABLE));
 
-        /**
+	/**
 	 * CCMWindow:block_mouse_redirect_event:
 	 *
 	 * If is set block pointer redirect event when window is transformed.
@@ -481,7 +481,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                       "Unblock/Block redirected pointer event when window is transformed",
                                       FALSE, G_PARAM_WRITABLE));
 
-        /**
+	/**
 	 * CCMWindow:use_image:
 	 *
 	 * If is set the window use software rendering instead configured backend.
@@ -493,7 +493,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                            FALSE,
                                                            G_PARAM_WRITABLE));
 
-        /**
+	/**
 	 * CCMWindow:mask_width:
 	 *
 	 * Width of window mask surface.
@@ -505,7 +505,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                        G_MININT, G_MAXINT, 0,
                                                        G_PARAM_READWRITE));
 
-        /**
+	/**
 	 * CCMWindow:mask_y_invert:
 	 *
 	 * This property indicate if the mask paint is y inverted.
@@ -518,7 +518,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                            G_PARAM_READABLE |
                                                            G_PARAM_WRITABLE));
 
-        /**
+	/**
 	 * CCMWindow:mask_height:
 	 *
 	 * Height of window mask surface.
@@ -530,7 +530,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                        G_MININT, G_MAXINT, 0,
                                                        G_PARAM_READWRITE));
 
-        /**
+	/**
 	 * CCMWindow:mask:
 	 *
 	 * Mask surface.
@@ -540,7 +540,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                            "Window paint mask",
                                                            G_PARAM_READWRITE));
 
-        /**
+	/**
 	 * CCMWindow::property-changed:
 	 * @property: #CCMPropertyType
 	 *
@@ -551,7 +551,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
                       g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
-        /**
+	/**
 	 * CCMWindow::opacity-changed:
 	 *
 	 * Emitted when the window opacity changed.
@@ -561,7 +561,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
                       g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-        /**
+	/**
 	 * CCMWindow::redirect-input:
 	 *
 	 * Emitted when the window redirect input changed.
@@ -572,7 +572,7 @@ ccm_window_class_init (CCMWindowClass * klass)
                       g_cclosure_marshal_VOID__BOOLEAN, G_TYPE_NONE, 1,
                       G_TYPE_BOOLEAN);
 
-        /**
+	/**
 	 * CCMWindow::error:
 	 *
 	 * Emitted when an error occur on a window request.
