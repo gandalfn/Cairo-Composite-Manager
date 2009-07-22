@@ -30,7 +30,7 @@ namespace CCM
 {
     class Output
     {
-        public CCM.Window window;
+        public weak CCM.Window window;
         public CCM.Pixmap pixmap;
 
         Output (CCM.Screen screen, CCM.Window window, X.Pixmap xpixmap,
