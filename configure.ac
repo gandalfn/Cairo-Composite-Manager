@@ -166,10 +166,13 @@ if [ test x$gir = xyes ]; then
     AC_SUBST(GIRDIR)
     TYPELIBDIR="$($PKG_CONFIG --variable=typelibdir gobject-introspection-1.0)"
     AC_SUBST(TYPELIBDIR)
-    GIRINSTDIR=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=girdir gobject-introspection-1.0`
-    AC_SUBST(GIRINSTDIR)
-    TYPELIBINSTDIR="$($PKG_CONFIG --define-variable=prefix=$prefix --variable=typelibdir gobject-introspection-1.0)"
-    AC_SUBST(TYPELIBINSTDIR)
+    if test "$prefix" = NONE
+    then
+        GIRINSTDIR=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=girdir gobject-introspection-1.0`
+        AC_SUBST(GIRINSTDIR)
+        TYPELIBINSTDIR="$($PKG_CONFIG --define-variable=prefix=$prefix --variable=typelibdir gobject-introspection-1.0)"
+        AC_SUBST(TYPELIBINSTDIR)
+    fi
 fi
 
 AM_CONDITIONAL(ENABLE_GOBJECT_INTROSPECTION, [test x$gir = xyes])
@@ -183,8 +186,14 @@ PKG_CHECK_MODULES(CCM_GLADE,
            [gladeui="no"])
 
 if [ test x$gladeui = xyes ]; then
-    glademoduledir=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=moduledir gladeui-1.0`
-    gladecatalogdir=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=catalogdir gladeui-1.0`
+    if test "$prefix" = NONE
+    then
+        glademoduledir=`$PKG_CONFIG --variable=moduledir gladeui-1.0`
+        gladecatalogdir=`$PKG_CONFIG --variable=catalogdir gladeui-1.0`
+    else
+        glademoduledir=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=moduledir gladeui-1.0`
+        gladecatalogdir=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=catalogdir gladeui-1.0`
+    fi
     
     AC_SUBST(glademoduledir)
     AC_SUBST(gladecatalogdir)
