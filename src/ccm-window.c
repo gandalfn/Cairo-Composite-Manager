@@ -1825,7 +1825,8 @@ ccm_window_on_transient_transform_changed (CCMWindow * self, GParamSpec * pspec,
     g_return_if_fail (self != NULL);
     g_return_if_fail (transient != NULL);
 
-    if (ccm_window_is_viewable (transient))
+    if (CCM_IS_DRAWABLE(transient) && CCM_IS_DRAWABLE(self) &&
+        ccm_window_is_viewable (transient))
     {
         cairo_matrix_t matrix, translate;
         cairo_rectangle_t clipbox, geometry;
