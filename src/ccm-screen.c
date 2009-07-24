@@ -1380,8 +1380,7 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
     g_return_if_fail (window != NULL);
     g_return_if_fail (sibling != NULL);
 
-    GList *sibling_link = NULL, *item;
-    gboolean found = FALSE;
+    GList *sibling_link = NULL, *item, *found = NULL;
     CCMWindow *transient = NULL, *leader = NULL;
 
     if (g_list_find (self->priv->removed, sibling))
@@ -1407,26 +1406,28 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
             if (sibling_link)
                 return;
             else
-                found = TRUE;
+                found = item;
         }
         if (item->data == sibling)
         {
             sibling_link = item;
             if (found)
+            {
+			    ccm_debug_window (window, "RESTACK AFTER 0x%x",
+				                  CCM_WINDOW_XWINDOW (sibling));
+				if (found->prev) found->prev->next = found->next;
+				if (found->next) found->next->prev = found->prev;
+				found->next = sibling_link->next;
+				found->prev = sibling_link;
+				sibling_link->next = found;
                 break;
+			}
         }
     }
 
-    ccm_debug_window (window, "RESTACK AFTER 0x%x",
-                      CCM_WINDOW_XWINDOW (sibling));
 
-    self->priv->windows = g_list_remove (self->priv->windows, window);
-    if (sibling_link)
-        self->priv->windows =
-            g_list_insert_before (self->priv->windows, sibling_link->next,
-                                  window);
-    else
-        self->priv->windows = g_list_append (self->priv->windows, window);
+	if (!found)
+		self->priv->windows = g_list_append (self->priv->windows, window);
 
     ccm_drawable_damage (CCM_DRAWABLE (window));
 }
