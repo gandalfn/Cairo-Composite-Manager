@@ -1415,19 +1415,17 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
             {
 			    ccm_debug_window (window, "RESTACK AFTER 0x%x",
 				                  CCM_WINDOW_XWINDOW (sibling));
-				if (found->prev) found->prev->next = found->next;
-				if (found->next) found->next->prev = found->prev;
+				self->priv->windows = g_list_remove_link(self->priv->windows,
+				                                         found);
 				found->next = sibling_link->next;
 				found->prev = sibling_link;
+				if (sibling_link->next) sibling_link->next->prev = found;
 				sibling_link->next = found;
-                break;
+	            break;
 			}
         }
     }
-
-
-	if (!found)
-		self->priv->windows = g_list_append (self->priv->windows, window);
+		
 
     ccm_drawable_damage (CCM_DRAWABLE (window));
 }
