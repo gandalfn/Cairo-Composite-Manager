@@ -168,6 +168,7 @@ CCMDisplay *ccm_screen_get_display (CCMScreen * self);
 Screen *ccm_screen_get_xscreen (CCMScreen * self);
 guint ccm_screen_get_number (CCMScreen * self);
 guint ccm_screen_get_refresh_rate (CCMScreen * self);
+const gchar* ccm_screen_get_backend (CCMScreen* self);
 CCMWindow *ccm_screen_get_root_window (CCMScreen * self);
 CCMWindow *ccm_screen_get_overlay_window (CCMScreen * self);
 gboolean ccm_screen_add_window (CCMScreen * self, CCMWindow * window);
@@ -194,10 +195,13 @@ CCMScreen *ccm_drawable_get_screen (CCMDrawable * self);
 CCMDisplay *ccm_drawable_get_display (CCMDrawable * self);
 XID ccm_drawable_get_xid (CCMDrawable * self);
 Visual *ccm_drawable_get_visual (CCMDrawable * self);
+void ccm_drawable_set_visual (CCMDrawable * self, Visual* visual);
 cairo_format_t ccm_drawable_get_format (CCMDrawable * self);
 guint ccm_drawable_get_depth (CCMDrawable * self);
+void ccm_drawable_set_depth (CCMDrawable * self, guint depth);
 void ccm_drawable_query_geometry (CCMDrawable * self);
 const CCMRegion *ccm_drawable_get_geometry (CCMDrawable * self);
+void ccm_drawable_set_geometry (CCMDrawable* self, CCMRegion* geometry);
 const CCMRegion *ccm_drawable_get_device_geometry (CCMDrawable * self);
 gboolean ccm_drawable_get_geometry_clipbox (CCMDrawable * self,
                                             cairo_rectangle_t * area);
@@ -223,6 +227,7 @@ void ccm_drawable_push_matrix (CCMDrawable * self, gchar * key,
                                cairo_matrix_t * matrix);
 void ccm_drawable_pop_matrix (CCMDrawable * self, gchar * key);
 cairo_matrix_t ccm_drawable_get_transform (CCMDrawable * self);
+const CCMRegion* ccm_drawable_get_damaged (CCMDrawable * self);
 /******************************************************************************/
 
 /******************************** Window **************************************/
@@ -291,6 +296,10 @@ void ccm_window_activate (CCMWindow * self, Time timestamp);
 GSList *ccm_window_get_transients (CCMWindow * self);
 gboolean ccm_window_undamage_sibling (CCMWindow * self);
 gboolean ccm_window_has_redirect_input (CCMWindow * self);
+gboolean ccm_window_get_redirect(CCMWindow* self);
+void ccm_window_set_redirect(CCMWindow* self, gboolean redirect);
+cairo_surface_t* ccm_window_get_mask(CCMWindow* self);
+void ccm_window_set_mask(CCMWindow* self, cairo_surface_t* mask);
 /******************************************************************************/
 
 G_END_DECLS

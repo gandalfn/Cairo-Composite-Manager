@@ -102,7 +102,7 @@ namespace CCM
             /* Paint damaged area */
             if (((ValaWindowOptions) get_option ()).enabled)
             {
-                CCM.Region damaged = window.get_damaged ().copy ();
+                weak CCM.Region damaged = window.damaged;
 
                 if (damaged != null)
                 {

@@ -492,7 +492,8 @@ ccm_menu_animation_finish (CCMMenuAnimation * self)
 
     ccm_debug_window (self->priv->window, "MENU ANIMATION COMPLETED");
 
-    if (ccm_timeline_get_direction (self->priv->timeline) ==
+    ccm_window_set_redirect(self->priv->window, TRUE);
+	if (ccm_timeline_get_direction (self->priv->timeline) ==
         CCM_TIMELINE_FORWARD)
     {
         CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD (self, map);
@@ -736,6 +737,7 @@ ccm_menu_animation_map (CCMWindowPlugin * plugin, CCMWindow * window)
         {
             ccm_timeline_advance (self->priv->timeline, current_frame);
         }
+		ccm_window_set_redirect(window, FALSE);
     }
     ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
@@ -794,6 +796,7 @@ ccm_menu_animation_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
                 current_frame;
             ccm_timeline_advance (self->priv->timeline, num_frame);
         }
+		ccm_window_set_redirect(window, FALSE);
     }
     ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }

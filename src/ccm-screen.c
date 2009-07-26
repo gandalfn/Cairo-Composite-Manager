@@ -994,7 +994,7 @@ ccm_screen_find_window_or_child (CCMScreen * self, Window xwindow)
     GList *item;
     CCMWindow *child = NULL;
 
-    for (item = g_list_last (self->priv->windows); item; item = item->prev)
+    for (item = self->priv->windows; item; item = item->next)
     {
         if (CCM_IS_WINDOW (item->data)
             && CCM_WINDOW_XWINDOW (item->data) == xwindow)
@@ -1018,7 +1018,7 @@ ccm_screen_find_window_from_input (CCMScreen * self, Window xwindow)
     GList *item;
     CCMWindow *child = NULL;
 
-    for (item = g_list_last (self->priv->windows); item; item = item->prev)
+    for (item = self->priv->windows; item; item = item->next)
     {
         if (CCM_IS_WINDOW (item->data)
             && ccm_window_has_redirect_input (item->data))
@@ -1383,7 +1383,10 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
     GList *sibling_link = NULL, *item, *found = NULL;
     CCMWindow *transient = NULL, *leader = NULL;
 
-    if (g_list_find (self->priv->removed, sibling))
+	if (sibling == self->priv->active)
+		return;
+	
+	if (g_list_find (self->priv->removed, sibling))
         return;
 
     if (ccm_window_get_hint_type (window) == CCM_WINDOW_TYPE_DESKTOP)
@@ -1479,8 +1482,8 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
             {
                 if (ccm_drawable_is_damaged (CCM_DRAWABLE (window)))
                 {
-                    CCMRegion *damaged = NULL;
-                    g_object_get (G_OBJECT (window), "damaged", &damaged, NULL);
+                    CCMRegion *damaged = (CCMRegion*)
+						ccm_drawable_get_damaged (CCM_DRAWABLE (window));
                     ccm_debug_region (CCM_DRAWABLE (window), "SCREEN DAMAGE");
                     if (!self->priv->damaged)
                         self->priv->damaged = ccm_region_copy (damaged);
@@ -3013,4 +3016,12 @@ ccm_screen_get_visual_for_depth (CCMScreen * self, int depth)
         return NULL;
 
     return vinfo.visual;
+}
+
+const gchar*
+ccm_screen_get_backend (CCMScreen* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	return (const gchar*)self->priv->backend;
 }

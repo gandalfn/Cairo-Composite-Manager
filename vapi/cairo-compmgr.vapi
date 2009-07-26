@@ -240,19 +240,13 @@ namespace CCM
 	[CCode (cheader_filename = "ccm.h,ccm-drawable.h")]
 	public class Drawable : GLib.Object 
 	{
-		[NoAccessorMethod]
-		public void* damaged { get; }
+		public weak CCM.Region damaged { get; }
 		public uint depth { get; set construct; }
 		public ulong drawable { get; set; }
 		public void* geometry { get; set construct; }
 		public void* screen { get; set; }
 		public Cairo.Matrix transform { get; }
 		public void* visual { get; set construct; }
-
-		public unowned CCM.Region? get_damaged() 
-		{
-			return (CCM.Region)damaged;
-		}
 		
 		public virtual Cairo.Context create_context ();
 		public virtual Cairo.Surface get_surface ();

@@ -480,6 +480,17 @@ ccm_drawable_get_visual (CCMDrawable * self)
     return self->priv->visual;
 }
 
+void
+ccm_drawable_set_visual (CCMDrawable * self, Visual* visual)
+{
+    g_return_if_fail (self != NULL);
+	g_return_if_fail (visual != NULL);
+
+	self->priv->visual = visual;
+
+	g_object_notify (G_OBJECT (self), "visual");
+}
+
 /**
  * ccm_drawable_get_depth:
  * @self: #CCMDrawable
@@ -494,6 +505,16 @@ ccm_drawable_get_depth (CCMDrawable * self)
     g_return_val_if_fail (self != NULL, 32);
 
     return self->priv->depth;
+}
+
+void
+ccm_drawable_set_depth (CCMDrawable * self, guint depth)
+{
+    g_return_if_fail (self != NULL);
+
+	self->priv->depth = depth;
+
+	g_object_notify (G_OBJECT (self), "depth");
 }
 
 /**
@@ -589,6 +610,31 @@ ccm_drawable_get_geometry (CCMDrawable * self)
     g_return_val_if_fail (self != NULL, NULL);
 
     return self->priv->geometry;
+}
+
+void
+ccm_drawable_set_geometry (CCMDrawable* self, CCMRegion* geometry)
+{
+	g_return_if_fail(self!= NULL);
+
+	if (self->priv->device)
+		ccm_region_destroy (self->priv->device);
+    if (self->priv->geometry)
+        ccm_region_destroy (self->priv->geometry);
+    self->priv->device = NULL;
+    self->priv->geometry = NULL;
+
+    if (geometry && !ccm_region_empty (geometry))
+    {
+        cairo_matrix_t transform;
+
+        transform = ccm_drawable_get_transform (self);
+        self->priv->device = ccm_region_copy (geometry);
+        self->priv->geometry = ccm_region_copy (geometry);
+        ccm_region_device_transform (self->priv->geometry, &transform);
+    }
+
+	g_object_notify(G_OBJECT(self), "geometry");
 }
 
 /**
@@ -959,6 +1005,14 @@ ccm_drawable_get_damage_path (CCMDrawable * self, cairo_t * context)
         }
         cairo_rectangles_free (rectangles, nb_rects);
     }
+}
+
+const CCMRegion*
+ccm_drawable_get_damaged (CCMDrawable * self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	return self->priv->damaged;
 }
 
 /**

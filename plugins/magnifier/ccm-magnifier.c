@@ -106,26 +106,17 @@ CCM_DEFINE_PLUGIN (CCMMagnifier, ccm_magnifier, CCM_TYPE_PLUGIN,
                                             ccm_magnifier_window_iface_init))
 struct _CCMMagnifierPrivate
 {
-    CCMScreen *
-        screen;
+    CCMScreen * screen;
 
-    int
-        x_offset;
-    int
-        y_offset;
-    cairo_surface_t *
-        surface;
-    cairo_rectangle_t
-        area;
-    CCMRegion *
-        damaged;
-    CCMKeybind *
-        keybind;
+    int x_offset;
+    int y_offset;
+    cairo_surface_t * surface;
+    cairo_rectangle_t area;
+    CCMRegion * damaged;
+    CCMKeybind * keybind;
 
-    cairo_surface_t *
-        surface_window_info;
-    CCMTimeline *
-        timeline;
+    cairo_surface_t * surface_window_info;
+    CCMTimeline * timeline;
 };
 
 #define CCM_MAGNIFIER_GET_PRIVATE(o)  \
@@ -1237,65 +1228,68 @@ ccm_magnifier_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
     CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (window));
     CCMMagnifier *self = CCM_MAGNIFIER (_ccm_screen_get_plugin (screen,
                                                                 CCM_TYPE_MAGNIFIER));
-    CCMRegion *damaged = NULL;
-
-    g_object_get (G_OBJECT (window), "damaged", &damaged, NULL);
-    if (damaged && ccm_magnifier_get_option (self)->enabled)
+    if (ccm_magnifier_get_option (self)->enabled)
     {
-        CCMRegion *area = ccm_region_rectangle (&self->priv->area);
-        CCMRegion *tmp = ccm_region_copy (damaged);
-        cairo_matrix_t matrix;
+		CCMRegion *damaged = (CCMRegion*)
+			ccm_drawable_get_damaged(CCM_DRAWABLE(window));
 
-        cairo_matrix_init_scale (&matrix,
-                                 ccm_magnifier_get_option (self)->scale,
-                                 ccm_magnifier_get_option (self)->scale);
-        cairo_matrix_translate (&matrix, -self->priv->x_offset,
-                                -self->priv->y_offset);
-        ccm_region_transform (tmp, &matrix);
-        cairo_matrix_init_translate (&matrix, self->priv->area.x,
-                                     self->priv->area.y);
-        ccm_region_transform (tmp, &matrix);
-        ccm_region_intersect (tmp, area);
+		if (damaged)
+		{
+		    CCMRegion *area = ccm_region_rectangle (&self->priv->area);
+		    CCMRegion *tmp = ccm_region_copy (damaged);
+		    cairo_matrix_t matrix;
 
-        if (!ccm_region_empty (tmp))
-        {
-            cairo_t *ctx = cairo_create (self->priv->surface);
-            cairo_matrix_t translate;
+		    cairo_matrix_init_scale (&matrix,
+		                             ccm_magnifier_get_option (self)->scale,
+		                             ccm_magnifier_get_option (self)->scale);
+		    cairo_matrix_translate (&matrix, -self->priv->x_offset,
+		                            -self->priv->y_offset);
+		    ccm_region_transform (tmp, &matrix);
+		    cairo_matrix_init_translate (&matrix, self->priv->area.x,
+		                                 self->priv->area.y);
+		    ccm_region_transform (tmp, &matrix);
+		    ccm_region_intersect (tmp, area);
 
-            ccm_debug_window (window, "MAGNIFIER PAINT WINDOW");
+		    if (!ccm_region_empty (tmp))
+		    {
+		        cairo_t *ctx = cairo_create (self->priv->surface);
+		        cairo_matrix_t translate;
 
-            if (!self->priv->damaged)
-                self->priv->damaged = ccm_region_copy (tmp);
-            else
-                ccm_region_union (self->priv->damaged, tmp);
+		        ccm_debug_window (window, "MAGNIFIER PAINT WINDOW");
 
-            cairo_rectangle (ctx, 0, 0,
-                             self->priv->area.width /
-                             ccm_magnifier_get_option (self)->scale,
-                             self->priv->area.height /
-                             ccm_magnifier_get_option (self)->scale);
-            cairo_clip (ctx);
+		        if (!self->priv->damaged)
+		            self->priv->damaged = ccm_region_copy (tmp);
+		        else
+		            ccm_region_union (self->priv->damaged, tmp);
 
-            cairo_matrix_init_translate (&translate, -self->priv->x_offset,
-                                         -self->priv->y_offset);
+		        cairo_rectangle (ctx, 0, 0,
+		                         self->priv->area.width /
+		                         ccm_magnifier_get_option (self)->scale,
+		                         self->priv->area.height /
+		                         ccm_magnifier_get_option (self)->scale);
+		        cairo_clip (ctx);
 
-            cairo_translate (ctx, -self->priv->x_offset, -self->priv->y_offset);
-            ccm_drawable_get_damage_path (CCM_DRAWABLE (window), ctx);
-            cairo_clip (ctx);
+		        cairo_matrix_init_translate (&translate, -self->priv->x_offset,
+		                                     -self->priv->y_offset);
 
-            g_object_set (G_OBJECT (window), "redirect", FALSE, NULL);
-            ccm_drawable_push_matrix (CCM_DRAWABLE (window), "CCMMagnifier",
-                                      &translate);
+		        cairo_translate (ctx, -self->priv->x_offset, -self->priv->y_offset);
+		        ccm_drawable_get_damage_path (CCM_DRAWABLE (window), ctx);
+		        cairo_clip (ctx);
 
-            ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
-                                     ctx, surface, y_invert);
-            cairo_destroy (ctx);
-            ccm_drawable_pop_matrix (CCM_DRAWABLE (window), "CCMMagnifier");
-            g_object_set (G_OBJECT (window), "redirect", TRUE, NULL);
-        }
+		        ccm_window_set_redirect(window, FALSE);
+		        ccm_drawable_push_matrix (CCM_DRAWABLE (window), "CCMMagnifier",
+		                                  &translate);
 
-        ccm_region_destroy (tmp);
-        ccm_region_destroy (area);
+		        ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
+		                                 ctx, surface, y_invert);
+		        cairo_destroy (ctx);
+		        ccm_drawable_pop_matrix (CCM_DRAWABLE (window), "CCMMagnifier");
+		        ccm_window_set_redirect(window, TRUE);
+		    }
+
+		    ccm_region_destroy (tmp);
+		    ccm_region_destroy (area);
+		}
     }
 
     return ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,

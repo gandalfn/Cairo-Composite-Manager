@@ -166,7 +166,7 @@ ccm_pixmap_class_init (CCMPixmapClass * klass)
     object_class->set_property = ccm_pixmap_set_property;
     object_class->get_property = ccm_pixmap_get_property;
 
-        /**
+	/**
 	 * CCMPixmap:y_invert:
 	 *
 	 * This property indicate if the pixmap paint is y inverted.
@@ -179,7 +179,7 @@ ccm_pixmap_class_init (CCMPixmapClass * klass)
                                                            G_PARAM_READABLE |
                                                            G_PARAM_WRITABLE));
 
-        /**
+	/**
 	 * CCMPixmap:freeze:
 	 *
 	 * This property locks paint and damage if is true.
@@ -191,7 +191,7 @@ ccm_pixmap_class_init (CCMPixmapClass * klass)
                                                            G_PARAM_READABLE |
                                                            G_PARAM_WRITABLE));
 
-        /**
+	/**
 	 * CCMPixmap:foreign:
 	 *
 	 * This property indicate the object doesn't owned XPixmap if true.
@@ -413,6 +413,24 @@ ccm_pixmap_image_new (CCMDrawable * drawable, Pixmap xpixmap)
 }
 
 gboolean
+ccm_pixmap_get_y_invert (CCMPixmap * self)
+{
+    g_return_val_if_fail (self != NULL, FALSE);
+
+    return self->priv->y_invert;
+}
+
+void
+ccm_pixmap_set_y_invert (CCMPixmap * self, gboolean y_invert)
+{
+    g_return_if_fail (self != NULL);
+
+    self->priv->y_invert = y_invert;
+
+    g_object_notify (G_OBJECT (self), "y_invert");
+}
+
+gboolean
 ccm_pixmap_get_foreign (CCMPixmap * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -428,4 +446,22 @@ ccm_pixmap_set_foreign (CCMPixmap * self, gboolean foreign)
     self->priv->foreign = foreign;
 
     g_object_notify (G_OBJECT (self), "foreign");
+}
+
+gboolean
+ccm_pixmap_get_freeze (CCMPixmap * self)
+{
+    g_return_val_if_fail (self != NULL, FALSE);
+
+    return self->priv->freeze;
+}
+
+void
+ccm_pixmap_set_freeze (CCMPixmap * self, gboolean freeze)
+{
+    g_return_if_fail (self != NULL);
+
+    self->priv->freeze = freeze;
+
+    g_object_notify (G_OBJECT (self), "freeze");
 }

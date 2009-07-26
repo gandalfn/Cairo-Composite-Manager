@@ -50,7 +50,7 @@ struct _CCMPluginPrivate
     gulong *id_options_changed;
 };
 
-#define CCMPLuginLockTable g_quark_from_static_string ("CCMPluginLockTable")
+static GQuark CCMPLuginLockTable;
 
 #define CCM_PLUGIN_GET_PRIVATE(o) \
 	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PLUGIN, CCMPluginPrivate))
@@ -161,6 +161,8 @@ ccm_plugin_class_init (CCMPluginClass * klass)
 
     ccm_plugin_parent_class = g_type_class_peek_parent (klass);
 
+	CCMPLuginLockTable = g_quark_from_static_string ("CCMPluginLockTable");
+	
     g_type_class_add_private (klass, sizeof (CCMPluginPrivate));
 
     klass->count = 0;

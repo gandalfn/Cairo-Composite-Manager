@@ -1065,8 +1065,8 @@ ccm_window_get_attribs (CCMWindow * self)
     self->priv->area.width = attribs.width + (attribs.border_width * 2);
     self->priv->area.height = attribs.height + (attribs.border_width * 2);
 
-    g_object_set (self, "visual", attribs.visual, NULL);
-    g_object_set (self, "depth", attribs.depth, NULL);
+    ccm_drawable_set_visual (CCM_DRAWABLE(self), attribs.visual);
+	ccm_drawable_set_depth (CCM_DRAWABLE(self), attribs.depth);
 
     self->priv->is_viewable = attribs.map_state == IsViewable;
 
@@ -1093,10 +1093,9 @@ ccm_window_query_geometry (CCMDrawable * drawable)
     }
     geometry = ccm_window_plugin_query_geometry (self->priv->plugin, self);
 
-    g_object_set (self, "geometry", geometry, NULL);
+    ccm_drawable_set_geometry(CCM_DRAWABLE(self), geometry);
 
-    if (geometry)
-        ccm_region_destroy (geometry);
+    if (geometry) ccm_region_destroy (geometry);
 }
 
 static void
@@ -1425,8 +1424,6 @@ impl_ccm_window_paint (CCMWindowPlugin * plugin, CCMWindow * self,
         if (cairo_status (context) != CAIRO_STATUS_SUCCESS)
         {
             ccm_debug_window (self, "PAINT ERROR %i", cairo_status (context));
-            g_object_unref (self->priv->pixmap);
-            self->priv->pixmap = NULL;
             g_signal_emit (self, signals[ERROR], 0);
             ret = FALSE;
         }
@@ -1452,8 +1449,7 @@ impl_ccm_window_map (CCMWindowPlugin * plugin, CCMWindow * self)
     ccm_debug_window (self, "IMPL WINDOW MAP");
     ccm_drawable_damage (CCM_DRAWABLE (self));
 
-    if (!
-        (matrix.x0 == 0 && matrix.xy == 0 && matrix.xx == 1 && matrix.y0 == 0
+    if (!(matrix.x0 == 0 && matrix.xy == 0 && matrix.xx == 1 && matrix.y0 == 0
          && matrix.yx == 0 && matrix.yy == 1))
         ccm_window_redirect_input (self);
 }
@@ -1867,8 +1863,7 @@ ccm_window_on_transform_changed (CCMWindow * self, GParamSpec * pspec)
     if (ccm_window_is_viewable (self) && !ccm_window_is_input_only (self))
     {
         ccm_window_unredirect_input (self);
-        if (!
-            (matrix.x0 == 0 && matrix.xy == 0 && matrix.xx == 1
+        if (!(matrix.x0 == 0 && matrix.xy == 0 && matrix.xx == 1
              && matrix.y0 == 0 && matrix.yx == 0 && matrix.yy == 1))
             ccm_window_redirect_input (self);
     }
@@ -2822,9 +2817,7 @@ ccm_window_paint (CCMWindow * self, cairo_t * context, gboolean buffered)
         if (pixmap)
         {
             cairo_surface_t *surface;
-            gboolean y_invert;
-
-            g_object_get (pixmap, "y_invert", &y_invert, NULL);
+            gboolean y_invert = ccm_pixmap_get_y_invert(pixmap);
 
             if (CCM_IS_PIXMAP_BUFFERED (pixmap))
                 g_object_set (pixmap, "buffered", buffered, NULL);
@@ -3639,4 +3632,44 @@ ccm_window_get_transients (CCMWindow * self)
     g_return_val_if_fail (self != NULL, NULL);
 
     return self->priv->transients;
+}
+
+cairo_surface_t*
+ccm_window_get_mask(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, NULL);
+
+	return self->priv->mask;
+}
+
+void
+ccm_window_set_mask(CCMWindow* self, cairo_surface_t* mask)
+{
+	g_return_if_fail(self != NULL);
+
+	if (self->priv->mask)
+		cairo_surface_destroy (self->priv->mask);
+    self->priv->mask = mask;
+
+	g_object_notify(G_OBJECT(self), "mask");
+}
+
+gboolean 
+ccm_window_get_redirect(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+
+	return self->priv->redirect;
+}
+
+void
+ccm_window_set_redirect(CCMWindow* self, gboolean redirect)
+{
+	g_return_if_fail(self != NULL);
+
+	self->priv->redirect = redirect;
+	
+	if (!self->priv->redirect) ccm_window_unredirect_input (self);
+
+	g_object_notify(G_OBJECT(self), "redirect");
 }

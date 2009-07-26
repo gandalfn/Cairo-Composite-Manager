@@ -118,7 +118,7 @@ namespace CCM
                 (geometry.height / 2.0) * (1.0 - progress);
             Cairo.Matrix matrix;
 
-            window.damage ();
+			window.damage ();
             if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
                 matrix = Cairo.Matrix (progress, 0, 0, progress, x0, y0);
             else
@@ -129,6 +129,7 @@ namespace CCM
 
         private void on_finish ()
         {
+			window.redirect = true;
             if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
             {
                 unlock_map ();
@@ -166,13 +167,22 @@ namespace CCM
             return region;
         }
 
+		protected void resize (CCM.Window window, int width, int height)
+		{
+			geometry.width = width;
+			geometry.height = height;
+			
+			((CCM.WindowPlugin) parent).resize (window, width, height);
+		}
+		
         protected void map (CCM.Window window)
         {
             if (type == CCM.WindowType.UNKNOWN)
                 type = window.get_hint_type ();
 
             if (!desktop_changed
-                && (type == CCM.WindowType.NORMAL
+                && window.is_decorated() &&
+                   (type == CCM.WindowType.NORMAL
                     || type == CCM.WindowType.DIALOG))
             {
                 int current_frame = 0;
@@ -209,6 +219,7 @@ namespace CCM
                 timeline.start ();
                 if (current_frame > 0)
                     timeline.advance (current_frame);
+				window.redirect = false;
             }
             desktop_changed = false;
 
@@ -218,7 +229,8 @@ namespace CCM
         protected void unmap (CCM.Window window)
         {
             if (!desktop_changed
-                && (type == CCM.WindowType.NORMAL
+                && window.is_decorated() &&
+                   (type == CCM.WindowType.NORMAL
                     || type == CCM.WindowType.DIALOG))
             {
                 int current_frame = 0;
@@ -246,6 +258,7 @@ namespace CCM
                 timeline.start ();
                 if (current_frame > 0)
                     timeline.advance (timeline.get_n_frames () - current_frame);
+				window.redirect = false;
             }
 
             desktop_changed = false;

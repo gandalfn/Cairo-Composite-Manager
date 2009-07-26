@@ -446,17 +446,17 @@ ccm_decoration_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
         if (self->priv->opaque)
             ccm_region_subtract (decoration, self->priv->opaque);
 
-        g_object_get (G_OBJECT (window), "damaged", &damaged, NULL);
+        damaged = (CCMRegion*)ccm_drawable_get_damaged(CCM_DRAWABLE(window));
         if (damaged)
         {
             ccm_region_intersect (decoration, damaged);
             if (ccm_region_empty (decoration))
             {
-                g_object_get (G_OBJECT (window), "mask", &mask, NULL);
+                mask = ccm_window_get_mask(window);
                 if (mask)
                 {
                     cairo_surface_reference (mask);
-                    g_object_set (G_OBJECT (window), "mask", NULL, NULL);
+                    ccm_window_set_mask(window, NULL);
                 }
             }
         }
@@ -467,10 +467,7 @@ ccm_decoration_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
         ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
                                  context, surface, y_invert);
 
-    if (mask)
-    {
-        g_object_set (G_OBJECT (window), "mask", mask, NULL);
-    }
+    if (mask) ccm_window_set_mask(window, mask);
 
     return ret;
 }
