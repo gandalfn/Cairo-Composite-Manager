@@ -78,66 +78,47 @@ static void ccm_menu_animation_on_event (CCMMenuAnimation * self,
 static void ccm_menu_animation_on_option_changed (CCMPlugin * plugin,
                                                   CCMConfig * config);
 
-CCM_DEFINE_PLUGIN (CCMMenuAnimation, ccm_menu_animation, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_menu_animation,
-                                            CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_menu_animation_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_menu_animation,
-                                            CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_menu_animation_window_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_menu_animation,
-                                            CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                            ccm_menu_animation_preferences_page_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMMenuAnimation, ccm_menu_animation, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_menu_animation,
+                                                         CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_menu_animation_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_menu_animation,
+                                                         CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_menu_animation_window_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_menu_animation,
+                                                         CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                                         ccm_menu_animation_preferences_page_iface_init))
 struct _CCMMenuAnimationPrivate
 {
-    CCMScreen *
-        screen;
+    CCMScreen* screen;
 
-    CCMWindow *
-        window;
-    CCMWindowType
-        type;
+    CCMWindow* window;
+    CCMWindowType type;
 
-    CCMTimeline *
-        timeline;
-    guint
-        x_pos;
-    guint
-        y_pos;
-    gboolean
-        forced_animation;
+    CCMTimeline* timeline;
+    guint x_pos;
+    guint y_pos;
+    gboolean forced_animation;
 
-    GtkBuilder *
-        builder;
+    GtkBuilder* builder;
 
-    gulong
-        id_event;
-    gulong
-        id_property_changed;
-    gulong
-        id_error;
+    gulong id_event;
+    gulong id_property_changed;
+    gulong id_error;
 };
 
 #define CCM_MENU_ANIMATION_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationPrivate))
 
-static CCMPluginOptions *
-ccm_menu_animation_options_init (CCMPlugin * plugin)
+static void
+ccm_menu_animation_options_init (CCMMenuAnimationOptions* self)
 {
-    CCMMenuAnimationOptions *options = g_slice_new0 (CCMMenuAnimationOptions);
-
-    options->duration = 0.1f;
-
-    return (CCMPluginOptions *) options;
+    self->duration = 0.1f;
 }
 
 static void
-ccm_menu_animation_options_finalize (CCMPlugin * plugin,
-                                     CCMPluginOptions * opts)
+ccm_menu_animation_options_finalize (CCMMenuAnimationOptions* self)
 {
-    CCMMenuAnimationOptions *options = (CCMMenuAnimationOptions *) opts;
-
-    g_slice_free (CCMMenuAnimationOptions, options);
 }
 
 static void
@@ -198,12 +179,6 @@ ccm_menu_animation_class_init (CCMMenuAnimationClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMMenuAnimationPrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_menu_animation_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize =
-        ccm_menu_animation_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed =
-        ccm_menu_animation_on_option_changed;
 
     object_class->finalize = ccm_menu_animation_finalize;
 }
@@ -645,7 +620,8 @@ ccm_menu_animation_window_load_options (CCMWindowPlugin * plugin,
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "menu-animation",
                              CCMMenuAnimationOptionKeys,
-                             CCM_MENU_ANIMATION_OPTION_N);
+                             CCM_MENU_ANIMATION_OPTION_N,
+                             ccm_menu_animation_on_option_changed);
 
     ccm_window_plugin_load_options (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 

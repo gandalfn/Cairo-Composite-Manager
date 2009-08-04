@@ -32,7 +32,7 @@ namespace CCM
         N
     }
 
-    const string[Options.N] options_key = {
+    const string[] options_key = {
         "duration"
     };
 
@@ -49,24 +49,17 @@ namespace CCM
         private CCM.Timeline timeline;
         private Cairo.Rectangle geometry;
 
-        ~WindowAnimation ()
+        class construct
+		{
+			type_options = typeof (WindowAnimationOptions);
+		}
+
+		~WindowAnimation ()
         {
             options_unload ();
         }
 
-        protected override PluginOptions options_init ()
-        {
-            WindowAnimationOptions options = new WindowAnimationOptions ();
-            return options;
-        }
-
-        protected override void options_finalize (PluginOptions opts)
-        {
-            WindowAnimationOptions *options = (WindowAnimationOptions *) opts;
-            delete options;
-        }
-
-        protected override void option_changed (CCM.Config config)
+        private void option_changed (CCM.Config config)
         {
             if (config == get_config (Options.DURATION))
             {
@@ -148,7 +141,8 @@ namespace CCM
             this.type = CCM.WindowType.UNKNOWN;
             this.window.property_changed += on_property_changed;
 
-            options_load ("window-animation", options_key);
+            options_load ("window-animation", options_key, 
+                          (PluginOptionsChangedFunc)option_changed);
 
             window.get_screen ().desktop_changed += on_desktop_changed;
             desktop_changed = false;

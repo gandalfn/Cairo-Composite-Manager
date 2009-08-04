@@ -66,14 +66,14 @@ static void ccm_freeze_on_event (CCMFreeze * self, XEvent * event,
 static void ccm_freeze_on_option_changed (CCMPlugin * plugin,
                                           CCMConfig * config);
 
-CCM_DEFINE_PLUGIN (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_freeze, CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_freeze_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_freeze, CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_freeze_window_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_freeze,
-                                            CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                            ccm_freeze_preferences_page_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_freeze, CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_freeze_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_freeze, CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_freeze_window_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_freeze,
+                                                         CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                                         ccm_freeze_preferences_page_iface_init))
 struct _CCMFreezePrivate
 {
     gboolean     alive;
@@ -95,27 +95,19 @@ struct _CCMFreezePrivate
 #define CCM_FREEZE_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FREEZE, CCMFreezePrivate))
 
-static CCMPluginOptions *
-ccm_freeze_options_init (CCMPlugin * plugin)
+static void
+ccm_freeze_options_init (CCMFreezeOptions* self)
 {
-    CCMFreezeOptions *options = g_slice_new0 (CCMFreezeOptions);
-
-    options->delay = 3;
-    options->duration = 0.3f;
-    options->color = NULL;
-
-    return (CCMPluginOptions *) options;
+    self->delay = 3;
+    self->duration = 0.3f;
+    self->color = NULL;
 }
 
 static void
-ccm_freeze_options_finalize (CCMPlugin * plugin, CCMPluginOptions * opts)
+ccm_freeze_options_finalize (CCMFreezeOptions* self)
 {
-    CCMFreezeOptions *options = (CCMFreezeOptions *) opts;
-
-    if (options->color)
-        g_free (options->color);
-    options->color = NULL;
-    g_slice_free (CCMFreezeOptions, options);
+    if (self->color) g_free (self->color);
+    self->color = NULL;
 }
 
 static void
@@ -168,10 +160,6 @@ ccm_freeze_class_init (CCMFreezeClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMFreezePrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_freeze_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize = ccm_freeze_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_freeze_on_option_changed;
 
     object_class->finalize = ccm_freeze_finalize;
 }
@@ -427,7 +415,7 @@ ccm_freeze_window_load_options (CCMWindowPlugin * plugin, CCMWindow * window)
     self->priv->window = window;
 
 	ccm_plugin_options_load (CCM_PLUGIN (self), "freeze", CCMFreezeOptionKeys,
-                             CCM_FREEZE_OPTION_N);
+                             CCM_FREEZE_OPTION_N, ccm_freeze_on_option_changed);
 
     ccm_window_plugin_load_options (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }

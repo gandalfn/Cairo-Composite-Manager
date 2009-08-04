@@ -62,59 +62,44 @@ static void ccm_fade_on_property_changed (CCMFade * self,
                                           CCMWindow * window);
 static void ccm_fade_on_option_changed (CCMPlugin * plugin, CCMConfig * config);
 
-CCM_DEFINE_PLUGIN (CCMFade, ccm_fade, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_fade, CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_fade_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_fade, CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_fade_window_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_fade,
-                                            CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                            ccm_fade_preferences_page_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMFade, ccm_fade, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_fade, CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_fade_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_fade, CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_fade_window_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_fade,
+                                                         CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                                         ccm_fade_preferences_page_iface_init))
 struct _CCMFadePrivate
 {
-    CCMScreen *
-        screen;
+    CCMScreen* screen;
 
-    CCMWindow *
-        window;
+    CCMWindow* window;
 
-    gfloat
-        origin;
+    gfloat origin;
 
-    CCMTimeline *
-        timeline;
+    CCMTimeline* timeline;
 
-    gboolean
-        force_disable;
+    gboolean force_disable;
 
-    GtkBuilder *
-        builder;
+    GtkBuilder* builder;
 
-    gulong
-        id_event;
-    gulong
-        id_property_changed;
+    gulong id_event;
+    gulong id_property_changed;
 };
 
 #define CCM_FADE_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FADE, CCMFadePrivate))
 
-static CCMPluginOptions *
-ccm_fade_options_init (CCMPlugin * plugin)
+static void
+ccm_fade_options_init (CCMFadeOptions* self)
 {
-    CCMFadeOptions *options = g_slice_new0 (CCMFadeOptions);
-
-    options->duration = 1.0f;
-
-    return (CCMPluginOptions *) options;
+    self->duration = 1.0f;
 }
 
 static void
-ccm_fade_options_finalize (CCMPlugin * plugin, CCMPluginOptions * opts)
+ccm_fade_options_finalize (CCMFadeOptions* self)
 {
-    CCMFadeOptions *options = (CCMFadeOptions *) opts;
-
-    g_slice_free (CCMFadeOptions, options);
 }
 
 static void
@@ -172,10 +157,6 @@ ccm_fade_class_init (CCMFadeClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMFadePrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_fade_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize = ccm_fade_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_fade_on_option_changed;
 
     object_class->finalize = ccm_fade_finalize;
 }
@@ -467,7 +448,7 @@ ccm_fade_window_load_options (CCMWindowPlugin * plugin, CCMWindow * window)
     self->priv->origin = ccm_window_get_opacity (window);
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "fade", CCMFadeOptionKeys,
-                             CCM_FADE_OPTION_N);
+                             CCM_FADE_OPTION_N, ccm_fade_on_option_changed);
 
     ccm_window_plugin_load_options (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 

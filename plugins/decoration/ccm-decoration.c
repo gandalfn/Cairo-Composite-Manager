@@ -50,7 +50,7 @@ static const gchar *CCMDecorationOptionKeys[CCM_DECORATION_OPTION_N] = {
 
 typedef struct
 {
-    CCMPluginOptions parent;
+    CCMPluginOptions parent_instance;
 
     float opacity;
     gboolean gradiant;
@@ -70,13 +70,13 @@ static void ccm_decoration_on_opacity_changed (CCMDecoration * self,
 static void ccm_decoration_on_option_changed (CCMPlugin * plugin,
                                               CCMConfig * config);
 
-CCM_DEFINE_PLUGIN (CCMDecoration, ccm_decoration, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_decoration,
-                                            CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_decoration_window_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_decoration,
-                                            CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                            ccm_decoration_preferences_page_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMDecoration, ccm_decoration, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_decoration,
+                                                         CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_decoration_window_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_decoration,
+                                                         CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                                         ccm_decoration_preferences_page_iface_init))
 struct _CCMDecorationPrivate
 {
     CCMWindow* window;
@@ -100,23 +100,16 @@ struct _CCMDecorationPrivate
 #define CCM_DECORATION_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DECORATION, CCMDecorationPrivate))
 
-static CCMPluginOptions *
-ccm_decoration_options_init (CCMPlugin * plugin)
+static void
+ccm_decoration_options_init (CCMDecorationOptions* self)
 {
-    CCMDecorationOptions *options = g_slice_new0 (CCMDecorationOptions);
-
-    options->gradiant = TRUE;
-    options->opacity = 1.0;
-
-    return (CCMPluginOptions *) options;
+    self->gradiant = TRUE;
+    self->opacity = 1.0;
 }
 
 static void
-ccm_decoration_options_finalize (CCMPlugin * plugin, CCMPluginOptions * opts)
+ccm_decoration_options_finalize (CCMDecorationOptions* self)
 {
-    CCMDecorationOptions *options = (CCMDecorationOptions *) opts;
-
-    g_slice_free (CCMDecorationOptions, options);
 }
 
 static void
@@ -172,11 +165,6 @@ ccm_decoration_class_init (CCMDecorationClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMDecorationPrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_decoration_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize =
-        ccm_decoration_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_decoration_on_option_changed;
 
     object_class->finalize = ccm_decoration_finalize;
 }
@@ -264,7 +252,8 @@ ccm_decoration_window_load_options (CCMWindowPlugin * plugin,
     self->priv->window = window;
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "decoration",
-                             CCMDecorationOptionKeys, CCM_DECORATION_OPTION_N);
+                             CCMDecorationOptionKeys, CCM_DECORATION_OPTION_N,
+                             ccm_decoration_on_option_changed);
 
     ccm_window_plugin_load_options (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 

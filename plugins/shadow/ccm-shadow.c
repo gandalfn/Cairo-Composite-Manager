@@ -94,14 +94,14 @@ static void ccm_shadow_screen_iface_init (CCMScreenPluginClass * iface);
 static void
 ccm_shadow_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
 
-CCM_DEFINE_PLUGIN (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_shadow, CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_shadow_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_shadow, CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_shadow_window_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_shadow,
-                                            CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                            ccm_shadow_preferences_page_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_shadow, CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_shadow_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_shadow, CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_shadow_window_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_shadow,
+                                                         CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                                         ccm_shadow_preferences_page_iface_init))
 struct _CCMShadowPrivate
 {
     CCMScreen *screen;
@@ -129,30 +129,22 @@ struct _CCMShadowPrivate
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SHADOW, CCMShadowPrivate))
 
 
-static CCMPluginOptions *
-ccm_shadow_options_init (CCMPlugin * self)
+static void
+ccm_shadow_options_init (CCMShadowOptions * self)
 {
-    CCMShadowOptions *options = g_slice_new0 (CCMShadowOptions);
-
-    options->real_blur = FALSE;
-    options->offset = 0;
-    options->radius = 14;
-    options->sigma = 7;
-    options->color = NULL;
-    options->alpha = 0.6;
-
-    return (CCMPluginOptions *) options;
+    self->real_blur = FALSE;
+    self->offset = 0;
+    self->radius = 14;
+    self->sigma = 7;
+    self->color = NULL;
+    self->alpha = 0.6;
 }
 
 static void
-ccm_shadow_options_finalize (CCMPlugin * self, CCMPluginOptions * opts)
+ccm_shadow_options_finalize (CCMShadowOptions* self)
 {
-    CCMShadowOptions *options = (CCMShadowOptions *) opts;
-
-    if (options->color)
-        g_free (options->color);
-    options->color = NULL;
-    g_slice_free (CCMShadowOptions, options);
+    if (self->color) g_free (self->color);
+    self->color = NULL;
 }
 
 static void
@@ -231,10 +223,6 @@ ccm_shadow_class_init (CCMShadowClass * klass)
 	CCMShadowPixmapQuark = g_quark_from_static_string("CCMShadowPixmap");
 	CCMShadowQuark = g_quark_from_static_string("CCMShadow");
 	
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_shadow_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize = ccm_shadow_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_shadow_on_option_changed;
-
     klass->shadow_disable_atom = None;
     klass->shadow_enable_atom = None;
 
@@ -996,7 +984,7 @@ ccm_shadow_window_load_options (CCMWindowPlugin * plugin, CCMWindow * window)
     self->priv->window = window;
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "shadow", CCMShadowOptionKeys,
-                             CCM_SHADOW_OPTION_N);
+                             CCM_SHADOW_OPTION_N, ccm_shadow_on_option_changed);
     ccm_window_plugin_load_options (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 
     ccm_shadow_create_atoms (self);

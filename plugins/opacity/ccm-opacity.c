@@ -71,57 +71,44 @@ static void ccm_opacity_on_property_changed (CCMOpacity * self,
 static void ccm_opacity_on_option_changed (CCMPlugin * plugin,
                                            CCMConfig * config);
 
-CCM_DEFINE_PLUGIN (CCMOpacity, ccm_opacity, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_opacity, CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_opacity_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_opacity, CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_opacity_window_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_opacity,
-                                            CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                            ccm_opacity_preferences_page_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMOpacity, ccm_opacity, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_opacity, CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_opacity_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_opacity, CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_opacity_window_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_opacity,
+                                                         CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                                         ccm_opacity_preferences_page_iface_init))
 struct _CCMOpacityPrivate
 {
-    CCMScreen *
-        screen;
+    CCMScreen* screen;
 
-    CCMWindow *
-        window;
+    CCMWindow* window;
 
-    GtkBuilder *
-        builder;
+    GtkBuilder* builder;
 
-    gulong
-        id_property_changed;
+    gulong id_property_changed;
 };
 
 #define CCM_OPACITY_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_OPACITY, CCMOpacityPrivate))
 
-static CCMPluginOptions *
-ccm_opacity_options_init (CCMPlugin * plugin)
+static void
+ccm_opacity_options_init (CCMOpacityOptions* self)
 {
-    CCMOpacityOptions *options = g_slice_new0 (CCMOpacityOptions);
-
-    options->increase = NULL;
-    options->decrease = NULL;
-    options->step = 0.1f;
-    options->opacity = 1.0;
-
-    return (CCMPluginOptions *) options;
+    self->increase = NULL;
+    self->decrease = NULL;
+    self->step = 0.1f;
+    self->opacity = 1.0;
 }
 
 static void
-ccm_opacity_options_finalize (CCMPlugin * plugin, CCMPluginOptions * opts)
+ccm_opacity_options_finalize (CCMOpacityOptions* self)
 {
-    CCMOpacityOptions *options = (CCMOpacityOptions *) opts;
-
-    if (options->increase)
-        g_object_unref (options->increase);
-    options->increase = NULL;
-    if (options->decrease)
-        g_object_unref (options->decrease);
-    options->decrease = NULL;
-    g_slice_free (CCMOpacityOptions, options);
+    if (self->increase) g_object_unref (self->increase);
+    self->increase = NULL;
+    if (self->decrease) g_object_unref (self->decrease);
+    self->decrease = NULL;
 }
 
 static void
@@ -162,10 +149,6 @@ ccm_opacity_class_init (CCMOpacityClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMOpacityPrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_opacity_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize = ccm_opacity_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_opacity_on_option_changed;
 
     object_class->finalize = ccm_opacity_finalize;
 }
@@ -419,7 +402,7 @@ ccm_opacity_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
     self->priv->screen = screen;
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "opacity", CCMOpacityOptionKeys,
-                             CCM_OPACITY_OPTION_N);
+                             CCM_OPACITY_OPTION_N, ccm_opacity_on_option_changed);
     ccm_screen_plugin_load_options (CCM_SCREEN_PLUGIN_PARENT (plugin), screen);
 }
 
@@ -431,7 +414,7 @@ ccm_opacity_window_load_options (CCMWindowPlugin * plugin, CCMWindow * window)
     self->priv->window = window;
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "opacity", CCMOpacityOptionKeys,
-                             CCM_OPACITY_OPTION_N);
+                             CCM_OPACITY_OPTION_N, ccm_opacity_on_option_changed);
     ccm_window_plugin_load_options (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 
     self->priv->id_property_changed =

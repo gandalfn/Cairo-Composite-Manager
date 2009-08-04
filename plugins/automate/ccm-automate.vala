@@ -32,7 +32,7 @@ namespace CCM
         N
     }
 
-    const string[Options.N] options_key = {
+    const string[] options_key = {
         "show"
     };
 
@@ -49,28 +49,17 @@ namespace CCM
 
         private CCM.AutomateDialog dialog;
 
-        ~Automate ()
+        class construct
+		{
+			type_options = typeof (AutomateOptions);
+		}
+
+		~Automate ()
         {
             options_unload ();
         }
 
-        protected override PluginOptions options_init ()
-        {
-            AutomateOptions options = new AutomateOptions ();
-
-            options.show_keybind = null;
-
-            return options;
-        }
-
-        protected override void options_finalize (PluginOptions opts)
-        {
-            AutomateOptions *options = (AutomateOptions *) opts;
-
-            delete options;
-        }
-
-        protected override void option_changed (Config config)
+        private void option_changed (Config config)
         {
             // Reload show shortcut
             get_show_shortcut ();
@@ -109,7 +98,8 @@ namespace CCM
             this.dialog = new CCM.AutomateDialog (screen);
 
             // load options
-            options_load ("automate", options_key);
+            options_load ("automate", options_key,
+                          (PluginOptionsChangedFunc)option_changed);
 
             ((CCM.ScreenPlugin) parent).screen_load_options (screen);
         }

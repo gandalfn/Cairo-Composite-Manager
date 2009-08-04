@@ -88,11 +88,11 @@ namespace CCM
             int width, height;
             Gdk.Atom atom_enable =
                 Gdk.Atom.intern_static_string ("_CCM_SHADOW_ENABLED");
-            uchar[]enable = { 1 };
+            uchar[] enable = { 1 };
 
             Gdk.property_change (main.window, atom_enable,
                                  Gdk.x11_xatom_to_atom (Gdk.x11_get_xatom_by_name ("CARDINAL")), 
-                                 32, Gdk.PropMode.REPLACE, enable);
+                                 32, Gdk.PropMode.REPLACE, enable, 1);
 
             main.window.get_size (out width, out height);
             main.window.set_override_redirect (true);
@@ -117,10 +117,10 @@ namespace CCM
                                                           height, 6);
             ctx.fill ();
             ctx.get_target ().finish ();
-            widget.window.shape_combine_mask ((Gdk.Bitmap) null, 0, 0);
-            widget.window.input_shape_combine_mask ((Gdk.Bitmap) null, 0, 0);
-            widget.window.shape_combine_mask ((Gdk.Bitmap) pixmap, 0, 0);
-            widget.window.input_shape_combine_mask ((Gdk.Bitmap) pixmap, 0, 0);
+            widget.window.shape_combine_mask ((Gdk.Bitmap*) null, 0, 0);
+            widget.window.input_shape_combine_mask ((Gdk.Bitmap*) null, 0, 0);
+            widget.window.shape_combine_mask ((Gdk.Bitmap*) pixmap, 0, 0);
+            widget.window.input_shape_combine_mask ((Gdk.Bitmap*) pixmap, 0, 0);
         }
 
         private bool on_expose_event (Gtk.Widget widget, Gdk.EventExpose event)

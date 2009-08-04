@@ -75,58 +75,43 @@ ccm_snapshot_preferences_page_iface_init (CCMPreferencesPagePluginClass *
 static void ccm_snapshot_on_option_changed (CCMPlugin * plugin,
                                             CCMConfig * config);
 
-CCM_DEFINE_PLUGIN (CCMSnapshot, ccm_snapshot, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_snapshot,
-                                            CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_snapshot_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_snapshot,
-                                            CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                            ccm_snapshot_preferences_page_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMSnapshot, ccm_snapshot, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_snapshot,
+                                                         CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_snapshot_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_snapshot,
+                                                         CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                                         ccm_snapshot_preferences_page_iface_init))
 struct _CCMSnapshotPrivate
 {
-    CCMScreen *
-        screen;
+    CCMScreen* screen;
 
-    cairo_rectangle_t
-        area;
-    CCMWindow *
-        selected;
+    cairo_rectangle_t area;
+    CCMWindow* selected;
 
-    GtkBuilder *
-        builder;
+    GtkBuilder* builder;
 };
 
 #define CCM_SNAPSHOT_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT, CCMSnapshotPrivate))
 
-static CCMPluginOptions *
-ccm_snapshot_options_init (CCMPlugin * plugin)
+static void
+ccm_snapshot_options_init (CCMSnapshotOptions* self)
 {
-    CCMSnapshotOptions *options = g_slice_new0 (CCMSnapshotOptions);
-
-    options->area_keybind = NULL;
-    options->window_keybind = NULL;
-    options->color = NULL;
-
-    return (CCMPluginOptions *) options;
+    self->area_keybind = NULL;
+    self->window_keybind = NULL;
+    self->color = NULL;
 }
 
 static void
-ccm_snapshot_options_finalize (CCMPlugin * plugin, CCMPluginOptions * opts)
+ccm_snapshot_options_finalize (CCMSnapshotOptions* self)
 {
-    CCMSnapshotOptions *options = (CCMSnapshotOptions *) opts;
-
-    if (options->color)
-        g_free (options->color);
-    options->color = NULL;
-    if (options->area_keybind)
-        g_object_unref (options->area_keybind);
-    options->area_keybind = NULL;
-    if (options->window_keybind)
-        g_object_unref (options->window_keybind);
-    options->window_keybind = NULL;
-
-    g_slice_free (CCMSnapshotOptions, options);
+    if (self->color) g_free (self->color);
+    self->color = NULL;
+    if (self->area_keybind) g_object_unref (self->area_keybind);
+    self->area_keybind = NULL;
+    if (self->window_keybind) g_object_unref (self->window_keybind);
+    self->window_keybind = NULL;
 }
 
 static void
@@ -162,10 +147,6 @@ ccm_snapshot_class_init (CCMSnapshotClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMSnapshotPrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_snapshot_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize = ccm_snapshot_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_snapshot_on_option_changed;
 
     object_class->finalize = ccm_snapshot_finalize;
 
@@ -479,7 +460,8 @@ ccm_snapshot_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
     self->priv->screen = screen;
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "snapshot",
-                             CCMSnapshotOptionKeys, CCM_SNAPSHOT_OPTION_N);
+                             CCMSnapshotOptionKeys, CCM_SNAPSHOT_OPTION_N,
+                             ccm_snapshot_on_option_changed);
 
     ccm_screen_plugin_load_options (CCM_SCREEN_PLUGIN_PARENT (plugin), screen);
 

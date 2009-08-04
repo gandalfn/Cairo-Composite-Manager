@@ -996,10 +996,9 @@ ccm_screen_find_window_or_child (CCMScreen * self, Window xwindow)
 
     for (item = self->priv->windows; item; item = item->next)
     {
-        if (CCM_IS_WINDOW (item->data)
-            && CCM_WINDOW_XWINDOW (item->data) == xwindow)
+        if (CCM_WINDOW_XWINDOW (item->data) == xwindow)
             return CCM_WINDOW (item->data);
-        else if (CCM_IS_WINDOW (item->data))
+        else
         {
             if (_ccm_window_get_child (item->data) == xwindow)
                 child = CCM_WINDOW (item->data);
@@ -1020,8 +1019,7 @@ ccm_screen_find_window_from_input (CCMScreen * self, Window xwindow)
 
     for (item = self->priv->windows; item; item = item->next)
     {
-        if (CCM_IS_WINDOW (item->data)
-            && ccm_window_has_redirect_input (item->data))
+        if (ccm_window_has_redirect_input (item->data))
         {
             Window xinput = None;
             g_object_get (G_OBJECT (item->data), "input", &xinput, NULL);
@@ -1046,7 +1044,7 @@ ccm_screen_find_window_at_pos (CCMScreen * self, int x, int y)
     for (item = g_list_last (self->priv->windows); item && !found;
          item = item->prev)
     {
-        if (CCM_IS_WINDOW (item->data) && ccm_window_is_viewable (item->data)
+        if (ccm_window_is_viewable (item->data)
             && !ccm_window_is_input_only (item->data))
         {
             CCMRegion *geometry =

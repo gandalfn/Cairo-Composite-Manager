@@ -97,13 +97,13 @@ static void ccm_magnifier_on_option_changed (CCMPlugin * plugin,
 static void ccm_magnifier_on_new_frame (CCMMagnifier * self, int num_frame,
                                         CCMTimeline * timeline);
 
-CCM_DEFINE_PLUGIN (CCMMagnifier, ccm_magnifier, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_magnifier,
-                                            CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_magnifier_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_magnifier,
-                                            CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_magnifier_window_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMMagnifier, ccm_magnifier, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_magnifier,
+                                                         CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_magnifier_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_magnifier,
+                                                         CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_magnifier_window_iface_init))
 struct _CCMMagnifierPrivate
 {
     CCMScreen * screen;
@@ -122,27 +122,20 @@ struct _CCMMagnifierPrivate
 #define CCM_MAGNIFIER_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MAGNIFIER, CCMMagnifierPrivate))
 
-static CCMPluginOptions *
-ccm_magnifier_options_init (CCMPlugin * plugin)
+static void
+ccm_magnifier_options_init (CCMMagnifierOptions* self)
 {
-    CCMMagnifierOptions *options = g_slice_new0 (CCMMagnifierOptions);
-
-    options->enabled = FALSE;
-    options->shade = TRUE;
-    options->scale = 1.0f;
-    options->new_scale = 1.0f;
-    options->quality = CAIRO_FILTER_FAST;
-    options->border = 0;
-
-    return (CCMPluginOptions *) options;
+    self->enabled = FALSE;
+    self->shade = TRUE;
+    self->scale = 1.0f;
+    self->new_scale = 1.0f;
+    self->quality = CAIRO_FILTER_FAST;
+    self->border = 0;
 }
 
 static void
-ccm_magnifier_options_finalize (CCMPlugin * plugin, CCMPluginOptions * opts)
+ccm_magnifier_options_finalize (CCMMagnifierOptions* self)
 {
-    CCMMagnifierOptions *options = (CCMMagnifierOptions *) opts;
-
-    g_slice_free (CCMMagnifierOptions, options);
 }
 
 static void
@@ -195,10 +188,6 @@ ccm_magnifier_class_init (CCMMagnifierClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMMagnifierPrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_magnifier_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize = ccm_magnifier_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_magnifier_on_option_changed;
 
     object_class->finalize = ccm_magnifier_finalize;
 }
@@ -897,7 +886,8 @@ ccm_magnifier_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
     self->priv->screen = screen;
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "magnifier",
-                             CCMMagnifierOptionKeys, CCM_MAGNIFIER_OPTION_N);
+                             CCMMagnifierOptionKeys, CCM_MAGNIFIER_OPTION_N,
+                             ccm_magnifier_on_option_changed);
 
     ccm_screen_plugin_load_options (CCM_SCREEN_PLUGIN_PARENT (plugin), screen);
 }

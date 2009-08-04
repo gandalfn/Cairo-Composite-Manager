@@ -25,6 +25,52 @@ using GLib;
 [CCode (cheader_filename = "math.h") ]
 public const double M_PI;
 
+[CCode (cprefix = "")]
+namespace X
+{
+    [CCode (cheader_filename = "X11/X.h", cname = "XRECTANGLE")] 
+	public struct RECTANGLE
+    {
+        public short x;
+        public short y;
+        public short width;
+        public short height;
+    }
+
+	[SimpleType]
+	[IntegerType (rank = 9)]
+	[CCode (cname = "XID", type_id = "G_TYPE_ULONG",
+		marshaller_type_name = "ULONG",
+		get_value_function = "g_value_get_ulong",
+		set_value_function = "g_value_set_ulong", default_value = "0",
+		type_signature = "lu")]
+	public struct ID
+	{
+	}
+
+	[SimpleType]
+	[IntegerType (rank = 9)]
+	[CCode (cname = "Drawable", type_id = "G_TYPE_ULONG",
+		marshaller_type_name = "ULONG",
+		get_value_function = "g_value_get_ulong",
+		set_value_function = "g_value_set_ulong", default_value = "0",
+		type_signature = "lu")]
+	public struct Drawable : ID
+	{
+	}
+
+	[SimpleType]
+	[IntegerType (rank = 9)]
+	[CCode (cname = "Pixmap", type_id = "G_TYPE_ULONG",
+		marshaller_type_name = "ULONG",
+		get_value_function = "g_value_get_ulong",
+		set_value_function = "g_value_set_ulong", default_value = "0",
+		type_signature = "lu")]
+	public struct Pixmap : Drawable
+	{
+	}
+}
+
 [CCode (cheader_filename = "cairo.h,ccm.h")]
 namespace Cairo 
 {
@@ -113,21 +159,21 @@ namespace CCM
 
 	public static delegate void PluginUnlockFunc (void* data);
 
-	[Compact]
-	[CCode (cheader_filename = "ccm-plugin.h", destroy_function = "g_slice_free")]
-	public class PluginOptions	{
+	public static delegate void PluginOptionsChangedFunc (CCM.Plugin plugin, CCM.Config config);
+	
+	[CCode (cheader_filename = "ccm-plugin.h")]
+	public class PluginOptions : GLib.Object 
+	{
 	}
 	
 	[CCode (cheader_filename = "ccm-plugin.h")]
 	public abstract class Plugin : GLib.Object
 	{
+		public class Type type_options;
+		
 		public GLib.Object parent { get; set; }
 
-		protected virtual PluginOptions options_init();
-		protected virtual void options_finalize(PluginOptions options);
-		protected virtual void option_changed(Config config);
-
-		public void options_load(string name, string[] options_keys);
+		public void options_load(string name, string[] options_keys, PluginOptionsChangedFunc func);
 		public void options_unload();
 		
 		public unowned PluginOptions get_option();

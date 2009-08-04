@@ -65,63 +65,47 @@ static void ccm_mosaic_check_windows (CCMMosaic * self);
 static void ccm_mosaic_on_option_changed (CCMPlugin * plugin,
                                           CCMConfig * config);
 
-CCM_DEFINE_PLUGIN (CCMMosaic, ccm_mosaic, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_mosaic, CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_mosaic_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_mosaic, CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_mosaic_window_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_mosaic,
-                                            CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                            ccm_mosaic_preferences_page_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMMosaic, ccm_mosaic, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_mosaic, CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_mosaic_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_mosaic, CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_mosaic_window_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_mosaic,
+                                                         CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
+                                                         ccm_mosaic_preferences_page_iface_init))
 typedef struct
 {
-    cairo_rectangle_t
-        geometry;
-    CCMWindow *
-        window;
+    cairo_rectangle_t geometry;
+    CCMWindow* window;
 } CCMMosaicArea;
 
 struct _CCMMosaicPrivate
 {
-    CCMScreen *
-        screen;
-    gboolean
-        enabled;
+    CCMScreen * screen;
+    gboolean enabled;
 
-    CCMMosaicArea *
-        areas;
-    gint
-        nb_areas;
+    CCMMosaicArea * areas;
+    gint nb_areas;
 
-    gboolean
-        mouse_over;
+    gboolean mouse_over;
 
-    GtkBuilder *
-        builder;
+    GtkBuilder * builder;
 };
 
 #define CCM_MOSAIC_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MOSAIC, CCMMosaicPrivate))
 
-static CCMPluginOptions *
-ccm_mosaic_options_init (CCMPlugin * plugin)
+static void
+ccm_mosaic_options_init (CCMMosaicOptions* self)
 {
-    CCMMosaicOptions *options = g_slice_new0 (CCMMosaicOptions);
-
-    options->spacing = 5;
-    options->keybind = NULL;
-
-    return (CCMPluginOptions *) options;
+    self->spacing = 5;
+    self->keybind = NULL;
 }
 
 static void
-ccm_mosaic_options_finalize (CCMPlugin * plugin, CCMPluginOptions * opts)
+ccm_mosaic_options_finalize (CCMMosaicOptions* self)
 {
-    CCMMosaicOptions *options = (CCMMosaicOptions *) opts;
-
-    if (options->keybind)
-        g_object_unref (options->keybind);
-    g_slice_free (CCMMosaicOptions, options);
+    if (self->keybind) g_object_unref (self->keybind);
 }
 
 static void
@@ -160,10 +144,6 @@ ccm_mosaic_class_init (CCMMosaicClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMMosaicPrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_mosaic_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize = ccm_mosaic_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_mosaic_on_option_changed;
 
     object_class->finalize = ccm_mosaic_finalize;
 }
@@ -288,8 +268,6 @@ ccm_mosaic_set_window_transform (CCMMosaic * self)
     GList *item = ccm_screen_get_windows (self->priv->screen);
     CCMWindow *mouse = NULL;
 
-    ccm_screen_query_pointer (self->priv->screen, &mouse, &x, &y);
-
     for (; item; item = item->next)
     {
         CCMWindowType type = ccm_window_get_hint_type (item->data);
@@ -343,6 +321,8 @@ ccm_mosaic_set_window_transform (CCMMosaic * self)
         g_object_set (G_OBJECT (self->priv->areas[cpt].window),
                       "block_mouse_redirect_event", TRUE, NULL);
     }
+
+    ccm_screen_query_pointer (self->priv->screen, &mouse, &x, &y);
 
     for (cpt = 0; cpt < self->priv->nb_areas; ++cpt)
     {
@@ -540,7 +520,7 @@ ccm_mosaic_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
     self->priv->screen = screen;
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "mosaic", CCMMosaicOptionKeys,
-                             CCM_MOSAIC_OPTION_N);
+                             CCM_MOSAIC_OPTION_N, ccm_mosaic_on_option_changed);
 
     ccm_screen_plugin_load_options (CCM_SCREEN_PLUGIN_PARENT (plugin), screen);
 

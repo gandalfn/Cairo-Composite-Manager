@@ -32,13 +32,13 @@ namespace CCM
         N
     }
 
-    const string[Options.N] options_key = {
+    const string[] options_key = {
         "enabled"
     };
 
     class ValaWindowOptions : PluginOptions
     {
-        public bool enabled;
+        public bool enabled = false;
     }
 
     private class ValaWindowPlugin : CCM.Plugin, CCM.WindowPlugin
@@ -47,27 +47,17 @@ namespace CCM
 
         private uint counter = 0;
 
+		class construct
+		{
+			type_options = typeof (ValaWindowOptions);
+		}
+		
         ~ValaWindowPlugin ()
         {
             options_unload ();
         }
 
-        protected override PluginOptions options_init ()
-        {
-            ValaWindowOptions options = new ValaWindowOptions ();
-
-            options.enabled = false;
-
-            return options;
-        }
-
-        protected override void options_finalize (PluginOptions opts)
-        {
-            ValaWindowOptions *options = (ValaWindowOptions *) opts;
-            delete options;
-        }
-
-        protected override void option_changed (CCM.Config config)
+        private void option_changed (CCM.Config config)
         {
             ((ValaWindowOptions) get_option ()).enabled = config.get_boolean ();
             if (!((ValaWindowOptions) get_option ()).enabled)
@@ -81,7 +71,8 @@ namespace CCM
         {
             this.window = window;
 
-            options_load ("vala-window-plugin", options_key);
+            options_load ("vala-window-plugin", options_key, 
+                          (PluginOptionsChangedFunc)option_changed);
 
             /* Chain call to next plugin */
             ((CCM.WindowPlugin) parent).window_load_options (window);

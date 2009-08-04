@@ -71,69 +71,46 @@ static void ccm_perf_screen_iface_init (CCMScreenPluginClass * iface);
 static void ccm_perf_window_iface_init (CCMWindowPluginClass * iface);
 static void ccm_perf_on_option_changed (CCMPlugin * plugin, CCMConfig * config);
 
-CCM_DEFINE_PLUGIN (CCMPerf, ccm_perf, CCM_TYPE_PLUGIN,
-                   CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_SCREEN_PLUGIN,
-                                            ccm_perf_screen_iface_init);
-                   CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_WINDOW_PLUGIN,
-                                            ccm_perf_window_iface_init))
+CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMPerf, ccm_perf, CCM_TYPE_PLUGIN,
+                                CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_SCREEN_PLUGIN,
+                                                         ccm_perf_screen_iface_init);
+                                CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_WINDOW_PLUGIN,
+                                                         ccm_perf_window_iface_init))
 struct _CCMPerfPrivate
 {
-    gint
-        frames;
-    gfloat
-        elapsed;
-    GTimer *
-        timer;
-    gfloat
-        fps;
+    gint frames;
+    gfloat elapsed;
+    GTimer* timer;
+    gfloat fps;
 
-    guint64
-        cpu_total;
-    guint64
-        last_cpu_total;
-    guint64
-        cpu_time;
-    guint
-        pcpu;
+    guint64 cpu_total;
+    guint64 last_cpu_total;
+    guint64 cpu_time;
+    guint pcpu;
 
-    guint64
-        mem_size;
-    guint64
-        mem_xorg;
+    guint64 mem_size;
+    guint64 mem_xorg;
 
-    gboolean
-        enabled;
-    gboolean
-        need_refresh;
+    gboolean enabled;
+    gboolean need_refresh;
 
-    CCMScreen *
-        screen;
+    CCMScreen* screen;
 };
 
 #define CCM_PERF_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PERF, CCMPerfPrivate))
 
-static CCMPluginOptions *
-ccm_perf_options_init (CCMPlugin * plugin)
+static void
+ccm_perf_options_init (CCMPerfOptions* self)
 {
-    CCMPerfOptions *options = g_slice_new0 (CCMPerfOptions);
-
-    options->keybind = NULL;
-
-    return (CCMPluginOptions *) options;
+    self->keybind = NULL;
 }
 
 static void
-ccm_perf_options_finalize (CCMPlugin * plugin, CCMPluginOptions * opts)
+ccm_perf_options_finalize (CCMPerfOptions* self)
 {
-    g_return_if_fail (opts != NULL);
-
-    CCMPerfOptions *options = (CCMPerfOptions *) opts;
-
-    if (options->keybind)
-        g_object_unref (options->keybind);
-    options->keybind = NULL;
-    g_slice_free (CCMPerfOptions, options);
+    if (self->keybind) g_object_unref (self->keybind);
+    self->keybind = NULL;
 }
 
 static void
@@ -175,10 +152,6 @@ ccm_perf_class_init (CCMPerfClass * klass)
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
     g_type_class_add_private (klass, sizeof (CCMPerfPrivate));
-
-    CCM_PLUGIN_CLASS (klass)->options_init = ccm_perf_options_init;
-    CCM_PLUGIN_CLASS (klass)->options_finalize = ccm_perf_options_finalize;
-    CCM_PLUGIN_CLASS (klass)->option_changed = ccm_perf_on_option_changed;
 
     object_class->finalize = ccm_perf_finalize;
 }
@@ -343,7 +316,7 @@ ccm_perf_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
     self->priv->screen = screen;
 
     ccm_plugin_options_load (CCM_PLUGIN (self), "perf", CCMPerfOptionKeys,
-                             CCM_PERF_OPTION_N);
+                             CCM_PERF_OPTION_N, ccm_perf_on_option_changed);
 
     ccm_screen_plugin_load_options (CCM_SCREEN_PLUGIN_PARENT (plugin), screen);
 }
