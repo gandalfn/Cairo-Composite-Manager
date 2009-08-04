@@ -306,7 +306,7 @@ ccm_decoration_create_mask (CCMDecoration * self)
         mask =
             cairo_surface_create_similar (surface, CAIRO_CONTENT_ALPHA,
                                           clipbox.width, clipbox.height);
-        cairo_surface_destroy (surface);
+		
         g_object_set (self->priv->window, "mask", mask, "mask_width",
                       (int) clipbox.width, "mask_height", (int) clipbox.height,
                       NULL);
@@ -381,6 +381,7 @@ ccm_decoration_create_mask (CCMDecoration * self)
 
         cairo_destroy (ctx);
     }
+	if (surface) cairo_surface_destroy (surface);
 }
 
 static CCMRegion *
