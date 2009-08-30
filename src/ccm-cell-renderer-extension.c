@@ -100,6 +100,7 @@ ccm_cell_renderer_extension_set_gobject_property (GObject * object,
                   &fake->style->text[self->priv->
                                      enabled ? GTK_STATE_NORMAL :
                                      GTK_STATE_INSENSITIVE], NULL);
+	gtk_widget_destroy(fake);
 }
 
 static void

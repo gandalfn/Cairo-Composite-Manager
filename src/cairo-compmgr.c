@@ -205,5 +205,7 @@ main (gint argc, gchar ** argv)
     trayicon = ccm_tray_icon_new ();
     gtk_main ();
     g_object_unref (trayicon);
+    g_option_context_free(option_context);
+    
     return 0;
 }

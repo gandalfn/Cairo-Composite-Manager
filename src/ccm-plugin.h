@@ -52,7 +52,7 @@ typedef struct _CCMPluginOptionsPrivate CCMPluginOptionsPrivate;
 typedef struct _CCMPluginOptionsClass   CCMPluginOptionsClass;
 typedef struct _CCMPluginOptions		CCMPluginOptions;
 
-typedef void (*CCMPluginOptionsChangedFunc) (CCMPlugin* plugin, CCMConfig* config);
+typedef void (*CCMPluginOptionsChangedFunc) (CCMPlugin* plugin, int index);
 typedef void (*CCMPluginUnlockFunc) (gpointer data);
 
 struct _CCMPluginClass
@@ -72,9 +72,13 @@ struct _CCMPlugin
     CCMPluginPrivate *priv;
 };
 
+typedef void (*CCMPluginOptionsChanged) (CCMPluginOptions* self, CCMConfig* config);
+
 struct _CCMPluginOptionsClass
 {
-    GObjectClass parent_class;
+    GObjectClass			parent_class;
+
+	CCMPluginOptionsChanged changed;
 };
 
 struct _CCMPluginOptions
@@ -87,17 +91,21 @@ struct _CCMPluginOptions
 GType ccm_plugin_get_type (void) G_GNUC_CONST;
 GType ccm_plugin_options_get_type (void) G_GNUC_CONST;
 
-GObject*          ccm_plugin_get_parent     (CCMPlugin* self);
-void              ccm_plugin_set_parent     (CCMPlugin* self, GObject* parent);
-
-void              ccm_plugin_options_load   (CCMPlugin* self, 
-                                             gchar* plugin_name,
-                                             const gchar** options_key, 
-                                             int nb_options,
-                                             CCMPluginOptionsChangedFunc callback);
-void              ccm_plugin_options_unload (CCMPlugin * self);
-CCMPluginOptions* ccm_plugin_get_option     (CCMPlugin * self);
-CCMConfig*        ccm_plugin_get_config     (CCMPlugin * self, int index);
+GObject*          ccm_plugin_get_parent 		     (CCMPlugin* self);
+void              ccm_plugin_set_parent 		     (CCMPlugin* self, 
+		                                              GObject* parent);
+CCMPluginOptions* ccm_plugin_get_option 		     (CCMPlugin * self);
+CCMConfig*        ccm_plugin_get_config     		 (CCMPlugin * self, 
+													  int index);
+void              ccm_plugin_options_load	         (CCMPlugin* self, 
+	                                                  gchar* plugin_name,
+	                                                  const gchar** options_key, 
+	                                                  int nb_options,
+	                                                  CCMPluginOptionsChangedFunc callback);
+void              ccm_plugin_options_unload		     (CCMPlugin * self);
+int				  ccm_plugin_options_get_screen_num  (CCMPluginOptions* self);
+CCMConfig*	      ccm_plugin_options_get_config      (CCMPluginOptions * self, 
+	                                                  int index);
 
 #define CCM_DEFINE_PLUGIN(class_name, prefix, parent_class_type, options_type, CODE) \
 \
@@ -184,8 +192,10 @@ struct _##class_name##OptionsClass \
     CCMPluginOptionsClass parent_class; \
 }; \
 \
-static void prefix##_options_init		     (class_name##Options      *self); \
-static void prefix##_options_finalize        (class_name##Options      *self); \
+static void prefix##_options_init	  (class_name##Options      *self); \
+static void prefix##_options_finalize (class_name##Options      *self); \
+static void prefix##_options_changed  (class_name##Options *self, CCMConfig* config); \
+\
 static gpointer prefix##_options_parent_class = NULL; \
 \
 static void     prefix##_options_intern_finalize (GObject *object) \
@@ -199,6 +209,7 @@ static void     prefix##_options_class_init (class_name##OptionsClass* klass) \
   GObjectClass *object_class = G_OBJECT_CLASS (klass); \
   prefix##_options_parent_class = g_type_class_peek_parent (klass); \
   object_class->finalize = prefix##_options_intern_finalize; \
+  CCM_PLUGIN_OPTIONS_CLASS(klass)->changed = (CCMPluginOptionsChanged)prefix##_options_changed; \
 } \
 \
 CCM_DEFINE_PLUGIN_OPTIONS (class_name##Options, prefix##_options) \

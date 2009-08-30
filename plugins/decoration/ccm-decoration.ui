@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <interface>
-  <requires lib="gtk+" version="2.14"/>
+  <requires lib="gtk+" version="2.16"/>
   <!-- interface-requires ccm 0.0 -->
-  <!-- interface-naming-policy toplevel-contextual -->
+  <!-- interface-naming-policy project-wide -->
   <object class="GtkFrame" id="decoration">
     <property name="visible">True</property>
     <property name="label_xalign">0</property>

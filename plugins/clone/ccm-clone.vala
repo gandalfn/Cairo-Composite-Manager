@@ -85,8 +85,8 @@ namespace CCM
             }
         }
 
-        private void on_composite_message (CCM.Window window, long l1, long l2,
-                                           long l3)
+        private void on_composite_message (CCM.Window client, CCM.Window window, 
+                                           long l1, long l2, long l3)
         {
             X.Atom atom = (X.Atom) l1;
             X.Pixmap xpixmap = (X.Pixmap) l2;
@@ -101,12 +101,14 @@ namespace CCM
                 if (clone.window_outputs == null)
                     clone.window_outputs = new ArrayList < Output > ();
                 clone.window_outputs.add (output);
+				client.no_undamage_sibling = true;
                 window.damage ();
             }
             else if (atom == disable_atom)
             {
                 CCM.log ("DISABLE CLONE");
                 var clone = (Clone) window.get_plugin (typeof (Clone));
+				client.no_undamage_sibling = false;
 
                 foreach (Output output in clone.window_outputs)
                 {
@@ -122,6 +124,7 @@ namespace CCM
                 CCM.log ("ENABLE SCREEN CLONE");
                 var output =
                     new Output (window.get_screen (), window, xpixmap, depth);
+				window.no_undamage_sibling = true;
                 add_screen_output (output);
             }
             else if (atom == screen_disable_atom)
@@ -131,6 +134,7 @@ namespace CCM
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
+						output.window.no_undamage_sibling = false;
                         remove_screen_output (output);
                         break;
                     }

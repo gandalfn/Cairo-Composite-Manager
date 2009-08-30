@@ -144,7 +144,8 @@ cairo_compmgr_SOURCES = \
     eggsmclient.c \
     eggsmclient.h \
     ccm-timed-dialog.h \
-    ccm-timed-dialog.c
+    ccm-timed-dialog.c \
+    ccm-object.h
 	
 if HAVE_XRENDER_BACKEND    
 cairo_compmgr_SOURCES += \

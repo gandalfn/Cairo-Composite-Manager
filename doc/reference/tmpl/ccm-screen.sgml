@@ -57,6 +57,15 @@ CCMScreen
 @arg2: 
 @arg3: 
 @arg4: 
+@Param6: 
+
+<!-- ##### SIGNAL CCMScreen::desktop-changed ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
 
 <!-- ##### SIGNAL CCMScreen::enter-window-notify ##### -->
 <para>

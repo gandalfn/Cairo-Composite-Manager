@@ -2146,7 +2146,6 @@ ccm_window_new (CCMScreen * screen, Window xwindow)
         XShapeSelectInput (CCM_DISPLAY_XDISPLAY (display),
                            CCM_WINDOW_XWINDOW (self), ShapeNotifyMask);
 
-        ccm_display_flush (display);
         ccm_display_sync (display);
     }
 
@@ -2205,7 +2204,6 @@ ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow)
         XShapeSelectInput (CCM_DISPLAY_XDISPLAY (display),
                            CCM_WINDOW_XWINDOW (self), ShapeNotifyMask);
 
-        ccm_display_flush (display);
         ccm_display_sync (display);
     }
 
@@ -2273,7 +2271,8 @@ ccm_window_get_opaque_region (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
 
-    return self->priv->opaque;
+    return self->priv->opaque ? 
+		(self->priv->no_undamage_sibling ? NULL : self->priv->opaque): NULL;
 }
 
 /**
@@ -2296,22 +2295,6 @@ ccm_window_get_opaque_clipbox (CCMWindow * self, cairo_rectangle_t * clipbox)
         return TRUE;
     }
     return FALSE;
-}
-
-/**
- * ccm_window_undamage_sibling:
- * @self: #CCMWindow
- *
- * Get if window undamage sibling windows
- *
- * Returns: TRUE if window undamage sibling
- **/
-gboolean
-ccm_window_undamage_sibling (CCMWindow * self)
-{
-    g_return_val_if_fail (self != NULL, FALSE);
-
-    return !self->priv->no_undamage_sibling;
 }
 
 void
@@ -2894,8 +2877,7 @@ ccm_window_unmap (CCMWindow * self)
 
         if (self->priv->is_fullscreen)
             ccm_window_switch_state (self,
-                                     CCM_WINDOW_GET_CLASS (self)->
-                                     state_fullscreen_atom);
+                                     CCM_WINDOW_GET_CLASS (self)->state_fullscreen_atom);
         if (CCM_IS_PIXMAP (self->priv->pixmap))
             g_object_set (self->priv->pixmap, "freeze", TRUE, NULL);
         ccm_debug_window (self, "WINDOW UNMAP");
@@ -3672,4 +3654,22 @@ ccm_window_set_redirect(CCMWindow* self, gboolean redirect)
 	if (!self->priv->redirect) ccm_window_unredirect_input (self);
 
 	g_object_notify(G_OBJECT(self), "redirect");
+}
+
+gboolean
+ccm_window_get_no_undamage_sibling(CCMWindow* self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+
+	return self->priv->no_undamage_sibling;
+}
+
+void
+ccm_window_set_no_undamage_sibling(CCMWindow* self, gboolean no_undamage)
+{
+	g_return_if_fail(self != NULL);
+
+	self->priv->no_undamage_sibling = no_undamage;
+
+	g_object_notify(G_OBJECT(self), "no-undamage-sibling");
 }

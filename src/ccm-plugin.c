@@ -35,6 +35,7 @@ typedef struct
 
 struct _CCMPluginOptionsPrivate
 {
+	gint		screen;
     gboolean	initialized;
     CCMConfig **configs;
     int			configs_size;
@@ -52,6 +53,7 @@ _ccm_plugin_options_disconnect_callback(CCMPluginOptionsChangedCallback* callbac
 	g_return_if_fail(callback != NULL);
 
 	CCMPluginOptions* self = callback->options;
+	g_object_steal_qdata(G_OBJECT(callback->plugin), CCMPLuginOptionsCallbackQuark);
 	if (self->priv)
 	{
 		self->priv->callbacks = g_slist_remove(self->priv->callbacks, callback);
@@ -63,6 +65,7 @@ static void
 ccm_plugin_options_init (CCMPluginOptions *self)
 {
 	self->priv = CCM_PLUGIN_OPTIONS_GET_PRIVATE(self);
+	self->priv->screen = -1;
 	self->priv->initialized = FALSE;
 	self->priv->configs = NULL;
     self->priv->configs_size = 0;
@@ -92,6 +95,9 @@ ccm_plugin_options_finalize (GObject * object)
 	self->priv->configs_size = 0;
 	if (self->priv->callbacks)
 	{
+		g_slist_foreach(self->priv->callbacks, 
+		                (GFunc)_ccm_plugin_options_disconnect_callback, 
+		                NULL);
 		g_slist_free(self->priv->callbacks);
 	}
 	self->priv->callbacks = NULL;
@@ -116,11 +122,25 @@ static void
 ccm_plugins_options_on_changed(CCMPluginOptions* self, CCMConfig* config)
 {
 	GSList* item;
+	gboolean found = FALSE;
+	gint index;
 	
-	for (item = self->priv->callbacks; item; item = item->next)
+	if (CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed)
+		CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed(self, config);
+
+	for (index = 0; index < self->priv->configs_size && !found; index++)
 	{
-		CCMPluginOptionsChangedCallback* callback = item->data;
-		callback->callback(callback->plugin, config);
+		if (self->priv->configs[index] == config)
+			found = TRUE;
+	}
+	
+	if (found)
+	{
+		for (item = self->priv->callbacks; item; item = item->next)
+		{
+			CCMPluginOptionsChangedCallback* callback = item->data;
+			callback->callback(callback->plugin, index);
+		}
 	}
 }
 
@@ -131,7 +151,9 @@ _ccm_plugin_options_load (CCMPluginOptions* self, gint screen,
                           CCMPlugin* plugin)
 {
 	gint cpt;
-	
+
+	self->priv->screen = screen;
+		
 	if (self->priv->configs == NULL)
     {
         ccm_debug ("%s CREATE CONFIG TAB", G_OBJECT_TYPE_NAME (self));
@@ -166,12 +188,15 @@ _ccm_plugin_options_load (CCMPluginOptions* self, gint screen,
 
         if (self->priv->configs[cpt] != NULL)
         {
-			if (!self->priv->initialized && func)
-				func(plugin, self->priv->configs[cpt]);
-			
-			g_signal_connect_swapped (G_OBJECT(self->priv->configs[cpt]), "changed",
+			if (!self->priv->initialized && CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed)
+			{
+				CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed(self, self->priv->configs[cpt]);
+				
+				g_signal_connect_swapped (G_OBJECT(self->priv->configs[cpt]), "changed",
 			                          G_CALLBACK (ccm_plugins_options_on_changed),
 			                          self);
+			}
+			if (func) func(plugin, cpt);
         }
     }
     self->priv->initialized = TRUE;
@@ -518,6 +543,22 @@ ccm_plugin_options_unload (CCMPlugin * self)
         if (klass->count == 0)
             ccm_plugin_finalize_options (self);
     }
+}
+
+int
+ccm_plugin_options_get_screen_num (CCMPluginOptions* self)
+{
+    g_return_val_if_fail (self != NULL, -1);
+
+    return self->priv->screen;
+}
+
+CCMConfig *
+ccm_plugin_options_get_config (CCMPluginOptions * self, int index)
+{
+    g_return_val_if_fail (self != NULL, NULL);
+
+    return self->priv->configs[index];
 }
 
 CCMPluginOptions *

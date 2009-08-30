@@ -39,6 +39,11 @@ namespace CCM
     class ValaWindowOptions : PluginOptions
     {
         public bool enabled = false;
+
+		protected override void changed(CCM.Config config)
+		{
+			enabled = config.get_boolean ();
+		}
     }
 
     private class ValaWindowPlugin : CCM.Plugin, CCM.WindowPlugin
@@ -57,9 +62,8 @@ namespace CCM
             options_unload ();
         }
 
-        private void option_changed (CCM.Config config)
+        private void option_changed (int index)
         {
-            ((ValaWindowOptions) get_option ()).enabled = config.get_boolean ();
             if (!((ValaWindowOptions) get_option ()).enabled)
                 window.get_screen ().damage_all ();
         }

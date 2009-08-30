@@ -23,6 +23,15 @@ CCMPreferencesPage
 </para>
 
 
+<!-- ##### SIGNAL CCMPreferencesPage::need-restart ##### -->
+<para>
+
+</para>
+
+@ccmpreferencespage: the object which received the signal.
+@arg1: 
+@arg2: 
+
 <!-- ##### SIGNAL CCMPreferencesPage::plugin-state-changed ##### -->
 <para>
 
@@ -37,7 +46,6 @@ CCMPreferencesPage
 
 </para>
 
-@preferences: 
 @screen_num: 
 @Returns: 
 

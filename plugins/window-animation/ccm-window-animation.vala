@@ -39,6 +39,31 @@ namespace CCM
     class WindowAnimationOptions : PluginOptions
     {
         public double duration = 0.4;
+
+		protected override void changed(CCM.Config config)
+		{
+			if (config == get_config (Options.DURATION))
+            {
+                var real_duration = 0.4;
+                real_duration = config.get_float ();
+                var duration = double.min (2.0, real_duration);
+                duration = double.max (0.1, duration);
+
+                this.duration = duration;
+                if (duration != real_duration)
+                {
+                    try
+                    {
+                        config.set_float ((float) duration);
+                    }
+                    catch (GLib.Error err)
+                    {
+                        CCM.log ("Error on set duration config: %s",
+                                 err.message);
+                    }
+                }
+            }
+		}
     }
 
     class WindowAnimation : CCM.Plugin, CCM.WindowPlugin
@@ -59,31 +84,11 @@ namespace CCM
             options_unload ();
         }
 
-        private void option_changed (CCM.Config config)
+        private void option_changed (int index)
         {
-            if (config == get_config (Options.DURATION))
+            if (index == Options.DURATION)
             {
-                var real_duration = 0.4;
-                real_duration = get_config (Options.DURATION).get_float ();
-                var duration = double.min (2.0, real_duration);
-                duration = double.max (0.1, duration);
-
-                ((WindowAnimationOptions) get_option ()).duration = duration;
-                if (duration != real_duration)
-                {
-                    try
-                    {
-                        config.set_float ((float) duration);
-                    }
-                    catch (GLib.Error err)
-                    {
-                        CCM.log ("Error on set duration config: %s",
-                                 err.message);
-                    }
-                }
-
-                if (timeline != null)
-                    timeline = null;
+				timeline = null;
             }
         }
 

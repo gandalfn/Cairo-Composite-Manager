@@ -162,7 +162,6 @@ ccm_window_xrender_flush (CCMDrawable * drawable)
                    CCM_WINDOW_XWINDOW (self), self->priv->gc, (int) clipbox.x,
                    (int) clipbox.y, (int) clipbox.width, (int) clipbox.height,
                    (int) clipbox.x, (int) clipbox.y);
-        ccm_display_flush (display);
         ccm_display_sync (display);
     }
 }
@@ -190,7 +189,6 @@ ccm_window_xrender_flush_region (CCMDrawable * drawable, CCMRegion * region)
                        (int) rects[cpt].width, (int) rects[cpt].height,
                        (int) rects[cpt].x, (int) rects[cpt].y);
         }
-        ccm_display_flush (display);
         ccm_display_sync (display);
         cairo_rectangles_free (rects, nb_rects);
     }

@@ -539,9 +539,9 @@ ccm_screen_class_init (CCMScreenClass * klass)
     signals[COMPOSITE_MESSAGE] =
         g_signal_new ("composite-message", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                      ccm_cclosure_marshal_VOID__OBJECT_LONG_LONG_LONG,
-                      G_TYPE_NONE, 4, CCM_TYPE_WINDOW, G_TYPE_LONG, G_TYPE_LONG,
-                      G_TYPE_LONG);
+                      ccm_cclosure_marshal_VOID__OBJECT_OBJECT_LONG_LONG_LONG,
+                      G_TYPE_NONE, 5, CCM_TYPE_WINDOW, CCM_TYPE_WINDOW, 
+                      G_TYPE_LONG, G_TYPE_LONG, G_TYPE_LONG);
 
     signals[DESKTOP_CHANGED] =
         g_signal_new ("desktop-changed", G_OBJECT_CLASS_TYPE (object_class),
@@ -859,7 +859,7 @@ ccm_screen_print_stack (CCMScreen * self)
     GList *item;
 
     ccm_log
-        ("XID\t\tVisible\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\t\tName");
+        ("XID\t\tVisible\tOpaque\tType\tManaged\tDecored\tFullscreen\tKA\tKB\tTransient\tGroup\t\tName");
     for (item = self->priv->windows; item; item = item->next)
     {
         CCMWindow *transient = ccm_window_transient_for (item->data);
@@ -867,9 +867,10 @@ ccm_screen_print_stack (CCMScreen * self)
 
         if (ccm_window_is_viewable (item->data))
             ccm_log
-                ("0x%lx\t%i\t%i\t%i\t%i\t%i\t\t%i\t%i\t0x%08lx\t0x%08lx\t%s",
+                ("0x%lx\t%i\t%i\t%i\t%i\t%i\t%i\t\t%i\t%i\t0x%08lx\t0x%08lx\t%s",
                  CCM_WINDOW_XWINDOW (item->data),
                  ccm_window_is_viewable (item->data),
+                 ccm_window_get_opaque_region (item->data) ? 1 : 0,
                  ccm_window_get_hint_type (item->data),
                  ccm_window_is_managed (item->data),
                  ccm_window_is_decorated (item->data),
@@ -1337,7 +1338,8 @@ ccm_screen_check_stack (CCMScreen * self)
             }
         }
     }
-    g_list_free (self->priv->windows);
+
+	g_list_free (self->priv->windows);
     self->priv->windows = stack;
 
     viewable = g_list_reverse (viewable);
@@ -1497,7 +1499,7 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
         }
     }
 
-    for (item = g_list_first (self->priv->removed); item; item = item->next)
+    for (item = self->priv->removed; item; item = item->next)
     {
         if (!ccm_window_is_viewable (item->data)
             || ccm_window_is_input_only (item->data))
@@ -1898,7 +1900,7 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
             && CCM_WINDOW_XWINDOW (item->data) != CCM_WINDOW_XWINDOW (window))
         {
             opaque = ccm_window_get_opaque_region (item->data);
-            if (opaque && ccm_window_undamage_sibling (item->data))
+            if (opaque)
             {
                 ccm_debug_window (window, "UNDAMAGE ABOVE 0x%lx",
                                   CCM_WINDOW_XWINDOW (item->data));
@@ -2531,6 +2533,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                                                          client_event->data.l[4]);
                     g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
                                    window ? window : self->priv->root,
+                                   window ? window : self->priv->root,
                                    client_event->data.l[0],
                                    client_event->data.l[2],
                                    client_event->data.l[3]);
@@ -2540,9 +2543,13 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                     CCMWindow *window =
                         ccm_screen_find_window_or_child (self,
                                                          client_event->data.l[1]);
+                    CCMWindow *client =
+                        ccm_screen_find_window_or_child (self,
+                                                         client_event->data.l[4]);
                     if (window)
                         g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
-                                       window, client_event->data.l[0],
+                                       client, window, 
+                                       client_event->data.l[0],
                                        client_event->data.l[2],
                                        client_event->data.l[3]);
                 }

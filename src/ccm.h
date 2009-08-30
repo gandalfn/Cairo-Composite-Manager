@@ -146,6 +146,7 @@ double ccm_cursor_get_height (CCMCursor * self);
 /******************************************************************************/
 
 /********************************** Display ***********************************/
+CCMDisplay* ccm_display_get_default();
 CCMDisplay *ccm_display_new (gchar * display);
 Display *ccm_display_get_xdisplay (CCMDisplay * self);
 CCMScreen *ccm_display_get_screen (CCMDisplay * self, guint number);
@@ -294,7 +295,8 @@ Window ccm_window_redirect_event (CCMWindow * self, XEvent * event,
                                   Window over);
 void ccm_window_activate (CCMWindow * self, Time timestamp);
 GSList *ccm_window_get_transients (CCMWindow * self);
-gboolean ccm_window_undamage_sibling (CCMWindow * self);
+gboolean ccm_window_get_no_undamage_sibling (CCMWindow * self);
+void ccm_window_set_no_undamage_sibling (CCMWindow * self, gboolean no_undamage);
 gboolean ccm_window_has_redirect_input (CCMWindow * self);
 gboolean ccm_window_get_redirect(CCMWindow* self);
 void ccm_window_set_redirect(CCMWindow* self, gboolean redirect);

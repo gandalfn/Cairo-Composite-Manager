@@ -63,8 +63,9 @@ typedef struct
 {
     CCMPluginOptions parent;
 
-    CCMKeybind *area_keybind;
-    CCMKeybind *window_keybind;
+	gchar* area_shortcut;
+	gchar* window_shortcut;
+	
     GdkColor *color;
 } CCMSnapshotOptions;
 
@@ -72,8 +73,7 @@ static void ccm_snapshot_screen_iface_init (CCMScreenPluginClass * iface);
 static void
 ccm_snapshot_preferences_page_iface_init (CCMPreferencesPagePluginClass *
                                           iface);
-static void ccm_snapshot_on_option_changed (CCMPlugin * plugin,
-                                            CCMConfig * config);
+static void ccm_snapshot_on_option_changed (CCMPlugin * plugin, int index);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMSnapshot, ccm_snapshot, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_snapshot,
@@ -86,7 +86,10 @@ struct _CCMSnapshotPrivate
 {
     CCMScreen* screen;
 
-    cairo_rectangle_t area;
+    CCMKeybind *area_keybind;
+    CCMKeybind *window_keybind;
+
+	cairo_rectangle_t area;
     CCMWindow* selected;
 
     GtkBuilder* builder;
@@ -98,8 +101,8 @@ struct _CCMSnapshotPrivate
 static void
 ccm_snapshot_options_init (CCMSnapshotOptions* self)
 {
-    self->area_keybind = NULL;
-    self->window_keybind = NULL;
+    self->area_shortcut = NULL;
+    self->window_shortcut = NULL;
     self->color = NULL;
 }
 
@@ -108,10 +111,57 @@ ccm_snapshot_options_finalize (CCMSnapshotOptions* self)
 {
     if (self->color) g_free (self->color);
     self->color = NULL;
-    if (self->area_keybind) g_object_unref (self->area_keybind);
-    self->area_keybind = NULL;
-    if (self->window_keybind) g_object_unref (self->window_keybind);
-    self->window_keybind = NULL;
+    if (self->area_shortcut) g_free (self->area_shortcut);
+    self->area_shortcut = NULL;
+    if (self->window_shortcut) g_free (self->window_shortcut);
+    self->window_shortcut = NULL;
+}
+
+static void
+ccm_snapshot_options_changed (CCMSnapshotOptions* self, CCMConfig* config)
+{
+	GError *error = NULL;
+
+	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+	                                            CCM_SNAPSHOT_AREA))
+	{
+		if (self->area_shortcut) g_free (self->area_shortcut);
+
+		self->area_shortcut = ccm_config_get_string (config, &error);
+		if (error)
+		{
+		    g_warning ("Error on get snapshot area shortcut configuration value");
+		    g_error_free (error);
+		    self->area_shortcut = g_strdup ("<Super>Button1");
+		}
+	}
+
+	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+	                                            CCM_SNAPSHOT_WINDOW))
+	{
+		if (self->window_shortcut) g_free (self->window_shortcut);
+
+		self->window_shortcut = ccm_config_get_string (config, &error);
+		if (error)
+		{
+		    g_warning ("Error on get snapshot area shortcut configuration value");
+		    g_error_free (error);
+		    self->window_shortcut = g_strdup ("<Super><Alt>Button1");
+		}
+	}
+	
+    if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+	                                            CCM_SNAPSHOT_COLOR))
+	{
+		if (self->color) g_free (self->color);
+
+		self->color = ccm_config_get_color (config, &error);
+		if (error)
+		{
+		    g_warning ("Error on get snapshot select color configuration value");
+		    g_error_free (error);
+		}
+	}
 }
 
 static void
@@ -124,6 +174,8 @@ ccm_snapshot_init (CCMSnapshot * self)
     self->priv->area.width = 0;
     self->priv->area.height = 0;
     self->priv->selected = NULL;
+	self->priv->area_keybind = NULL;
+	self->priv->window_keybind = NULL;
     self->priv->builder = NULL;
 }
 
@@ -134,7 +186,15 @@ ccm_snapshot_finalize (GObject * object)
 
     ccm_plugin_options_unload (CCM_PLUGIN (self));
 
-    if (self->priv->builder)
+	if (self->priv->area_keybind)
+		g_object_unref (self->priv->area_keybind);
+	self->priv->area_keybind = NULL;
+	
+	if (self->priv->window_keybind)
+		g_object_unref (self->priv->window_keybind);
+	self->priv->window_keybind = NULL;
+
+	if (self->priv->builder)
         g_object_unref (self->priv->builder);
     self->priv->builder = NULL;
 
@@ -356,34 +416,22 @@ ccm_snapshot_on_window_key_release (CCMSnapshot * self)
 static void
 ccm_snapshot_get_area_keybind (CCMSnapshot * self)
 {
-    GError *error = NULL;
-    gchar *shortcut = NULL;
+    if (self->priv->area_keybind)
+        g_object_unref (self->priv->area_keybind);
 
-    if (ccm_snapshot_get_option (self)->area_keybind)
-        g_object_unref (ccm_snapshot_get_option (self)->area_keybind);
+    self->priv->area_keybind = ccm_keybind_new (self->priv->screen, 
+                                                ccm_snapshot_get_option (self)->area_shortcut, 
+                                                TRUE);
 
-    shortcut =
-        ccm_config_get_string (ccm_snapshot_get_config
-                               (self, CCM_SNAPSHOT_AREA), &error);
-    if (error)
-    {
-        g_warning ("Error on get snapshot area shortcut configuration value");
-        g_error_free (error);
-        shortcut = g_strdup ("<Super>Button1");
-    }
-    ccm_snapshot_get_option (self)->area_keybind =
-        ccm_keybind_new (self->priv->screen, shortcut, TRUE);
-
-    g_free (shortcut);
-    g_signal_connect_swapped (ccm_snapshot_get_option (self)->area_keybind,
+    g_signal_connect_swapped (self->priv->area_keybind,
                               "key_press",
                               G_CALLBACK (ccm_snapshot_on_area_key_press),
                               self);
-    g_signal_connect_swapped (ccm_snapshot_get_option (self)->area_keybind,
+    g_signal_connect_swapped (self->priv->area_keybind,
                               "key_release",
                               G_CALLBACK (ccm_snapshot_on_area_key_release),
                               self);
-    g_signal_connect_swapped (ccm_snapshot_get_option (self)->area_keybind,
+    g_signal_connect_swapped (self->priv->area_keybind,
                               "key_motion",
                               G_CALLBACK (ccm_snapshot_on_area_key_motion),
                               self);
@@ -392,64 +440,38 @@ ccm_snapshot_get_area_keybind (CCMSnapshot * self)
 static void
 ccm_snapshot_get_window_keybind (CCMSnapshot * self)
 {
-    GError *error = NULL;
-    gchar *shortcut = NULL;
+    if (self->priv->window_keybind)
+        g_object_unref (self->priv->window_keybind);
 
-    if (ccm_snapshot_get_option (self)->window_keybind)
-        g_object_unref (ccm_snapshot_get_option (self)->window_keybind);
-
-    shortcut =
-        ccm_config_get_string (ccm_snapshot_get_config
-                               (self, CCM_SNAPSHOT_WINDOW), &error);
-    if (error)
-    {
-        g_warning ("Error on get snapshot window shortcut configuration value");
-        g_error_free (error);
-        shortcut = g_strdup ("<Super><Alt>Button1");
-    }
-    ccm_snapshot_get_option (self)->window_keybind =
-        ccm_keybind_new (self->priv->screen, shortcut, TRUE);
-    g_free (shortcut);
-
-    g_signal_connect_swapped (ccm_snapshot_get_option (self)->window_keybind,
+    self->priv->window_keybind = ccm_keybind_new (self->priv->screen, 
+                                                  ccm_snapshot_get_option (self)->window_shortcut, 
+                                                  TRUE);
+    g_signal_connect_swapped (self->priv->window_keybind,
                               "key_press",
                               G_CALLBACK (ccm_snapshot_on_window_key_press),
                               self);
-    g_signal_connect_swapped (ccm_snapshot_get_option (self)->window_keybind,
+    g_signal_connect_swapped (self->priv->window_keybind,
                               "key_release",
                               G_CALLBACK (ccm_snapshot_on_window_key_release),
                               self);
 }
 
 static void
-ccm_snapshot_get_color (CCMSnapshot * self)
-{
-    GError *error = NULL;
-
-    if (ccm_snapshot_get_option (self)->color)
-        g_free (ccm_snapshot_get_option (self)->color);
-
-    ccm_snapshot_get_option (self)->color =
-        ccm_config_get_color (ccm_snapshot_get_config
-                              (self, CCM_SNAPSHOT_COLOR), &error);
-    if (error)
-    {
-        g_warning ("Error on get snapshot select color configuration value");
-        g_error_free (error);
-    }
-}
-
-static void
-ccm_snapshot_on_option_changed (CCMPlugin * plugin, CCMConfig * config)
+ccm_snapshot_on_option_changed (CCMPlugin * plugin, int index)
 {
     CCMSnapshot *self = CCM_SNAPSHOT (plugin);
 
-    if (config == ccm_snapshot_get_config (self, CCM_SNAPSHOT_AREA))
-        ccm_snapshot_get_area_keybind (self);
-    else if (config == ccm_snapshot_get_config (self, CCM_SNAPSHOT_WINDOW))
-        ccm_snapshot_get_window_keybind (self);
-    else if (config == ccm_snapshot_get_config (self, CCM_SNAPSHOT_COLOR))
-        ccm_snapshot_get_color (self);
+	switch (index)
+	{
+		case CCM_SNAPSHOT_AREA:
+			ccm_snapshot_get_area_keybind (self);
+			break;
+		case CCM_SNAPSHOT_WINDOW:
+    		ccm_snapshot_get_window_keybind (self);
+			break;
+		default:
+			break;
+	}
 }
 
 static void

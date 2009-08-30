@@ -166,15 +166,15 @@ ccm_config_key_monitor_new (gchar * filename)
     self->keyfile = g_key_file_new ();
     g_key_file_set_list_separator (self->keyfile, ',');
     file = g_file_new_for_path (filename);
-    output = g_file_create (file, G_FILE_CREATE_NONE, NULL, NULL);
-    if (output)
-        g_object_unref (output);
-    g_key_file_load_from_file (self->keyfile, filename, G_KEY_FILE_NONE, NULL);
+	output = g_file_create (file, G_FILE_CREATE_NONE, NULL, NULL);
+	if (output) g_object_unref (output);
+	g_key_file_load_from_file (self->keyfile, filename, G_KEY_FILE_NONE, NULL);
     self->configs = NULL;
     self->monitor = g_file_monitor (file, G_FILE_MONITOR_NONE, NULL, NULL);
     g_file_monitor_set_rate_limit (self->monitor, 250);
     if (!self->monitor)
     {
+		g_object_unref(file);
         g_key_file_free (self->keyfile);
         g_free (self->filename);
         g_free (self);
@@ -183,7 +183,8 @@ ccm_config_key_monitor_new (gchar * filename)
     g_signal_connect_swapped (self->monitor, "changed",
                               G_CALLBACK (ccm_config_key_monitor_changed),
                               self);
-
+	g_object_unref(file);
+	
     return self;
 }
 
@@ -293,7 +294,7 @@ ccm_config_key_get_schema (CCMConfigKey * self, gchar * extension)
         schema = ccm_config_schema_new (self->priv->screen, extension);
         if (schema)
             g_hash_table_insert (CCM_CONFIG_KEY_GET_CLASS (self)->schemas,
-                                 self->priv->schema_name, schema);
+                                 g_strdup(self->priv->schema_name), schema);
     }
 
     return schema;

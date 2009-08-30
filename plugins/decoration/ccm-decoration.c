@@ -67,8 +67,7 @@ static void ccm_decoration_on_property_changed (CCMDecoration * self,
                                                 CCMWindow * window);
 static void ccm_decoration_on_opacity_changed (CCMDecoration * self,
                                                CCMWindow * window);
-static void ccm_decoration_on_option_changed (CCMPlugin * plugin,
-                                              CCMConfig * config);
+static void ccm_decoration_on_option_changed (CCMPlugin * plugin, int index);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMDecoration, ccm_decoration, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_decoration,
@@ -111,6 +110,43 @@ static void
 ccm_decoration_options_finalize (CCMDecorationOptions* self)
 {
 }
+
+static void
+ccm_decoration_options_changed (CCMDecorationOptions* self, CCMConfig* config)
+{
+	GError *error = NULL;
+
+	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+	                                            CCM_DECORATION_GRADIANT))
+	{
+	    self->gradiant = ccm_config_get_boolean (config, NULL);
+	}
+
+	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+	                                            CCM_DECORATION_OPACITY))
+	{
+		gfloat real_opacity;
+		gfloat opacity;
+
+		real_opacity = ccm_config_get_float (config, &error);
+		if (error)
+		{
+		    g_warning ("Error on get opacity configuration value %s",
+		               error->message);
+		    g_error_free (error);
+		    real_opacity = 0.8f;
+		}
+		opacity = MAX (0.0f, real_opacity);
+		opacity = MIN (1.0f, opacity);
+		if (self->opacity != opacity)
+		{
+		    self->opacity = opacity;
+		    if (opacity != real_opacity)
+		        ccm_config_set_float (config, opacity, NULL);
+		}
+	}
+}
+
 
 static void
 ccm_decoration_init (CCMDecoration * self)
@@ -169,53 +205,12 @@ ccm_decoration_class_init (CCMDecorationClass * klass)
     object_class->finalize = ccm_decoration_finalize;
 }
 
-static gboolean
-ccm_decoration_get_opacity (CCMDecoration * self)
-{
-    GError *error = NULL;
-    gfloat real_opacity;
-    gfloat opacity;
-    gboolean ret = FALSE;
-    gboolean gradiant =
-        ccm_config_get_boolean (ccm_decoration_get_config
-                                (self, CCM_DECORATION_GRADIANT),
-                                NULL);
-
-    ret = ccm_decoration_get_option (self)->gradiant != gradiant;
-    ccm_decoration_get_option (self)->gradiant = gradiant;
-
-    real_opacity =
-        ccm_config_get_float (ccm_decoration_get_config
-                              (self, CCM_DECORATION_OPACITY), &error);
-    if (error)
-    {
-        g_warning ("Error on get opacity configuration value %s",
-                   error->message);
-        g_error_free (error);
-        real_opacity = 0.8f;
-    }
-    opacity = MAX (0.0f, real_opacity);
-    opacity = MIN (1.0f, opacity);
-    if (ccm_decoration_get_option (self)->opacity != opacity)
-    {
-        ccm_decoration_get_option (self)->opacity = opacity;
-        if (opacity != real_opacity)
-            ccm_config_set_float (ccm_decoration_get_config
-                                  (self, CCM_DECORATION_OPACITY), opacity,
-                                  NULL);
-        ret = TRUE;
-    }
-
-    return ret;
-}
-
 static void
-ccm_decoration_on_option_changed (CCMPlugin * plugin, CCMConfig * config)
+ccm_decoration_on_option_changed (CCMPlugin * plugin, int index)
 {
     CCMDecoration *self = CCM_DECORATION (plugin);
 
-    if (ccm_decoration_get_opacity (self) && self->priv->window
-        && self->priv->geometry)
+    if (self->priv->window && self->priv->geometry)
     {
         ccm_decoration_create_mask (self);
         ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));

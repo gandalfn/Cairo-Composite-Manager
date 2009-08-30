@@ -1,3 +1,16 @@
+cairo-compmgr (0.2.97-0ubuntu1~ppa1) jaunty; urgency=low
+
+  * New upstream release.
+  * Some performances improvements
+  * Rewrite plugin options load
+  * Fix root background setting
+  * Fix fake blur
+  * Add window animation plugin
+  * Fix vala support
+  * Fix clone plugin
+
+ -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Tue, 18 Aug 2009 01:29:28 +0200
+
 cairo-compmgr (0.2.96-0ubuntu1~ppa1) jaunty; urgency=low
 
   * New upstream release.

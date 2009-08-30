@@ -117,6 +117,7 @@ struct _CCMDisplayPrivate
 };
 
 static gint CCMLastXError = 0;
+static CCMDisplay* CCMDefaultDisplay = NULL;
 
 #define CCM_DISPLAY_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayPrivate))
@@ -212,6 +213,9 @@ ccm_display_finalize (GObject * object)
 
     ccm_debug ("DISPLAY FINALIZE");
 
+	if (self == CCMDefaultDisplay)
+		CCMDefaultDisplay = NULL;
+	
     if (self->priv->cursors)
         g_hash_table_destroy (self->priv->cursors);
 
@@ -718,6 +722,8 @@ ccm_display_new (gchar * display)
         return NULL;
     }
 
+	if (CCMDefaultDisplay == NULL) CCMDefaultDisplay = self;
+	
     ccm_display_get_pointers (self);
 
     ccm_display_load_config (self);
@@ -926,4 +932,10 @@ ccm_display_get_current_cursor (CCMDisplay * self, gboolean initiate)
     }
 
     return (const CCMCursor *) self->priv->cursor_current;
+}
+
+CCMDisplay*
+ccm_display_get_default()
+{
+	return CCMDefaultDisplay;
 }

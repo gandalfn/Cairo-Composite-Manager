@@ -75,8 +75,8 @@ static void ccm_menu_animation_on_property_changed (CCMMenuAnimation * self,
                                                     CCMWindow * window);
 static void ccm_menu_animation_on_event (CCMMenuAnimation * self,
                                          XEvent * event);
-static void ccm_menu_animation_on_option_changed (CCMPlugin * plugin,
-                                                  CCMConfig * config);
+static void ccm_menu_animation_on_option_changed (CCMPlugin * plugin, 
+                                                  int index);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMMenuAnimation, ccm_menu_animation, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_menu_animation,
@@ -119,6 +119,30 @@ ccm_menu_animation_options_init (CCMMenuAnimationOptions* self)
 static void
 ccm_menu_animation_options_finalize (CCMMenuAnimationOptions* self)
 {
+}
+
+static void
+ccm_menu_animation_options_changed (CCMMenuAnimationOptions* self,
+                                    CCMConfig* config)
+{
+	GError *error = NULL;
+    gfloat real_duration = ccm_config_get_float (config, &error);
+    gfloat duration;
+    
+    if (error)
+    {
+        g_error_free (error);
+        g_warning ("Error on get menu animation duration configuration value");
+        real_duration = 0.2f;
+    }
+    duration = MAX (0.1f, real_duration);
+    duration = MIN (2.0f, real_duration);
+    if (duration != self->duration)
+    {
+        self->duration = duration;
+        if (duration != real_duration)
+            ccm_config_set_float (config, self->duration, NULL);
+    }
 }
 
 static void
@@ -238,9 +262,7 @@ ccm_menu_animation_query_forced_animation (CCMMenuAnimation * self)
     CCMDisplay *display =
         ccm_drawable_get_display (CCM_DRAWABLE (self->priv->window));
 
-    Window child = None;
-
-    g_object_get (G_OBJECT (self->priv->window), "child", &child, NULL);
+    Window child = _ccm_window_get_child(self->priv->window);
 
     if (!child)
     {
@@ -509,54 +531,14 @@ ccm_menu_animation_on_error (CCMMenuAnimation * self, CCMWindow * window)
     }
 }
 
-static gboolean
-ccm_menu_animation_get_duration (CCMMenuAnimation * self)
+static void
+ccm_menu_animation_on_option_changed (CCMPlugin * plugin, int index)
 {
-    GError *error = NULL;
-    gfloat real_duration =
-        ccm_config_get_float (ccm_menu_animation_get_config
-                              (self, CCM_MENU_ANIMATION_DURATION),
-                              &error);
-    gfloat duration;
-    gboolean ret = TRUE;
-
-    if (error)
-    {
-        g_error_free (error);
-        g_warning ("Error on get menu animation duration configuration value");
-        real_duration = 0.2f;
-    }
-    duration = MAX (0.1f, real_duration);
-    duration = MIN (2.0f, real_duration);
-    if (duration != ccm_menu_animation_get_option (self)->duration)
-    {
-        ccm_menu_animation_get_option (self)->duration = duration;
-        if (duration != real_duration)
-            ccm_config_set_float (ccm_menu_animation_get_config
-                                  (self, CCM_MENU_ANIMATION_DURATION),
-                                  ccm_menu_animation_get_option (self)->
-                                  duration, NULL);
-
-        ret = TRUE;
-    }
+    CCMMenuAnimation *self = CCM_MENU_ANIMATION (plugin);
 
     if (self->priv->timeline)
         g_object_unref (self->priv->timeline);
     self->priv->timeline = NULL;
-
-    return ret;
-}
-
-static void
-ccm_menu_animation_on_option_changed (CCMPlugin * plugin, CCMConfig * config)
-{
-    CCMMenuAnimation *self = CCM_MENU_ANIMATION (plugin);
-
-    if (config ==
-        ccm_menu_animation_get_config (self, CCM_MENU_ANIMATION_DURATION))
-    {
-        ccm_menu_animation_get_duration (self);
-    }
 }
 
 static void

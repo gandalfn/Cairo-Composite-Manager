@@ -1,3 +1,14 @@
+Overview of Changes in Cairo Composite Manager 0.2.97
+====================================
+
+* Some performances improvements
+* Rewrite plugin options load
+* Fix root background setting
+* Fix fake blur
+* Add window animation plugin
+* Fix vala support
+* Fix clone plugin
+
 Overview of Changes in Cairo Composite Manager 0.2.96
 ====================================
 

@@ -69,6 +69,9 @@ namespace X
 	public struct Pixmap : Drawable
 	{
 	}
+
+	[CCode (cheader_filename = "X11/X.h", cname = "None")] 
+	const X.ID None;
 }
 
 [CCode (cheader_filename = "cairo.h,ccm.h")]
@@ -147,7 +150,7 @@ namespace CCM
 	public class Keybind : GLib.Object 
 	{
 		[CCode (has_construct_function = false)]
-		public Keybind (CCM.Screen screen, owned string keystring, bool exclusive);
+		public Keybind (CCM.Screen screen, string keystring, bool exclusive);
 		
 		[HasEmitter]
 		public signal void key_motion (int object, int p0);
@@ -159,11 +162,14 @@ namespace CCM
 
 	public static delegate void PluginUnlockFunc (void* data);
 
-	public static delegate void PluginOptionsChangedFunc (CCM.Plugin plugin, CCM.Config config);
+	public static delegate void PluginOptionsChangedFunc (CCM.Plugin plugin, int index);
 	
 	[CCode (cheader_filename = "ccm-plugin.h")]
 	public class PluginOptions : GLib.Object 
 	{
+		protected virtual void changed(CCM.Config config);
+
+		public unowned Config get_config(int index);
 	}
 	
 	[CCode (cheader_filename = "ccm-plugin.h")]
@@ -176,8 +182,8 @@ namespace CCM
 		public void options_load(string name, string[] options_keys, PluginOptionsChangedFunc func);
 		public void options_unload();
 		
+		public int get_screen_num();
 		public unowned PluginOptions get_option();
-		public unowned Config get_config(int index);
 		
 		[CCode (cname = "ccm_plugin_get_type")]
 		public static GLib.Type get_type ();
@@ -199,6 +205,7 @@ namespace CCM
 		
 		public void grab ();
 		public void ungrab ();
+		public void flush ();
 		public void sync ();
 		
 		public void trap_error ();
@@ -269,7 +276,7 @@ namespace CCM
 		public void add_damaged_region (CCM.Region region);
 		public void remove_damaged_region (CCM.Region region);
 		
-		public bool query_pointer (out CCM.Window below, out int x, out int y);
+		public bool query_pointer (out weak CCM.Window below, out int x, out int y);
 		
 		[HasEmitter]
 		public signal void plugins_changed ();
@@ -278,9 +285,15 @@ namespace CCM
 		[HasEmitter]
 		public signal void window_destroyed ();
 		[HasEmitter]
+		public signal void enter_window_notify (CCM.Window window);
+		[HasEmitter]
+		public signal void leave_window_notify (CCM.Window window);
+		[HasEmitter]
+		public signal void activate_window_notify (CCM.Window window);
+		[HasEmitter]
 		public signal void desktop_changed (int desktop);
 		[HasEmitter]
-		public signal void composite_message (CCM.Window window, long l1, long l2, long l3);
+		public signal void composite_message (CCM.Window client, CCM.Window window, long l1, long l2, long l3);
 	}
 
 	[CCode (cheader_filename = "ccm.h,ccm-drawable.h")]
@@ -408,13 +421,19 @@ namespace CCM
 	[CCode (cheader_filename = "ccm.h,ccm-window.h,ccm-window-plugin.h")]
 	public class Window : CCM.Drawable, CCM.WindowPlugin 
 	{
-		public void* child { get; set; }
-		public void* input { get; }
-		public void* mask { get; set; }
+		public class X.Atom state_atom;
+		public class X.Atom state_above_atom;
+
+		public X.Window child { [CCode (cname = "_ccm_window_get_child")] get; }
+		public X.Window input { get; }
+		public weak Cairo.Surface mask { get; set; }
 		public int mask_height { get; set; }
 		public int mask_width { get; set; }
 		public bool redirect { set; }
 		public bool use_image { set; }
+		public bool no_undamage_sibling { get; set; }
+		[NoAccessorMethod]
+		public bool block_mouse_redirect_event { get; set; }
 
 		[CCode (has_construct_function = false)]
 		public Window (CCM.Screen screen, X.Window xwindow);
@@ -476,6 +495,7 @@ namespace CCM
 		public void unredirect_input ();
 		public void unredirect_subwindows ();
 		public void unset_state (X.Atom state_atom);
+		public CCM.Region get_area_geometry();
 		
 		[HasEmitter]
 		public signal void error ();
@@ -521,6 +541,7 @@ namespace CCM
 		public uint fps { get; set; }
 		public bool loop { get; set; }
 		public uint num_frames { get; set; }
+		public bool master { get; set; }
 		
 		[CCode (has_construct_function = false)]
 		public Timeline (uint n_frames, uint fps);

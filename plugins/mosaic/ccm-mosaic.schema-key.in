@@ -7,3 +7,8 @@ _Description=The spacing between each areas of mosaic.
 Type=string
 Default=<Super>Tab
 _Description=The mosaic shortcut key.
+
+[duration]
+Type=float
+Default=0.2
+_Description=The mosaic animation duration.

@@ -63,8 +63,7 @@ static void
 ccm_freeze_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
 static void ccm_freeze_on_event (CCMFreeze * self, XEvent * event,
                                  CCMDisplay * display);
-static void ccm_freeze_on_option_changed (CCMPlugin * plugin,
-                                          CCMConfig * config);
+static void ccm_freeze_on_option_changed (CCMPlugin * plugin, int index);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_freeze, CCM_TYPE_SCREEN_PLUGIN,
@@ -108,6 +107,32 @@ ccm_freeze_options_finalize (CCMFreezeOptions* self)
 {
     if (self->color) g_free (self->color);
     self->color = NULL;
+}
+
+static void
+ccm_freeze_options_changed (CCMFreezeOptions* self, CCMConfig* config)
+{
+	if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+	                                             CCM_FREEZE_DELAY))
+    {
+        self->delay = ccm_config_get_integer (config, NULL);
+        if (!self->delay) self->delay = 3;
+    }
+
+	if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+	                                             CCM_FREEZE_DURATION))
+    {
+        self->duration = ccm_config_get_float (config, NULL);
+        if (!self->duration) self->duration = 0.3f;
+    }
+
+	if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+	                                             CCM_FREEZE_COLOR))
+    {
+        if (self->color) g_free (self->color);
+
+        self->color = ccm_config_get_color (config, NULL);
+    }
 }
 
 static void
@@ -225,9 +250,7 @@ ccm_freeze_get_pid (CCMFreeze * self)
 
     guint32 *data = NULL;
     guint n_items;
-    Window child = None;
-
-    g_object_get (G_OBJECT (self->priv->window), "child", &child, NULL);
+    Window child = _ccm_window_get_child(self->priv->window);
 
     if (!child)
     {
@@ -292,7 +315,7 @@ ccm_freeze_ping (CCMFreeze * self)
 
         g_return_val_if_fail (CCM_IS_DISPLAY (display), FALSE);
 
-        g_object_get (G_OBJECT (self->priv->window), "child", &window, NULL);
+        window = _ccm_window_get_child(self->priv->window);
 
         if (!window)
             window = CCM_WINDOW_XWINDOW (self->priv->window);
@@ -349,45 +372,17 @@ ccm_freeze_ping (CCMFreeze * self)
 }
 
 static void
-ccm_freeze_on_option_changed (CCMPlugin * plugin, CCMConfig * config)
+ccm_freeze_on_option_changed (CCMPlugin * plugin, int index)
 {
     g_return_if_fail (plugin != NULL);
     g_return_if_fail (config != NULL);
 
     CCMFreeze *self = CCM_FREEZE (plugin);
 
-    if (config == ccm_freeze_get_config (self, CCM_FREEZE_DELAY))
+    if (index == CCM_FREEZE_DURATION && self->priv->timeline)
     {
-        ccm_freeze_get_option (self)->delay =
-            ccm_config_get_integer (ccm_freeze_get_config
-                                    (self, CCM_FREEZE_DELAY), NULL);
-        if (!ccm_freeze_get_option (self)->delay)
-            ccm_freeze_get_option (self)->delay = 3;
-    }
-
-    if (config == ccm_freeze_get_config (self, CCM_FREEZE_DURATION))
-    {
-        ccm_freeze_get_option (self)->duration =
-            ccm_config_get_float (ccm_freeze_get_config
-                                  (self, CCM_FREEZE_DURATION), NULL);
-        if (!ccm_freeze_get_option (self)->duration)
-            ccm_freeze_get_option (self)->duration = 0.3f;
-
-        if (self->priv->timeline)
-        {
-            g_object_unref (self->priv->timeline);
-            self->priv->timeline = NULL;
-        }
-    }
-
-    if (config == ccm_freeze_get_config (self, CCM_FREEZE_COLOR))
-    {
-        if (ccm_freeze_get_option (self)->color)
-            g_free (ccm_freeze_get_option (self)->color);
-
-        ccm_freeze_get_option (self)->color =
-            ccm_config_get_color (ccm_freeze_get_config
-                                  (self, CCM_FREEZE_COLOR), NULL);
+        g_object_unref (self->priv->timeline);
+        self->priv->timeline = NULL;
     }
 }
 

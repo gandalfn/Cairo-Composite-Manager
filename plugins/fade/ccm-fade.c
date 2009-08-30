@@ -60,7 +60,7 @@ static void ccm_fade_on_event (CCMFade * self, XEvent * event);
 static void ccm_fade_on_property_changed (CCMFade * self,
                                           CCMPropertyType changed,
                                           CCMWindow * window);
-static void ccm_fade_on_option_changed (CCMPlugin * plugin, CCMConfig * config);
+static void ccm_fade_on_option_changed (CCMPlugin * plugin, int index);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMFade, ccm_fade, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_fade, CCM_TYPE_SCREEN_PLUGIN,
@@ -100,6 +100,32 @@ ccm_fade_options_init (CCMFadeOptions* self)
 static void
 ccm_fade_options_finalize (CCMFadeOptions* self)
 {
+}
+
+static void
+ccm_fade_options_changed (CCMFadeOptions* self, CCMConfig* config)
+{
+	GError *error = NULL;
+    gfloat real_duration;
+    gfloat duration;
+
+    real_duration = ccm_config_get_float (config, &error);
+    if (error)
+    {
+        g_error_free (error);
+        g_warning ("Error on get fade duration configuration value");
+        real_duration = 0.25f;
+    }
+    duration = MAX (0.1f, real_duration);
+    duration = MIN (2.0f, real_duration);
+
+	if (self->duration != duration)
+	{
+		self->duration = duration;
+
+		if (duration != real_duration)
+			ccm_config_set_float (config, duration, NULL);
+	}
 }
 
 static void
@@ -246,52 +272,15 @@ ccm_fade_on_property_changed (CCMFade * self, CCMPropertyType changed,
     }
 }
 
-static gboolean
-ccm_fade_get_duration (CCMFade * self)
+static void
+ccm_fade_on_option_changed (CCMPlugin * plugin, int index)
 {
-    GError *error = NULL;
-    gfloat real_duration;
-    gfloat duration;
-    gboolean ret = FALSE;
-
-    real_duration =
-        ccm_config_get_float (ccm_fade_get_config (self, CCM_FADE_DURATION),
-                              &error);
-    if (error)
-    {
-        g_error_free (error);
-        g_warning ("Error on get fade duration configuration value");
-        real_duration = 0.25f;
-    }
-    duration = MAX (0.1f, real_duration);
-    duration = MIN (2.0f, real_duration);
-
-    ccm_fade_get_option (self)->duration = duration;
-
-    if (duration != real_duration)
-    {
-        ccm_config_set_float (ccm_fade_get_config (self, CCM_FADE_DURATION),
-                              ccm_fade_get_option (self)->duration, NULL);
-        ret = TRUE;
-    }
+    CCMFade *self = CCM_FADE (plugin);
 
     if (self->priv->timeline)
     {
         g_object_unref (self->priv->timeline);
         self->priv->timeline = NULL;
-    }
-
-    return ret;
-}
-
-static void
-ccm_fade_on_option_changed (CCMPlugin * plugin, CCMConfig * config)
-{
-    CCMFade *self = CCM_FADE (plugin);
-
-    if (config == ccm_fade_get_config (self, CCM_FADE_DURATION))
-    {
-        ccm_fade_get_duration (self);
     }
 }
 
@@ -334,9 +323,7 @@ ccm_fade_query_force_disable (CCMFade * self)
     CCMDisplay *display =
         ccm_drawable_get_display (CCM_DRAWABLE (self->priv->window));
 
-    Window child = None;
-
-    g_object_get (G_OBJECT (self->priv->window), "child", &child, NULL);
+    Window child = _ccm_window_get_child(self->priv->window);
 
     if (!child)
     {

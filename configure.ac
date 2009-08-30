@@ -1,6 +1,6 @@
 m4_define(ccm_version_major, 0)
 m4_define(ccm_version_minor, 2)
-m4_define(ccm_version_micro, 96)
+m4_define(ccm_version_micro, 97)
 AC_INIT(cairo-compmgr, ccm_version_major.ccm_version_minor.ccm_version_micro)
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)

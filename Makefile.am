@@ -69,7 +69,7 @@ DISTCLEANFILES = intltool-extract \
     			 shave.in \
     			 shave-libtool.in
 
-DISTCHECK_CONFIGURE_FLAGS = --enable-perf-plugin --enable-glitz --enable-gobject-introspection --enable-gtk-doc
+DISTCHECK_CONFIGURE_FLAGS = --enable-perf-plugin --enable-glitz --enable-gtk-doc
 
 dist-hook: gen-ChangeLog
 	for specfile in *.spec; do \

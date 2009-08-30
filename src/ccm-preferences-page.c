@@ -266,6 +266,7 @@ ccm_preferences_page_on_background_changed (CCMPreferencesPage * self,
             g_object_unref (scaled);
         }
     }
+	if (filename) g_free(filename);
 }
 
 static void
@@ -309,10 +310,11 @@ ccm_preferences_page_on_use_root_background_changed (CCMPreferencesPage * self,
         GdkWindow *root = gdk_screen_get_root_window (screen);
         GdkAtom atom = gdk_atom_intern ("_XROOTPMAP_ID", FALSE);
 
-        gdk_property_get (root, atom, 0, 0, 10, FALSE, &prop_type, NULL, NULL,
-                          &prop_data.data);
+        gboolean ret = gdk_property_get (root, atom, 0, 0, 10, FALSE, 
+                                         &prop_type, NULL, NULL,
+                                         &prop_data.data);
 
-        if (prop_type == GDK_TARGET_PIXMAP && prop_data.pixmap != NULL
+        if (ret && prop_type == GDK_TARGET_PIXMAP && prop_data.pixmap != NULL
             && prop_data.pixmap[0] != 0)
         {
             GdkPixbuf *scaled;
@@ -332,6 +334,7 @@ ccm_preferences_page_on_use_root_background_changed (CCMPreferencesPage * self,
                 gdk_pixbuf_get_from_drawable (NULL, pixmap, colormap, 0, 0, 0,
                                               0, width, height);
             g_object_unref (colormap);
+			g_object_unref (pixmap);
 
             image =
                 GTK_IMAGE (gtk_builder_get_object
@@ -364,7 +367,10 @@ ccm_preferences_page_on_use_root_background_changed (CCMPreferencesPage * self,
             g_object_unref (pixbuf);
 
             gtk_image_set_from_pixbuf (image, scaled);
+			
+			g_object_unref (scaled);
         }
+		if (ret) g_free(prop_data.data);
     }
     else
         ccm_preferences_page_on_background_changed (self,
@@ -905,11 +911,12 @@ ccm_preferences_page_on_backend_changed (CCMPreferencesPage * self,
 
     if (gtk_combo_box_get_active_iter (combo, &iter))
     {
-        gchar *name;
+        gchar *name = NULL;
 
         gtk_tree_model_get (model, &iter, 0, &name, -1);
         ccm_preferences_page_change_backend (self, name);
-
+		if (name) g_free(name);
+		
         ccm_preferences_page_need_restart (self,
                                            (CCMNeedRestartFunc)
                                            ccm_preferences_page_on_backend_need_restart,

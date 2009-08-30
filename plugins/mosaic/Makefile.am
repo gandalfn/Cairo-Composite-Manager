@@ -2,7 +2,8 @@ PLUGIN = ccm-mosaic
 PLUGIN_UI = ccm-mosaic.ui mosaic.svg
 PLUGIN_SCHEMA = ccm-mosaic.schema-key.in
 
-PLUGIN_SOURCES = ccm-mosaic.c ccm-mosaic.h
+PLUGIN_SOURCES = 
+PLUGIN_VALA_SOURCES = ccm-mosaic.vala
 
 include $(top_srcdir)/plugin.make
 

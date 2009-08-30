@@ -64,12 +64,12 @@ typedef struct
     CCMPluginOptions parent;
 
     cairo_rectangle_t area;
-    CCMKeybind *keybind;
+    gchar* shortcut;
 } CCMPerfOptions;
 
 static void ccm_perf_screen_iface_init (CCMScreenPluginClass * iface);
 static void ccm_perf_window_iface_init (CCMWindowPluginClass * iface);
-static void ccm_perf_on_option_changed (CCMPlugin * plugin, CCMConfig * config);
+static void ccm_perf_on_option_changed (CCMPlugin * plugin, int index);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMPerf, ccm_perf, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_SCREEN_PLUGIN,
@@ -93,6 +93,8 @@ struct _CCMPerfPrivate
 
     gboolean enabled;
     gboolean need_refresh;
+	
+	CCMKeybind *keybind;
 
     CCMScreen* screen;
 };
@@ -103,14 +105,62 @@ struct _CCMPerfPrivate
 static void
 ccm_perf_options_init (CCMPerfOptions* self)
 {
-    self->keybind = NULL;
+    self->shortcut = NULL;
 }
 
 static void
 ccm_perf_options_finalize (CCMPerfOptions* self)
 {
-    if (self->keybind) g_object_unref (self->keybind);
-    self->keybind = NULL;
+    if (self->shortcut) g_free (self->shortcut);
+    self->shortcut = NULL;
+}
+
+static void
+ccm_perf_options_changed (CCMPerfOptions* self, CCMConfig* config)
+{
+    GError *error = NULL;
+
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_PERF_X) ||
+        config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_PERF_Y))
+    {
+        self->area.x = ccm_config_get_integer (ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
+                                                                              CCM_PERF_X),
+                                               &error);
+        if (error)
+        {
+            g_error_free (error);
+            error = NULL;
+            self->area.x = 20;
+        }
+
+        self->area.y = ccm_config_get_integer (ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
+                                                                              CCM_PERF_Y),
+                                               &error);
+        if (error)
+        {
+            g_error_free (error);
+            error = NULL;
+            self->area.y = 20;
+        }
+        self->area.width = 280;
+        self->area.height = 100;
+    }
+
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_PERF_SHORTCUT))
+    {
+        if (self->shortcut) g_free (self->shortcut);
+
+        self->shortcut = ccm_config_get_string (config, &error);
+        if (error)
+        {
+            g_error_free (error);
+            error = NULL;
+            self->shortcut = g_strdup ("<Super>f");
+        }
+    }
 }
 
 static void
@@ -250,59 +300,19 @@ ccm_perf_on_key_press (CCMPerf * self)
 }
 
 static void
-ccm_perf_on_option_changed (CCMPlugin * plugin, CCMConfig * config)
+ccm_perf_on_option_changed (CCMPlugin * plugin, int index)
 {
     CCMPerf *self = CCM_PERF (plugin);
-    GError *error = NULL;
 
-    if (config == ccm_perf_get_config (self, CCM_PERF_X)
-        || config == ccm_perf_get_config (self, CCM_PERF_Y))
+    if (index == CCM_PERF_SHORTCUT)
     {
-        ccm_perf_get_option (self)->area.x =
-            ccm_config_get_integer (ccm_perf_get_config (self, CCM_PERF_X),
-                                    &error);
-        if (error)
-        {
-            g_error_free (error);
-            error = NULL;
-            ccm_perf_get_option (self)->area.x = 20;
-        }
+        if (self->priv->keybind)
+            g_object_unref (self->priv->keybind);
 
-        ccm_perf_get_option (self)->area.y =
-            ccm_config_get_integer (ccm_perf_get_config (self, CCM_PERF_Y),
-                                    &error);
-        if (error)
-        {
-            g_error_free (error);
-            error = NULL;
-            ccm_perf_get_option (self)->area.y = 20;
-        }
-        ccm_perf_get_option (self)->area.width = 280;
-        ccm_perf_get_option (self)->area.height = 100;
-    }
-
-    if (config == ccm_perf_get_config (self, CCM_PERF_SHORTCUT))
-    {
-        gchar *shortcut;
-
-        if (ccm_perf_get_option (self)->keybind)
-            g_object_unref (ccm_perf_get_option (self)->keybind);
-
-        shortcut =
-            ccm_config_get_string (ccm_perf_get_config
-                                   (self, CCM_PERF_SHORTCUT), &error);
-        if (error)
-        {
-            g_error_free (error);
-            error = NULL;
-            shortcut = g_strdup ("<Super>f");
-        }
-
-        ccm_perf_get_option (self)->keybind =
-            ccm_keybind_new (self->priv->screen, shortcut, TRUE);
-        g_free (shortcut);
-
-        g_signal_connect_swapped (ccm_perf_get_option (self)->keybind,
+        self->priv->keybind = ccm_keybind_new (self->priv->screen, 
+                                               ccm_perf_get_option (self)->shortcut, 
+                                               TRUE);
+        g_signal_connect_swapped (self->priv->keybind,
                                   "key_press",
                                   G_CALLBACK (ccm_perf_on_key_press), self);
     }

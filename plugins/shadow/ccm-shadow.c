@@ -86,8 +86,7 @@ static void ccm_shadow_on_property_changed (CCMShadow * self,
                                             CCMPropertyType changed,
                                             CCMWindow * window);
 static void ccm_shadow_on_event (CCMShadow * self, XEvent * event);
-static void ccm_shadow_on_option_changed (CCMPlugin * plugin,
-                                          CCMConfig * config);
+static void ccm_shadow_on_option_changed (CCMPlugin * plugin, int index);
 
 static void ccm_shadow_window_iface_init (CCMWindowPluginClass * iface);
 static void ccm_shadow_screen_iface_init (CCMScreenPluginClass * iface);
@@ -145,6 +144,91 @@ ccm_shadow_options_finalize (CCMShadowOptions* self)
 {
     if (self->color) g_free (self->color);
     self->color = NULL;
+}
+
+static void
+ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
+{
+    GError *error = NULL;
+
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_SHADOW_REAL_BLUR))
+    {
+        self->real_blur = ccm_config_get_boolean (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get shadow realblur configuration value");
+            g_error_free (error);
+            error = NULL;
+            self->real_blur = FALSE;
+        }
+    }
+	
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_SHADOW_OFFSET))
+    {
+        self->offset = ccm_config_get_integer (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get shadow offset configuration value");
+            g_error_free (error);
+            error = NULL;
+            self->offset = 0;
+        }
+    }
+	
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_SHADOW_RADIUS))
+    {
+        self->radius = ccm_config_get_integer (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get shadow radius configuration value");
+            g_error_free (error);
+            error = NULL;
+            self->radius = 14;
+        }
+    }
+	
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_SHADOW_SIGMA))
+    {
+        self->sigma = ccm_config_get_float (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get shadow radius configuration value");
+            g_error_free (error);
+            error = NULL;
+            self->sigma = 7;
+        }
+    }
+	
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_SHADOW_COLOR))
+    {
+        if (self->color) g_free (self->color);
+        self->color = ccm_config_get_color (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get shadow color configuration value");
+            g_error_free (error);
+            error = NULL;
+            self->color = g_new0 (GdkColor, 1);
+        }
+    }
+	
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_SHADOW_ALPHA))
+    {
+        self->alpha = ccm_config_get_float (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get shadow alpha configuration value");
+            g_error_free (error);
+            error = NULL;
+            self->alpha = 0.6;
+        }
+    }
 }
 
 static void
@@ -238,27 +322,25 @@ ccm_shadow_need_shadow (CCMShadow * self)
     CCMWindowType type = ccm_window_get_hint_type (window);
     const CCMRegion *opaque = ccm_window_get_opaque_region (window);
 
-    return self->priv->force_enable || (!self->priv->force_disable
-                                        && !ccm_window_is_fullscreen (window)
-                                        && !ccm_window_is_input_only (window)
-                                        && (ccm_window_is_decorated (window)
-                                            || (type != CCM_WINDOW_TYPE_NORMAL
-                                                && type !=
-                                                CCM_WINDOW_TYPE_DIALOG
-                                                && opaque))
-                                        &&
-                                        ((type == CCM_WINDOW_TYPE_DOCK
-                                          && opaque)
-                                         || type != CCM_WINDOW_TYPE_DOCK)
-                                        && (ccm_window_is_managed (window)
-                                            || type == CCM_WINDOW_TYPE_DOCK
-                                            || type ==
-                                            CCM_WINDOW_TYPE_DROPDOWN_MENU
-                                            || type ==
-                                            CCM_WINDOW_TYPE_POPUP_MENU
-                                            || type == CCM_WINDOW_TYPE_TOOLTIP
-                                            || type == CCM_WINDOW_TYPE_MENU
-                                            || type == CCM_WINDOW_TYPE_SPLASH));
+    return self->priv->force_enable || 
+		   (!self->priv->force_disable && 
+		    !ccm_window_is_fullscreen (window) && 
+		    !ccm_window_is_input_only (window) && 
+		    ((ccm_window_is_decorated (window) && 
+		      type != CCM_WINDOW_TYPE_DOCK)|| 
+			 (!ccm_window_is_decorated (window) && 
+			  type == CCM_WINDOW_TYPE_DOCK) ||
+		     (type != CCM_WINDOW_TYPE_NORMAL &&  
+		      type != CCM_WINDOW_TYPE_DIALOG && opaque)) &&
+		    /*((type == CCM_WINDOW_TYPE_DOCK && opaque) || 
+		      type != CCM_WINDOW_TYPE_DOCK) && */
+		    (ccm_window_is_managed (window) || 
+		     type == CCM_WINDOW_TYPE_DOCK ||
+		     type == CCM_WINDOW_TYPE_DROPDOWN_MENU || 
+		     type == CCM_WINDOW_TYPE_POPUP_MENU || 
+		     type == CCM_WINDOW_TYPE_TOOLTIP || 
+		     type == CCM_WINDOW_TYPE_MENU || 
+		     type == CCM_WINDOW_TYPE_SPLASH));
 }
 
 static gboolean
@@ -791,7 +873,10 @@ ccm_shadow_on_pixmap_damage (CCMShadow * self, CCMRegion * area)
 
         ctx = ccm_drawable_create_context (CCM_DRAWABLE (self->priv->shadow));
         if (!ctx)
-            return;
+		{
+			cairo_surface_destroy (surface);
+			return;
+		}
 
         ccm_region_get_clipbox (self->priv->geometry, &clipbox);
 
@@ -850,7 +935,6 @@ ccm_shadow_on_pixmap_damage (CCMShadow * self, CCMRegion * area)
         }
         cairo_destroy (ctx);
         cairo_surface_destroy (surface);
-        ccm_display_flush (display);
         ccm_display_sync (display);
     }
 }
@@ -869,108 +953,27 @@ ccm_shadow_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
 }
 
 static void
-ccm_shadow_on_option_changed (CCMPlugin * plugin, CCMConfig * config)
+ccm_shadow_on_option_changed (CCMPlugin * plugin, int index)
 {
     g_return_if_fail (plugin != NULL);
     g_return_if_fail (config != NULL);
 
-    CCMShadow *self = CCM_SHADOW (plugin);
-    GError *error = NULL;
+	CCMShadow *self = CCM_SHADOW (plugin);
 
-    if (config == ccm_shadow_get_config (self, CCM_SHADOW_REAL_BLUR))
-    {
-        ccm_shadow_get_option (self)->real_blur =
-            ccm_config_get_boolean (ccm_shadow_get_config
-                                    (self, CCM_SHADOW_REAL_BLUR), &error);
-        if (error)
-        {
-            g_warning ("Error on get shadow realblur configuration value");
-            g_error_free (error);
-            error = NULL;
-            ccm_shadow_get_option (self)->real_blur = FALSE;
-        }
-    }
-    if (config == ccm_shadow_get_config (self, CCM_SHADOW_OFFSET))
-    {
-        ccm_shadow_get_option (self)->offset =
-            ccm_config_get_integer (ccm_shadow_get_config
-                                    (self, CCM_SHADOW_OFFSET), &error);
-        if (error)
-        {
-            g_warning ("Error on get shadow offset configuration value");
-            g_error_free (error);
-            error = NULL;
-            ccm_shadow_get_option (self)->offset = 0;
-        }
-    }
-    if (config == ccm_shadow_get_config (self, CCM_SHADOW_RADIUS))
-    {
-        ccm_shadow_get_option (self)->radius =
-            ccm_config_get_integer (ccm_shadow_get_config
-                                    (self, CCM_SHADOW_RADIUS), &error);
-        if (error)
-        {
-            g_warning ("Error on get shadow radius configuration value");
-            g_error_free (error);
-            error = NULL;
-            ccm_shadow_get_option (self)->radius = 14;
-        }
-    }
-    if (config == ccm_shadow_get_config (self, CCM_SHADOW_SIGMA))
-    {
-        ccm_shadow_get_option (self)->sigma =
-            ccm_config_get_float (ccm_shadow_get_config
-                                  (self, CCM_SHADOW_SIGMA), &error);
-        if (error)
-        {
-            g_warning ("Error on get shadow radius configuration value");
-            g_error_free (error);
-            error = NULL;
-            ccm_shadow_get_option (self)->sigma = 7;
-        }
-    }
-    if (config == ccm_shadow_get_config (self, CCM_SHADOW_COLOR))
-    {
-        if (ccm_shadow_get_option (self)->color)
-            g_free (ccm_shadow_get_option (self)->color);
-        ccm_shadow_get_option (self)->color =
-            ccm_config_get_color (ccm_shadow_get_config
-                                  (self, CCM_SHADOW_COLOR), &error);
-        if (error)
-        {
-            g_warning ("Error on get shadow color configuration value");
-            g_error_free (error);
-            error = NULL;
-            ccm_shadow_get_option (self)->color = g_new0 (GdkColor, 1);
-        }
-    }
-    if (config == ccm_shadow_get_config (self, CCM_SHADOW_ALPHA))
-    {
-        ccm_shadow_get_option (self)->alpha =
-            ccm_config_get_float (ccm_shadow_get_config
-                                  (self, CCM_SHADOW_ALPHA), &error);
-        if (error)
-        {
-            g_warning ("Error on get shadow alpha configuration value");
-            g_error_free (error);
-            error = NULL;
-            ccm_shadow_get_option (self)->alpha = 0.6;
-        }
-    }
+	if (self->priv->shadow_image)
+        cairo_surface_destroy (self->priv->shadow_image);
+	self->priv->shadow_image = NULL;
 
-    if (!self->priv->id_check)
+    if (self->priv->pixmap)
+        g_object_unref (self->priv->pixmap);
+    self->priv->pixmap = NULL;
+
+    if (self->priv->geometry)
+        ccm_region_destroy (self->priv->geometry);
+    self->priv->geometry = NULL;
+
+	if (!self->priv->id_check)
     {
-        if (self->priv->shadow_image)
-            cairo_surface_destroy (self->priv->shadow_image);
-        self->priv->shadow_image = NULL;
-
-        if (self->priv->pixmap)
-            g_object_unref (self->priv->pixmap);
-
-        if (self->priv->geometry)
-            ccm_region_destroy (self->priv->geometry);
-        self->priv->geometry = NULL;
-
         self->priv->id_check =
             g_idle_add ((GSourceFunc) ccm_shadow_check_needed, self);
     }

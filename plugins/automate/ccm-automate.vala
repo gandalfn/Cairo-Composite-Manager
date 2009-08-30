@@ -38,7 +38,21 @@ namespace CCM
 
     class AutomateOptions : PluginOptions
     {
-        public CCM.Keybind show_keybind;
+        public string show_shortcut;
+
+		protected override void changed(CCM.Config config)
+		{
+			show_shortcut = "<Super>a";
+
+            try
+            {
+                show_shortcut = config.get_string ();
+            }
+            catch (GLib.Error ex)
+            {
+                CCM.log ("Error on get show shortcut config get default");
+            }
+		}
     }
 
     class Automate : CCM.Plugin, CCM.ScreenPlugin
@@ -47,7 +61,9 @@ namespace CCM
 
         private bool enable = false;
 
-        private CCM.AutomateDialog dialog;
+        private CCM.Keybind show_keybind;
+
+		private CCM.AutomateDialog dialog;
 
         class construct
 		{
@@ -59,7 +75,7 @@ namespace CCM
             options_unload ();
         }
 
-        private void option_changed (Config config)
+        private void option_changed (int index)
         {
             // Reload show shortcut
             get_show_shortcut ();
@@ -77,18 +93,10 @@ namespace CCM
 
         private void get_show_shortcut ()
         {
-            string shortcut = "<Super>a";
-
-            try
-            {
-                shortcut = get_config (Options.SHOW_SHORTCUT).get_string ();
-            }
-            catch (GLib.Error ex)
-            {
-                CCM.log ("Error on get show shortcut config get default");
-            }
-            ((AutomateOptions) get_option ()).show_keybind = new CCM.Keybind (screen, shortcut, true);
-            ((AutomateOptions) get_option ()).show_keybind.key_press += on_show_shortcut_pressed;
+            show_keybind = new CCM.Keybind (screen, 
+                                            ((AutomateOptions) get_option ()).show_shortcut, 
+                                            true);
+            show_keybind.key_press += on_show_shortcut_pressed;
         }
 
         protected void screen_load_options (CCM.Screen screen)

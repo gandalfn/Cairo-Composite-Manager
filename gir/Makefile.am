@@ -32,14 +32,25 @@ GIR_DEPENDS = \
     ${top_srcdir}/src/ccm-image.h \
     ${top_srcdir}/src/ccm-debug.h \
     ${top_srcdir}/lib/ccm-cairo-utils.h \
+    ${top_srcdir}/lib/ccm-config-adjustment.h \
+    ${top_srcdir}/lib/ccm-config-check-button.h \
+    ${top_srcdir}/lib/ccm-config-color-button.h \
+    ${top_srcdir}/lib/ccm-config-entry-shortcut.h \
+    ${top_srcdir}/lib/ccm-config-gconf.h \
     ${top_srcdir}/lib/ccm-config.h \
-    ${top_srcdir}/lib/ccm-timeline.h  
+    ${top_srcdir}/lib/ccm-config-key.h \
+    ${top_srcdir}/lib/ccm-config-schema.h \
+    ${top_srcdir}/lib/ccm-timeline.h \
+    ${top_srcdir}/lib/ccm-timeout-interval.h \
+    ${top_srcdir}/lib/ccm-timeout-pool.h \
+    ${top_srcdir}/lib/eggaccelerators.h
 
-CCM-1.0.gir: Makefile xlib-2.0.gir $(GIR_DEPENDS)
+
+CCM-1.0.gir: Makefile $(GIR_DEPENDS)
 	$(G_IR_SCANNER) -v --namespace CCM --nsversion=1.0 \
+	-I ${top_srcdir}/lib \
 	--add-include-path=. \
     --include GObject-2.0 \
-    --include cairo-1.0 \
     --include Gtk-2.0 \
     --include GConf-2.0 \
     --include xlib-2.0 \
