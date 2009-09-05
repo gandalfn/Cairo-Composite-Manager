@@ -482,21 +482,27 @@ namespace CCM
 			// set mouse over on enter/leave window
 			screen.enter_window_notify += (window) => { 
 				CCM.Mosaic plugin = ((CCM.Mosaic)window.get_plugin(typeof(Mosaic)));
-				plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
-				plugin.timeline.rewind();
-				plugin.timeline.start();
-				switch_keep_above(window, true);
-				plugin.mouse_over = true; 
-				window.damage();
+				if (plugin.enabled)
+				{
+					plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+					plugin.timeline.rewind();
+					plugin.timeline.start();
+					switch_keep_above(window, true);
+					plugin.mouse_over = true; 
+					window.damage();
+				}
 			};
 			screen.leave_window_notify += (window) => { 
 				CCM.Mosaic plugin = ((CCM.Mosaic)window.get_plugin(typeof(Mosaic)));
-				plugin.mouse_over = false; 
-				plugin.timeline.set_direction(CCM.TimelineDirection.BACKWARD);
-				plugin.timeline.rewind();
-				plugin.timeline.start();
-				switch_keep_above(window, false);
-				window.damage();
+				if (plugin.enabled)
+				{
+					plugin.mouse_over = false; 
+					plugin.timeline.set_direction(CCM.TimelineDirection.BACKWARD);
+					plugin.timeline.rewind();
+					plugin.timeline.start();
+					switch_keep_above(window, false);
+					window.damage();
+				}
 			};
 
 			// disable mosaic on window activate
