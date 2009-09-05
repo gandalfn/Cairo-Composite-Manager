@@ -1305,6 +1305,8 @@ ccm_screen_check_stack (CCMScreen * self)
         CCMWindow *leader = ccm_window_get_group_leader (item->data);
 
         if (transient
+            && ccm_window_is_viewable(transient)
+            && !ccm_window_is_input_only(transient)
             && g_list_index (stack, item->data) < g_list_index (stack,
                                                                 transient))
         {
@@ -1316,6 +1318,7 @@ ccm_screen_check_stack (CCMScreen * self)
                                       item->data);
         }
         if (leader
+            && leader != self->priv->root 
             && ccm_window_get_hint_type (item->data) == CCM_WINDOW_TYPE_DIALOG)
         {
             GList *iter;
@@ -1323,7 +1326,9 @@ ccm_screen_check_stack (CCMScreen * self)
             for (iter = item; iter; iter = iter->next)
             {
                 if (leader == ccm_window_get_group_leader (iter->data)
-                    && ccm_window_get_hint_type (iter->data) ==
+                    && ccm_window_is_viewable(iter->data)
+		            && !ccm_window_is_input_only(iter->data)
+        			&& ccm_window_get_hint_type (iter->data) ==
                     CCM_WINDOW_TYPE_NORMAL)
                 {
                     ccm_debug ("RESTACK LEADER");
