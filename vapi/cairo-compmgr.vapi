@@ -121,6 +121,59 @@ namespace Cairo
 [CCode (cprefix = "CCM", lower_case_cprefix = "ccm_")]
 namespace CCM 
 {
+	[CCode (cheader_filename = "ccm-config-adjustment.h")]
+	public class ConfigAdjustment : Gtk.Adjustment 
+	{
+		[CCode (type = "GtkAdjustment*", has_construct_function = false)]
+		public ConfigAdjustment (int screen, string plugin, string key);
+		[NoAccessorMethod]
+		public string key { owned get; set; }
+		[NoAccessorMethod]
+		public string plugin { owned get; set; }
+		[NoAccessorMethod]
+		public int screen { get; set; }
+	}
+	[CCode (cheader_filename = "ccm-config-check-button.h")]
+	public class ConfigCheckButton : Gtk.CheckButton
+	{
+		[CCode (type = "GtkWidget*", has_construct_function = false)]
+		public ConfigCheckButton (int screen, string plugin, string key);
+		[NoAccessorMethod]
+		public string key { owned get; set; }
+		[NoAccessorMethod]
+		public string plugin { owned get; set; }
+		[NoAccessorMethod]
+		public int screen { get; set; }
+	}
+	[CCode (cheader_filename = "ccm-config-color-button.h")]
+	public class ConfigColorButton : Gtk.ColorButton
+	{
+		[CCode (type = "GtkWidget*", has_construct_function = false)]
+		public ConfigColorButton (int screen, string plugin, string key);
+		[NoAccessorMethod]
+		public string key { owned get; set; }
+		[NoAccessorMethod]
+		public string key_alpha { owned get; set; }
+		[NoAccessorMethod]
+		public string plugin { owned get; set; }
+		[NoAccessorMethod]
+		public int screen { get; set; }
+	}
+	[CCode (cheader_filename = "ccm-config-entry-shortcut.h")]
+	public class ConfigEntryShortcut : Gtk.Entry
+	{
+		[CCode (type = "GtkWidget*", has_construct_function = false)]
+		public ConfigEntryShortcut (bool mouse, int screen, string plugin, string key);
+		[NoAccessorMethod]
+		public string key { owned get; set; }
+		[NoAccessorMethod]
+		public bool mouse { get; set; }
+		[NoAccessorMethod]
+		public string plugin { owned get; set; }
+		[NoAccessorMethod]
+		public int screen { get; set; }
+	}
+	
 	[CCode (cheader_filename = "ccm-config.h")]
 	public class Config : GLib.Object 
 	{
@@ -167,6 +220,9 @@ namespace CCM
 	[CCode (cheader_filename = "ccm-plugin.h")]
 	public class PluginOptions : GLib.Object 
 	{
+		[CCode (has_construct_function = false)]
+		public PluginOptions ();
+		
 		protected virtual void changed(CCM.Config config);
 
 		public unowned Config get_config(int index);
@@ -176,6 +232,9 @@ namespace CCM
 	public abstract class Plugin : GLib.Object
 	{
 		public class Type type_options;
+
+		[CCode (has_construct_function = false)]
+		public Plugin ();
 		
 		public GLib.Object parent { get; set; }
 
@@ -530,6 +589,12 @@ namespace CCM
 	{
 		[CCode (has_construct_function = false)]
 		public PreferencesPage (CCM.Preferences preferences, int screen_num);
+
+		public int get_screen_num();
+		public void set_current_section(PreferencesPageSection section);
+		public void section_p(PreferencesPageSection section);
+		public void section_v(PreferencesPageSection section);
+		public void section_register_widget(PreferencesPageSection section, Gtk.Widget widget, string plugin);
 	}
 	
 	[CCode (cheader_filename = "ccm-timeline.h")]
@@ -691,6 +756,17 @@ namespace CCM
 		POPUP_MENU,
 		MENU,
 		DOCK
+	}
+
+	[CCode (cprefix = "CCM_PREFERENCES_PAGE_SECTION_", cheader_filename = "ccm-preferences-page.h")]
+	public enum PreferencesPageSection {
+		GENERAL,
+		DESKTOP,
+		WINDOW,
+		EFFECTS,
+		ACCESSIBILTY,
+		UTILITIES,
+		N
 	}
 		
 	[CCode (cheader_filename = "ccm-debug.h")]

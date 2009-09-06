@@ -32,6 +32,7 @@
 G_BEGIN_DECLS
 
 #define CCM_TYPE_PREFERENCES_PAGE_PLUGIN             		(ccm_preferences_page_plugin_get_type ())
+#define CCM_PREFERENCES_PAGE_PLUGIN(obj)                    (G_TYPE_CHECK_INSTANCE_CAST ((obj), CCM_TYPE_PREFERENCES_PAGE_PLUGIN, CCMPreferencesPagePlugin))
 #define CCM_IS_PREFERENCES_PAGE_PLUGIN(obj)          		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), CCM_TYPE_PREFERENCES_PAGE_PLUGIN))
 #define CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(obj)   	(G_TYPE_INSTANCE_GET_INTERFACE ((obj), CCM_TYPE_PREFERENCES_PAGE_PLUGIN, CCMPreferencesPagePluginClass))
 #define CCM_PREFERENCES_PAGE_PLUGIN_PARENT(obj)	   		    ((CCMPreferencesPagePlugin*)ccm_plugin_get_parent((CCMPlugin*)obj))
@@ -57,6 +58,7 @@ G_BEGIN_DECLS
 }
 
 typedef struct _CCMPreferencesPagePluginClass CCMPreferencesPagePluginClass;
+typedef struct _CCMPreferencesPagePluginClass CCMPreferencesPagePluginIface;
 typedef struct _CCMPreferencesPagePlugin CCMPreferencesPagePlugin;
 
 struct _CCMPreferencesPagePluginClass
