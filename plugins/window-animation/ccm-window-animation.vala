@@ -22,6 +22,7 @@
 
 using GLib;
 using Cairo;
+using Config;
 using CCM;
 
 namespace CCM
@@ -66,13 +67,14 @@ namespace CCM
 		}
     }
 
-    class WindowAnimation : CCM.Plugin, CCM.WindowPlugin
+    class WindowAnimation : CCM.Plugin, CCM.WindowPlugin, CCM.PreferencesPagePlugin
     {
         private weak CCM.Window window;
         private CCM.WindowType type;
         private bool desktop_changed;
         private CCM.Timeline timeline;
         private Cairo.Rectangle geometry;
+		private Gtk.Builder builder;
 
         class construct
 		{
@@ -264,6 +266,38 @@ namespace CCM
 
             ((CCM.WindowPlugin) parent).unmap (window);
         }
+
+		////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////
+		protected void
+		init_effects_section(CCM.PreferencesPage preferences, Gtk.Widget effects_section)
+		{
+			builder = new Gtk.Builder();
+			try
+			{
+				builder.add_from_file(UI_DIR + "/ccm-window-animation.ui");
+				var widget = builder.get_object ("window-animation") as Gtk.Widget;
+				if (widget != null)
+				{
+					int screen_num = preferences.get_screen_num();
+					
+					((Gtk.Box)effects_section).pack_start(widget, false, true, 0);
+
+					var duration = builder.get_object ("duration-adjustment") as CCM.ConfigAdjustment;
+					duration.screen = screen_num;
+
+					preferences.section_register_widget(PreferencesPageSection.EFFECTS,
+					                                    widget, "window-animation");
+				}
+			}
+			catch (GLib.Error err)
+			{
+				CCM.log("%s", err.message);
+			}
+
+			((CCM.PreferencesPagePlugin) parent).init_effects_section (preferences,
+			                                                           effects_section);
+		}
     }
 }
 

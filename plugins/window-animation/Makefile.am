@@ -1,5 +1,5 @@
 PLUGIN = ccm-window-animation
-PLUGIN_UI = 
+PLUGIN_UI = ccm-window-animation.ui window-animation.svg
 PLUGIN_SCHEMA = ccm-window-animation.schema-key.in
 
 PLUGIN_SOURCES = 
