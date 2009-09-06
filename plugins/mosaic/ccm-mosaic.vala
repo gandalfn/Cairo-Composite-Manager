@@ -23,6 +23,7 @@ using GLib;
 using Cairo;
 using Gee;
 using Math;
+using Config;
 using CCM;
 
 namespace CCM
@@ -118,7 +119,7 @@ namespace CCM
 		public weak CCM.Mosaic plugin;
 	}
 	
-	class Mosaic : CCM.Plugin, CCM.ScreenPlugin, CCM.WindowPlugin
+	class Mosaic : CCM.Plugin, CCM.ScreenPlugin, CCM.WindowPlugin, CCM.PreferencesPagePlugin
 	{
 		weak CCM.MosaicArea?    area = null;
 		weak CCM.Screen			screen;
@@ -128,6 +129,7 @@ namespace CCM
 		bool					mouse_over = false;
 		Timeline				timeline;
 		double					progress;
+		Gtk.Builder				builder = null;
 
 		class construct
 		{
@@ -366,6 +368,7 @@ namespace CCM
 					area.plugin.area = null;
 					switch_keep_above(area.window, false);
 				}
+				areas.clear();
 			}
 			screen.damage_all();
 		}
@@ -417,7 +420,7 @@ namespace CCM
 			if (enabled)
 			{
 				enabled = false;
-			
+
 				if (timeline.is_playing())
 				{
 					timeline.stop();
@@ -438,7 +441,20 @@ namespace CCM
 			{
 				timeline.stop();
 			}
-			if (enabled) create_areas();
+			if (enabled) 
+			{
+				create_areas();
+			}
+			else
+			{
+				foreach (MosaicArea area in areas)
+				{
+					if (area.window.keep_above())
+					{
+						switch_keep_above(area.window, false);
+					}
+				}
+			}
 			timeline.set_direction(enabled ? CCM.TimelineDirection.BACKWARD : CCM.TimelineDirection.FORWARD);
 			timeline.rewind();
 			timeline.start();
@@ -538,6 +554,44 @@ namespace CCM
 			}
 
 			return ret;
+		}
+
+		////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////
+		protected void
+		init_desktop_section(CCM.PreferencesPage preferences, Gtk.Widget desktop_section)
+		{
+			builder = new Gtk.Builder();
+			try
+			{
+				builder.add_from_file(UI_DIR + "/ccm-mosaic.ui");
+				var widget = builder.get_object ("mosaic") as Gtk.Widget;
+				if (widget != null)
+				{
+					int screen_num = preferences.get_screen_num();
+					
+					((Gtk.Box)desktop_section).pack_start(widget, false, true, 0);
+
+					var duration = builder.get_object ("duration-adjustment") as CCM.ConfigAdjustment;
+					duration.screen = screen_num;
+
+					var spacing = builder.get_object ("spacing-adjustment") as CCM.ConfigAdjustment;
+					spacing.screen = screen_num;
+
+					var shortcut = builder.get_object ("shortcut") as CCM.ConfigEntryShortcut;
+					shortcut.screen = screen_num;
+
+					preferences.section_register_widget(PreferencesPageSection.DESKTOP,
+					                                    widget, "mosaic");
+				}
+			}
+			catch (GLib.Error err)
+			{
+				CCM.log("%s", err.message);
+			}
+
+			((CCM.PreferencesPagePlugin) parent).init_desktop_section (preferences,
+			                                                           desktop_section);
 		}
 	}
 }
