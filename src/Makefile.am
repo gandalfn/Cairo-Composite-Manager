@@ -62,6 +62,7 @@ bin_PROGRAMS = cairo-compmgr
 cairo_compmgr_include_HEADERS =  \
     ccm-debug.h \
     ccm-region.h \
+    ccm-object.h \
     ccm-drawable.h \
     ccm-image.h \
     ccm-pixmap.h \

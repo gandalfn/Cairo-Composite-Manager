@@ -17,6 +17,10 @@ lib_LTLIBRARIES = libcairo_compmgr.la
 cairo_compmgr_include_HEADERS =  \
 	ccm-config.h \
 	ccm-timeline.h \
+	ccm-config-check-button.h \
+	ccm-config-adjustment.h \
+	ccm-config-color-button.h \
+	ccm-config-entry-shortcut.h \
 	ccm-cairo-utils.h
 
 libcairo_compmgr_la_SOURCES =  \
