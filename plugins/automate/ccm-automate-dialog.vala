@@ -23,6 +23,7 @@
 using GLib;
 using Gtk;
 using Cairo;
+using Config;
 using CCM;
 
 [CCode (cheader_filename = "gdk/gdkx.h", cname = "GDK_WINDOW_XWINDOW")]
@@ -32,8 +33,7 @@ namespace CCM
 {
     class AutomateDialog : GLib.Object
     {
-        private const string UI_FILE =
-            "/usr/share/cairo-compmgr/ui/ccm-automate.ui";
+        private const string UI_FILE = UI_DIR + "/ccm-automate.ui";
 
         private weak CCM.Screen screen;
 
