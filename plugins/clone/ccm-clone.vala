@@ -28,12 +28,12 @@ using Gee;
 
 namespace CCM
 {
-    class Output
+    public class Output
     {
         public weak CCM.Window window;
         public CCM.Pixmap pixmap;
 
-        Output (CCM.Screen screen, CCM.Window window, X.Pixmap xpixmap,
+        public Output (CCM.Screen screen, CCM.Window window, X.Pixmap xpixmap,
                 int depth)
         {
             X.Visual * visual = screen.get_visual_for_depth (depth);
