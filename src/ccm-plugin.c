@@ -89,7 +89,7 @@ ccm_plugin_options_finalize (GObject * object)
         }
         ccm_debug ("%s FINALIZE CONFIG TAB",
                    G_OBJECT_TYPE_NAME (self));
-        g_free (self->priv->configs);
+        g_slice_free1 (sizeof(CCMConfig*) * self->priv->configs_size, self->priv->configs);
         self->priv->configs = NULL;
     }
 	self->priv->configs_size = 0;
@@ -157,7 +157,7 @@ _ccm_plugin_options_load (CCMPluginOptions* self, gint screen,
 	if (self->priv->configs == NULL)
     {
         ccm_debug ("%s CREATE CONFIG TAB", G_OBJECT_TYPE_NAME (self));
-        self->priv->configs = g_new0 (CCMConfig*, nb_options);
+        self->priv->configs = g_slice_alloc0 (sizeof(CCMConfig*) * nb_options);
         self->priv->configs_size = nb_options;
     }
 
