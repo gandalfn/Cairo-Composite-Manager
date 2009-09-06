@@ -477,7 +477,7 @@ ccm_decoration_window_map (CCMWindowPlugin * plugin, CCMWindow * window)
                                         ccm_decoration_on_map_unmap_unlocked,
                                         self);
     self->priv->locked = TRUE;
-    g_object_set (G_OBJECT (window), "mask", NULL, NULL);
+    ccm_window_set_mask(window, NULL);
 
     ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 
@@ -493,7 +493,7 @@ ccm_decoration_window_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
     ccm_debug ("UNMAP");
     CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD (plugin, unmap, NULL, NULL);
     self->priv->locked = TRUE;
-    g_object_set (G_OBJECT (window), "mask", NULL, NULL);
+    ccm_window_set_mask(window, NULL);
 
     ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 
