@@ -70,6 +70,7 @@ typedef struct
 static void ccm_perf_screen_iface_init (CCMScreenPluginClass * iface);
 static void ccm_perf_window_iface_init (CCMWindowPluginClass * iface);
 static void ccm_perf_on_option_changed (CCMPlugin * plugin, int index);
+static void ccm_perf_on_key_press	   (CCMPerf * self);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMPerf, ccm_perf, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_SCREEN_PLUGIN,
@@ -180,6 +181,7 @@ ccm_perf_init (CCMPerf * self)
     self->priv->need_refresh = TRUE;
     self->priv->timer = g_timer_new ();
     self->priv->screen = NULL;
+	self->priv->keybind = NULL;
 }
 
 static void
@@ -188,9 +190,18 @@ ccm_perf_finalize (GObject * object)
     CCMPerf *self = CCM_PERF (object);
 
     if (self->priv->screen)
-        ccm_plugin_options_unload (CCM_PLUGIN (self));
+	    ccm_plugin_options_unload (CCM_PLUGIN (self));
 
-    if (self->priv->timer)
+    if (self->priv->keybind)
+	{
+		g_signal_handlers_disconnect_by_func(self->priv->keybind,
+		                                     ccm_perf_on_key_press,
+		                                     self);
+		g_object_unref (self->priv->keybind);
+		self->priv->keybind = NULL;
+	}
+
+	if (self->priv->timer)
         g_timer_destroy (self->priv->timer);
 
     G_OBJECT_CLASS (ccm_perf_parent_class)->finalize (object);
