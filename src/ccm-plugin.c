@@ -36,7 +36,6 @@ typedef struct
 struct _CCMPluginOptionsPrivate
 {
 	gint		screen;
-    gboolean	initialized;
     CCMConfig **configs;
     int			configs_size;
 	GSList*		callbacks;
@@ -66,7 +65,6 @@ ccm_plugin_options_init (CCMPluginOptions *self)
 {
 	self->priv = CCM_PLUGIN_OPTIONS_GET_PRIVATE(self);
 	self->priv->screen = -1;
-	self->priv->initialized = FALSE;
 	self->priv->configs = NULL;
     self->priv->configs_size = 0;
 	self->priv->callbacks = NULL;
@@ -77,7 +75,6 @@ ccm_plugin_options_finalize (GObject * object)
 {
     CCMPluginOptions *self = CCM_PLUGIN_OPTIONS (object);
 
-	self->priv->initialized = FALSE;
 	if (self->priv->configs)
 	{
 		gint cpt; 
@@ -95,10 +92,12 @@ ccm_plugin_options_finalize (GObject * object)
 	self->priv->configs_size = 0;
 	if (self->priv->callbacks)
 	{
-		g_slist_foreach(self->priv->callbacks, 
+		GSList* copy = g_slist_copy(self->priv->callbacks);
+		g_slist_foreach(copy, 
 		                (GFunc)_ccm_plugin_options_disconnect_callback, 
 		                NULL);
 		g_slist_free(self->priv->callbacks);
+		g_slist_free(copy);
 	}
 	self->priv->callbacks = NULL;
 	
@@ -122,24 +121,24 @@ static void
 ccm_plugins_options_on_changed(CCMPluginOptions* self, CCMConfig* config)
 {
 	GSList* item;
-	gboolean found = FALSE;
+	int found = -1;
 	gint index;
 	
 	if (CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed)
 		CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed(self, config);
 
-	for (index = 0; index < self->priv->configs_size && !found; index++)
+	for (index = 0; index < self->priv->configs_size && found == -1; index++)
 	{
 		if (self->priv->configs[index] == config)
-			found = TRUE;
+			found = index;
 	}
-	
-	if (found)
+
+	if (found >= 0)
 	{
 		for (item = self->priv->callbacks; item; item = item->next)
 		{
 			CCMPluginOptionsChangedCallback* callback = item->data;
-			callback->callback(callback->plugin, index);
+			callback->callback(callback->plugin, found);
 		}
 	}
 }
@@ -184,22 +183,18 @@ _ccm_plugin_options_load (CCMPluginOptions* self, gint screen,
 
             self->priv->configs[cpt] = ccm_config_new (screen, plugin_name,
                                                  (gchar *) options_key[cpt]);
-        }
 
-        if (self->priv->configs[cpt] != NULL)
-        {
-			if (!self->priv->initialized && CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed)
+			if (CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed)
 			{
 				CCM_PLUGIN_OPTIONS_GET_CLASS(self)->changed(self, self->priv->configs[cpt]);
 				
 				g_signal_connect_swapped (G_OBJECT(self->priv->configs[cpt]), "changed",
-			                          G_CALLBACK (ccm_plugins_options_on_changed),
-			                          self);
+			                              G_CALLBACK (ccm_plugins_options_on_changed),
+			                              self);
 			}
 			if (func) func(plugin, cpt);
         }
     }
-    self->priv->initialized = TRUE;
 }
 
 enum
