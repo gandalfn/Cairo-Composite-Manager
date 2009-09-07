@@ -131,10 +131,25 @@ namespace CCM
 		double					progress;
 		Gtk.Builder				builder = null;
 
+		////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////
 		class construct
 		{
 			type_options = typeof (MosaicOptions);
 		}
+
+		////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////
+		~Mosaic ()
+        {
+			if (screen != null)
+	            options_unload ();
+			if (keybind != null)
+			{
+				keybind.key_press += on_shortcut_pressed;
+				keybind = null;
+			}
+        }
 
 		////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////
@@ -320,23 +335,26 @@ namespace CCM
 			{
 				foreach (MosaicArea area in areas)
 				{
-					// Apply final transformation to window
-					Cairo.Rectangle win_area;
-					if (area.window.get_device_geometry_clipbox(out win_area))
+					if (area.window is CCM.Window)
 					{
-						// Calculate window scale
-						double scale = double.min(area.geometry.width / win_area.width,
-							                      area.geometry.height / win_area.height);
+						// Apply final transformation to window
+						Cairo.Rectangle win_area;
+						if (area.window.get_device_geometry_clipbox(out win_area))
+						{
+							// Calculate window scale
+							double scale = double.min(area.geometry.width / win_area.width,
+									                  area.geometry.height / win_area.height);
 
-						// Calculate window position
-						double x = (area.geometry.x - win_area.x) - 
-									(((win_area.width * scale) - area.geometry.width) / 2.0);
-						double y = (area.geometry.y - win_area.y) - 
-									(((win_area.height * scale) - area.geometry.height) / 2.0);
+							// Calculate window position
+							double x = (area.geometry.x - win_area.x) - 
+										(((win_area.width * scale) - area.geometry.width) / 2.0);
+							double y = (area.geometry.y - win_area.y) - 
+										(((win_area.height * scale) - area.geometry.height) / 2.0);
 
-						// Apply transformation to window
-						Cairo.Matrix matrix = Cairo.Matrix(scale, 0, 0, scale, x, y);
-						area.window.push_matrix("CCMMosaic", matrix);
+							// Apply transformation to window
+							Cairo.Matrix matrix = Cairo.Matrix(scale, 0, 0, scale, x, y);
+							area.window.push_matrix("CCMMosaic", matrix);
+						}
 					}
 				}	 
 				
@@ -346,14 +364,17 @@ namespace CCM
 				screen.query_pointer(out mouse, out x_mouse, out y_mouse);
 				foreach (MosaicArea area in areas)
 				{
-					area.plugin.mouse_over = area.window == mouse;			
-					if (area.plugin.mouse_over)
+					if (area.window is CCM.Window)
 					{
-						area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
-						area.plugin.timeline.rewind();
-						area.plugin.timeline.start();
-						switch_keep_above(area.window, true);
-						area.window.damage();
+						area.plugin.mouse_over = area.window == mouse;			
+						if (area.plugin.mouse_over)
+						{
+							area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+							area.plugin.timeline.rewind();
+							area.plugin.timeline.start();
+							switch_keep_above(area.window, true);
+							area.window.damage();
+						}
 					}
 				}
 			}
@@ -362,11 +383,14 @@ namespace CCM
 				foreach (MosaicArea area in areas)
 				{
 					// Remove window transformation
-					area.window.pop_matrix("CCMMosaic");
-					area.window.block_mouse_redirect_event = false;
-					area.plugin.enabled = false;
-					area.plugin.area = null;
-					switch_keep_above(area.window, false);
+					if (area.window is CCM.Window)
+					{
+						area.window.pop_matrix("CCMMosaic");
+						area.window.block_mouse_redirect_event = false;
+						area.plugin.enabled = false;
+						area.plugin.area = null;
+						switch_keep_above(area.window, false);
+					}
 				}
 				areas.clear();
 			}
@@ -377,7 +401,7 @@ namespace CCM
 		////////////////////////////////////////////////////////////////////////
 		private void on_window_animation_new_frame (int frame)
 		{
-			if (area != null)
+			if (area != null && area.window is CCM.Window)
 			{
 				Cairo.Rectangle win_area;
 				if (area.window.get_device_geometry_clipbox(out win_area))
@@ -449,7 +473,8 @@ namespace CCM
 			{
 				foreach (MosaicArea area in areas)
 				{
-					if (area.window.keep_above())
+					if (area is CCM.Window &&
+					    area.window.keep_above())
 					{
 						switch_keep_above(area.window, false);
 					}
