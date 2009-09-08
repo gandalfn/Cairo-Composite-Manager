@@ -144,11 +144,6 @@ namespace CCM
         {
 			if (screen != null)
 	            options_unload ();
-			if (keybind != null)
-			{
-				keybind.key_press += on_shortcut_pressed;
-				keybind = null;
-			}
         }
 
 		////////////////////////////////////////////////////////////////////////
