@@ -163,7 +163,8 @@ ccm_freeze_finalize (GObject * object)
 	{
 		CCMDisplay *display = ccm_screen_get_display(self->priv->screen);
 
-		g_signal_handler_disconnect (display, self->priv->id_event);
+		if (g_signal_handler_is_connected(display, self->priv->id_event))
+			g_signal_handler_disconnect (display, self->priv->id_event);
 	}
 	
     if (self->priv->id_ping)
