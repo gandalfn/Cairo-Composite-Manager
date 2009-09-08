@@ -54,6 +54,8 @@ typedef struct
     unsigned long decorations;
 } MotifWmHints;
 
+static GQuark CCMWindowPixmapQuark;
+
 static void ccm_window_iface_init (CCMWindowPluginClass * iface);
 static void ccm_window_query_geometry (CCMDrawable * drawable);
 static void ccm_window_move (CCMDrawable * drawable, int x, int y);
@@ -127,6 +129,8 @@ struct _CCMWindowPrivate
     CCMWindowType hint_type;
     gchar *name;
     gchar *class_name;
+	
+	gboolean unmanaged;
 
     Window root;
     Window child;
@@ -283,6 +287,7 @@ ccm_window_init (CCMWindow * self)
     self->priv->hint_type = CCM_WINDOW_TYPE_NORMAL;
     self->priv->name = NULL;
     self->priv->class_name = NULL;
+	self->priv->unmanaged = FALSE;
     self->priv->child = None;
     self->priv->transient_for = None;
     self->priv->group_leader = None;
@@ -411,6 +416,8 @@ ccm_window_class_init (CCMWindowClass * klass)
 
     g_type_class_add_private (klass, sizeof (CCMWindowPrivate));
 
+	CCMWindowPixmapQuark = g_quark_from_static_string("CCMWindowPixmap");
+	
     object_class->get_property = ccm_window_get_gobject_property;
     object_class->set_property = ccm_window_set_gobject_property;
     object_class->finalize = ccm_window_finalize;
@@ -958,7 +965,9 @@ ccm_window_get_plugins (CCMWindow * self)
 {
     g_return_if_fail (self != NULL);
 
-    CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
+    if (self->priv->unmanaged) return;
+	
+	CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
     GSList *item;
 
     if (!CCM_WINDOW_GET_CLASS (self)->plugins)
@@ -970,7 +979,7 @@ ccm_window_get_plugins (CCMWindow * self)
 
     self->priv->plugin = (CCMWindowPlugin *) self;
 
-    for (item = CCM_WINDOW_GET_CLASS (self)->plugins; item; item = item->next)
+	for (item = CCM_WINDOW_GET_CLASS (self)->plugins; item; item = item->next)
     {
         GType type = GPOINTER_TO_INT (item->data);
         GObject *prev = G_OBJECT (self->priv->plugin);
@@ -2175,6 +2184,8 @@ ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow)
 
     create_atoms (self);
 
+	self->priv->unmanaged = TRUE;
+	
 	self->priv->plugin = (CCMWindowPlugin*)self;
 	
     if (!ccm_window_get_attribs (self))
@@ -2725,10 +2736,11 @@ ccm_window_get_pixmap (CCMWindow * self)
             ccm_window_plugin_get_pixmap (self->priv->plugin, self);
         if (self->priv->pixmap)
         {
-            g_object_set_data_full (G_OBJECT (self->priv->pixmap), "CCMWindow",
-                                    self,
-                                    (GDestroyNotify)
-                                    ccm_window_on_pixmap_destroyed);
+            g_object_set_qdata_full (G_OBJECT (self->priv->pixmap), 
+                                     CCMWindowPixmapQuark,
+                                     self,
+                                     (GDestroyNotify)
+                                     ccm_window_on_pixmap_destroyed);
 
             // we connect after to be sure an eventually plugin draw before we
             // call main window callback
