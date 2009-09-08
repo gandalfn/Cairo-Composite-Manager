@@ -27,7 +27,7 @@
 
 G_BEGIN_DECLS
 
-#define CCM_OBJECT_PREFETCH 3
+#define CCM_OBJECT_PREFETCH 20
 
 #define CCM_DEFINE_TYPE_EXTENDED(class_name, prefix, parent_class_type, CODE) \
 \
