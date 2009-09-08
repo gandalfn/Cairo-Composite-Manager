@@ -112,6 +112,7 @@ struct _CCMShadowPrivate
 
     CCMWindow *window;
 
+	gboolean have_shadow;
 	CCMPixmap *pixmap;
     CCMPixmap *shadow;
     cairo_surface_t *shadow_image;
@@ -240,6 +241,7 @@ ccm_shadow_init (CCMShadow * self)
     self->priv->force_disable = FALSE;
     self->priv->force_enable = FALSE;
     self->priv->id_check = 0;
+	self->priv->have_shadow = FALSE;
     self->priv->window = NULL;
     self->priv->shadow = NULL;
     self->priv->shadow_image = NULL;
@@ -348,32 +350,14 @@ ccm_shadow_check_needed (CCMShadow * self)
 {
     g_return_val_if_fail (CCM_IS_SHADOW (self), FALSE);
 
-    if (self->priv->window && !ccm_shadow_need_shadow (self)
-        && self->priv->geometry)
-    {
-        if (self->priv->shadow_image)
-            cairo_surface_destroy (self->priv->shadow_image);
-        self->priv->shadow_image = NULL;
-
-        if (self->priv->pixmap)
-            g_object_unref (self->priv->pixmap);
-        self->priv->pixmap = NULL;
-
-        if (self->priv->geometry)
-            ccm_region_destroy (self->priv->geometry);
-        self->priv->geometry = NULL;
-
-        ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
-        ccm_drawable_query_geometry (CCM_DRAWABLE (self->priv->window));
-        ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
-    }
-    else if (ccm_shadow_need_shadow (self) && !self->priv->geometry)
-    {
-        ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
-        ccm_drawable_query_geometry (CCM_DRAWABLE (self->priv->window));
-        ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
-    }
-
+	if (CCM_IS_WINDOW(self->priv->window) &&
+	    self->priv->have_shadow != ccm_shadow_need_shadow (self))
+	{
+		ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
+		ccm_drawable_query_geometry (CCM_DRAWABLE (self->priv->window));
+		ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
+	}
+	
     self->priv->id_check = 0;
 
     return FALSE;
@@ -960,23 +944,11 @@ ccm_shadow_on_option_changed (CCMPlugin * plugin, int index)
 
 	CCMShadow *self = CCM_SHADOW (plugin);
 
-	if (self->priv->shadow_image)
-        cairo_surface_destroy (self->priv->shadow_image);
-	self->priv->shadow_image = NULL;
-
-    if (self->priv->pixmap)
-        g_object_unref (self->priv->pixmap);
-    self->priv->pixmap = NULL;
-
-    if (self->priv->geometry)
-        ccm_region_destroy (self->priv->geometry);
-    self->priv->geometry = NULL;
-
-	if (!self->priv->id_check)
-    {
-        self->priv->id_check =
-            g_idle_add ((GSourceFunc) ccm_shadow_check_needed, self);
-    }
+	if (ccm_drawable_get_geometry(CCM_DRAWABLE (self->priv->window)))
+	{
+		ccm_drawable_query_geometry (CCM_DRAWABLE (self->priv->window));
+		ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));		
+	}
 }
 
 static void
@@ -996,6 +968,12 @@ ccm_shadow_window_load_options (CCMWindowPlugin * plugin, CCMWindow * window)
         g_signal_connect_swapped (window, "property-changed",
                                   G_CALLBACK (ccm_shadow_on_property_changed),
                                   self);
+
+	// We have a geometry it's a plugin reload
+	if (ccm_drawable_get_device_geometry(CCM_DRAWABLE(window)) != NULL)
+	{
+		ccm_drawable_query_geometry (CCM_DRAWABLE (window));
+	}
 }
 
 static CCMRegion *
@@ -1005,6 +983,10 @@ ccm_shadow_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * window)
     cairo_rectangle_t area;
     CCMShadow *self = CCM_SHADOW (plugin);
 
+	if (self->priv->id_check)
+		g_source_remove(self->priv->id_check);
+	self->priv->id_check = 0;
+	
     if (self->priv->shadow_image)
         cairo_surface_destroy (self->priv->shadow_image);
     self->priv->shadow_image = NULL;
@@ -1031,22 +1013,17 @@ ccm_shadow_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * window)
                            ccm_shadow_get_option (self)->radius * 2,
                            area.height +
                            ccm_shadow_get_option (self)->radius * 2);
+		
+		self->priv->have_shadow = TRUE;
+		
+	    ccm_shadow_query_avoid_shadow (self);
     }
+	else
+		self->priv->have_shadow = FALSE;
 
-    ccm_shadow_query_avoid_shadow (self);
     ccm_shadow_query_force_shadow (self);
 
     return geometry;
-}
-
-static void
-ccm_shadow_window_map (CCMWindowPlugin * plugin, CCMWindow * window)
-{
-    CCMShadow *self = CCM_SHADOW (plugin);
-
-    ccm_shadow_query_avoid_shadow (self);
-
-    ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
 
 static void
@@ -1249,7 +1226,7 @@ ccm_shadow_window_iface_init (CCMWindowPluginClass * iface)
     iface->load_options = ccm_shadow_window_load_options;
     iface->query_geometry = ccm_shadow_window_query_geometry;
     iface->paint = NULL;
-    iface->map = ccm_shadow_window_map;
+    iface->map = NULL;
     iface->unmap = NULL;
     iface->query_opacity = NULL;
     iface->move = ccm_shadow_window_move;
