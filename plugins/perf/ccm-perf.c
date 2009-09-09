@@ -68,15 +68,12 @@ typedef struct
 } CCMPerfOptions;
 
 static void ccm_perf_screen_iface_init (CCMScreenPluginClass * iface);
-static void ccm_perf_window_iface_init (CCMWindowPluginClass * iface);
 static void ccm_perf_on_option_changed (CCMPlugin * plugin, int index);
 static void ccm_perf_on_key_press	   (CCMPerf * self);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMPerf, ccm_perf, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_SCREEN_PLUGIN,
-                                                         ccm_perf_screen_iface_init);
-                                CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_WINDOW_PLUGIN,
-                                                         ccm_perf_window_iface_init))
+                                                         ccm_perf_screen_iface_init))
 struct _CCMPerfPrivate
 {
     gint frames;
@@ -179,7 +176,7 @@ ccm_perf_init (CCMPerf * self)
     self->priv->mem_xorg = 0;
     self->priv->enabled = FALSE;
     self->priv->need_refresh = TRUE;
-    self->priv->timer = g_timer_new ();
+    self->priv->timer = NULL;
     self->priv->screen = NULL;
 	self->priv->keybind = NULL;
 }
@@ -335,7 +332,8 @@ ccm_perf_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
     CCMPerf *self = CCM_PERF (plugin);
 
     self->priv->screen = screen;
-
+	self->priv->timer = g_timer_new ();
+	
     ccm_plugin_options_load (CCM_PLUGIN (self), "perf", CCMPerfOptionKeys,
                              CCM_PERF_OPTION_N, ccm_perf_on_option_changed);
 
@@ -439,33 +437,6 @@ ccm_perf_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
     return ret;
 }
 
-static gboolean
-ccm_perf_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
-                       cairo_t * context, cairo_surface_t * surface,
-                       gboolean y_invert)
-{
-    CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (window));
-    CCMPerf *self = CCM_PERF (_ccm_screen_get_plugin (screen, CCM_TYPE_PERF));
-    
-    if (self->priv->enabled && !self->priv->need_refresh)
-    {
-		CCMRegion *damaged = 
-			(CCMRegion*)ccm_drawable_get_damaged(CCM_DRAWABLE(window));
-		if (damaged && !ccm_region_empty(damaged))
-		{
-		    CCMRegion *area =
-		        ccm_region_rectangle (&ccm_perf_get_option (self)->area);
-
-		    ccm_region_intersect (area, damaged);
-		    self->priv->need_refresh = !ccm_region_empty (area);
-		    ccm_region_destroy (area);
-		}
-    }
-
-    return ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
-                                    context, surface, y_invert);
-}
-
 static void
 ccm_perf_screen_iface_init (CCMScreenPluginClass * iface)
 {
@@ -474,19 +445,4 @@ ccm_perf_screen_iface_init (CCMScreenPluginClass * iface)
     iface->add_window = NULL;
     iface->remove_window = NULL;
     iface->damage = NULL;
-}
-
-static void
-ccm_perf_window_iface_init (CCMWindowPluginClass * iface)
-{
-    iface->load_options = NULL;
-    iface->query_geometry = NULL;
-    iface->paint = ccm_perf_window_paint;
-    iface->map = NULL;
-    iface->unmap = NULL;
-    iface->query_opacity = NULL;
-    iface->move = NULL;
-    iface->resize = NULL;
-    iface->set_opaque_region = NULL;
-    iface->get_origin = NULL;
 }
