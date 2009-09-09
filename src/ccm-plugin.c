@@ -235,15 +235,15 @@ static void
 ccm_plugin_set_property (GObject * object, guint prop_id, const GValue * value,
                          GParamSpec * pspec)
 {
-    CCMPluginPrivate *priv = CCM_PLUGIN_GET_PRIVATE (object);
+    CCMPlugin *self = CCM_PLUGIN (object);
 
     switch (prop_id)
     {
         case PROP_PARENT:
-            priv->parent = g_value_get_pointer (value);
+            self->priv->parent = g_value_get_pointer (value);
             break;
         case PROP_SCREEN:
-            priv->screen = g_value_get_uint (value);
+            self->priv->screen = g_value_get_uint (value);
             break;
         default:
             break;
@@ -254,15 +254,15 @@ static void
 ccm_plugin_get_property (GObject * object, guint prop_id, GValue * value,
                          GParamSpec * pspec)
 {
-    CCMPluginPrivate *priv = CCM_PLUGIN_GET_PRIVATE (object);
+    CCMPlugin *self = CCM_PLUGIN (object);
 
     switch (prop_id)
     {
         case PROP_PARENT:
-            g_value_set_pointer (value, priv->parent);
+            g_value_set_pointer (value, self->priv->parent);
             break;
         case PROP_SCREEN:
-            g_value_set_uint (value, priv->screen);
+            g_value_set_uint (value, self->priv->screen);
             break;
         default:
             break;
