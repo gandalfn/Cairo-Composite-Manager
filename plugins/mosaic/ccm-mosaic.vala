@@ -187,15 +187,31 @@ namespace CCM
 			// Calculate the less scale area
 			foreach (MosaicArea area in areas)
 			{
-				double scale = sqrt(pow(1.0 - double.min(area.geometry.width / win_area->width,
-				                                         area.geometry.height / win_area->height), 2));
-				if (scale < search)
+				double dist = pow(area.geometry.x - win_area->x, 2) +
+				              pow(area.geometry.y - win_area->y, 2);
+				if (dist < search)
 				{
 					if (area.window == null)
 					{
-						found = area;
+						found = area;					
+						search = dist;
+						break;
 					}
-					search = scale;
+					else
+					{
+						
+						Cairo.Rectangle* awa = area.window.get_area();
+						if (dist < pow(area.geometry.x - awa->x, 2) +
+  				                   pow(area.geometry.y - awa->y, 2))
+						{
+							weak CCM.Window conflict = area.window;
+							area.window = window;
+							find_area(conflict);
+							found = area;
+							search = dist;
+							break;
+						}
+					}
 				}
 			}
 			if (found == null) 
