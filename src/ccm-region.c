@@ -33,8 +33,8 @@
 	 (b).y2 = pixman_double_to_fixed((r).y + (r).height);}
 
 #define PIXMAN_BOX_TO_CAIRO_RECTANGLE(b, r)  \
-	{(r).x = pixman_fixed_to_double(pixman_fixed_ceil((b).x1)); \
-	 (r).y = pixman_fixed_to_double(pixman_fixed_ceil((b).y1)); \
+	{(r).x = pixman_fixed_to_double(pixman_fixed_floor((b).x1)); \
+	 (r).y = pixman_fixed_to_double(pixman_fixed_floor((b).y1)); \
 	 (r).width = pixman_fixed_to_double(pixman_fixed_ceil((b).x2 - (b).x1)); \
 	 (r).height = pixman_fixed_to_double(pixman_fixed_ceil((b).y2 - (b).y1));}
 
@@ -45,14 +45,14 @@
 	 (b).y2 = pixman_int_to_fixed((r).y + (r).height);}
 
 #define PIXMAN_BOX_TO_X_RECTANGLE(b, r)  \
-	{(r).x = pixman_fixed_to_int(pixman_fixed_ceil((b).x1)); \
-	 (r).y = pixman_fixed_to_int(pixman_fixed_ceil((b).y1)); \
+	{(r).x = pixman_fixed_to_int(pixman_fixed_floor((b).x1)); \
+	 (r).y = pixman_fixed_to_int(pixman_fixed_floor((b).y1)); \
 	 (r).width = pixman_fixed_to_int(pixman_fixed_ceil((b).x2 - (b).x1)); \
 	 (r).height = pixman_fixed_to_int(pixman_fixed_ceil((b).y2 - (b).y1));}
 
 #define PIXMAN_BOX_TO_REGION_BOX(b, r)  \
-	{(r).x1 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).x1)); \
-	 (r).y1 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).y1)); \
+	{(r).x1 = (short)pixman_fixed_to_int(pixman_fixed_floor((b).x1)); \
+	 (r).y1 = (short)pixman_fixed_to_int(pixman_fixed_floor((b).y1)); \
 	 (r).x2 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).x2)); \
 	 (r).y2 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).y2));}
 
