@@ -55,7 +55,14 @@ namespace CCM
 			if (config == get_config (Options.SPACING))
             {
                 var real_spacing = 5;
-                real_spacing = config.get_integer ();
+				try
+				{
+            		real_spacing = config.get_integer ();
+				}
+				catch (GLib.Error err)
+				{
+					real_spacing = 5;
+				}
                 var spacing = int.min (50, real_spacing);
                 spacing = int.max (0, spacing);
 
@@ -91,7 +98,15 @@ namespace CCM
 			if (config == get_config (Options.DURATION))
             {
                 var real_duration = 0.3;
-                real_duration = config.get_float ();
+				try
+				{
+            		real_duration = config.get_float ();
+				}
+				catch (GLib.Error err)
+				{
+					real_duration = 0.3;
+				}
+				
                 var duration = double.max (0.1, real_duration);
                 duration = double.min (0.9, duration);
 
