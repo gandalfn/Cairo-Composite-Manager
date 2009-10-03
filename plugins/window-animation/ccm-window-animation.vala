@@ -46,7 +46,14 @@ namespace CCM
 			if (config == get_config (Options.DURATION))
             {
                 var real_duration = 0.4;
-                real_duration = config.get_float ();
+				try
+				{
+            		real_duration = config.get_float ();
+				}
+				catch (GLib.Error err)
+				{
+					real_duration = 0.4;
+				}
                 var duration = double.min (2.0, real_duration);
                 duration = double.max (0.1, duration);
 
