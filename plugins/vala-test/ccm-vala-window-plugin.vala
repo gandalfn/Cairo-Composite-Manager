@@ -42,7 +42,14 @@ namespace CCM
 
 		protected override void changed(CCM.Config config)
 		{
-			enabled = config.get_boolean ();
+			try
+			{
+				enabled = config.get_boolean ();
+			}
+			catch (GLib.Error err)
+			{
+				CCM.log("%s", err);
+			}
 		}
     }
 
