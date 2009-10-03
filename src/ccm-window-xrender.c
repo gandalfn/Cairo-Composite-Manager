@@ -131,7 +131,7 @@ ccm_window_xrender_create_backbuffer (CCMWindowXRender * self)
             ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self),
                                                &geometry))
 			self->priv->back = cairo_surface_create_similar(self->priv->front,
-			                                                CAIRO_CONTENT_COLOR_ALPHA,
+			                                                CAIRO_CONTENT_COLOR,
 			                                                geometry.width,
 			                                                geometry.height);
     }
