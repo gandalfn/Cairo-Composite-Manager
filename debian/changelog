@@ -1,3 +1,10 @@
+cairo-compmgr (0.2.98-0ubuntu1~ppa1) jaunty; urgency=low
+
+  * New upstream release.
+  * Fix some crash and performances improvements
+
+ -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Sat, 03 Oct 2009 20:07:52 +0200
+
 cairo-compmgr (0.2.97-0ubuntu1~ppa1) jaunty; urgency=low
 
   * New upstream release.

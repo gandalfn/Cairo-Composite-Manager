@@ -43,5 +43,6 @@ plugins/opacity/ccm-opacity.ui
 src/eggdesktopfile.c
 src/eggsmclient.c
 plugins/clone/ccm-clone.plugin.desktop.in
-plugins/window-animation/ccm-window-animation.plugin.desktop.in
+plugins/window-animation/ccm-window-animation.plugin.desktop.in*
+plugins/window-animation/ccm-window-animation.ui
 src/ccm-timed-dialog.c
