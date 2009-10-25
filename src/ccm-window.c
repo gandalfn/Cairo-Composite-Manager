@@ -1216,7 +1216,7 @@ impl_ccm_window_move (CCMWindowPlugin * plugin, CCMWindow * self, int x, int y)
 {
     cairo_rectangle_t geometry;
 
-    if (ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self), &geometry)
+    if (ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE (self), &geometry)
         && (x != (int) geometry.x || y != (int) geometry.y))
     {
         CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
@@ -1247,6 +1247,11 @@ impl_ccm_window_move (CCMWindowPlugin * plugin, CCMWindow * self, int x, int y)
         }
         ccm_region_destroy (old_geometry);
     }
+	else if (!ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
+	{
+		ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+		ccm_drawable_damage(CCM_DRAWABLE(self));
+	}
 }
 
 static void
@@ -1325,6 +1330,11 @@ impl_ccm_window_resize (CCMWindowPlugin * plugin, CCMWindow * self, int width,
             }
         }
     }
+	else if (!ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
+	{
+		ccm_drawable_query_geometry(CCM_DRAWABLE(self));
+		ccm_drawable_damage(CCM_DRAWABLE(self));
+	}
 }
 
 static void
