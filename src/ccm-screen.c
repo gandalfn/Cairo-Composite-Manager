@@ -2341,10 +2341,23 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             XConfigureEvent *configure_event = (XConfigureEvent *) event;
             CCMWindow *window;
 
-            window = ccm_screen_find_window (self, configure_event->window);
+			window = ccm_screen_find_window (self, configure_event->window);
 
             if (window)
             {
+				XEvent ce;
+
+				while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+				                              configure_event->window,
+				                              event->type, &ce)) 
+				{
+					if (ce.xconfigure.above != configure_event->above) 
+					{
+						XPutBackEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), &ce);
+						break;
+					}
+					configure_event = &ce.xconfigure;
+				}
                 if (configure_event->above != None)
                 {
                     if (configure_event->above
