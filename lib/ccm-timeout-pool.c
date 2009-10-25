@@ -59,7 +59,6 @@ struct _CCMTimeoutPool
 
     guint next_id;
 
-    GTimeVal start_time;
     GList *timeouts, *dispatched_timeouts;
     gint ready;
 
@@ -353,7 +352,6 @@ ccm_timeout_pool_new (gint priority)
         g_source_set_priority (source, priority);
 
     pool = (CCMTimeoutPool *) source;
-    g_get_current_time (&pool->start_time);
     pool->next_id = 1;
     pool->id = g_source_attach (source, NULL);
     g_source_unref (source);
