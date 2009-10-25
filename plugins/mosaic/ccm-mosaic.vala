@@ -21,7 +21,7 @@
  */
 using GLib;
 using Cairo;
-using Gee;
+using Vala;
 using Math;
 using Config;
 using CCM;

@@ -24,7 +24,7 @@ using GLib;
 using Cairo;
 using CCM;
 using X;
-using Gee;
+using Vala;
 
 namespace CCM
 {
