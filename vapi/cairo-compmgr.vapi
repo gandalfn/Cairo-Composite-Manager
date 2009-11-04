@@ -77,14 +77,6 @@ namespace X
 [CCode (cheader_filename = "cairo.h,ccm.h")]
 namespace Cairo 
 {
-	[CCode (cname = "cairo_rectangle_t")]
-	public struct Rectangle 
-	{
-		public double x;
-		public double y;
-		public double width;
-		public double height;
-	}
 	public static void rectangles_free(Rectangle[] rects);
 	
 	[Compact]
