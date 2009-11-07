@@ -334,8 +334,8 @@ ccm_shadow_need_shadow (CCMShadow * self)
 			  type == CCM_WINDOW_TYPE_DOCK) ||
 		     (type != CCM_WINDOW_TYPE_NORMAL &&  
 		      type != CCM_WINDOW_TYPE_DIALOG && opaque)) &&
-		    /*((type == CCM_WINDOW_TYPE_DOCK && opaque) || 
-		      type != CCM_WINDOW_TYPE_DOCK) && */
+		    ((type == CCM_WINDOW_TYPE_DOCK && opaque) || 
+		      type != CCM_WINDOW_TYPE_DOCK) && 
 		    (ccm_window_is_managed (window) || 
 		     type == CCM_WINDOW_TYPE_DOCK ||
 		     type == CCM_WINDOW_TYPE_DROPDOWN_MENU || 
