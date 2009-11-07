@@ -12,7 +12,7 @@ dnl Packages version required
 dnl ****************************************************************************
 GTK_REQUIRED=2.10.0
 CAIRO_REQUIRED=1.8.0
-PIXMAN_REQUIRED=0.12.0
+PIXMAN_REQUIRED=0.16.0
 CAIRO_XLIB_REQUIRED=1.8.0
 CAIRO_XLIB_XRENDER_REQUIRED=1.8.0
 CAIRO_GLITZ_REQUIRED=1.8.0
@@ -20,9 +20,9 @@ CAIRO_OPENVG_REQUIRED=1.5.7
 GLITZ_REQUIRED=0.5.7
 GLITZ_GLX_REQUIRED=0.5.7
 GL_PROTO_REQUIRED=1.4.9
-VALA_REQUIRED=0.7.2
+VALA_REQUIRED=0.7.8
 GOBJECT_INTROSPECTION_REQUIRED=0.6.2
-GLADEUI_REQUIRED=3.5.7
+GLADEUI_REQUIRED=3.6.7
 
 dnl ****************************************************************************
 dnl Check for debug flags
