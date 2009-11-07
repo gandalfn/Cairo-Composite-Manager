@@ -105,10 +105,13 @@ ccm_config_check_button_set_property (GObject * object, guint prop_id,
         self->priv->config =
             ccm_config_new (self->priv->screen, self->priv->plugin,
                             self->priv->key);
-        g_signal_connect_swapped (self->priv->config, "changed",
-                                  G_CALLBACK
-                                  (ccm_config_check_button_on_changed), self);
-        ccm_config_check_button_on_changed (self, self->priv->config);
+        if (self->priv->config)
+		{
+			g_signal_connect_swapped (self->priv->config, "changed",
+        		                      G_CALLBACK(ccm_config_check_button_on_changed), 
+			                          self);
+			ccm_config_check_button_on_changed (self, self->priv->config);
+		}
     }
 }
 

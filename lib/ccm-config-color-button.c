@@ -123,9 +123,10 @@ ccm_config_color_button_set_property (GObject * object, guint prop_id,
         self->priv->config =
             ccm_config_new (self->priv->screen, self->priv->plugin,
                             self->priv->key);
-        g_signal_connect_swapped (self->priv->config, "changed",
-                                  G_CALLBACK
-                                  (ccm_config_color_button_on_changed), self);
+		if (self->priv->config)
+			g_signal_connect_swapped (self->priv->config, "changed",
+        		                      G_CALLBACK(ccm_config_color_button_on_changed), 
+		                              self);
     }
     if (self->priv->key_alpha)
     {
@@ -134,10 +135,10 @@ ccm_config_color_button_set_property (GObject * object, guint prop_id,
         self->priv->config_alpha =
             ccm_config_new (self->priv->screen, self->priv->plugin,
                             self->priv->key_alpha);
-        g_signal_connect_swapped (self->priv->config_alpha, "changed",
-                                  G_CALLBACK
-                                  (ccm_config_color_button_on_alpha_changed),
-                                  self);
+        if (self->priv->config_alpha)
+    		g_signal_connect_swapped (self->priv->config_alpha, "changed",
+        		                      G_CALLBACK(ccm_config_color_button_on_alpha_changed),
+		                              self);
     }
 }
 
