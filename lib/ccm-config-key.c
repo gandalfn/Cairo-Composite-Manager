@@ -315,16 +315,20 @@ ccm_config_key_initialize (CCMConfig * config, int screen, gchar * extension,
     if (!self->priv->schema)
         return FALSE;
 
+	if (ccm_config_schema_get_value_type(self->priv->schema, key) == CCM_CONFIG_VALUE_INVALID)
+		return FALSE;
+
+	if (screen == -1 && extension != NULL)
+		return FALSE;
+	
     self->priv->key = g_strdup (key);
 
     if (screen == -1)
-        filename =
-            g_strdup_printf ("%s/cairo-compmgr/ccm-display.conf",
-                             g_get_user_config_dir ());
+        filename = g_strdup_printf ("%s/cairo-compmgr/ccm-display.conf",
+                                    g_get_user_config_dir ());
     else if (screen >= 0)
-        filename =
-            g_strdup_printf ("%s/cairo-compmgr/ccm-screen-%i.conf",
-                             g_get_user_config_dir (), screen);
+        filename = g_strdup_printf ("%s/cairo-compmgr/ccm-screen-%i.conf",
+                                    g_get_user_config_dir (), screen);
     else
         return FALSE;
 
