@@ -25,6 +25,7 @@ static Damage damage = None;
 int event_base;
 int error_base;
 int width = 400, height = 400;
+int count = 0;
 
 void
 on_realize(GtkWidget* widget, gpointer data)
@@ -77,6 +78,10 @@ on_expose_event(GtkWidget* widget, GdkEventExpose* event, gpointer data)
         cairo_paint(ctx);
         cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
         cairo_set_source_surface(ctx, cairo_get_target(clone), 0, 0);
+        gchar* filename = g_strdup_printf("%05d.png", count);
+        cairo_surface_write_to_png(cairo_get_target(clone), filename);
+        count++;
+        g_free(filename);
         cairo_paint(ctx);
         cairo_destroy(ctx);
         cairo_destroy(clone);
@@ -121,6 +126,7 @@ on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
         
         width = event->width;
         height = event->height;
+
         
         clone (clone_window, FALSE);
         if (pixmap) g_object_unref(pixmap);
@@ -134,7 +140,7 @@ on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
 
         damage = XDamageCreate(GDK_DISPLAY_XDISPLAY(display), 
                                    GDK_PIXMAP_XID(pixmap), 
-                                   XDamageReportBoundingBox);
+                                   XDamageReportNonEmpty);
         
         clone (clone_window, TRUE);
     }
@@ -150,12 +156,19 @@ on_filter_event(XEvent* xevent, GdkEvent* event, gpointer data)
     switch (xevent->type) 
     {
         case ButtonPress:
+        {
+            int width, height;
             clone_window = gdk_window_foreign_new(xevent->xbutton.subwindow);
+            gdk_drawable_get_size(clone_window, &width, &height);
+            double ratio = (double)width/(double)height;
+            gtk_window_get_size(GTK_WINDOW(main_window), &width, &height);
+            gtk_window_resize(GTK_WINDOW(main_window), width*ratio, height);
             clone (clone_window, TRUE);
             XUngrabPointer(xevent->xany.display, GDK_CURRENT_TIME);
-            break;
+        }
+        break;
         default:
-            break;
+        break;
     }
 
     if (xevent->type == event_base + XDamageNotify)
