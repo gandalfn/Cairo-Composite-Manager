@@ -1469,15 +1469,7 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
     GList *item, *destroy = NULL;
 
     ccm_debug ("PAINT SCREEN BEGIN");
-    for (item = self->priv->fullscreen
-         && ccm_window_get_opaque_region (self->priv->
-                                          fullscreen) ? g_list_find (self->
-                                                                     priv->
-                                                                     windows,
-                                                                     self->
-                                                                     priv->
-                                                                     fullscreen)
-         : g_list_first (self->priv->windows); item; item = item->next)
+    for (item = g_list_first (self->priv->windows); item; item = item->next)
     {
         if (CCM_IS_WINDOW (item->data))
         {
@@ -1487,8 +1479,7 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
             {
                 if (ccm_drawable_is_damaged (CCM_DRAWABLE (window)))
                 {
-                    CCMRegion *damaged = (CCMRegion*)
-						ccm_drawable_get_damaged (CCM_DRAWABLE (window));
+                    CCMRegion *damaged = (CCMRegion*)ccm_drawable_get_damaged (CCM_DRAWABLE (window));
                     ccm_debug_region (CCM_DRAWABLE (window), "SCREEN DAMAGE");
                     if (!self->priv->damaged)
                         self->priv->damaged = ccm_region_copy (damaged);
@@ -1497,9 +1488,8 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
                 }
 
                 ccm_debug_window (window, "PAINT SCREEN");
-                ret |=
-                    ccm_window_paint (window, self->priv->ctx,
-                                      self->priv->buffered);
+                ret |= ccm_window_paint (window, self->priv->ctx,
+                                         self->priv->buffered);
             }
         }
     }
@@ -1596,7 +1586,6 @@ ccm_screen_on_window_property_changed (CCMScreen * self,
         {
             ccm_debug_window (window, "UNFULLSCREEN");
             self->priv->fullscreen = NULL;
-            ccm_screen_damage (self);
         }
     }
     else if (changed == CCM_PROPERTY_HINT_TYPE)
@@ -2646,20 +2635,23 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             {
                 XShapeEvent *shape_event = (XShapeEvent *) event;
 
-                CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                     shape_event->window);
-                if (window)
-                {
-                    const CCMRegion *geometry =
-                        ccm_drawable_get_device_geometry (CCM_DRAWABLE(window));
+				if (shape_event->kind != ShapeInput)
+				{
+		            CCMWindow *window = ccm_screen_find_window_or_child (self,
+		                                                                 shape_event->window);
+		            if (window)
+		            {
+		                const CCMRegion *geometry =
+		                    ccm_drawable_get_device_geometry (CCM_DRAWABLE(window));
 
-                    if (!geometry || !ccm_region_is_shaped ((CCMRegion *) geometry))
-                    {
-                        ccm_drawable_damage (CCM_DRAWABLE (window));
-                        ccm_drawable_query_geometry (CCM_DRAWABLE (window));
-                        ccm_drawable_damage (CCM_DRAWABLE (window));
-                    }
-                }
+		                if (!geometry || !ccm_region_is_shaped ((CCMRegion *) geometry))
+		                {
+		                    ccm_drawable_damage (CCM_DRAWABLE (window));
+		                    ccm_drawable_query_geometry (CCM_DRAWABLE (window));
+		                    ccm_drawable_damage (CCM_DRAWABLE (window));
+		                }
+		            }
+				}
             }
         }
         break;
