@@ -136,12 +136,12 @@ ccm_log_region (CCMDrawable * drawable, const char *format, ...)
 void
 ccm_log_print_backtrace ()
 {
-    void *array[10];
+    void *array[30];
     int size;
     char **strings;
     int i;
 
-    size = backtrace (array, 10);
+    size = backtrace (array, 30);
     strings = backtrace_symbols (array, size);
 
     for (i = 0; i < size; i++)
