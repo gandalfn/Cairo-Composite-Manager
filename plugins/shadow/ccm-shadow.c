@@ -1188,7 +1188,7 @@ ccm_shadow_window_get_pixmap (CCMWindowPlugin * plugin, CCMWindow * window)
         ccm_window_plugin_get_pixmap (CCM_WINDOW_PLUGIN_PARENT (plugin),
                                       window);
 
-	if (pixmap && ccm_shadow_need_shadow (self) && self->priv->geometry)
+	if (pixmap && self->priv->have_shadow && self->priv->geometry)
     {
         gint swidth, sheight;
         cairo_rectangle_t clipbox;
