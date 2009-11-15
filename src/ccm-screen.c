@@ -2185,8 +2185,8 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
         case CreateNotify:
         {
             XCreateWindowEvent *create_event = ((XCreateWindowEvent *) event);
-            CCMWindow *window = ccm_screen_find_window (self,
-                                                        create_event->window);
+            CCMWindow *window = ccm_screen_find_window_or_child (self,
+                                                                 create_event->window);
             ccm_debug ("CREATE 0x%lx", create_event->window);
 
             if (!window)
@@ -2419,7 +2419,8 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             else if (property_event->atom ==
                      CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom)
             {
-                g_object_unref (self->priv->background);
+                if (self->priv->background) 
+					g_object_unref (self->priv->background);
                 self->priv->background = NULL;
                 ccm_screen_damage (self);
             }
@@ -2621,7 +2622,8 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                      CCM_WINDOW_GET_CLASS (self->priv->root)->
                      root_pixmap_atom)
             {
-                g_object_unref (self->priv->background);
+                if(self->priv->background)
+					g_object_unref (self->priv->background);
                 self->priv->background = NULL;
                 ccm_screen_damage (self);
             }
