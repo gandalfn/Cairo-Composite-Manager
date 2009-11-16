@@ -92,6 +92,17 @@ CAIRO_COMPMGR_CFLAGS="$CAIRO_COMPMGR_CFLAGS -DG_DISABLE_ASSERT -DG_DISABLE_CHECK
 AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 
+dnl ***************************************************************************
+dnl check for bfd
+dnl ***************************************************************************
+AC_CHECK_LIB(bfd, main, [BFD_LIBS="-lbfd"], [])
+AC_CHECK_LIB(iberty, main, [IBERTY_LIBS="-liberty"], [])
+EDEBUG_LIBS="$BFD_LIBS $IBERTY_LIBS"
+AC_SUBST(EDEBUG_LIBS)
+if test "$EDEBUG_LIBS" = "-lbfd -liberty"; then
+    AC_DEFINE(HAVE_EDEBUG, 1, [Enhanced debug enabled])
+fi
+
 dnl ****************************************************************************
 dnl Check for XInput2
 dnl *****************************************************************************

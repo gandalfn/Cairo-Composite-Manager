@@ -176,7 +176,7 @@ endif
 
 cairo_compmgr_LDFLAGS = -rdynamic
 
-cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS) ../lib/libcairo_compmgr.la
+cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS) $(EDEBUG_LIBS) ../lib/libcairo_compmgr.la
 
 if ENABLE_PERF_PLUGIN
 cairo_compmgr_LDADD += $(CCM_PERF_PLUGIN_LIBS)
