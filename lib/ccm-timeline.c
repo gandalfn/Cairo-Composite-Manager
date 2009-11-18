@@ -393,6 +393,9 @@ timeline_timeout_func (CCMTimeline * self)
     if (!self->priv->prev_frame_timeval.tv_sec)
         self->priv->prev_frame_timeval = timeval;
 
+    if ((timeval.tv_sec - self->priv->prev_frame_timeval.tv_sec) < 0)
+         self->priv->prev_frame_timeval = timeval;
+    
     msecs = (timeval.tv_sec - self->priv->prev_frame_timeval.tv_sec) * 1000;
     msecs += (timeval.tv_usec - self->priv->prev_frame_timeval.tv_usec) / 1000;
     self->priv->msecs_delta = msecs;

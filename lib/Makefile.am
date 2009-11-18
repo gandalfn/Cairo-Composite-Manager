@@ -74,7 +74,7 @@ libgladeccm_la_LDFLAGS = -module -avoid-version -no-undefined
 libgladeccm_la_LIBADD = $(CCM_GLADE_LIBS) libcairo_compmgr.la
 endif
 
-noinst_PROGRAMS = test-boxed-blur test-config test-config-widget
+noinst_PROGRAMS = test-boxed-blur test-config test-config-widget test-timeline
 
 test_boxed_blur_SOURCES = test-boxed-blur.c
 
@@ -87,3 +87,7 @@ test_config_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
 test_config_widget_SOURCES = test-config-widget.c
 
 test_config_widget_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
+
+test_timeline_SOURCES = test-timeline.c
+
+test_timeline_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
