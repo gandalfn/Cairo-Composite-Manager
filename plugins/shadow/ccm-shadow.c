@@ -356,9 +356,9 @@ ccm_shadow_check_needed (CCMShadow * self)
 		const CCMRegion* geometry = ccm_drawable_get_device_geometry(CCM_DRAWABLE (self->priv->window));
 		if (geometry && !ccm_region_empty((CCMRegion*)geometry))
 		{
-			ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
 			if (self->priv->have_shadow)
 			{
+				ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
 				ccm_debug_window(self->priv->window, "UNSET SHADOW %s", __FUNCTION__);
 				ccm_drawable_set_geometry(CCM_DRAWABLE(self->priv->window),
 				                          self->priv->geometry);
@@ -391,6 +391,9 @@ ccm_shadow_check_needed (CCMShadow * self)
 					g_object_unref (self->priv->pixmap);
 				self->priv->pixmap = NULL;
 
+				g_object_set(G_OBJECT(self->priv->window), "pixmap", 
+				             self->priv->pixmap, NULL);
+				
 				ccm_region_get_clipbox (new_geometry, &area);
 				ccm_region_offset (new_geometry, -ccm_shadow_get_option (self)->radius,
 				                   -ccm_shadow_get_option (self)->radius);
