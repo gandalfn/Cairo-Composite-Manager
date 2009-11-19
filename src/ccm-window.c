@@ -99,6 +99,7 @@ enum
 {
     PROP_0,
     PROP_CHILD,
+	PROP_PIXMAP,
     PROP_NO_UNDAMAGE_SIBLING,
     PROP_INPUT,
     PROP_REDIRECT,
@@ -195,6 +196,10 @@ ccm_window_set_gobject_property (GObject * object, guint prop_id,
     {
         case PROP_CHILD:
             priv->child = (Window) g_value_get_pointer (value);
+            break;
+        case PROP_PIXMAP:
+			if (priv->pixmap) g_object_unref (priv->pixmap);
+            priv->pixmap = (CCMPixmap*)g_value_get_pointer (value);
             break;
         case PROP_IMAGE:
             {
@@ -438,6 +443,16 @@ ccm_window_class_init (CCMWindowClass * klass)
                                      g_param_spec_pointer ("child", "Child",
                                                            "Child of window",
                                                            G_PARAM_READWRITE));
+
+	/**
+	 * CCMWindow:pixmap:
+	 *
+	 * The redirect pixmap of window.
+	 */
+    g_object_class_install_property (object_class, PROP_PIXMAP,
+                                     g_param_spec_pointer ("pixmap", "Pixmap",
+                                                           "Pixmap of window",
+                                                           G_PARAM_WRITABLE));
 
 	/**
 	 * CCMWindow:no_undamage_sibling:
@@ -1306,7 +1321,7 @@ ccm_window_check_mask (CCMWindow * self)
         height = self->priv->mask_height;
 
         // Size doesn't match a plugin add an offset to pixmap
-        if (clipbox.width != width || clipbox.height != height)
+        if (clipbox.width > width || clipbox.height > height)
         {
             const CCMRegion *geometry = ccm_drawable_get_device_geometry (CCM_DRAWABLE (self));
             CCMRegion *tmp1 = ccm_region_copy ((CCMRegion *)geometry);
@@ -1358,6 +1373,31 @@ ccm_window_check_mask (CCMWindow * self)
             cairo_destroy (ctx);
             cairo_surface_destroy (old);
         }
+		else if (clipbox.width < width || clipbox.height < height)
+        {
+			double x, y;
+			cairo_surface_t *old = self->priv->mask;
+            cairo_t *ctx;
+            cairo_surface_t *surface = ccm_drawable_get_surface (CCM_DRAWABLE (self));
+
+            // Resize mask
+            self->priv->mask = cairo_surface_create_similar (surface, CAIRO_CONTENT_ALPHA,
+                                                             clipbox.width, clipbox.height);
+            cairo_surface_destroy (surface);
+            self->priv->mask_width = (int) clipbox.width;
+            self->priv->mask_height = (int) clipbox.height;
+
+            // Center old mask in new one
+            ctx = cairo_create (self->priv->mask);
+            cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
+
+			x = (clipbox.width - width) / 2;
+			y = (clipbox.height - height) / 2;
+            cairo_set_source_surface (ctx, old, x, y);
+            cairo_paint (ctx);
+            cairo_destroy (ctx);
+            cairo_surface_destroy (old);
+		}
     }
 }
 
