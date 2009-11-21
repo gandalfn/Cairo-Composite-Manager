@@ -258,9 +258,9 @@ ccm_pixmap_on_damage (CCMPixmap * self, Damage damage, CCMDisplay * display)
                 }
                 XFree (rects);
 
-
-                ccm_drawable_damage_region (CCM_DRAWABLE (self), damaged);
-                ccm_region_destroy (damaged);
+				ccm_drawable_damage_region (CCM_DRAWABLE (self), damaged);				
+				ccm_drawable_repair(CCM_DRAWABLE (self));
+				ccm_region_destroy (damaged);
             }
             XFixesDestroyRegion (CCM_DISPLAY_XDISPLAY (display), region);
         }
