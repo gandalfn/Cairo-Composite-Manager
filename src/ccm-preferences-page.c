@@ -791,6 +791,7 @@ ccm_preferences_page_on_composite_desktop_toggled (CCMPreferencesPage * self,
                                      NULL);
         g_slist_free (unmanaged);
     }
+	ccm_preferences_page_need_restart (self, NULL, NULL);
 }
 
 static void
