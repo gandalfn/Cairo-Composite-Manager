@@ -3318,7 +3318,7 @@ ccm_window_redirect_input (CCMWindow * self)
 
             if (self->priv->input)
             {
-                XRectangle *rects;
+                XRectangle *rects = NULL;
                 gint nb_rects;
                 XserverRegion region;
                 XWindowChanges xwc;
@@ -3340,7 +3340,7 @@ ccm_window_redirect_input (CCMWindow * self)
                                             self->priv->input, ShapeInput, 0, 0,
                                             region);
                 XFixesDestroyRegion (CCM_DISPLAY_XDISPLAY (display), region);
-                x_rectangles_free (rects, nb_rects);
+                if (rects) x_rectangles_free (rects, nb_rects);
                 ccm_region_destroy (area);
 
                 xwc.stack_mode = Above;

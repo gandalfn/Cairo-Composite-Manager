@@ -403,7 +403,7 @@ ccm_log_region (CCMDrawable * drawable, const char *format, ...)
     va_start (args, format);
     formatted = g_strdup_vprintf (format, args);
     va_end (args);
-    cairo_rectangle_t *rects;
+    cairo_rectangle_t *rects = NULL;
     gint cpt, nb_rects;
 
     ccm_print_log ("%s: 0x%lx\n", formatted, ccm_drawable_get_xid (drawable));
@@ -417,7 +417,8 @@ ccm_log_region (CCMDrawable * drawable, const char *format, ...)
             ccm_log ("--> %i, %i, %i, %i", (int) rects[cpt].x,
                      (int) rects[cpt].y, (int) rects[cpt].width,
                      (int) rects[cpt].height);
-        cairo_rectangles_free (rects, nb_rects);
+        if (rects) cairo_rectangles_free (rects, nb_rects);
+		rects = NULL;
     }
 
     g_object_get (drawable, "damaged", &damaged, NULL);
@@ -430,7 +431,7 @@ ccm_log_region (CCMDrawable * drawable, const char *format, ...)
             ccm_log ("--> %i, %i, %i, %i", (int) rects[cpt].x,
                      (int) rects[cpt].y, (int) rects[cpt].width,
                      (int) rects[cpt].height);
-        cairo_rectangles_free (rects, nb_rects);
+        if (rects) cairo_rectangles_free (rects, nb_rects);
     }
 
     g_free (formatted);

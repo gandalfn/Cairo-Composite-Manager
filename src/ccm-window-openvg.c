@@ -250,7 +250,7 @@ ccm_window_openvg_flush_region (CCMDrawable * drawable, CCMRegion * region)
     }
     if (csb)
     {
-        cairo_rectangle_t *rects, geometry;
+        cairo_rectangle_t *rects = NULL, geometry;
         gint cpt, nb_rects;
 
         ccm_drawable_get_geometry_clipbox (drawable, &geometry);
@@ -272,7 +272,7 @@ ccm_window_openvg_flush_region (CCMDrawable * drawable, CCMRegion * region)
                 csb (CCM_DISPLAY_XDISPLAY (display), CCM_WINDOW_XWINDOW (self),
                      x, y > 0 ? y : 0, width, height);
         }
-        cairo_rectangles_free (rects, nb_rects);
+        if (rects) cairo_rectangles_free (rects, nb_rects);
     }
     else
         glXSwapBuffers (CCM_DISPLAY_XDISPLAY (display),

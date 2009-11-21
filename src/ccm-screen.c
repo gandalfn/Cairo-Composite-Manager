@@ -1784,7 +1784,7 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             {
                 ccm_screen_update_background (self);
             }
-            cairo_rectangle_t *rects;
+            cairo_rectangle_t *rects = NULL;
             gint cpt, nb_rects;
 
             cairo_save (self->priv->ctx);
@@ -1793,7 +1793,7 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             for (cpt = 0; cpt < nb_rects; ++cpt)
                 cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
                                  rects[cpt].width, rects[cpt].height);
-            cairo_rectangles_free (rects, nb_rects);
+            if (rects) cairo_rectangles_free (rects, nb_rects);
             cairo_clip (self->priv->ctx);
 
             if (self->priv->background)

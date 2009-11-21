@@ -147,7 +147,7 @@ ccm_pixmap_image_repair (CCMDrawable * drawable, CCMRegion * area)
         }
         else
         {
-            XRectangle *rects;
+            XRectangle *rects = NULL;
             gint nb_rects, cpt;
 
             ccm_region_get_xrectangles (area, &rects, &nb_rects);
@@ -164,7 +164,7 @@ ccm_pixmap_image_repair (CCMDrawable * drawable, CCMRegion * area)
                     break;
                 }
             }
-            x_rectangles_free (rects, nb_rects);
+            if (rects) x_rectangles_free (rects, nb_rects);
         }
     }
 
@@ -236,7 +236,7 @@ ccm_pixmap_image_flush_region (CCMDrawable * drawable, CCMRegion * area)
 
     if (self->priv->image)
     {
-        XRectangle *rects;
+        XRectangle *rects = NULL;
         gint cpt, nb_rects;
 
         ccm_region_get_xrectangles (area, &rects, &nb_rects);
@@ -245,6 +245,6 @@ ccm_pixmap_image_flush_region (CCMDrawable * drawable, CCMRegion * area)
                                  rects[cpt].x, rects[cpt].y, rects[cpt].x,
                                  rects[cpt].y, rects[cpt].width,
                                  rects[cpt].height);
-        x_rectangles_free (rects, nb_rects);
+        if (rects) x_rectangles_free (rects, nb_rects);
     }
 }

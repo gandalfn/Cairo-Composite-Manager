@@ -189,7 +189,7 @@ ccm_window_xrender_flush_region (CCMDrawable * drawable, CCMRegion * region)
     {
 		CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
         cairo_t* ctx = cairo_create(self->priv->front);
-        cairo_rectangle_t *rects;
+        cairo_rectangle_t *rects = NULL;
         gint nb_rects, cpt;
 
 		cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
@@ -198,7 +198,7 @@ ccm_window_xrender_flush_region (CCMDrawable * drawable, CCMRegion * region)
 			cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
 			                rects[cpt].width, rects[cpt].height);
 		cairo_clip(ctx);
-		cairo_rectangles_free (rects, nb_rects);
+		if (rects) cairo_rectangles_free (rects, nb_rects);
 		
 		cairo_set_source_surface(ctx, self->priv->back, 0, 0);
 		cairo_paint(ctx);

@@ -994,7 +994,7 @@ ccm_drawable_get_damage_path (CCMDrawable * self, cairo_t * context)
     ccm_debug_region (self, "GET_DAMAGE_PATH");
     if (self->priv->damaged && !ccm_region_empty (self->priv->damaged))
     {
-        cairo_rectangle_t *rectangles;
+        cairo_rectangle_t *rectangles = NULL;
         gint nb_rects, cpt;
 
         ccm_region_get_rectangles (self->priv->damaged, &rectangles, &nb_rects);
@@ -1003,7 +1003,7 @@ ccm_drawable_get_damage_path (CCMDrawable * self, cairo_t * context)
             cairo_rectangle (context, rectangles[cpt].x, rectangles[cpt].y,
                              rectangles[cpt].width, rectangles[cpt].height);
         }
-        cairo_rectangles_free (rectangles, nb_rects);
+        if (rectangles) cairo_rectangles_free (rectangles, nb_rects);
     }
 }
 
@@ -1034,7 +1034,7 @@ ccm_drawable_get_geometry_path (CCMDrawable * self, cairo_t * context)
 
     if (self->priv->geometry)
     {
-        cairo_rectangle_t *rectangles;
+        cairo_rectangle_t *rectangles = NULL;
         gint nb_rects, cpt;
 
         ccm_region_get_rectangles (self->priv->geometry, &rectangles,
@@ -1044,7 +1044,7 @@ ccm_drawable_get_geometry_path (CCMDrawable * self, cairo_t * context)
             cairo_rectangle (context, rectangles[cpt].x, rectangles[cpt].y,
                              rectangles[cpt].width, rectangles[cpt].height);
         }
-        cairo_rectangles_free (rectangles, nb_rects);
+        if (rectangles) cairo_rectangles_free (rectangles, nb_rects);
         path = cairo_copy_path (context);
     }
 
