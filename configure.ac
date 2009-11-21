@@ -300,6 +300,8 @@ if [ test x$glitzbackend = xyes ]; then
 	CFLAGS=$cflags_save 
 	LIBS=$libs_save 
     fi
+else
+    glitztfpbacken="no"
 fi                  
 AM_CONDITIONAL(HAVE_GLITZ_TFP_BACKEND, [test x$glitztfpbackend = xyes])
 

@@ -858,7 +858,7 @@ ccm_preferences_page_on_backend_need_restart (CCMPreferencesPage * self,
         GtkTreeModel *backends;
         GtkTreeIter iter;
 
-        g_free (name);
+        if (name) g_free (name);
         combo =
             GTK_COMBO_BOX (gtk_builder_get_object
                            (self->priv->builder, "backend"));
@@ -883,11 +883,10 @@ ccm_preferences_page_on_backend_need_restart (CCMPreferencesPage * self,
                 if (name && !g_ascii_strcasecmp (name, self->priv->backend))
                 {
                     gtk_combo_box_set_active_iter (combo, &iter);
-                    g_free (name);
+					g_free (name);
                     break;
                 }
-                if (name)
-                    g_free (name);
+                if (name) g_free (name);
             }
             while (gtk_tree_model_iter_next (backends, &iter));
         }
@@ -915,7 +914,6 @@ ccm_preferences_page_on_backend_changed (CCMPreferencesPage * self,
 
         gtk_tree_model_get (model, &iter, 0, &name, -1);
         ccm_preferences_page_change_backend (self, name);
-		if (name) g_free(name);
 		
         ccm_preferences_page_need_restart (self,
                                            (CCMNeedRestartFunc)

@@ -95,8 +95,7 @@ static void
 ccm_timed_dialog_set_timeout_string (CCMTimedDialog * self)
 {
     gchar *string =
-        g_strdup_printf (_
-                         ("Testing the new settings. If you don't respond in %d second the previous settings will be restored."),
+        g_strdup_printf (_("Testing the new settings. If you don't respond in %d second the previous settings will be restored."),
                          self->priv->time);
 
     g_object_set_data_full (G_OBJECT (self), "TimeoutString", string, g_free);
@@ -106,6 +105,8 @@ ccm_timed_dialog_set_timeout_string (CCMTimedDialog * self)
 static gboolean
 ccm_timed_dialog_timeout_callback (CCMTimedDialog * self)
 {
+	if (self->priv->timeout == 0) return FALSE;
+	
     if (!self->priv->timed_out)
     {
         self->priv->time--;
