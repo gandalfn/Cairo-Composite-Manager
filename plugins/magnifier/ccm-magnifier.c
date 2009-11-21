@@ -859,7 +859,7 @@ ccm_magnifier_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
     if (ccm_magnifier_get_option (self)->enabled)
     {
         CCMRegion *area = ccm_region_rectangle (&ccm_magnifier_get_option (self)->area);
-        cairo_rectangle_t *rects;
+        cairo_rectangle_t *rects = NULL;
         CCMRegion *geometry;
         gint cpt, nb_rects;
 
@@ -877,7 +877,7 @@ ccm_magnifier_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
             cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
                              rects[cpt].width, rects[cpt].height);
         cairo_clip (context);
-        cairo_rectangles_free (rects, nb_rects);
+        if (rects) cairo_rectangles_free (rects, nb_rects);
         ccm_region_destroy (area);
         ccm_region_destroy (geometry);
 
@@ -908,7 +908,7 @@ ccm_magnifier_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
             if (damaged)
             {
                 gint cpt, nb_rects;
-                cairo_rectangle_t *rects;
+                cairo_rectangle_t *rects = NULL;
 
                 ccm_debug ("MAGNIFIER PAINT SCREEN SHADE");
 
@@ -931,7 +931,7 @@ ccm_magnifier_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
                                      rects[cpt].width, rects[cpt].height);
                     cairo_fill (context);
                 }
-                cairo_rectangles_free (rects, nb_rects);
+                if (rects) cairo_rectangles_free (rects, nb_rects);
                 cairo_restore (context);
 
                 cairo_save (context);
@@ -974,7 +974,7 @@ ccm_magnifier_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
         if (self->priv->damaged)
         {
             gint cpt, nb_rects;
-            cairo_rectangle_t *rects;
+            cairo_rectangle_t *rects = NULL;
             cairo_pattern_t *pattern;
 
             ccm_debug ("MAGNIFIER PAINT SCREEN FILL CONTENT");
@@ -989,7 +989,7 @@ ccm_magnifier_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
             for (cpt = 0; cpt < nb_rects; ++cpt)
                 cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
                                  rects[cpt].width, rects[cpt].height);
-            cairo_rectangles_free (rects, nb_rects);
+            if (rects) cairo_rectangles_free (rects, nb_rects);
             cairo_clip (context);
 
             ccm_debug ("MAGNIFIER PAINT SCREEN FILL CLIP");
