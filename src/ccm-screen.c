@@ -2187,7 +2187,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             XCreateWindowEvent *create_event = ((XCreateWindowEvent *) event);
             CCMWindow *window = ccm_screen_find_window_or_child (self,
                                                                  create_event->window);
-            ccm_debug ("CREATE 0x%lx", create_event->window);
+            ccm_debug ("CREATE 0x%lx 0x%lx", create_event->window, create_event->parent);
 
             if (!window)
             {
@@ -2200,6 +2200,20 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                         ccm_debug_window (window, "CREATE");
                         if (!ccm_screen_add_window (self, window))
                             g_object_unref (window);
+						else
+						{
+							ccm_drawable_move (CCM_DRAWABLE (window),
+							                   create_event->x -
+							                   create_event->border_width,
+							                   create_event->y -
+							                   create_event->border_width);
+
+							ccm_drawable_resize (CCM_DRAWABLE (window),
+							                     create_event->width +
+							                     create_event->border_width * 2,
+							                     create_event->height +
+							                     create_event->border_width * 2);
+						}
                     }
                 }
             }
@@ -2230,7 +2244,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                                         ((XMapEvent *) event)->window);
             if (window)
             {
-                ccm_debug_window (window, "MAP");
+                ccm_debug_window (window, "MAP 0x%lx", ((XMapEvent *) event)->event);
                 ccm_window_map (window);
             }
             else if (((XMapEvent *) event)->event ==
@@ -2275,13 +2289,8 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
         break;
         case ReparentNotify:
         {
-            CCMWindow *window = ccm_screen_find_window (self,
-                                                        ((XReparentEvent *)
-                                                         event)->window);
-            CCMWindow *parent = ccm_screen_find_window (self,
-                                                        ((XReparentEvent *)
-                                                         event)->parent);
-
+            CCMWindow *window = ccm_screen_find_window_or_child (self, ((XReparentEvent *)event)->window);
+            
             ccm_debug ("REPARENT 0x%x, 0x%x",
                        ((XReparentEvent *) event)->parent,
                        ((XReparentEvent *) event)->window);
@@ -2302,12 +2311,10 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                     }
                 }
             }
-            else if (parent && window)
+            else if (window)
             {
                 ccm_debug_window (window, "REPARENT REMOVE");
-				_ccm_window_reparent(window, parent);
-                ccm_screen_destroy_window (self, window);
-                ccm_drawable_damage (CCM_DRAWABLE (parent));
+				ccm_screen_destroy_window (self, window);
             }
         }
         break;
