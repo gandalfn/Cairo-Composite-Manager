@@ -302,7 +302,7 @@ ccm_decoration_create_mask (CCMDecoration * self)
     {
         cairo_t *ctx;
         cairo_pattern_t *pattern = NULL;
-        cairo_rectangle_t clipbox, *rects;
+        cairo_rectangle_t clipbox, *rects = NULL;
         gint cpt, nb_rects;
         gfloat opacity = ccm_window_get_opacity (self->priv->window);
         CCMRegion *decoration, *tmp;
@@ -369,11 +369,10 @@ ccm_decoration_create_mask (CCMDecoration * self)
         ccm_region_destroy (tmp);
 
         ccm_region_get_rectangles (decoration, &rects, &nb_rects);
-
-        for (cpt = 0; cpt < nb_rects; ++cpt)
+		for (cpt = 0; cpt < nb_rects; ++cpt)
             cairo_rectangle (ctx, rects[cpt].x, rects[cpt].y, rects[cpt].width,
                              rects[cpt].height);
-        cairo_rectangles_free (rects, nb_rects);
+        if (rects) cairo_rectangles_free (rects, nb_rects);
         cairo_fill (ctx);
         if (pattern)
             cairo_pattern_destroy (pattern);
