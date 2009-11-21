@@ -183,8 +183,10 @@ ccm_tray_menu_on_preferences_reload (CCMTrayMenu * self,
 
     if (self->priv->display)
     {
+		ccm_preferences_hide(preferences);
         g_object_unref (self->priv->display);
         self->priv->display = ccm_display_new (NULL);
+        ccm_preferences_show(preferences);
         ret = TRUE;
     }
 
