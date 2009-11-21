@@ -133,8 +133,8 @@ namespace CCM
                     {
                         ctx.rectangle (rectangle.x, rectangle.y,
                                        rectangle.width, rectangle.height);
+						ctx.fill ();
                     }
-                    ctx.fill ();
                     rectangles_free (rectangles);
                 }
             }
