@@ -508,7 +508,7 @@ namespace CCM
 		public weak CCM.Region get_opaque_region ();
 		public weak CCM.Pixmap get_pixmap ();
 		public uint32 get_property (X.Atom property_atom, X.Atom req_type, out uint n_items);
-		public GLib.SList get_transients ();
+		public weak GLib.SList<weak CCM.Window?>? get_transients ();
 		public bool is_decorated ();
 		public bool is_fullscreen ();
 		public bool is_input_only ();

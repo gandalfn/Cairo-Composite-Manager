@@ -124,14 +124,40 @@ namespace CCM
             double x0 = (geometry.width / 2.0) * (1.0 - progress), y0 =
                 (geometry.height / 2.0) * (1.0 - progress);
             Cairo.Matrix matrix;
-
-			window.damage ();
-            if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
+			CCM.Region damaged = new CCM.Region.empty();
+			
+			if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
                 matrix = Cairo.Matrix (progress, 0, 0, progress, x0, y0);
             else
                 matrix = Cairo.Matrix (progress, 0, 0, 1, x0, 0);
+
+			weak CCM.Region? geometry;
+			foreach (CCM.Window transient in window.get_transients())
+			{
+				geometry = transient.get_geometry();
+				if (transient.is_viewable() && !transient.is_input_only() &&
+				    geometry != null && !geometry.is_empty())
+					damaged.union(geometry);
+			}
+			geometry = window.get_geometry();
+			if (geometry != null && !geometry.is_empty())
+				damaged.union(geometry);
+			
             window.push_matrix ("CCMWindowAnimation", matrix);
-            window.damage ();
+			
+            foreach (CCM.Window transient in window.get_transients())
+			{
+				geometry = transient.get_geometry();
+				if (transient.is_viewable() && !transient.is_input_only() &&
+				    geometry != null && !geometry.is_empty())
+					damaged.union(geometry);
+			}
+			geometry = window.get_geometry();
+			if (geometry != null && !geometry.is_empty())
+				damaged.union(geometry); 
+			
+            if (!damaged.is_empty())
+				window.get_screen().damage_region(damaged);
         }
 
         private void on_finish ()
