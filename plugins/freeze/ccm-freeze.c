@@ -288,11 +288,13 @@ ccm_freeze_ping (CCMFreeze * self)
     if (self->priv->window && ccm_window_is_viewable (self->priv->window))
     {
         CCMWindowType type = ccm_window_get_hint_type (self->priv->window);
-
+		const gchar* name = ccm_window_get_name(self->priv->window);
+		
         if (!self->priv->pid)
             ccm_freeze_get_pid (self);
 
-        if (!self->priv->pid || ccm_window_is_input_only (self->priv->window)
+        if ((name && !g_strcasecmp(name, "mplayer")) || 
+            !self->priv->pid || ccm_window_is_input_only (self->priv->window)
             || !ccm_window_is_viewable (self->priv->window)
             || !ccm_window_is_decorated (self->priv->window)
             || (type != CCM_WINDOW_TYPE_NORMAL
