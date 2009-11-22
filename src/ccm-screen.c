@@ -1186,8 +1186,7 @@ ccm_screen_check_stack (CCMScreen * self)
     guint cpt;
     GList *stack = NULL, *item, *last = NULL;
     GList *viewable = NULL, *old_viewable = NULL;
-    CCMWindow *desktop = NULL;
-
+    
     ccm_debug ("CHECK_STACK");
 
     ccm_screen_update_stack (self);
@@ -1203,10 +1202,6 @@ ccm_screen_check_stack (CCMScreen * self)
             stack = g_list_prepend (stack, window);
             if (ccm_window_is_viewable (window))
             {
-                if (ccm_window_get_hint_type (window) ==
-                    CCM_WINDOW_TYPE_DESKTOP)
-                    desktop = window;
-
                 ccm_debug_window (window, "STACK IS VIEWABLE");
                 viewable = g_list_prepend (viewable, window);
             }
@@ -1289,16 +1284,7 @@ ccm_screen_check_stack (CCMScreen * self)
     }
 
     viewable = g_list_reverse (viewable);
-    if (desktop)
-    {
-        for (item = viewable; item->data != desktop; item = item->next)
-        {
-            ccm_debug ("RESTACK 0x%x", item->data);
-            stack = g_list_remove (stack, item->data);
-            stack = g_list_append (stack, item->data);
-        }
-    }
-
+    
     for (item = viewable; item; item = item->next)
     {
         CCMWindow *transient = ccm_window_transient_for (item->data);
