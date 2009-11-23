@@ -135,12 +135,13 @@ struct _CCMWindowPrivate
 
     Window root;
     Window child;
-    Window transient_for;
-    Window group_leader;
+    CCMWindow* transient_for;
+    CCMWindow* group_leader;
     Window input;
 
     GSList *transients;
-
+	GSList *group;
+	
     cairo_rectangle_t area;
     gboolean is_input_only;
     gboolean is_viewable;
@@ -294,10 +295,11 @@ ccm_window_init (CCMWindow * self)
     self->priv->class_name = NULL;
 	self->priv->unmanaged = FALSE;
     self->priv->child = None;
-    self->priv->transient_for = None;
-    self->priv->group_leader = None;
+    self->priv->transient_for = NULL;
+    self->priv->group_leader = NULL;
     self->priv->input = None;
     self->priv->transients = NULL;
+    self->priv->group = NULL;
     self->priv->area.x = 0;
     self->priv->area.y = 0;
     self->priv->area.width = 0;
@@ -351,28 +353,37 @@ ccm_window_finalize (GObject * object)
         g_signal_handler_disconnect (screen, self->priv->id_plugins_changed);
     ccm_window_unredirect_input (self);
 
-    for (item = self->priv->transients; item; item = item->next)
+    for (item = self->priv->group; item; item = item->next)
+    {
+		CCMWindow* window = item->data;
+		window->priv->group_leader = NULL;
+	}
+
+	if (self->priv->group_leader)
+	{
+		self->priv->group_leader->priv->group =
+					g_slist_remove (self->priv->group_leader->priv->group, 
+					                self);
+	}
+	
+	for (item = self->priv->transients; item; item = item->next)
     {
 		CCMWindow* window = item->data;
 		ccm_drawable_pop_matrix (CCM_DRAWABLE (window), "CCMWindowTranslate");
         ccm_drawable_pop_matrix (CCM_DRAWABLE (window), "CCMWindowTransient");
+		window->priv->transient_for = NULL;
 		window->priv->id_transient_transform_changed = 0;
     }
 	g_slist_free(self->priv->transients);
 	
-    if (self->priv->transient_for)
-    {
-        CCMWindow *transient = ccm_window_transient_for (self);
-
-        if (transient && self->priv->id_transient_transform_changed)
-        {
-            g_signal_handler_disconnect (transient,
-                                         self->priv->id_transient_transform_changed);
-			self->priv->id_transient_transform_changed = 0;
-			transient->priv->transients =
-                g_slist_remove (transient->priv->transients, self);
-        }
-    }
+    if (self->priv->transient_for && self->priv->id_transient_transform_changed)
+	{
+		g_signal_handler_disconnect (self->priv->transient_for,
+		                             self->priv->id_transient_transform_changed);
+		self->priv->id_transient_transform_changed = 0;
+		self->priv->transient_for->priv->transients =
+			g_slist_remove (self->priv->transient_for->priv->transients, self);
+	}
     if (self->priv->mask)
     {
         cairo_surface_destroy (self->priv->mask);
@@ -1687,45 +1698,41 @@ ccm_window_on_get_property_async (CCMWindow * self, guint n_items,
 
         if (result)
         {
-            Window old = self->priv->transient_for;
-
-            memcpy (&self->priv->transient_for, result, sizeof (Window));
-            updated = old != self->priv->transient_for;
-
-            if (old != None)
+			CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE(self));
+			Window transient = None;
+			CCMWindow* new = NULL;
+            
+            memcpy (&transient, result, sizeof (Window));
+			new = transient != None ?
+				  ccm_screen_find_window_or_child(screen, transient) : NULL;
+			updated = new != self->priv->transient_for;
+			
+			if (self->priv->transient_for && self->priv->id_transient_transform_changed)
+			{
+				ccm_drawable_pop_matrix (CCM_DRAWABLE (self),
+				                         "CCMWindowTranslate");
+				ccm_drawable_pop_matrix (CCM_DRAWABLE (self),
+				                         "CCMWindowTransient");
+				g_signal_handler_disconnect (self->priv->transient_for,
+				                             self->priv->id_transient_transform_changed);
+				self->priv->transient_for->priv->transients =
+					g_slist_remove (self->priv->transient_for->priv->transients, 
+					                self);
+				self->priv->id_transient_transform_changed = 0;
+			}
+			self->priv->transient_for = new;
+			
+            if (self->priv->transient_for)
             {
-                CCMWindow *transient = ccm_window_transient_for (self);
-
-                if (transient && self->priv->id_transient_transform_changed)
-                {
-                    ccm_drawable_pop_matrix (CCM_DRAWABLE (self),
-                                             "CCMWindowTranslate");
-                    ccm_drawable_pop_matrix (CCM_DRAWABLE (self),
-                                             "CCMWindowTransient");
-                    g_signal_handler_disconnect (transient,
-                                                 self->priv->id_transient_transform_changed);
-					transient->priv->transients =
-                        g_slist_remove (transient->priv->transients, self);
-					self->priv->id_transient_transform_changed = 0;
-                }
-            }
-
-            if (self->priv->transient_for != None)
-            {
-                CCMWindow *transient = ccm_window_transient_for (self);
-
-                if (transient)
-                {
-                    ccm_window_on_transient_transform_changed (self, NULL,
-                                                               transient);
-                    self->priv->id_transient_transform_changed =
-                        g_signal_connect_swapped (transient,
-                                                  "notify::transform",
-                                                  G_CALLBACK(ccm_window_on_transient_transform_changed),
-                                                  self);
-					transient->priv->transients =
-                        g_slist_prepend (transient->priv->transients, self);
-                }
+				ccm_window_on_transient_transform_changed (self, NULL,
+				                                           self->priv->transient_for);
+				self->priv->id_transient_transform_changed =
+					g_signal_connect_swapped (self->priv->transient_for,
+					                          "notify::transform",
+					                          G_CALLBACK(ccm_window_on_transient_transform_changed),
+					                          self);
+				self->priv->transient_for->priv->transients =
+					g_slist_prepend (self->priv->transient_for->priv->transients, self);
                 if (self->priv->hint_type == CCM_WINDOW_TYPE_NORMAL)
                 {
                     self->priv->hint_type = CCM_WINDOW_TYPE_DIALOG;
@@ -2596,34 +2603,20 @@ ccm_window_is_child (CCMWindow * self, Window window)
     return ccm_window_traverse_child (self, None, window);
 }
 
-CCMWindow *
+const CCMWindow *
 ccm_window_transient_for (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
 
-    CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
-    CCMWindow *window = NULL;
-
-    if (self->priv->transient_for)
-        window = ccm_screen_find_window_or_child (screen, 
-                                                  self->priv->transient_for);
- 
-    return window;
+    return self->priv->transient_for;
 }
 
-CCMWindow *
+const CCMWindow *
 ccm_window_get_group_leader (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
 
-    CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
-    CCMWindow *window = NULL;
-
-    if (self->priv->group_leader)
-        window =
-            ccm_screen_find_window_or_child (screen, self->priv->group_leader);
-
-    return window;
+    return self->priv->group_leader;
 }
 
 void
@@ -2944,6 +2937,7 @@ ccm_window_query_wm_hints (CCMWindow * self)
 
     XWMHints *hints;
     CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
+	CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
 
     hints =
         XGetWMHints (CCM_DISPLAY_XDISPLAY (display),
@@ -2951,13 +2945,36 @@ ccm_window_query_wm_hints (CCMWindow * self)
                      child : CCM_WINDOW_XWINDOW (self));
     if (hints)
     {
-        Window old = self->priv->group_leader;
+        CCMWindow* old = self->priv->group_leader;
+		Window group_leader = None;
 
-        if (hints->flags & WindowGroupHint)
-            self->priv->group_leader = hints->window_group;
+		if (hints->flags & WindowGroupHint)
+            group_leader = hints->window_group;
+
+		if (old)
+		{
+			old->priv->group = g_slist_remove (old->priv->transients, 
+			                                   self);
+		}
+		
+		self->priv->group_leader = group_leader != None ? 
+								   ccm_screen_find_window_or_child(screen,
+								                                   group_leader) : NULL;
+
+
+		if (self->priv->group_leader)
+		{
+			self->priv->group_leader->priv->group =
+						g_slist_prepend (self->priv->group_leader->priv->group, self);
+		}
+
+		ccm_debug_window(self, "GROUP LEADER 0x%lx", self->priv->group_leader);
+			
         if (old != self->priv->group_leader)
-            g_signal_emit (self, signals[PROPERTY_CHANGED], 0,
-                           CCM_PROPERTY_WM_HINTS);
+		{
+			g_signal_emit (self, signals[PROPERTY_CHANGED], 0,
+			               CCM_PROPERTY_WM_HINTS);
+		}
 
         XFree (hints);
     }

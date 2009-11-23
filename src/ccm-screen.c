@@ -1287,12 +1287,12 @@ ccm_screen_check_stack (CCMScreen * self)
     
     for (item = viewable; item; item = item->next)
     {
-        CCMWindow *transient = ccm_window_transient_for (item->data);
-        CCMWindow *leader = ccm_window_get_group_leader (item->data);
+        const CCMWindow *transient = ccm_window_transient_for (item->data);
+        const CCMWindow *leader = ccm_window_get_group_leader (item->data);
 
         if (transient
-            && ccm_window_is_viewable(transient)
-            && !ccm_window_is_input_only(transient)
+            && ccm_window_is_viewable((CCMWindow*)transient)
+            && !ccm_window_is_input_only((CCMWindow*)transient)
             && g_list_index (stack, item->data) < g_list_index (stack,
                                                                 transient))
         {
@@ -1372,7 +1372,7 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
     g_return_if_fail (sibling != NULL);
 
     GList *sibling_link = NULL, *item, *found = NULL;
-    CCMWindow *transient = NULL, *leader = NULL;
+    const CCMWindow *transient = NULL, *leader = NULL;
 
 	if (sibling == self->priv->active)
 		return;
@@ -1580,10 +1580,10 @@ ccm_screen_on_window_property_changed (CCMScreen * self,
     }
     else if (changed == CCM_PROPERTY_TRANSIENT)
     {
-        CCMWindow *transient = ccm_window_transient_for (window);
+        const CCMWindow *transient = ccm_window_transient_for (window);
 
         if (transient)
-            ccm_screen_restack (self, window, transient);
+            ccm_screen_restack (self, window, (CCMWindow*) transient);
     }
 }
 
@@ -2252,10 +2252,10 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             }
             if (window)
             {
-                CCMWindow *transient = ccm_window_transient_for (window);
+                const CCMWindow *transient = ccm_window_transient_for (window);
 
                 if (transient)
-                    ccm_screen_restack (self, window, transient);
+                    ccm_screen_restack (self, window, (CCMWindow*)transient);
             }
         }
         break;
