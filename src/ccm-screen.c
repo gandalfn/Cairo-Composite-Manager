@@ -1178,6 +1178,51 @@ ccm_screen_query_stack (CCMScreen * self)
     }
 }
 
+static int
+ccm_screen_compare_window(CCMWindow* a, CCMWindow* b)
+{
+	CCMWindowType ta = ccm_window_get_hint_type(a);
+	CCMWindowType tb = ccm_window_get_hint_type(b);
+
+	if (!ccm_window_is_managed(a) && ccm_window_is_managed(b))
+		return 1;
+	
+	if (ccm_window_is_managed(a) && !ccm_window_is_managed(b))
+		return -1;
+
+	if (ta == CCM_WINDOW_TYPE_DESKTOP && tb != CCM_WINDOW_TYPE_DESKTOP)
+		return -1;
+
+	if (ta != CCM_WINDOW_TYPE_DESKTOP && tb == CCM_WINDOW_TYPE_DESKTOP)
+		return 1;
+
+	if (ccm_window_keep_below(a) && !ccm_window_keep_below(b))
+		return -1;
+	
+	if (!ccm_window_keep_below(a) && ccm_window_keep_below(b))
+		return 1;
+	
+	if (ccm_window_keep_above(a) && !ccm_window_keep_above(b))
+		return 1;
+	
+	if (!ccm_window_keep_above(a) && ccm_window_keep_above(b))
+		return -1;
+
+	if (ta == CCM_WINDOW_TYPE_DOCK && tb != CCM_WINDOW_TYPE_DOCK)
+		return 1;
+
+	if (ta != CCM_WINDOW_TYPE_DOCK && tb == CCM_WINDOW_TYPE_DOCK)
+		return -1;
+
+	if (ccm_window_is_fullscreen(a) && !ccm_window_is_fullscreen(b))
+		return 1;
+	
+	if (!ccm_window_is_fullscreen(a) && ccm_window_is_fullscreen(b))
+		return -1;
+
+	return 0;
+}
+
 static void
 ccm_screen_check_stack (CCMScreen * self)
 {
@@ -1285,7 +1330,9 @@ ccm_screen_check_stack (CCMScreen * self)
 
     viewable = g_list_reverse (viewable);
     
-    for (item = viewable; item; item = item->next)
+    stack = g_list_sort(stack, (GCompareFunc)ccm_screen_compare_window);
+	
+	for (item = viewable; item; item = item->next)
     {
         const CCMWindow *transient = ccm_window_transient_for (item->data);
         const CCMWindow *leader = ccm_window_get_group_leader (item->data);
