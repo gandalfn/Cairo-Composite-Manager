@@ -1811,6 +1811,38 @@ ccm_window_on_get_property_async (CCMWindow * self, guint n_items,
             }
         }
     }
+	else if (property == CCM_WINDOW_GET_CLASS (self)->frame_extends_atom)
+	{
+		gboolean updated = FALSE;
+
+		if (result)
+		{
+			int left_frame, right_frame, top_frame, bottom_frame;
+		    gulong *extends = (gulong *) result;
+
+    		if (n_items == 4)
+    		{
+				left_frame = (int) extends[0];
+				updated |= left_frame != self->priv->frame_left;
+				right_frame = (int) extends[1];
+				updated |= right_frame != self->priv->frame_right;
+				top_frame = (int) extends[2];
+				updated |= left_frame != self->priv->frame_top;
+				bottom_frame = (int) extends[3];
+				updated |= bottom_frame != self->priv->frame_bottom;
+			}
+
+			if (updated)
+			{
+				self->priv->frame_left = left_frame;
+				self->priv->frame_right = right_frame;
+				self->priv->frame_top = top_frame;
+				self->priv->frame_bottom = bottom_frame;
+				g_signal_emit (self, signals[PROPERTY_CHANGED], 0,
+				               CCM_PROPERTY_FRAME_EXTENDS);
+			}
+		}
+	}
 
     self->priv->properties_pending =
         g_slist_remove (self->priv->properties_pending, prop);
@@ -3123,49 +3155,10 @@ ccm_window_query_frame_extends (CCMWindow * self)
     g_return_if_fail (self != NULL);
     g_return_if_fail (CCM_WINDOW_GET_CLASS (self) != NULL);
 
-    guint32 *data = NULL;
-    guint n_items;
-    gboolean updated = FALSE;
-    int left_frame, right_frame, top_frame, bottom_frame;
-
-    if (self->priv->child)
-        data =
-            ccm_window_get_child_property (self,
-                                           CCM_WINDOW_GET_CLASS (self)->
-                                           frame_extends_atom, XA_CARDINAL,
-                                           &n_items);
-    else
-        data =
-            ccm_window_get_property (self,
-                                     CCM_WINDOW_GET_CLASS (self)->
-                                     frame_extends_atom, XA_CARDINAL, &n_items);
-    if (data)
-    {
-        gulong *extends = (gulong *) data;
-
-        if (n_items == 4)
-        {
-            left_frame = (int) extends[0];
-            updated |= left_frame != self->priv->frame_left;
-            right_frame = (int) extends[1];
-            updated |= right_frame != self->priv->frame_right;
-            top_frame = (int) extends[2];
-            updated |= left_frame != self->priv->frame_top;
-            bottom_frame = (int) extends[3];
-            updated |= bottom_frame != self->priv->frame_bottom;
-        }
-        g_free (data);
-    }
-
-    if (updated)
-    {
-        self->priv->frame_left = left_frame;
-        self->priv->frame_right = right_frame;
-        self->priv->frame_top = top_frame;
-        self->priv->frame_bottom = bottom_frame;
-        g_signal_emit (self, signals[PROPERTY_CHANGED], 0,
-                       CCM_PROPERTY_FRAME_EXTENDS);
-    }
+	ccm_debug_window (self, "QUERY FRAME EXTENDS");
+    ccm_window_get_property_async (self, 
+                                   CCM_WINDOW_GET_CLASS (self)->frame_extends_atom, 
+                                   XA_CARDINAL, 32);
 }
 
 void
