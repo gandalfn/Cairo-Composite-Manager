@@ -2347,7 +2347,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             else if (window)
             {
                 ccm_debug_window (window, "REPARENT REMOVE");
-				ccm_screen_remove_window (self, window);
+				ccm_screen_destroy_window (self, window);
             }
         }
         break;
