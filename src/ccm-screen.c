@@ -929,7 +929,7 @@ ccm_screen_destroy_window (CCMScreen * self, CCMWindow * window)
 {
     ccm_debug_window (window, "DESTROY WINDOW");
 
-    self->priv->windows = g_list_remove (self->priv->windows, window);
+	self->priv->windows = g_list_remove (self->priv->windows, window);
 
     if (CCM_IS_WINDOW (window))
     {
@@ -1529,11 +1529,10 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
 
     for (item = self->priv->removed; item; item = item->next)
     {
-        if (!ccm_window_is_viewable (item->data)
-            || ccm_window_is_input_only (item->data))
+		if (!CCM_IS_WINDOW(item->data) ||
+		    !ccm_window_is_viewable (item->data) ||
+            ccm_window_is_input_only (item->data))
         {
-            self->priv->windows =
-                g_list_remove (self->priv->windows, item->data);
             ccm_screen_destroy_window (self, item->data);
             destroy = g_list_prepend (destroy, item->data);
         }
