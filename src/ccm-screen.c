@@ -1196,6 +1196,12 @@ ccm_screen_compare_window(CCMWindow* a, CCMWindow* b)
 	if (ta != CCM_WINDOW_TYPE_DESKTOP && tb == CCM_WINDOW_TYPE_DESKTOP)
 		return 1;
 
+	if (ccm_window_is_fullscreen(a) && !ccm_window_is_fullscreen(b))
+		return 1;
+	
+	if (!ccm_window_is_fullscreen(a) && ccm_window_is_fullscreen(b))
+		return -1;
+
 	if (ccm_window_keep_below(a) && !ccm_window_keep_below(b))
 		return -1;
 	
@@ -1212,12 +1218,6 @@ ccm_screen_compare_window(CCMWindow* a, CCMWindow* b)
 		return 1;
 
 	if (ta != CCM_WINDOW_TYPE_DOCK && tb == CCM_WINDOW_TYPE_DOCK)
-		return -1;
-
-	if (ccm_window_is_fullscreen(a) && !ccm_window_is_fullscreen(b))
-		return 1;
-	
-	if (!ccm_window_is_fullscreen(a) && ccm_window_is_fullscreen(b))
 		return -1;
 
 	return 0;
@@ -1380,6 +1380,7 @@ ccm_screen_check_stack (CCMScreen * self)
 	g_list_free (self->priv->windows);
     self->priv->windows = stack;
 
+	viewable = g_list_sort (viewable, (GCompareFunc)ccm_screen_compare_window);
     viewable = g_list_reverse (viewable);
 
     last = old_viewable;
