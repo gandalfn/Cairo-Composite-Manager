@@ -88,6 +88,13 @@ ccm_timeout_sort (gconstpointer a, gconstpointer b)
     const CCMTimeout *t_a = a;
     const CCMTimeout *t_b = b;
 
+    /* Keep 'ready' 'master' timeouts at the front */
+    if (TIMEOUT_READY (t_a) && TIMEOUT_MASTER (t_a))
+        return -1;
+
+    if (TIMEOUT_READY (t_b) && TIMEOUT_MASTER (t_b))
+        return 1;
+
     /* Keep 'ready' timeouts at the front */
     if (TIMEOUT_READY (t_a))
         return -1;
