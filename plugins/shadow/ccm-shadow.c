@@ -900,8 +900,6 @@ ccm_shadow_on_pixmap_damage (CCMShadow * self, CCMRegion * area)
 
     if (self->priv->shadow && self->priv->pixmap)
     {
-        CCMDisplay *display = 
-			ccm_drawable_get_display (CCM_DRAWABLE (self->priv->pixmap));
         cairo_surface_t *surface;
         cairo_t *ctx;
         cairo_rectangle_t *rects = NULL;
@@ -978,7 +976,6 @@ ccm_shadow_on_pixmap_damage (CCMShadow * self, CCMRegion * area)
         }
         cairo_destroy (ctx);
         cairo_surface_destroy (surface);
-        ccm_display_sync (display);
     }
 }
 
