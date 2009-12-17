@@ -152,6 +152,7 @@ struct _CCMScreenPrivate
     Window *stack;
     guint n_windows;
     GList *windows;
+	GList *last_windows;
     GList *removed;
     gboolean buffered;
     gint nb_redirect_input;
@@ -328,6 +329,7 @@ ccm_screen_init (CCMScreen * self)
     self->priv->stack = NULL;
     self->priv->n_windows = 0;
     self->priv->windows = NULL;
+	self->priv->last_windows = NULL;
     self->priv->removed = NULL;
     self->priv->buffered = FALSE;
     self->priv->nb_redirect_input = 0;
@@ -930,7 +932,8 @@ ccm_screen_destroy_window (CCMScreen * self, CCMWindow * window)
     ccm_debug_window (window, "DESTROY WINDOW");
 
 	self->priv->windows = g_list_remove (self->priv->windows, window);
-
+	self->priv->last_windows = g_list_last (self->priv->windows);
+	
     if (CCM_IS_WINDOW (window))
     {
         g_signal_handlers_disconnect_by_func (window,
@@ -1042,7 +1045,7 @@ ccm_screen_find_window_at_pos (CCMScreen * self, int x, int y)
     GList *item;
     CCMWindow *found = NULL;
 
-    for (item = g_list_last (self->priv->windows); item && !found;
+    for (item = self->priv->last_windows; item && !found;
          item = item->prev)
     {
         if (ccm_window_is_viewable (item->data)
@@ -1164,7 +1167,8 @@ ccm_screen_query_stack (CCMScreen * self)
     }
 
     ccm_screen_update_stack (self);
-    for (cpt = 0; cpt < self->priv->n_windows; ++cpt)
+
+	for (cpt = 0; cpt < self->priv->n_windows; ++cpt)
     {
         CCMWindow *window = ccm_window_new (self, self->priv->stack[cpt]);
         if (window)
@@ -1379,7 +1383,8 @@ ccm_screen_check_stack (CCMScreen * self)
 
 	g_list_free (self->priv->windows);
     self->priv->windows = stack;
-
+	self->priv->last_windows = g_list_last(self->priv->windows);
+	
 	viewable = g_list_sort (viewable, (GCompareFunc)ccm_screen_compare_window);
     viewable = g_list_reverse (viewable);
 
@@ -1467,7 +1472,7 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
 			}
         }
     }
-		
+	self->priv->last_windows = g_list_last(self->priv->windows);
 
     ccm_drawable_damage (CCM_DRAWABLE (window));
 }
@@ -1503,13 +1508,14 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
     GList *item, *destroy = NULL;
 
     ccm_debug ("PAINT SCREEN BEGIN");
-    for (item = g_list_first (self->priv->windows); item; item = item->next)
+    for (item = self->priv->windows; item; item = item->next)
     {
         if (CCM_IS_WINDOW (item->data))
         {
             CCMWindow *window = CCM_WINDOW (item->data);
 
-            if (!ccm_window_is_input_only (window))
+            if (ccm_window_is_viewable (window) &&
+                !ccm_window_is_input_only (window))
             {
                 if (ccm_drawable_is_damaged (CCM_DRAWABLE (window)))
                 {
@@ -1541,7 +1547,7 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
 
     if (destroy)
     {
-        for (item = g_list_first (destroy); item; item = item->next)
+        for (item = destroy; item; item = item->next)
             self->priv->removed =
                 g_list_remove (self->priv->removed, item->data);
         g_list_free (destroy);
@@ -1645,7 +1651,8 @@ impl_ccm_screen_add_window (CCMScreenPlugin * plugin, CCMScreen * self,
     ccm_debug_window (window, "ADD");
 
     self->priv->windows = g_list_append (self->priv->windows, window);
-
+	self->priv->last_windows = g_list_last(self->priv->windows);
+	
     g_signal_connect_swapped (window, "damaged",
                               G_CALLBACK (ccm_screen_on_window_damaged), self);
     g_signal_connect_swapped (window, "error",
@@ -1920,7 +1927,7 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
     }
 
     // Substract all obscured area to damage region
-    for (item = g_list_last (self->priv->windows); item; item = item->prev)
+    for (item = self->priv->last_windows; item; item = item->prev)
     {
         if (!ccm_window_is_input_only (item->data)
             && ccm_window_is_viewable (item->data)
@@ -1956,7 +1963,7 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
         top = FALSE;
     }
     else
-        item = g_list_last (self->priv->windows);
+        item = self->priv->last_windows;
 
     // damage now all concurent window
     for (; item; item = item->prev)
@@ -2908,7 +2915,7 @@ ccm_screen_damage_region (CCMScreen * self, const CCMRegion * area)
 
     ccm_debug ("SCREEN DAMAGE REGION");
 
-    for (item = g_list_last (self->priv->windows); item; item = item->prev)
+    for (item = self->priv->last_windows; item; item = item->prev)
     {
         if (CCM_IS_WINDOW (item->data) && !ccm_window_is_input_only (item->data)
             && ccm_window_is_viewable (item->data))
@@ -2927,7 +2934,7 @@ ccm_screen_undamage_region (CCMScreen * self, const CCMRegion * area)
 
     GList *item;
 
-    for (item = g_list_last (self->priv->windows); item; item = item->prev)
+    for (item = self->priv->last_windows; item; item = item->prev)
     {
         if (!ccm_window_is_input_only (item->data)
             && ccm_window_is_viewable (item->data))
