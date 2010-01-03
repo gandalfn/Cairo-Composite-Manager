@@ -26,6 +26,7 @@
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xfixes.h>
+#include <X11/extensions/Xdbe.h>
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/shape.h>
 #include <gtk/gtk.h>
@@ -45,18 +46,21 @@ enum
     PROP_0,
     PROP_XDISPLAY,
     PROP_USE_XSHM,
+    PROP_USE_XDBE,
     PROP_SHM_SHARED_PIXMAP
 };
 
 enum
 {
     CCM_DISPLAY_OPTION_USE_XSHM,
-    CCM_DISPLAY_UNMANAGED_SCREEN,
+    CCM_DISPLAY_OPTION_USE_XDBE,
+	CCM_DISPLAY_UNMANAGED_SCREEN,
     CCM_DISPLAY_OPTION_N
 };
 
 static gchar *CCMDisplayOptions[CCM_DISPLAY_OPTION_N] = {
     "use_xshm",
+    "use_xdbe",
     "unmanaged_screen"
 };
 
@@ -96,7 +100,8 @@ struct _CCMDisplayPrivate
     CCMExtension damage;
     CCMExtension shm;
     gboolean shm_shared_pixmap;
-    CCMExtension fixes;
+	CCMExtension dbe;
+	CCMExtension fixes;
     CCMExtension input;
 
     GSList *pointers;
@@ -111,6 +116,7 @@ struct _CCMDisplayPrivate
     GHashTable *cursors;
 
     gboolean use_shm;
+	gboolean use_dbe;
 
     gint fd;
     CCMConfig *options[CCM_DISPLAY_OPTION_N];
@@ -158,13 +164,16 @@ ccm_display_get_property (GObject * object, guint prop_id, GValue * value,
                 g_value_set_boolean (value, priv->use_shm);
             }
             break;
+        case PROP_USE_XDBE:
+            {
+                g_value_set_boolean (value, priv->use_dbe);
+            }
+            break;
         case PROP_SHM_SHARED_PIXMAP:
             {
                 GError *error = NULL;
                 gboolean xshm =
-                    ccm_config_get_boolean (priv->
-                                            options
-                                            [CCM_DISPLAY_OPTION_USE_XSHM],
+                    ccm_config_get_boolean (priv->options[CCM_DISPLAY_OPTION_USE_XSHM],
                                             &error);
 
                 if (error)
@@ -193,6 +202,7 @@ ccm_display_init (CCMDisplay * self)
     self->priv->screens = NULL;
     self->priv->shm_shared_pixmap = FALSE;
     self->priv->use_shm = FALSE;
+    self->priv->use_dbe = FALSE;
     self->priv->pointers = NULL;
     self->priv->type_button_press = 0;
     self->priv->type_button_release = 0;
@@ -285,6 +295,13 @@ ccm_display_class_init (CCMDisplayClass * klass)
                                                            TRUE,
                                                            G_PARAM_READWRITE));
 
+	g_object_class_install_property (object_class, PROP_USE_XDBE,
+                                     g_param_spec_boolean ("use_xdbe",
+                                                           "UseXdbe",
+                                                           "Use Double Buffer Extension",
+                                                           TRUE,
+                                                           G_PARAM_READABLE));
+
     signals[EVENT] =
         g_signal_new ("event", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -320,6 +337,10 @@ ccm_display_load_config (CCMDisplay * self)
         ccm_config_get_boolean (self->priv->
                                 options[CCM_DISPLAY_OPTION_USE_XSHM], NULL)
         && self->priv->shm.available;
+    self->priv->use_dbe =
+        ccm_config_get_boolean (self->priv->
+                                options[CCM_DISPLAY_OPTION_USE_XDBE], NULL)
+        && self->priv->dbe.available;
 }
 
 static void
@@ -468,6 +489,22 @@ ccm_display_init_shm (CCMDisplay * self)
         return TRUE;
     }
 
+    return FALSE;
+}
+
+static gboolean
+ccm_display_init_dbe(CCMDisplay *self)
+{
+	g_return_val_if_fail(self != NULL, FALSE);
+	
+	int major, minor;
+
+	if (XdbeQueryExtension (self->priv->xdisplay, &major, &minor))
+    {
+		self->priv->dbe.available = TRUE;
+		return TRUE;
+    }
+    
     return FALSE;
 }
 
@@ -680,7 +717,9 @@ ccm_display_new (gchar * display)
 
     self = g_object_new (CCM_TYPE_DISPLAY, "xdisplay", xdisplay, NULL);
 
-    if (!ccm_display_init_shape (self))
+    ccm_display_init_dbe(self);
+
+	if (!ccm_display_init_shape (self))
     {
         g_object_unref (self);
         g_warning ("Shape init failed for %s", display);
