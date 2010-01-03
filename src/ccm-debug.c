@@ -334,6 +334,31 @@ ccm_backtrace_symbols(void *const *buffer, int size)
 }
 #endif /* HAVE_EDEBUG */
 
+static double audit = 0;
+
+void
+ccm_log_start_audit()
+{
+	if (!timer)
+        timer = g_timer_new ();
+
+	audit = g_timer_elapsed (timer, NULL);
+}
+
+void
+ccm_log_audit(const char *format, ...)
+{
+	va_list args;
+    gchar *formatted;
+
+    va_start (args, format);
+    formatted = g_strdup_vprintf (format, args);
+    va_end (args);
+
+    g_print ("%f: %s\n", (g_timer_elapsed (timer, NULL) - audit) * 1000, formatted);
+    g_free (formatted);
+}
+
 static void
 ccm_print_log (const char *format, ...)
 {
