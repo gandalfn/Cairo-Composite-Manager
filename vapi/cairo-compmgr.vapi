@@ -25,55 +25,6 @@ using GLib;
 [CCode (cheader_filename = "math.h") ]
 public const double M_PI;
 
-[CCode (cprefix = "")]
-namespace X
-{
-    [CCode (cheader_filename = "X11/X.h", cname = "XRECTANGLE")] 
-	public struct RECTANGLE
-    {
-        public short x;
-        public short y;
-        public short width;
-        public short height;
-    }
-
-	[SimpleType]
-	[IntegerType (rank = 9)]
-	[CCode (cname = "XID", type_id = "G_TYPE_ULONG",
-		marshaller_type_name = "ULONG",
-		get_value_function = "g_value_get_ulong",
-		set_value_function = "g_value_set_ulong", default_value = "0",
-		type_signature = "lu")]
-	public struct ID
-	{
-	}
-
-	[SimpleType]
-	[IntegerType (rank = 9)]
-	[CCode (cname = "Drawable", type_id = "G_TYPE_ULONG",
-		marshaller_type_name = "ULONG",
-		get_value_function = "g_value_get_ulong",
-		set_value_function = "g_value_set_ulong", default_value = "0",
-		type_signature = "lu")]
-	public struct Drawable : ID
-	{
-	}
-
-	[SimpleType]
-	[IntegerType (rank = 9)]
-	[CCode (cname = "Pixmap", type_id = "G_TYPE_ULONG",
-		marshaller_type_name = "ULONG",
-		get_value_function = "g_value_get_ulong",
-		set_value_function = "g_value_set_ulong", default_value = "0",
-		type_signature = "lu")]
-	public struct Pixmap : Drawable
-	{
-	}
-
-	[CCode (cheader_filename = "X11/X.h", cname = "None")] 
-	const X.ID None;
-}
-
 [CCode (cheader_filename = "cairo.h,ccm.h")]
 namespace Cairo 
 {
@@ -688,7 +639,7 @@ namespace CCM
         [CCode (cname = "ccm_region_rectangle")]
         public Region.rectangle (Cairo.Rectangle rectangle);
 	    [CCode (cname = "ccm_region_xrectangle")]  
-    	public Region.xrectangle (X.RECTANGLE rectangle);
+    	public Region.xrectangle (X.Rectangle rectangle);
 		public Region copy();
 	    
         [CCode (cname = "ccm_region_empty")]
@@ -696,7 +647,7 @@ namespace CCM
     	public CCM.RegionBox[] get_boxes (out int n_box);
     	public void get_clipbox (out Cairo.Rectangle clipbox);
 		public void get_rectangles (out unowned Cairo.Rectangle[] rectangles);
-    	public void region_get_xrectangles (out unowned X.RECTANGLE[] rectangles);
+    	public void region_get_xrectangles (out unowned X.Rectangle[] rectangles);
 
     	public void intersect (CCM.Region other);
     	public void offset (int dx, int dy);
@@ -706,7 +657,7 @@ namespace CCM
     	public void subtract (CCM.Region other);
     	public void @union (CCM.Region other);
 	    public void union_with_rect (Cairo.Rectangle rect);
-	    public void union_with_xrect (X.RECTANGLE rect);
+	    public void union_with_xrect (X.Rectangle rect);
 
     	public void region_transform (Cairo.Matrix matrix);
     	public void region_transform_invert (Cairo.Matrix matrix);
