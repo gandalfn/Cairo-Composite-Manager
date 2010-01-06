@@ -2240,20 +2240,6 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                         ccm_debug_window (window, "CREATE");
                         if (!ccm_screen_add_window (self, window))
                             g_object_unref (window);
-						else
-						{
-							ccm_drawable_move (CCM_DRAWABLE (window),
-							                   create_event->x -
-							                   create_event->border_width,
-							                   create_event->y -
-							                   create_event->border_width);
-
-							ccm_drawable_resize (CCM_DRAWABLE (window),
-							                     create_event->width +
-							                     create_event->border_width * 2,
-							                     create_event->height +
-							                     create_event->border_width * 2);
-						}
                     }
                 }
             }
