@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -55,7 +55,7 @@ static void ccm_config_key_set_integer_list (CCMConfig * config, GSList * value,
                                              GError ** error);
 
 #define CCM_CONFIG_KEY_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_KEY, CCMConfigKeyPrivate))
+    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_KEY, CCMConfigKeyPrivate))
 
 G_DEFINE_TYPE (CCMConfigKey, ccm_config_key, CCM_TYPE_CONFIG);
 
@@ -97,23 +97,21 @@ ccm_config_key_monitor_changed (CCMConfigKeyMonitor * self, GFile * file,
 
                 g_key_file_free (self->keyfile);
                 self->keyfile = g_key_file_new ();
-                if (g_key_file_load_from_file
-                    (self->keyfile, self->filename, G_KEY_FILE_NONE, NULL))
+                if (g_key_file_load_from_file (self->keyfile, self->filename, 
+                                               G_KEY_FILE_NONE, NULL))
                 {
                     for (item = self->configs; item; item = item->next)
                     {
                         CCMConfigKey *config = CCM_CONFIG_KEY (item->data);
 
                         gchar *value = g_key_file_get_string (self->keyfile,
-                                                              config->priv->
-                                                              name,
+                                                              config->priv->name,
                                                               config->priv->key,
                                                               NULL);
 
-                        if (value
-                            && (!config->priv->value
-                                || g_ascii_strcasecmp (config->priv->value,
-                                                       value)))
+                        if (value && (!config->priv->value || 
+                                      g_ascii_strcasecmp (config->priv->value,
+                                                          value)))
                         {
                             if (config->priv->value)
                                 g_free (config->priv->value);
@@ -166,15 +164,15 @@ ccm_config_key_monitor_new (gchar * filename)
     self->keyfile = g_key_file_new ();
     g_key_file_set_list_separator (self->keyfile, ',');
     file = g_file_new_for_path (filename);
-	output = g_file_create (file, G_FILE_CREATE_NONE, NULL, NULL);
-	if (output) g_object_unref (output);
-	g_key_file_load_from_file (self->keyfile, filename, G_KEY_FILE_NONE, NULL);
+    output = g_file_create (file, G_FILE_CREATE_NONE, NULL, NULL);
+    if (output) g_object_unref (output);
+    g_key_file_load_from_file (self->keyfile, filename, G_KEY_FILE_NONE, NULL);
     self->configs = NULL;
     self->monitor = g_file_monitor (file, G_FILE_MONITOR_NONE, NULL, NULL);
     g_file_monitor_set_rate_limit (self->monitor, 250);
     if (!self->monitor)
     {
-		g_object_unref(file);
+        g_object_unref(file);
         g_key_file_free (self->keyfile);
         g_free (self->filename);
         g_free (self);
@@ -183,8 +181,8 @@ ccm_config_key_monitor_new (gchar * filename)
     g_signal_connect_swapped (self->monitor, "changed",
                               G_CALLBACK (ccm_config_key_monitor_changed),
                               self);
-	g_object_unref(file);
-	
+    g_object_unref(file);
+
     return self;
 }
 
@@ -228,8 +226,7 @@ ccm_config_key_finalize (GObject * object)
     if (self->priv->value)
         g_free (self->priv->value);
     if (self->priv->monitor)
-        self->priv->monitor->configs =
-            g_slist_remove (self->priv->monitor->configs, self);
+        self->priv->monitor->configs = g_slist_remove (self->priv->monitor->configs, self);
 
     G_OBJECT_CLASS (ccm_config_key_parent_class)->finalize (object);
 }
@@ -241,19 +238,17 @@ ccm_config_key_class_init (CCMConfigKeyClass * klass)
 
     g_type_class_add_private (klass, sizeof (CCMConfigKeyPrivate));
 
-    gchar *config_dir = g_strdup_printf ("%s/cairo-compmgr",
-                                         g_get_user_config_dir ());
+    gchar *config_dir = g_strdup_printf ("%s/cairo-compmgr", g_get_user_config_dir ());
     if (!g_file_test (config_dir, G_FILE_TEST_EXISTS))
     {
         g_mkdir_with_parents (config_dir, 0755);
     }
     g_free (config_dir);
 
-    klass->schemas =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_object_unref);
-    klass->configs =
-        g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
-                               (GDestroyNotify) ccm_config_key_monitor_free);
+    klass->schemas = g_hash_table_new_full (g_str_hash, g_str_equal, 
+                                            g_free, g_object_unref);
+    klass->configs = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+                                            (GDestroyNotify)ccm_config_key_monitor_free);
 
     CCM_CONFIG_CLASS (klass)->initialize = ccm_config_key_initialize;
 
@@ -268,10 +263,8 @@ ccm_config_key_class_init (CCMConfigKeyClass * klass)
     CCM_CONFIG_CLASS (klass)->set_string = ccm_config_key_set_string;
     CCM_CONFIG_CLASS (klass)->get_string_list = ccm_config_key_get_string_list;
     CCM_CONFIG_CLASS (klass)->set_string_list = ccm_config_key_set_string_list;
-    CCM_CONFIG_CLASS (klass)->get_integer_list =
-        ccm_config_key_get_integer_list;
-    CCM_CONFIG_CLASS (klass)->set_integer_list =
-        ccm_config_key_set_integer_list;
+    CCM_CONFIG_CLASS (klass)->get_integer_list = ccm_config_key_get_integer_list;
+    CCM_CONFIG_CLASS (klass)->set_integer_list = ccm_config_key_set_integer_list;
 
     object_class->finalize = ccm_config_key_finalize;
 }
@@ -282,13 +275,12 @@ ccm_config_key_get_schema (CCMConfigKey * self, gchar * extension)
     CCMConfigSchema *schema = NULL;
 
     self->priv->name = extension ? g_strdup (extension) : g_strdup ("general");
-    self->priv->schema_name =
-        extension ? g_strdup (extension) : self->priv->screen <
-        0 ? g_strdup ("display") : g_strdup ("screen");
+    self->priv->schema_name = extension ? g_strdup (extension) : 
+                                          self->priv->screen < 0 ? g_strdup ("display") : 
+                                                                   g_strdup ("screen");
 
-    schema =
-        g_hash_table_lookup (CCM_CONFIG_KEY_GET_CLASS (self)->schemas,
-                             self->priv->schema_name);
+    schema = g_hash_table_lookup (CCM_CONFIG_KEY_GET_CLASS (self)->schemas,
+                                  self->priv->schema_name);
     if (!schema)
     {
         schema = ccm_config_schema_new (self->priv->screen, extension);
@@ -313,14 +305,14 @@ ccm_config_key_initialize (CCMConfig * config, int screen, gchar * extension,
     self->priv->schema = ccm_config_key_get_schema (self, extension);
 
     if (!self->priv->schema)
+       return FALSE;
+    
+    if (ccm_config_schema_get_value_type(self->priv->schema, key) == CCM_CONFIG_VALUE_INVALID)
         return FALSE;
-
-	if (ccm_config_schema_get_value_type(self->priv->schema, key) == CCM_CONFIG_VALUE_INVALID)
-		return FALSE;
-
-	if (screen == -1 && extension != NULL)
-		return FALSE;
-	
+    
+    if (screen == -1 && extension != NULL)
+        return FALSE;
+    
     self->priv->key = g_strdup (key);
 
     if (screen == -1)
@@ -350,15 +342,14 @@ ccm_config_key_initialize (CCMConfig * config, int screen, gchar * extension,
     else
         g_free (filename);
 
-    self->priv->monitor->configs =
-        g_slist_prepend (self->priv->monitor->configs, self);
-    self->priv->value =
-        g_key_file_get_string (self->priv->monitor->keyfile, self->priv->name,
-                               self->priv->key, NULL);
+    self->priv->monitor->configs = g_slist_prepend (self->priv->monitor->configs, self);
+    self->priv->value = g_key_file_get_string (self->priv->monitor->keyfile, 
+                                               self->priv->name,
+                                               self->priv->key, NULL);
     if (!self->priv->value)
     {
-        self->priv->value =
-            ccm_config_schema_get_default (self->priv->schema, self->priv->key);
+        self->priv->value = ccm_config_schema_get_default (self->priv->schema, 
+                                                           self->priv->key);
         g_key_file_set_string (self->priv->monitor->keyfile, self->priv->name,
                                self->priv->key,
                                self->priv->value ? self->priv->value : "");
@@ -518,9 +509,7 @@ ccm_config_key_get_integer_list (CCMConfig * config, GError ** error)
             gint cpt;
 
             for (cpt = 0; list[cpt]; cpt++)
-                result =
-                    g_slist_prepend (result,
-                                     GINT_TO_POINTER (atoi (list[cpt])));
+                result = g_slist_prepend (result, GINT_TO_POINTER (atoi (list[cpt])));
             result = g_slist_reverse (result);
             g_strfreev (list);
         }

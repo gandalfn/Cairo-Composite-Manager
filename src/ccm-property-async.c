@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2008 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -46,7 +46,7 @@ struct _CCMPropertyASyncPrivate
 };
 
 #define CCM_PROPERTY_ASYNC_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PROPERTY_ASYNC, CCMPropertyASyncPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PROPERTY_ASYNC, CCMPropertyASyncPrivate))
 
 G_DEFINE_TYPE (CCMPropertyASync, ccm_property_async, G_TYPE_OBJECT);
 
@@ -111,7 +111,7 @@ ccm_property_async_class_init (CCMPropertyASyncClass * klass)
 }
 
 #define ALIGN_VALUE(this, boundary) \
-  (( ((unsigned long)(this)) + (((unsigned long)(boundary)) -1)) & (~(((unsigned long)(boundary))-1)))
+(( ((unsigned long)(this)) + (((unsigned long)(boundary)) -1)) & (~(((unsigned long)(boundary))-1)))
 
 static gboolean
 ccm_property_async_idle (CCMPropertyASync * self)
@@ -165,9 +165,8 @@ ccm_property_async_handler (Display * dpy, xReply * rep, char *buf, int len,
             case 8:
                 nbytes = reply->nItems;
                 netbytes = ALIGN_VALUE (nbytes, 4);
-                if (nbytes + 1 > 0
-                    && (self->priv->data =
-                        (gchar *) Xmalloc ((unsigned) nbytes + 1)))
+                if (nbytes + 1 > 0 && 
+                    (self->priv->data = (gchar *) Xmalloc ((unsigned) nbytes + 1)))
                 {
                     _XGetAsyncData (dpy, self->priv->data, buf, len,
                                     sizeof (xGetPropertyReply), nbytes,
@@ -178,9 +177,8 @@ ccm_property_async_handler (Display * dpy, xReply * rep, char *buf, int len,
                 nbytes = reply->nItems * sizeof (short);
                 netbytes = reply->nItems << 1;
                 netbytes = ALIGN_VALUE (netbytes, 4);
-                if (nbytes + 1 > 0
-                    && (self->priv->data =
-                        (gchar *) Xmalloc ((unsigned) nbytes + 1)))
+                if (nbytes + 1 > 0 && 
+                    (self->priv->data = (gchar *) Xmalloc ((unsigned) nbytes + 1)))
                 {
                     _XGetAsyncData (dpy, self->priv->data, buf, len,
                                     sizeof (xGetPropertyReply), nbytes,
@@ -190,9 +188,8 @@ ccm_property_async_handler (Display * dpy, xReply * rep, char *buf, int len,
             case 32:
                 nbytes = reply->nItems * sizeof (long);
                 netbytes = reply->nItems << 2;
-                if (nbytes + 1 > 0
-                    && (self->priv->data =
-                        (gchar *) Xmalloc ((unsigned) nbytes + 1)))
+                if (nbytes + 1 > 0 && 
+                    (self->priv->data = (gchar *) Xmalloc ((unsigned) nbytes + 1)))
                 {
                     if (sizeof (long) == 8)
                     {
@@ -234,10 +231,9 @@ ccm_property_async_handler (Display * dpy, xReply * rep, char *buf, int len,
             (self->priv->data)[nbytes] = '\0';
             self->priv->n_items = reply->nItems;
             ccm_debug ("DATA %i", self->priv->n_items);
-            self->priv->id =
-                g_idle_add_full (G_PRIORITY_HIGH,
-                                 (GSourceFunc) ccm_property_async_idle, self,
-                                 NULL);
+            self->priv->id = g_idle_add_full (G_PRIORITY_HIGH,
+                                              (GSourceFunc) ccm_property_async_idle, 
+                                              self, NULL);
         }
         else
         {

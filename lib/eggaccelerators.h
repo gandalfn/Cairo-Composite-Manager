@@ -26,9 +26,9 @@
 
 G_BEGIN_DECLS
 /* Where a value is also in GdkModifierType we coincide,
- * otherwise we don't overlap.
- */
-    typedef enum
+     * otherwise we don't overlap.
+     */
+typedef enum
 {
     EGG_VIRTUAL_SHIFT_MASK = 1 << 0,
     EGG_VIRTUAL_LOCK_MASK = 1 << 1,

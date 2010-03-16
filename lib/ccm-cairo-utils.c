@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -91,19 +91,15 @@ cairo_notebook_page_round (cairo_t * cr, double x, double y, double w, double h,
     // +                                      +    y+th+r
     // |                                      |
     cairo_move_to (cr, x + tx + radius, y);
-    cairo_arc (cr, x + tx + tw - radius, y + radius, radius, M_PI * 1.5,
-               M_PI * 2);
-    cairo_arc_negative (cr, x + tx + tw + radius, y + th - radius, radius, M_PI,
-                        M_PI * 0.5);
-    cairo_arc (cr, x + w - radius, y + th + radius, radius, M_PI * 1.5,
-               M_PI * 2);
+    cairo_arc (cr, x + tx + tw - radius, y + radius, radius, M_PI * 1.5, M_PI * 2);
+    cairo_arc_negative (cr, x + tx + tw + radius, y + th - radius, radius, M_PI, M_PI * 0.5);
+    cairo_arc (cr, x + w - radius, y + th + radius, radius, M_PI * 1.5, M_PI * 2);
     cairo_arc (cr, x + w - radius, y + h - radius, radius, 0, M_PI * 0.5);
     cairo_arc (cr, x + radius, y + h - radius, radius, M_PI * 0.5, M_PI);
     if (tx >= radius)
     {
         cairo_arc (cr, x + radius, y + th + radius, radius, M_PI, M_PI * 1.5);
-        cairo_arc_negative (cr, x + tx - radius, y + th - radius, radius,
-                            M_PI * 0.5, 0);
+        cairo_arc_negative (cr, x + tx - radius, y + th - radius, radius, M_PI * 0.5, 0);
         cairo_arc (cr, x + tx + radius, y + radius, radius, M_PI, M_PI * 1.5);
     }
     else
@@ -190,8 +186,7 @@ cairo_image_surface_blur (cairo_surface_t * surface, int radius, double sigma,
     cairo_format_t cairo_format;
     pixman_format_code_t pixman_format;
 
-    g_return_val_if_fail (cairo_surface_get_type (surface) ==
-                          CAIRO_SURFACE_TYPE_IMAGE, NULL);
+    g_return_val_if_fail (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
     w = width <= 0 ? cairo_image_surface_get_width (surface) : width;
     h = height <= 0 ? cairo_image_surface_get_height (surface) : height;
@@ -212,8 +207,7 @@ cairo_image_surface_blur (cairo_surface_t * surface, int radius, double sigma,
     /* render blured image to new pixman image */
     p = g_malloc0 (s * h);
     dst = pixman_image_create_bits (pixman_format, w, h, p, s);
-    pixman_image_composite (PIXMAN_OP_SRC, src, NULL, dst, 0, 0, 0, 0, 0, 0, w,
-                            h);
+    pixman_image_composite (PIXMAN_OP_SRC, src, NULL, dst, 0, 0, 0, 0, 0, 0, w, h);
     pixman_image_unref (src);
 
     /* create new cairo image for blured pixman image */
@@ -242,8 +236,7 @@ cairo_image_surface_blur2 (cairo_surface_t * surface, double radius, int x_orig,
     cairo_format_t cairo_format;
     pixman_format_code_t pixman_format;
 
-    g_return_val_if_fail (cairo_surface_get_type (surface) ==
-                          CAIRO_SURFACE_TYPE_IMAGE, NULL);
+    g_return_val_if_fail (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE, NULL);
 
     cairo_format = cairo_image_surface_get_format (surface);
     pixman_format = pixman_format_from_cairo_format (cairo_format);
@@ -270,8 +263,7 @@ cairo_image_surface_blur2 (cairo_surface_t * surface, double radius, int x_orig,
     psrc = pixman_image_create_bits (pixman_format, w, h, (gpointer) src, s);
     dst = g_malloc0 (s * h);
     pdst = pixman_image_create_bits (pixman_format, w, h, (gpointer) dst, s);
-    pixman_image_composite (PIXMAN_OP_SRC, psrc, NULL, pdst, 0, 0, 0, 0, 0, 0,
-                            w, h);
+    pixman_image_composite (PIXMAN_OP_SRC, psrc, NULL, pdst, 0, 0, 0, 0, 0, 0, w, h);
     pixman_image_unref (psrc);
     pixman_image_unref (pdst);
 
@@ -315,11 +307,7 @@ cairo_image_surface_blur2 (cairo_surface_t * surface, double radius, int x_orig,
                     int t = y < radius ? 0 : y - radius;
                     int r = x + radius >= w ? w - 1 : x + radius;
                     int b = y + radius >= h ? h - 1 : y + radius;
-                    int tot =
-                        precalc[r + b * w] + precalc[l + t * w] - precalc[l +
-                                                                          b *
-                                                                          w] -
-                        precalc[r + t * w];
+                    int tot = precalc[r + b * w] + precalc[l + t * w] - precalc[l + b * w] - precalc[r + t * w];
                     *pix = (unsigned char) (tot * mul);
                     pix += nchan;
                 }
@@ -350,8 +338,7 @@ cairo_blur_path (cairo_surface_t * ref, cairo_path_t * path,
 
     double cpt;
     double x1, y1, x2, y2;
-    cairo_surface_t *surface = cairo_surface_create_similar (ref,
-                                                             CAIRO_CONTENT_ALPHA,
+    cairo_surface_t *surface = cairo_surface_create_similar (ref, CAIRO_CONTENT_ALPHA,
                                                              width, height);
     cairo_t *cr = cairo_create (surface);
 

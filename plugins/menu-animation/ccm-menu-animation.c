@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -108,7 +108,7 @@ struct _CCMMenuAnimationPrivate
 };
 
 #define CCM_MENU_ANIMATION_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MENU_ANIMATION, CCMMenuAnimationPrivate))
 
 static void
 ccm_menu_animation_options_init (CCMMenuAnimationOptions* self)
@@ -125,10 +125,10 @@ static void
 ccm_menu_animation_options_changed (CCMMenuAnimationOptions* self,
                                     CCMConfig* config)
 {
-	GError *error = NULL;
+    GError *error = NULL;
     gfloat real_duration = ccm_config_get_float (config, &error);
     gfloat duration;
-    
+
     if (error)
     {
         g_error_free (error);
@@ -490,7 +490,7 @@ ccm_menu_animation_finish (CCMMenuAnimation * self)
     ccm_debug_window (self->priv->window, "MENU ANIMATION COMPLETED");
 
     ccm_window_set_redirect(self->priv->window, TRUE);
-	if (ccm_timeline_get_direction (self->priv->timeline) ==
+    if (ccm_timeline_get_direction (self->priv->timeline) ==
         CCM_TIMELINE_FORWARD)
     {
         CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD (self, map);
@@ -550,26 +550,26 @@ ccm_menu_animation_on_event (CCMMenuAnimation * self, XEvent * event)
     switch (event->type)
     {
         case PropertyNotify:
-            {
-                XPropertyEvent *property_event = (XPropertyEvent *) event;
-                CCMWindow *window;
+        {
+            XPropertyEvent *property_event = (XPropertyEvent *) event;
+            CCMWindow *window;
 
-                if (property_event->atom ==
-                    CCM_MENU_ANIMATION_GET_CLASS (self)->animation_atom)
+            if (property_event->atom ==
+                CCM_MENU_ANIMATION_GET_CLASS (self)->animation_atom)
+            {
+                window =
+                    ccm_screen_find_window_or_child (self->priv->screen,
+                                                     property_event->
+                                                     window);
+                if (window)
                 {
-                    window =
-                        ccm_screen_find_window_or_child (self->priv->screen,
-                                                         property_event->
-                                                         window);
-                    if (window)
-                    {
-                        CCMMenuAnimation *plugin =
-                            CCM_MENU_ANIMATION (_ccm_window_get_plugin (window,
-                                                                        CCM_TYPE_MENU_ANIMATION));
-                        ccm_menu_animation_query_forced_animation (plugin);
-                    }
+                    CCMMenuAnimation *plugin =
+                        CCM_MENU_ANIMATION (_ccm_window_get_plugin (window,
+                                                                    CCM_TYPE_MENU_ANIMATION));
+                    ccm_menu_animation_query_forced_animation (plugin);
                 }
             }
+        }
             break;
         default:
             break;
@@ -695,7 +695,7 @@ ccm_menu_animation_map (CCMWindowPlugin * plugin, CCMWindow * window)
         {
             ccm_timeline_advance (self->priv->timeline, current_frame);
         }
-		ccm_window_set_redirect(window, FALSE);
+        ccm_window_set_redirect(window, FALSE);
     }
     ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
@@ -754,15 +754,15 @@ ccm_menu_animation_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
                 current_frame;
             ccm_timeline_advance (self->priv->timeline, num_frame);
         }
-		ccm_window_set_redirect(window, FALSE);
+        ccm_window_set_redirect(window, FALSE);
     }
     ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
 
 static void
 ccm_menu_animation_preferences_page_init_effects_section
-    (CCMPreferencesPagePlugin * plugin, CCMPreferencesPage * preferences,
-     GtkWidget * effects_section)
+(CCMPreferencesPagePlugin * plugin, CCMPreferencesPage * preferences,
+ GtkWidget * effects_section)
 {
     CCMMenuAnimation *self = CCM_MENU_ANIMATION (plugin);
 

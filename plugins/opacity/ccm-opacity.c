@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,10 +54,10 @@ typedef struct
 {
     CCMPluginOptions parent;
 
-	gchar* increase;
-	gchar* decrease;
-		
-	gfloat step;
+    gchar* increase;
+    gchar* decrease;
+
+    gfloat step;
 
     gfloat opacity;
 } CCMOpacityOptions;
@@ -86,7 +86,7 @@ struct _CCMOpacityPrivate
     CCMKeybind *increase;
     CCMKeybind *decrease;
 
-	CCMWindow* window;
+    CCMWindow* window;
 
     GtkBuilder* builder;
 
@@ -94,7 +94,7 @@ struct _CCMOpacityPrivate
 };
 
 #define CCM_OPACITY_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_OPACITY, CCMOpacityPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_OPACITY, CCMOpacityPrivate))
 
 static void
 ccm_opacity_options_init (CCMOpacityOptions* self)
@@ -117,11 +117,11 @@ ccm_opacity_options_finalize (CCMOpacityOptions* self)
 static void
 ccm_opacity_options_changed (CCMOpacityOptions* self, CCMConfig* config)
 {
-	GError *error = NULL;
-	
-	if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
-	                                             CCM_OPACITY_INCREASE))
-	{
+    GError *error = NULL;
+
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                 CCM_OPACITY_INCREASE))
+    {
         if (self->increase) g_free(self->increase);
 
         self->increase = ccm_config_get_string (config, &error);
@@ -131,10 +131,10 @@ ccm_opacity_options_changed (CCMOpacityOptions* self, CCMConfig* config)
             g_error_free (error);
             self->increase = g_strdup ("<Super>Button4");
         }
-	}
-	else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
-	                                                  CCM_OPACITY_DECREASE))
-	{
+    }
+    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                      CCM_OPACITY_DECREASE))
+    {
         if (self->decrease) g_free(self->decrease);
 
         self->decrease = ccm_config_get_string (config, &error);
@@ -144,49 +144,49 @@ ccm_opacity_options_changed (CCMOpacityOptions* self, CCMConfig* config)
             g_error_free (error);
             self->decrease = g_strdup ("<Super>Button5");
         }
-	}
-	else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
-	                                                  CCM_OPACITY_STEP))
-	{
-		gfloat real_step;
-	    gfloat step;
-
-		real_step = ccm_config_get_float (config, &error);
-	    if (error)
-		{
-			g_warning ("Error on get opacity step configuration value");
-			g_error_free (error);
-			real_step = 0.1;
-		}
-		step = MAX (0.01f, real_step);
-		step = MIN (0.5f, real_step);
-		if (self->step != step)
-		{
-			self->step = step;
-			if (real_step != step) ccm_config_set_float (config, step, NULL);
-		}
-	}
+    }
     else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
-	                                                  CCM_OPACITY_OPACITY))
+                                                      CCM_OPACITY_STEP))
     {
-		gfloat real_opacity;
-		gfloat opacity;
+        gfloat real_step;
+        gfloat step;
 
-		real_opacity = ccm_config_get_float (config, &error);
-		if (error)
-		{
-			g_warning ("Error on get opacity configuration value");
-			g_error_free (error);
-			real_opacity = 0.85f;
-		}
-		opacity = MAX (0.1f, real_opacity);
-		opacity = MIN (1.0f, real_opacity);
-		if (self->opacity != opacity)
-		{
-			self->opacity = opacity;
-			if (opacity != real_opacity) 
-				ccm_config_set_float (config, opacity, NULL);
-		}
+        real_step = ccm_config_get_float (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get opacity step configuration value");
+            g_error_free (error);
+            real_step = 0.1;
+        }
+        step = MAX (0.01f, real_step);
+        step = MIN (0.5f, real_step);
+        if (self->step != step)
+        {
+            self->step = step;
+            if (real_step != step) ccm_config_set_float (config, step, NULL);
+        }
+    }
+    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+                                                      CCM_OPACITY_OPACITY))
+    {
+        gfloat real_opacity;
+        gfloat opacity;
+
+        real_opacity = ccm_config_get_float (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get opacity configuration value");
+            g_error_free (error);
+            real_opacity = 0.85f;
+        }
+        opacity = MAX (0.1f, real_opacity);
+        opacity = MIN (1.0f, real_opacity);
+        if (self->opacity != opacity)
+        {
+            self->opacity = opacity;
+            if (opacity != real_opacity) 
+                ccm_config_set_float (config, opacity, NULL);
+        }
     }
 }
 
@@ -196,8 +196,8 @@ ccm_opacity_init (CCMOpacity * self)
     self->priv = CCM_OPACITY_GET_PRIVATE (self);
     self->priv->screen = NULL;
     self->priv->window = NULL;
-	self->priv->increase = NULL;
-	self->priv->decrease = NULL;
+    self->priv->increase = NULL;
+    self->priv->decrease = NULL;
     self->priv->builder = NULL;
     self->priv->id_property_changed = 0;
 }
@@ -217,14 +217,14 @@ ccm_opacity_finalize (GObject * object)
 
     ccm_plugin_options_unload (CCM_PLUGIN (self));
 
-	if (self->priv->increase) 
-		g_object_unref(self->priv->increase);
-	self->priv->increase = NULL;
+    if (self->priv->increase) 
+        g_object_unref(self->priv->increase);
+    self->priv->increase = NULL;
 
-	if (self->priv->decrease) 
-		g_object_unref(self->priv->decrease);
-	self->priv->decrease = NULL;
-	
+    if (self->priv->decrease) 
+        g_object_unref(self->priv->decrease);
+    self->priv->decrease = NULL;
+
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
     self->priv->builder = NULL;
@@ -326,7 +326,7 @@ ccm_opacity_get_increase_keybind (CCMOpacity * self)
 {
     if (self->priv->screen)
     {
-		if (self->priv->increase) g_object_unref(self->priv->increase);
+        if (self->priv->increase) g_object_unref(self->priv->increase);
         self->priv->increase = ccm_keybind_new (self->priv->screen, 
                                                 ccm_opacity_get_option (self)->increase, 
                                                 TRUE);
@@ -380,25 +380,25 @@ ccm_opacity_on_option_changed (CCMPlugin * plugin, int index)
 {
     CCMOpacity *self = CCM_OPACITY (plugin);
 
-	switch (index)
-	{
-		case CCM_OPACITY_INCREASE:
-	        ccm_opacity_get_increase_keybind (self);
-			break;
-		case CCM_OPACITY_DECREASE:
-	        ccm_opacity_get_decrease_keybind (self);
-			break;
-		case CCM_OPACITY_OPACITY:
+    switch (index)
+    {
+        case CCM_OPACITY_INCREASE:
+            ccm_opacity_get_increase_keybind (self);
+            break;
+        case CCM_OPACITY_DECREASE:
+            ccm_opacity_get_decrease_keybind (self);
+            break;
+        case CCM_OPACITY_OPACITY:
             if (self->priv->window)
-		    {
-    			ccm_opacity_on_property_changed (self, CCM_PROPERTY_HINT_TYPE,
-            			                         self->priv->window);
-    			ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
-			}
-			break;
-		default:
-			break;
-	}
+        {
+            ccm_opacity_on_property_changed (self, CCM_PROPERTY_HINT_TYPE,
+                                             self->priv->window);
+            ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
+        }
+            break;
+        default:
+            break;
+    }
 }
 
 static void
@@ -571,9 +571,7 @@ ccm_opacity_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
     iface->init_general_section = NULL;
     iface->init_desktop_section = NULL;
     iface->init_windows_section = NULL;
-    iface->init_effects_section =
-        ccm_opacity_preferences_page_init_effects_section;
+    iface->init_effects_section = ccm_opacity_preferences_page_init_effects_section;
     iface->init_accessibility_section = NULL;
-    iface->init_utilities_section =
-        ccm_opacity_preferences_page_init_utilities_section;
+    iface->init_utilities_section = ccm_opacity_preferences_page_init_utilities_section;
 }

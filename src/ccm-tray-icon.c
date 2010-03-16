@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,9 +50,9 @@
 #  define N_(String) (String)
 #endif
 
-#define CCM_LOGO_PIXMAP 	PACKAGE_PIXMAP_DIR "/cairo-compmgr.png"
-#define CCM_LOGO_ON		 	PACKAGE_PIXMAP_DIR "/cairo-compmgr-on-24.png"
-#define CCM_LOGO_OFF		PACKAGE_PIXMAP_DIR "/cairo-compmgr-off-24.png"
+#define CCM_LOGO_PIXMAP     PACKAGE_PIXMAP_DIR "/cairo-compmgr.png"
+#define CCM_LOGO_ON         PACKAGE_PIXMAP_DIR "/cairo-compmgr-on-24.png"
+#define CCM_LOGO_OFF        PACKAGE_PIXMAP_DIR "/cairo-compmgr-off-24.png"
 
 G_DEFINE_TYPE (CCMTrayIcon, ccm_tray_icon, G_TYPE_OBJECT);
 
@@ -64,7 +64,7 @@ struct _CCMTrayIconPrivate
 };
 
 #define CCM_TRAY_ICON_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TRAY_ICON, CCMTrayIconPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TRAY_ICON, CCMTrayIconPrivate))
 
 static void
 ccm_tray_icon_init (CCMTrayIcon * self)
@@ -114,8 +114,7 @@ ccm_tray_icon_enable_ccm_changed (CCMTrayIcon * self, CCMConfig * config)
 {
     gboolean enable = ccm_config_get_boolean (self->priv->config, NULL);
     GdkPixbuf *image =
-        gdk_pixbuf_new_from_file (enable ? CCM_LOGO_ON : CCM_LOGO_OFF,
-                                  NULL);
+        gdk_pixbuf_new_from_file (enable ? CCM_LOGO_ON : CCM_LOGO_OFF, NULL);
 
     gtk_status_icon_set_from_pixbuf (self->priv->trayicon, image);
 }

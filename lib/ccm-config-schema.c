@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -42,7 +42,7 @@ const gchar *CCM_CONFIG_VALUE_TYPE_NAME[] = {
 };
 
 #define CCM_CONFIG_SCHEMA_GET_PRIVATE(o)  \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_SCHEMA, CCMConfigSchemaPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_SCHEMA, CCMConfigSchemaPrivate))
 
 G_DEFINE_TYPE (CCMConfigSchema, ccm_config_schema, G_TYPE_OBJECT);
 
@@ -220,20 +220,15 @@ ccm_config_schema_get_value_type (CCMConfigSchema * self, gchar * key)
     if (!type)
         return ret;
 
-    if (!g_ascii_strcasecmp
-        (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_STRING], type))
+    if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_STRING], type))
         ret = CCM_CONFIG_VALUE_STRING;
-    else if (!g_ascii_strcasecmp
-             (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_BOOLEAN], type))
+    else if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_BOOLEAN], type))
         ret = CCM_CONFIG_VALUE_BOOLEAN;
-    else if (!g_ascii_strcasecmp
-             (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_INTEGER], type))
+    else if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_INTEGER], type))
         ret = CCM_CONFIG_VALUE_INTEGER;
-    else if (!g_ascii_strcasecmp
-             (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_FLOAT], type))
+    else if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_FLOAT], type))
         ret = CCM_CONFIG_VALUE_FLOAT;
-    else if (!g_ascii_strcasecmp
-             (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_LIST], type))
+    else if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_LIST], type))
     {
         gchar *list_type = g_key_file_get_string (self->priv->file, key,
                                                   CCM_CONFIG_SCHEMA_ENTRY_LIST_TYPE,
@@ -245,26 +240,22 @@ ccm_config_schema_get_value_type (CCMConfigSchema * self, gchar * key)
             return ret;
         }
 
-        if (!g_ascii_strcasecmp
-            (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_STRING], list_type))
+        if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_STRING], list_type))
             ret = CCM_CONFIG_VALUE_LIST_STRING;
-        else if (!g_ascii_strcasecmp
-                 (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_INTEGER],
-                  list_type))
+        else if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_INTEGER],
+                                      list_type))
             ret = CCM_CONFIG_VALUE_LIST_INTEGER;
-        else if (!g_ascii_strcasecmp
-                 (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_BOOLEAN],
-                  list_type))
+        else if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_BOOLEAN],
+                                      list_type))
             ret = CCM_CONFIG_VALUE_LIST_BOOLEAN;
-        else if (!g_ascii_strcasecmp
-                 (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_FLOAT],
-                  list_type))
+        else if (!g_ascii_strcasecmp (CCM_CONFIG_VALUE_TYPE_NAME[CCM_CONFIG_VALUE_FLOAT],
+                                      list_type))
             ret = CCM_CONFIG_VALUE_LIST_FLOAT;
 
         g_free (list_type);
     }
     g_free (type);
-
+    
     return ret;
 }
 
@@ -414,12 +405,12 @@ ccm_config_schema_write_gconf (CCMConfigSchema * self, gchar * filename)
         {
             if (t > CCM_CONFIG_VALUE_INVALID && t < CCM_CONFIG_VALUE_LIST)
                 defaut =
-                    g_markup_printf_escaped ("      <default>%s</default>\n",
-                                             tmp);
+                g_markup_printf_escaped ("      <default>%s</default>\n",
+                                         tmp);
             else if (t > CCM_CONFIG_VALUE_LIST)
                 defaut =
-                    g_markup_printf_escaped ("      <default>[%s]</default>\n",
-                                             tmp);
+                g_markup_printf_escaped ("      <default>[%s]</default>\n",
+                                         tmp);
             g_free (tmp);
         }
 

@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ namespace CCM
         public CCM.Pixmap pixmap;
 
         public Output (CCM.Screen screen, CCM.Window window, X.Pixmap xpixmap,
-                int depth)
+                       int depth)
         {
             X.Visual * visual = screen.get_visual_for_depth (depth);
 
@@ -55,7 +55,8 @@ namespace CCM
         ArrayList < Output > screen_outputs = null;
         ArrayList < Output > window_outputs = null;
 
-        private void add_screen_output (Output output)
+        void
+        add_screen_output (Output output)
         {
             if (screen_outputs == null)
                 screen_outputs = new ArrayList < Output > ();
@@ -70,12 +71,13 @@ namespace CCM
                     if (clone.screen_outputs == null)
                         clone.screen_outputs = new ArrayList < Output > ();
 
-                     clone.screen_outputs.add (output);
+                    clone.screen_outputs.add (output);
                 }
             }
         }
 
-        private void remove_screen_output (Output output)
+        void 
+        remove_screen_output (Output output)
         {
             screen_outputs.remove (output);
             foreach (CCM.Window window in screen.get_windows ())
@@ -85,8 +87,9 @@ namespace CCM
             }
         }
 
-        private void on_composite_message (CCM.Window client, CCM.Window window, 
-                                           long l1, long l2, long l3)
+        void
+        on_composite_message (CCM.Window client, CCM.Window window, 
+                              long l1, long l2, long l3)
         {
             X.Atom atom = (X.Atom) l1;
             X.Pixmap xpixmap = (X.Pixmap) l2;
@@ -101,14 +104,14 @@ namespace CCM
                 if (clone.window_outputs == null)
                     clone.window_outputs = new ArrayList < Output > ();
                 clone.window_outputs.add (output);
-				client.no_undamage_sibling = true;
+                client.no_undamage_sibling = true;
                 window.damage ();
             }
             else if (atom == disable_atom)
             {
                 CCM.log ("DISABLE CLONE");
                 var clone = (Clone) window.get_plugin (typeof (Clone));
-				client.no_undamage_sibling = false;
+                client.no_undamage_sibling = false;
 
                 foreach (Output output in clone.window_outputs)
                 {
@@ -124,7 +127,7 @@ namespace CCM
                 CCM.log ("ENABLE SCREEN CLONE");
                 var output =
                     new Output (window.get_screen (), window, xpixmap, depth);
-				window.no_undamage_sibling = true;
+                window.no_undamage_sibling = true;
                 add_screen_output (output);
             }
             else if (atom == screen_disable_atom)
@@ -134,7 +137,7 @@ namespace CCM
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
-						output.window.no_undamage_sibling = false;
+                        output.window.no_undamage_sibling = false;
                         remove_screen_output (output);
                         break;
                     }
@@ -143,9 +146,10 @@ namespace CCM
         }
 
         /**
-		 * Implement load_options screen plugin interface
-		 **/
-        protected void screen_load_options (CCM.Screen screen)
+         * Implement load_options screen plugin interface
+         **/
+        void
+        screen_load_options (CCM.Screen screen)
         {
             this.screen = screen;
             this.screen.composite_message += on_composite_message;
@@ -168,10 +172,11 @@ namespace CCM
         }
 
         /**
-		 * Implement paint window plugin interface
-		 **/
-        protected bool window_paint (CCM.Window window, Cairo.Context context,
-                                     Cairo.Surface surface, bool y_invert)
+         * Implement paint window plugin interface
+         **/
+        bool 
+        window_paint (CCM.Window window, Cairo.Context context,
+                      Cairo.Surface surface, bool y_invert)
         {
             bool ret = false;
 
@@ -232,7 +237,7 @@ namespace CCM
                                 if (ctx != null)
                                 {
                                     Cairo.Matrix matrix;
-									
+
                                     matrix = Cairo.Matrix (clipbox.width / width, 0, 0,
                                                            clipbox.height / height,
                                                            -geometry.x * (1 - clipbox.width / width),

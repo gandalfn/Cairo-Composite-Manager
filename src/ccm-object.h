@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,25 +47,25 @@ prefix##_get_type (void) \
   if (g_once_init_enter (&g_define_type_id__volatile))  \
   { \
     static const GTypeInfo type_info = { \
-			sizeof (class_name##Class), \
-			NULL, \
-			NULL, \
-			(GClassInitFunc)prefix##_class_intern_init, \
-			NULL, \
-			NULL, \
-			sizeof (class_name), \
-			CCM_OBJECT_PREFETCH, \
-			(GInstanceInitFunc)prefix##_init \
-		}; \
-	GType g_define_type_id = \
-			g_type_register_static(parent_class_type, #class_name, \
-			                       &type_info, (GTypeFlags) 0); \
+            sizeof (class_name##Class), \
+            NULL, \
+            NULL, \
+            (GClassInitFunc)prefix##_class_intern_init, \
+            NULL, \
+            NULL, \
+            sizeof (class_name), \
+            CCM_OBJECT_PREFETCH, \
+            (GInstanceInitFunc)prefix##_init \
+        }; \
+    GType g_define_type_id = \
+            g_type_register_static(parent_class_type, #class_name, \
+                                   &type_info, (GTypeFlags) 0); \
     { \
-		CODE; \
-	} \
+        CODE; \
+    } \
     g_once_init_leave (&g_define_type_id__volatile, g_define_type_id); \
-  }					\
-  return g_define_type_id__volatile;	\
+  } \
+  return g_define_type_id__volatile; \
 }
 
 #define CCM_DEFINE_TYPE(class_name, prefix, parent_class_type) CCM_DEFINE_TYPE_EXTENDED (class_name, prefix, parent_class_type, {})

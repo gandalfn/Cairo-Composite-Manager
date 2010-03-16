@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,34 +27,34 @@
 #include "ccm-region.h"
 
 #define CAIRO_RECTANGLE_TO_PIXMAN_BOX(r, b)  \
-	{(b).x1 = pixman_double_to_fixed((r).x); \
-	 (b).y1 = pixman_double_to_fixed((r).y); \
-	 (b).x2 = pixman_double_to_fixed((r).x + (r).width); \
-	 (b).y2 = pixman_double_to_fixed((r).y + (r).height);}
+    {(b).x1 = pixman_double_to_fixed((r).x); \
+    (b).y1 = pixman_double_to_fixed((r).y); \
+    (b).x2 = pixman_double_to_fixed((r).x + (r).width); \
+    (b).y2 = pixman_double_to_fixed((r).y + (r).height);}
 
 #define PIXMAN_BOX_TO_CAIRO_RECTANGLE(b, r)  \
-	{(r).x = pixman_fixed_to_double(pixman_fixed_floor((b).x1)); \
-	 (r).y = pixman_fixed_to_double(pixman_fixed_floor((b).y1)); \
-	 (r).width = pixman_fixed_to_double(pixman_fixed_ceil((b).x2 - (b).x1)); \
-	 (r).height = pixman_fixed_to_double(pixman_fixed_ceil((b).y2 - (b).y1));}
+    {(r).x = pixman_fixed_to_double(pixman_fixed_floor((b).x1)); \
+    (r).y = pixman_fixed_to_double(pixman_fixed_floor((b).y1)); \
+    (r).width = pixman_fixed_to_double(pixman_fixed_ceil((b).x2 - (b).x1)); \
+    (r).height = pixman_fixed_to_double(pixman_fixed_ceil((b).y2 - (b).y1));}
 
 #define X_RECTANGLE_TO_PIXMAN_BOX(r, b)  \
-	{(b).x1 = pixman_int_to_fixed((r).x); \
-	 (b).y1 = pixman_int_to_fixed((r).y); \
-	 (b).x2 = pixman_int_to_fixed((r).x + (r).width); \
-	 (b).y2 = pixman_int_to_fixed((r).y + (r).height);}
+    {(b).x1 = pixman_int_to_fixed((r).x); \
+    (b).y1 = pixman_int_to_fixed((r).y); \
+    (b).x2 = pixman_int_to_fixed((r).x + (r).width); \
+    (b).y2 = pixman_int_to_fixed((r).y + (r).height);}
 
 #define PIXMAN_BOX_TO_X_RECTANGLE(b, r)  \
-	{(r).x = pixman_fixed_to_int(pixman_fixed_floor((b).x1)); \
-	 (r).y = pixman_fixed_to_int(pixman_fixed_floor((b).y1)); \
-	 (r).width = pixman_fixed_to_int(pixman_fixed_ceil((b).x2 - (b).x1)); \
-	 (r).height = pixman_fixed_to_int(pixman_fixed_ceil((b).y2 - (b).y1));}
+    {(r).x = pixman_fixed_to_int(pixman_fixed_floor((b).x1)); \
+    (r).y = pixman_fixed_to_int(pixman_fixed_floor((b).y1)); \
+    (r).width = pixman_fixed_to_int(pixman_fixed_ceil((b).x2 - (b).x1)); \
+    (r).height = pixman_fixed_to_int(pixman_fixed_ceil((b).y2 - (b).y1));}
 
 #define PIXMAN_BOX_TO_REGION_BOX(b, r)  \
-	{(r).x1 = (short)pixman_fixed_to_int(pixman_fixed_floor((b).x1)); \
-	 (r).y1 = (short)pixman_fixed_to_int(pixman_fixed_floor((b).y1)); \
-	 (r).x2 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).x2)); \
-	 (r).y2 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).y2));}
+    {(r).x1 = (short)pixman_fixed_to_int(pixman_fixed_floor((b).x1)); \
+    (r).y1 = (short)pixman_fixed_to_int(pixman_fixed_floor((b).y1)); \
+    (r).x2 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).x2)); \
+    (r).y2 = (short)pixman_fixed_to_int(pixman_fixed_ceil((b).y2));}
 
 struct _CCMRegion
 {
@@ -188,8 +188,7 @@ ccm_region_get_rectangles (CCMRegion * self, cairo_rectangle_t ** rectangles,
 
     int cpt;
 
-    pixman_box32_t *boxes = pixman_region32_rectangles (&self->reg,
-                                                        n_rectangles);
+    pixman_box32_t *boxes = pixman_region32_rectangles (&self->reg, n_rectangles);
 
     if (*n_rectangles > 0)
     {
@@ -212,8 +211,7 @@ ccm_region_get_xrectangles (CCMRegion * self, XRectangle ** rectangles,
 
     int cpt;
 
-    pixman_box32_t *boxes = pixman_region32_rectangles (&self->reg,
-                                                        n_rectangles);
+    pixman_box32_t *boxes = pixman_region32_rectangles (&self->reg,  n_rectangles);
 
     if (*n_rectangles > 0)
     {
@@ -233,8 +231,7 @@ ccm_region_get_boxes (CCMRegion * self, gint * n_boxes)
     int cpt;
     CCMRegionBox *rboxes = NULL;
 
-    pixman_box32_t *boxes = pixman_region32_rectangles (&self->reg,
-                                                        n_boxes);
+    pixman_box32_t *boxes = pixman_region32_rectangles (&self->reg, n_boxes);
 
     if (*n_boxes > 0)
     {
@@ -318,8 +315,8 @@ ccm_region_transform (CCMRegion * self, cairo_matrix_t * matrix)
     g_return_if_fail (self != NULL);
     g_return_if_fail (matrix != NULL);
 
-    if (matrix->xx == 1.0f && matrix->yy == 1.0f && matrix->x0 == 0.0f
-        && matrix->y0 == 0.0f && matrix->xy == 0.0f && matrix->yx == 0.0f)
+    if (matrix->xx == 1.0f && matrix->yy == 1.0f && matrix->x0 == 0.0f && 
+        matrix->y0 == 0.0f && matrix->xy == 0.0f && matrix->yx == 0.0f)
         return;
 
     int n_boxes, cpt;
@@ -335,15 +332,15 @@ ccm_region_transform (CCMRegion * self, cairo_matrix_t * matrix)
     y2 = pixman_fixed_to_double (extents->y2);
     cairo_matrix_transform_point (matrix, &x2, &y2);
 
-	if (pixman_double_to_fixed (x1) == pixman_double_to_fixed (x2) || 
-	    pixman_double_to_fixed (y1) == pixman_double_to_fixed (y2))
-	{
-		pixman_region32_fini(&self->reg);
-		pixman_region32_init(&self->reg);
-		return;
-	}
-	
-	extents->x1 = pixman_double_to_fixed (x1);
+    if (pixman_double_to_fixed (x1) == pixman_double_to_fixed (x2) || 
+        pixman_double_to_fixed (y1) == pixman_double_to_fixed (y2))
+    {
+        pixman_region32_fini(&self->reg);
+        pixman_region32_init(&self->reg);
+        return;
+    }
+
+    extents->x1 = pixman_double_to_fixed (x1);
     extents->y1 = pixman_double_to_fixed (y1);
     extents->x2 = pixman_double_to_fixed (x2);
     extents->y2 = pixman_double_to_fixed (y2);
@@ -419,8 +416,8 @@ ccm_region_device_transform (CCMRegion * self, cairo_matrix_t * matrix)
 
     cairo_rectangle_t clipbox;
 
-    if (matrix->xx == 1.0f && matrix->yy == 1.0f && matrix->x0 == 0.0f
-        && matrix->y0 == 0.0f && matrix->xy == 0.0f && matrix->yx == 0.0f)
+    if (matrix->xx == 1.0f && matrix->yy == 1.0f && matrix->x0 == 0.0f && 
+        matrix->y0 == 0.0f && matrix->xy == 0.0f && matrix->yx == 0.0f)
         return;
 
     ccm_region_get_clipbox (self, &clipbox);
@@ -447,29 +444,29 @@ ccm_region_device_transform_invert (CCMRegion * self, cairo_matrix_t * matrix)
 }
 
 /* 
-   Utility procedure Compress:
-   Replace r by the region r', where 
-     p in r' iff (Quantifer m <= dx) (p + m in r), and
-     Quantifier is Exists if grow is TRUE, For all if grow is FALSE, and
-     (x,y) + m = (x+m,y) if xdir is TRUE; (x,y+m) if xdir is FALSE.
+ Utility procedure Compress:
+ Replace r by the region r', where 
+ p in r' iff (Quantifer m <= dx) (p + m in r), and
+ Quantifier is Exists if grow is TRUE, For all if grow is FALSE, and
+ (x,y) + m = (x+m,y) if xdir is TRUE; (x,y+m) if xdir is FALSE.
 
-   Thus, if xdir is TRUE and grow is FALSE, r is replaced by the region
-   of all points p such that p and the next dx points on the same
-   horizontal scan line are all in r.  We do this using by noting
-   that p is the head of a run of length 2^i + k iff p is the head
-   of a run of length 2^i and p+2^i is the head of a run of length
-   k. Thus, the loop invariant: s contains the region corresponding
-   to the runs of length shift.  r contains the region corresponding
-   to the runs of length 1 + dxo & (shift-1), where dxo is the original
-   value of dx.  dx = dxo & ~(shift-1).  As parameters, s and t are
-   scratch regions, so that we don't have to allocate them on every
-   call.
-*/
+ Thus, if xdir is TRUE and grow is FALSE, r is replaced by the region
+ of all points p such that p and the next dx points on the same
+ horizontal scan line are all in r.  We do this using by noting
+ that p is the head of a run of length 2^i + k iff p is the head
+ of a run of length 2^i and p+2^i is the head of a run of length
+ k. Thus, the loop invariant: s contains the region corresponding
+ to the runs of length shift.  r contains the region corresponding
+ to the runs of length 1 + dxo & (shift-1), where dxo is the original
+ value of dx.  dx = dxo & ~(shift-1).  As parameters, s and t are
+ scratch regions, so that we don't have to allocate them on every
+ call.
+ */
 
 #define ZOpRegion(a,b) if (grow) ccm_region_union (a, b); \
-			 else ccm_region_intersect (a,b)
+else ccm_region_intersect (a,b)
 #define ZShiftRegion(a,b) if (xdir) ccm_region_offset (a,b,0); \
-			  else ccm_region_offset (a,0,b)
+else ccm_region_offset (a,0,b)
 
 static void
 Compress (CCMRegion * r, CCMRegion * s, CCMRegion * t, guint dx, int xdir,

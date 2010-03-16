@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,9 +51,9 @@
 #  define N_(String) (String)
 #endif
 
-#define CCM_LOGO_PIXMAP 	PACKAGE_PIXMAP_DIR "/cairo-compmgr.png"
-#define CCM_LOGO_ON		 	PACKAGE_PIXMAP_DIR "/cairo-compmgr-on-24.png"
-#define CCM_LOGO_OFF		PACKAGE_PIXMAP_DIR "/cairo-compmgr-off-24.png"
+#define CCM_LOGO_PIXMAP     PACKAGE_PIXMAP_DIR "/cairo-compmgr.png"
+#define CCM_LOGO_ON         PACKAGE_PIXMAP_DIR "/cairo-compmgr-on-24.png"
+#define CCM_LOGO_OFF        PACKAGE_PIXMAP_DIR "/cairo-compmgr-off-24.png"
 
 G_DEFINE_TYPE (CCMTrayMenu, ccm_tray_menu, GTK_TYPE_MENU);
 
@@ -69,7 +69,7 @@ struct _CCMTrayMenuPrivate
 };
 
 #define CCM_TRAY_MENU_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TRAY_MENU, CCMTrayMenuPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TRAY_MENU, CCMTrayMenuPrivate))
 
 static void
 ccm_tray_menu_init (CCMTrayMenu * self)
@@ -183,7 +183,7 @@ ccm_tray_menu_on_preferences_reload (CCMTrayMenu * self,
 
     if (self->priv->display)
     {
-		ccm_preferences_hide(preferences);
+        ccm_preferences_hide(preferences);
         g_object_unref (self->priv->display);
         self->priv->display = ccm_display_new (NULL);
         ccm_preferences_show(preferences);

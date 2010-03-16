@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,12 +46,9 @@ ccm_drawable_matrix_get_type (void)
     static GType type = 0;
     if (type == 0)
     {
-        type =
-            g_boxed_type_register_static ("CCMDrawableMatrix",
-                                          (GBoxedCopyFunc)
-                                          ccm_drawable_matrix_copy,
-                                          (GBoxedFreeFunc)
-                                          ccm_drawable_matrix_free);
+        type = g_boxed_type_register_static ("CCMDrawableMatrix",
+                                             (GBoxedCopyFunc)ccm_drawable_matrix_copy,
+                                             (GBoxedFreeFunc)ccm_drawable_matrix_free);
     }
     return type;
 }
@@ -95,7 +92,7 @@ struct _CCMDrawablePrivate
 };
 
 #define CCM_DRAWABLE_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DRAWABLE, CCMDrawablePrivate))
+  (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DRAWABLE, CCMDrawablePrivate))
 
 static void __ccm_drawable_query_geometry (CCMDrawable * self);
 static void __ccm_drawable_move (CCMDrawable * self, int x, int y);
@@ -112,19 +109,19 @@ ccm_drawable_set_property (GObject * object, guint prop_id,
         case PROP_SCREEN:
             priv->screen = g_value_get_pointer (value);
             break;
+
         case PROP_XDRAWABLE:
             priv->drawable = g_value_get_ulong (value);
             break;
+
         case PROP_GEOMETRY:
-            if (priv->device)
-                ccm_region_destroy (priv->device);
-            if (priv->geometry)
-                ccm_region_destroy (priv->geometry);
+            if (priv->device) ccm_region_destroy (priv->device);
+            if (priv->geometry) ccm_region_destroy (priv->geometry);
             priv->device = NULL;
             priv->geometry = NULL;
 
-            if (g_value_get_pointer (value)
-                && !ccm_region_empty (g_value_get_pointer (value)))
+            if (g_value_get_pointer (value) && 
+                !ccm_region_empty (g_value_get_pointer (value)))
             {
                 cairo_matrix_t transform;
 
@@ -134,12 +131,15 @@ ccm_drawable_set_property (GObject * object, guint prop_id,
                 ccm_region_device_transform (priv->geometry, &transform);
             }
             break;
+
         case PROP_DEPTH:
             priv->depth = g_value_get_uint (value);
             break;
+
         case PROP_VISUAL:
             priv->visual = g_value_get_pointer (value);
             break;
+
         default:
             break;
     }
@@ -258,11 +258,11 @@ ccm_drawable_class_init (CCMDrawableClass * klass)
     klass->move = __ccm_drawable_move;
     klass->resize = __ccm_drawable_resize;
 
-        /**
-	 * CCMDrawable:screen:
-	 *
-	 * Screen of the drawable.
-	 */
+    /**
+     * CCMDrawable:screen:
+     *
+     * Screen of the drawable.
+     */
     g_object_class_install_property (object_class, PROP_SCREEN,
                                      g_param_spec_pointer ("screen", "Screen",
                                                            "Screen of the drawable",
@@ -270,10 +270,10 @@ ccm_drawable_class_init (CCMDrawableClass * klass)
                                                            G_PARAM_CONSTRUCT_ONLY));
 
     /**
-	 * CCMDrawable:drawable:
-	 *
-	 * The X resource (window or pixmap) belonging to a Drawable.
-	 */
+     * CCMDrawable:drawable:
+     *
+     * The X resource (window or pixmap) belonging to a Drawable.
+     */
     g_object_class_install_property (object_class, PROP_XDRAWABLE,
                                      g_param_spec_ulong ("drawable", "Drawable",
                                                          "Xid of the drawable",
@@ -281,12 +281,12 @@ ccm_drawable_class_init (CCMDrawableClass * klass)
                                                          G_PARAM_READWRITE |
                                                          G_PARAM_CONSTRUCT_ONLY));
 
-        /**
-	 * CCMDrawable:geometry:
-	 *
-	 * Geometry of the drawable, if the drawable have transformation returns
-	 * the transformed geometry.
-	 */
+    /**
+     * CCMDrawable:geometry:
+     *
+     * Geometry of the drawable, if the drawable have transformation returns
+     * the transformed geometry.
+     */
     g_object_class_install_property (object_class, PROP_GEOMETRY,
                                      g_param_spec_pointer ("geometry",
                                                            "Geometry",
@@ -294,22 +294,22 @@ ccm_drawable_class_init (CCMDrawableClass * klass)
                                                            G_PARAM_READWRITE |
                                                            G_PARAM_CONSTRUCT));
 
-        /**
-	 * CCMDrawable:visual:
-	 *
-	 * Visual of the drawable.
-	 */
+    /**
+     * CCMDrawable:visual:
+     *
+     * Visual of the drawable.
+     */
     g_object_class_install_property (object_class, PROP_VISUAL,
                                      g_param_spec_pointer ("visual", "Visual",
                                                            "Visual of the drawable",
                                                            G_PARAM_READWRITE |
                                                            G_PARAM_CONSTRUCT));
 
-        /**
-	 * CCMDrawable:depth:
-	 *
-	 * Depth of the drawable.
-	 */
+    /**
+     * CCMDrawable:depth:
+     *
+     * Depth of the drawable.
+     */
     g_object_class_install_property (object_class, PROP_DEPTH,
                                      g_param_spec_uint ("depth", "Depth",
                                                         "Depth of the drawable",
@@ -317,21 +317,21 @@ ccm_drawable_class_init (CCMDrawableClass * klass)
                                                         G_PARAM_READWRITE |
                                                         G_PARAM_CONSTRUCT));
 
-        /**
-	 * CCMDrawable:geometry:
-	 *
-	 * Damaged region of the drawable
-	 */
+    /**
+     * CCMDrawable:geometry:
+     *
+     * Damaged region of the drawable
+     */
     g_object_class_install_property (object_class, PROP_DAMAGED,
                                      g_param_spec_pointer ("damaged", "Damaged",
                                                            "Damaged region of the drawable",
                                                            G_PARAM_READABLE));
 
-        /**
-	 * CCMDrawable:transform:
-	 *
-	 * The cumulated #cairo_matrix_t transforms of the drawable
-	 */
+    /**
+     * CCMDrawable:transform:
+     *
+     * The cumulated #cairo_matrix_t transforms of the drawable
+     */
     g_object_class_install_property (object_class, PROP_TRANSFORM,
                                      g_param_spec_boxed ("transform",
                                                          "Transform",
@@ -339,13 +339,13 @@ ccm_drawable_class_init (CCMDrawableClass * klass)
                                                          CCM_TYPE_DRAWABLE_MATRIX,
                                                          G_PARAM_READABLE));
 
-        /**
-	 * CCMDrawable::damaged:
-	 * @self: #CCMDrawable
-	 * @damaged: damaged #CCMRegion
-	 *
-	 * Emitted when a #CCMRegion of the drawable is damaged.
-	 */
+    /**
+     * CCMDrawable::damaged:
+     * @self: #CCMDrawable
+     * @damaged: damaged #CCMRegion
+     *
+     * Emitted when a #CCMRegion of the drawable is damaged.
+     */
     signals[DAMAGED] =
         g_signal_new ("damaged", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -460,8 +460,7 @@ ccm_drawable_get_display (CCMDrawable * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
 
-    return self->priv->screen ? ccm_screen_get_display (self->priv->
-                                                        screen) : NULL;
+    return self->priv->screen ? ccm_screen_get_display (self->priv->screen) : NULL;
 }
 
 /**
@@ -484,11 +483,11 @@ void
 ccm_drawable_set_visual (CCMDrawable * self, Visual* visual)
 {
     g_return_if_fail (self != NULL);
-	g_return_if_fail (visual != NULL);
+    g_return_if_fail (visual != NULL);
 
-	self->priv->visual = visual;
+    self->priv->visual = visual;
 
-	g_object_notify (G_OBJECT (self), "visual");
+    g_object_notify (G_OBJECT (self), "visual");
 }
 
 /**
@@ -512,9 +511,9 @@ ccm_drawable_set_depth (CCMDrawable * self, guint depth)
 {
     g_return_if_fail (self != NULL);
 
-	self->priv->depth = depth;
+    self->priv->depth = depth;
 
-	g_object_notify (G_OBJECT (self), "depth");
+    g_object_notify (G_OBJECT (self), "depth");
 }
 
 /**
@@ -531,22 +530,24 @@ ccm_drawable_get_format (CCMDrawable * self)
     g_return_val_if_fail (self != NULL, CAIRO_FORMAT_ARGB32);
     g_return_val_if_fail (self->priv->visual != NULL, CAIRO_FORMAT_ARGB32);
 
-    if (self->priv->depth == 16 && self->priv->visual->red_mask == 0xf800
-        && self->priv->visual->green_mask == 0x7e0
-        && self->priv->visual->blue_mask == 0x1f)
+    if (self->priv->depth == 16 && 
+        self->priv->visual->red_mask == 0xf800 &&
+        self->priv->visual->green_mask == 0x7e0 &&
+        self->priv->visual->blue_mask == 0x1f)
     {
         return CAIRO_FORMAT_A8;
     }
-    else if ((self->priv->depth == 24 || self->priv->depth == 0)
-             && self->priv->visual->red_mask == 0xff0000
-             && self->priv->visual->green_mask == 0xff00
-             && self->priv->visual->blue_mask == 0xff)
+    else if ((self->priv->depth == 24 || self->priv->depth == 0) &&
+             self->priv->visual->red_mask == 0xff0000 &&
+             self->priv->visual->green_mask == 0xff00 &&
+             self->priv->visual->blue_mask == 0xff)
     {
         return CAIRO_FORMAT_RGB24;
     }
-    else if (self->priv->depth == 32 && self->priv->visual->red_mask == 0xff0000
-             && self->priv->visual->green_mask == 0xff00
-             && self->priv->visual->blue_mask == 0xff)
+    else if (self->priv->depth == 32 && 
+             self->priv->visual->red_mask == 0xff0000 &&
+             self->priv->visual->green_mask == 0xff00 &&
+             self->priv->visual->blue_mask == 0xff)
     {
         return CAIRO_FORMAT_ARGB32;
     }
@@ -615,10 +616,10 @@ ccm_drawable_get_geometry (CCMDrawable * self)
 void
 ccm_drawable_set_geometry (CCMDrawable* self, CCMRegion* geometry)
 {
-	g_return_if_fail(self!= NULL);
+    g_return_if_fail(self!= NULL);
 
-	if (self->priv->device)
-		ccm_region_destroy (self->priv->device);
+    if (self->priv->device)
+        ccm_region_destroy (self->priv->device);
     if (self->priv->geometry)
         ccm_region_destroy (self->priv->geometry);
     self->priv->device = NULL;
@@ -634,7 +635,7 @@ ccm_drawable_set_geometry (CCMDrawable* self, CCMRegion* geometry)
         ccm_region_device_transform (self->priv->geometry, &transform);
     }
 
-	g_object_notify(G_OBJECT(self), "geometry");
+    g_object_notify(G_OBJECT(self), "geometry");
 }
 
 /**
@@ -721,9 +722,9 @@ ccm_drawable_move (CCMDrawable * self, int x, int y)
 {
     g_return_if_fail (self != NULL);
 
-    if (CCM_DRAWABLE_GET_CLASS (self)->move
-        && (self->priv->last_pos_size.x != x
-            || self->priv->last_pos_size.y != y))
+    if (CCM_DRAWABLE_GET_CLASS (self)->move &&
+        (self->priv->last_pos_size.x != x ||
+         self->priv->last_pos_size.y != y))
     {
         CCM_DRAWABLE_GET_CLASS (self)->move (self, x, y);
         self->priv->last_pos_size.x = x;
@@ -744,9 +745,9 @@ ccm_drawable_resize (CCMDrawable * self, int width, int height)
 {
     g_return_if_fail (self != NULL);
 
-    if (CCM_DRAWABLE_GET_CLASS (self)->resize
-        && (self->priv->last_pos_size.width != width
-            || self->priv->last_pos_size.height != height))
+    if (CCM_DRAWABLE_GET_CLASS (self)->resize &&
+        (self->priv->last_pos_size.width != width ||
+         self->priv->last_pos_size.height != height))
     {
         CCM_DRAWABLE_GET_CLASS (self)->resize (self, width, height);
         self->priv->last_pos_size.width = width;
@@ -913,9 +914,8 @@ ccm_drawable_repair (CCMDrawable * self)
         gboolean ret = TRUE;
 
         if (CCM_DRAWABLE_GET_CLASS (self)->repair)
-            ret =
-                CCM_DRAWABLE_GET_CLASS (self)->repair (self,
-                                                       self->priv->damaged);
+            ret = CCM_DRAWABLE_GET_CLASS (self)->repair (self, self->priv->damaged);
+
         if (ret)
         {
             ccm_debug_region (self, "REPAIR");
@@ -1010,9 +1010,9 @@ ccm_drawable_get_damage_path (CCMDrawable * self, cairo_t * context)
 const CCMRegion*
 ccm_drawable_get_damaged (CCMDrawable * self)
 {
-	g_return_val_if_fail(self != NULL, NULL);
+    g_return_val_if_fail(self != NULL, NULL);
 
-	return self->priv->damaged;
+    return self->priv->damaged;
 }
 
 /**

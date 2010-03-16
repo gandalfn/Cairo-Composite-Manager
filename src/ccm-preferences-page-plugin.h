@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,21 +40,21 @@ G_BEGIN_DECLS
 
 #define CCM_PREFERENCES_PAGE_PLUGIN_LOCK_ROOT_METHOD(plugin, func, callback, data) \
 { \
-	CCMPreferencesPagePlugin* r = (CCMPreferencesPagePlugin*)_ccm_preferences_page_plugin_get_root((CCMPreferencesPagePlugin*)plugin); \
+CCMPreferencesPagePlugin* r = (CCMPreferencesPagePlugin*)_ccm_preferences_page_plugin_get_root((CCMPreferencesPagePlugin*)plugin); \
 \
-	if (r && CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r) && \
-		CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func) \
-		_ccm_plugin_lock_method ((GObject*)r, CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func, \
-								 callback, data); \
+if (r && CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r) && \
+CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func) \
+_ccm_plugin_lock_method ((GObject*)r, CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func, \
+callback, data); \
 }
 
 #define CCM_PREFERENCES_PAGE_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func) \
 { \
-	CCMPreferencesPagePlugin* r = (CCMPreferencesPagePlugin*)_ccm_preferences_page_plugin_get_root((CCMPreferencesPagePlugin*)plugin); \
+CCMPreferencesPagePlugin* r = (CCMPreferencesPagePlugin*)_ccm_preferences_page_plugin_get_root((CCMPreferencesPagePlugin*)plugin); \
 \
-	if (r && CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r) && \
-		CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func) \
-		_ccm_plugin_unlock_method ((GObject*)r, CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func); \
+if (r && CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r) && \
+CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func) \
+_ccm_plugin_unlock_method ((GObject*)r, CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE(r)->func); \
 }
 
 typedef struct _CCMPreferencesPagePluginClass CCMPreferencesPagePluginClass;

@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -63,9 +63,9 @@ typedef struct
 {
     CCMPluginOptions parent;
 
-	gchar* area_shortcut;
-	gchar* window_shortcut;
-	
+    gchar* area_shortcut;
+    gchar* window_shortcut;
+
     GdkColor *color;
 } CCMSnapshotOptions;
 
@@ -89,14 +89,14 @@ struct _CCMSnapshotPrivate
     CCMKeybind *area_keybind;
     CCMKeybind *window_keybind;
 
-	cairo_rectangle_t area;
+    cairo_rectangle_t area;
     CCMWindow* selected;
 
     GtkBuilder* builder;
 };
 
 #define CCM_SNAPSHOT_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT, CCMSnapshotPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT, CCMSnapshotPrivate))
 
 static void
 ccm_snapshot_options_init (CCMSnapshotOptions* self)
@@ -120,48 +120,48 @@ ccm_snapshot_options_finalize (CCMSnapshotOptions* self)
 static void
 ccm_snapshot_options_changed (CCMSnapshotOptions* self, CCMConfig* config)
 {
-	GError *error = NULL;
+    GError *error = NULL;
 
-	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                            CCM_SNAPSHOT_AREA))
-	{
-		if (self->area_shortcut) g_free (self->area_shortcut);
-
-		self->area_shortcut = ccm_config_get_string (config, &error);
-		if (error)
-		{
-		    g_warning ("Error on get snapshot area shortcut configuration value");
-		    g_error_free (error);
-		    self->area_shortcut = g_strdup ("<Super>Button1");
-		}
-	}
-
-	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                            CCM_SNAPSHOT_WINDOW))
-	{
-		if (self->window_shortcut) g_free (self->window_shortcut);
-
-		self->window_shortcut = ccm_config_get_string (config, &error);
-		if (error)
-		{
-		    g_warning ("Error on get snapshot area shortcut configuration value");
-		    g_error_free (error);
-		    self->window_shortcut = g_strdup ("<Super><Alt>Button1");
-		}
-	}
-	
     if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                            CCM_SNAPSHOT_COLOR))
-	{
-		if (self->color) g_free (self->color);
+                                                CCM_SNAPSHOT_AREA))
+    {
+        if (self->area_shortcut) g_free (self->area_shortcut);
 
-		self->color = ccm_config_get_color (config, &error);
-		if (error)
-		{
-		    g_warning ("Error on get snapshot select color configuration value");
-		    g_error_free (error);
-		}
-	}
+        self->area_shortcut = ccm_config_get_string (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get snapshot area shortcut configuration value");
+            g_error_free (error);
+            self->area_shortcut = g_strdup ("<Super>Button1");
+        }
+    }
+
+    if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                CCM_SNAPSHOT_WINDOW))
+    {
+        if (self->window_shortcut) g_free (self->window_shortcut);
+
+        self->window_shortcut = ccm_config_get_string (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get snapshot area shortcut configuration value");
+            g_error_free (error);
+            self->window_shortcut = g_strdup ("<Super><Alt>Button1");
+        }
+    }
+
+    if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                CCM_SNAPSHOT_COLOR))
+    {
+        if (self->color) g_free (self->color);
+
+        self->color = ccm_config_get_color (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get snapshot select color configuration value");
+            g_error_free (error);
+        }
+    }
 }
 
 static void
@@ -174,8 +174,8 @@ ccm_snapshot_init (CCMSnapshot * self)
     self->priv->area.width = 0;
     self->priv->area.height = 0;
     self->priv->selected = NULL;
-	self->priv->area_keybind = NULL;
-	self->priv->window_keybind = NULL;
+    self->priv->area_keybind = NULL;
+    self->priv->window_keybind = NULL;
     self->priv->builder = NULL;
 }
 
@@ -186,15 +186,15 @@ ccm_snapshot_finalize (GObject * object)
 
     ccm_plugin_options_unload (CCM_PLUGIN (self));
 
-	if (self->priv->area_keybind)
-		g_object_unref (self->priv->area_keybind);
-	self->priv->area_keybind = NULL;
-	
-	if (self->priv->window_keybind)
-		g_object_unref (self->priv->window_keybind);
-	self->priv->window_keybind = NULL;
+    if (self->priv->area_keybind)
+        g_object_unref (self->priv->area_keybind);
+    self->priv->area_keybind = NULL;
 
-	if (self->priv->builder)
+    if (self->priv->window_keybind)
+        g_object_unref (self->priv->window_keybind);
+    self->priv->window_keybind = NULL;
+
+    if (self->priv->builder)
         g_object_unref (self->priv->builder);
     self->priv->builder = NULL;
 
@@ -461,17 +461,17 @@ ccm_snapshot_on_option_changed (CCMPlugin * plugin, int index)
 {
     CCMSnapshot *self = CCM_SNAPSHOT (plugin);
 
-	switch (index)
-	{
-		case CCM_SNAPSHOT_AREA:
-			ccm_snapshot_get_area_keybind (self);
-			break;
-		case CCM_SNAPSHOT_WINDOW:
-    		ccm_snapshot_get_window_keybind (self);
-			break;
-		default:
-			break;
-	}
+    switch (index)
+    {
+        case CCM_SNAPSHOT_AREA:
+            ccm_snapshot_get_area_keybind (self);
+            break;
+        case CCM_SNAPSHOT_WINDOW:
+            ccm_snapshot_get_window_keybind (self);
+            break;
+        default:
+            break;
+    }
 }
 
 static void
@@ -627,6 +627,5 @@ ccm_snapshot_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
     iface->init_windows_section = NULL;
     iface->init_effects_section = NULL;
     iface->init_accessibility_section = NULL;
-    iface->init_utilities_section =
-        ccm_snapshot_preferences_page_init_utilities_section;
+    iface->init_utilities_section = ccm_snapshot_preferences_page_init_utilities_section;
 }

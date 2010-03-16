@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ struct _CCMPixmapImagePrivate
 };
 
 #define CCM_PIXMAP_IMAGE_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_IMAGE, CCMPixmapImagePrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_IMAGE, CCMPixmapImagePrivate))
 
 static cairo_surface_t *ccm_pixmap_image_get_surface (CCMDrawable * drawable);
 static gboolean ccm_pixmap_image_repair (CCMDrawable * drawable,
@@ -98,11 +98,11 @@ ccm_pixmap_image_bind (CCMPixmap * pixmap)
     Visual *visual = ccm_drawable_get_visual (CCM_DRAWABLE (pixmap));
     cairo_rectangle_t geometry;
 
-    if (visual
-        && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (pixmap), &geometry))
-        self->priv->image =
-            ccm_image_new (display, visual, format, geometry.width,
-                           geometry.height, depth);
+    if (visual  && 
+        ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (pixmap), &geometry))
+        self->priv->image = ccm_image_new (display, visual, format,
+                                           geometry.width, geometry.height,
+                                           depth);
     else
         ccm_debug ("PIXMAP BIND ERROR");
 }
@@ -134,8 +134,8 @@ ccm_pixmap_image_repair (CCMDrawable * drawable, CCMRegion * area)
     {
         if (!self->priv->synced)
         {
-            if (!ccm_image_get_image
-                (self->priv->image, CCM_PIXMAP (self), 0, 0))
+            if (!ccm_image_get_image (self->priv->image, CCM_PIXMAP (self), 
+                                      0, 0))
             {
                 ccm_debug ("IMAGE_REPAIR ERROR");
                 ret = FALSE;
@@ -153,9 +153,10 @@ ccm_pixmap_image_repair (CCMDrawable * drawable, CCMRegion * area)
             ccm_region_get_xrectangles (area, &rects, &nb_rects);
             for (cpt = 0; cpt < nb_rects; ++cpt)
             {
-                if (!ccm_image_get_sub_image
-                    (self->priv->image, CCM_PIXMAP (self), rects[cpt].x,
-                     rects[cpt].y, rects[cpt].width, rects[cpt].height))
+                if (!ccm_image_get_sub_image (self->priv->image,
+                                              CCM_PIXMAP (self),
+                                              rects[cpt].x, rects[cpt].y,
+                                              rects[cpt].width, rects[cpt].height))
                 {
                     ccm_debug ("SUB IMAGE_REPAIR ERROR");
                     ccm_image_destroy (self->priv->image);
@@ -185,22 +186,13 @@ ccm_pixmap_image_get_surface (CCMDrawable * drawable)
         cairo_surface_destroy (self->priv->surface);
         self->priv->surface = NULL;
     }
-    if (self->priv->image && ccm_image_get_data (self->priv->image)
-        && !self->priv->surface)
-        self->priv->surface =
-            cairo_image_surface_create_for_data (ccm_image_get_data
-                                                 (self->priv->image),
-                                                 ccm_drawable_get_format
-                                                 (CCM_DRAWABLE (self)),
-                                                 ccm_image_get_width (self->
-                                                                      priv->
-                                                                      image),
-                                                 ccm_image_get_height (self->
-                                                                       priv->
-                                                                       image),
-                                                 ccm_image_get_stride (self->
-                                                                       priv->
-                                                                       image));
+    if (self->priv->image && ccm_image_get_data (self->priv->image) && !self->priv->surface)
+        self->priv->surface = 
+            cairo_image_surface_create_for_data (ccm_image_get_data (self->priv->image),
+                                                 ccm_drawable_get_format (CCM_DRAWABLE (self)),
+                                                 ccm_image_get_width (self->priv->image),
+                                                 ccm_image_get_height (self->priv->image),
+                                                 ccm_image_get_stride (self->priv->image));
 
     if (self->priv->surface)
         cairo_surface_reference (self->priv->surface);

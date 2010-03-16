@@ -1,8 +1,8 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
- * 				 Carlos Diógenes  2007 <cerdiogenes@gmail.com>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
+ *               Carlos Diógenes  2007 <cerdiogenes@gmail.com>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -83,11 +83,11 @@ typedef struct
     gboolean enabled;
     gchar* shortcut;
 
-	gfloat scale;
+    gfloat scale;
     gfloat new_scale;
-	
+
     gboolean shade;
-	
+
     cairo_rectangle_t restrict_area;
     cairo_rectangle_t area;
     cairo_filter_t quality;
@@ -123,7 +123,7 @@ struct _CCMMagnifierPrivate
 };
 
 #define CCM_MAGNIFIER_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MAGNIFIER, CCMMagnifierPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_MAGNIFIER, CCMMagnifierPrivate))
 
 static void
 ccm_magnifier_options_init (CCMMagnifierOptions* self)
@@ -133,16 +133,16 @@ ccm_magnifier_options_init (CCMMagnifierOptions* self)
     self->scale = 1.0f;
     self->new_scale = 1.0f;
     self->quality = CAIRO_FILTER_FAST;
-	self->shortcut = NULL;
+    self->shortcut = NULL;
     self->border = 0;
-	bzero (&self->area, sizeof (cairo_rectangle_t));
-	bzero (&self->restrict_area, sizeof (cairo_rectangle_t));
+    bzero (&self->area, sizeof (cairo_rectangle_t));
+    bzero (&self->restrict_area, sizeof (cairo_rectangle_t));
 }
 
 static void
 ccm_magnifier_options_finalize (CCMMagnifierOptions* self)
 {
-	if (self->shortcut) g_free(self->shortcut);
+    if (self->shortcut) g_free(self->shortcut);
 }
 
 static void
@@ -151,9 +151,9 @@ ccm_magnifier_options_get_restrict_area (CCMMagnifierOptions* self)
     GError *error = NULL;
     gint val, real;
     gdouble x, y, width, height;
-	CCMDisplay* display = ccm_display_get_default();
-	Screen* screen = ScreenOfDisplay(CCM_DISPLAY_XDISPLAY(display),
-	                                 ccm_plugin_options_get_screen_num(CCM_PLUGIN_OPTIONS(self)));
+    CCMDisplay* display = ccm_display_get_default();
+    Screen* screen = ScreenOfDisplay(CCM_DISPLAY_XDISPLAY(display),
+                                     ccm_plugin_options_get_screen_num(CCM_PLUGIN_OPTIONS(self)));
 
     real = ccm_config_get_integer (ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self), 
                                                                  CCM_MAGNIFIER_RESTRICT_AREA_WIDTH),
@@ -222,7 +222,7 @@ ccm_magnifier_options_get_restrict_area (CCMMagnifierOptions* self)
     {
         self->restrict_area.x = 0;
     }
-	else
+    else
     {
         val = MAX (0, real);
         val = MIN (self->restrict_area.width, val);
@@ -270,9 +270,9 @@ ccm_magnifier_options_get_size (CCMMagnifierOptions* self)
     GError *error = NULL;
     gint val, real;
     gdouble x, y, width, height;
-	CCMDisplay* display = ccm_display_get_default();
-	Screen* screen = ScreenOfDisplay(CCM_DISPLAY_XDISPLAY(display),
-	                                 ccm_plugin_options_get_screen_num(CCM_PLUGIN_OPTIONS(self)));
+    CCMDisplay* display = ccm_display_get_default();
+    Screen* screen = ScreenOfDisplay(CCM_DISPLAY_XDISPLAY(display),
+                                     ccm_plugin_options_get_screen_num(CCM_PLUGIN_OPTIONS(self)));
 
     self->area.x = 0;
     self->area.y = 0;
@@ -375,112 +375,112 @@ ccm_magnifier_options_get_size (CCMMagnifierOptions* self)
 static void
 ccm_magnifier_options_changed (CCMMagnifierOptions* self, CCMConfig* config)
 {
-	GError *error = NULL;
+    GError *error = NULL;
 
-	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                            CCM_MAGNIFIER_ENABLE))
+    if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                CCM_MAGNIFIER_ENABLE))
     {
-		self->enabled = ccm_config_get_boolean(config, NULL);
-	}
-	else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                                 CCM_MAGNIFIER_ZOOM_LEVEL))
-	{
-		gfloat scale, real = ccm_config_get_float (config, &error);
-
-		if (error)
-		{
-		    g_error_free (error);
-		    g_warning ("Error on get magnifier zoom level configuration value");
-		    real = 1.5f;
-		}
-		scale = MAX (1.0f, real);
-		scale = MIN (5.0f, scale);
-		if (real != scale) ccm_config_set_float (config, scale, NULL);
-
-		if (self->new_scale != scale) self->new_scale = scale;
-	}
-	else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                                 CCM_MAGNIFIER_ZOOM_QUALITY))
-	{
-		gchar *quality = ccm_config_get_string (config, NULL);
-
-		if (!quality)
-		{
-		    if (self->quality != CAIRO_FILTER_FAST)
-		    {
-		        self->quality = CAIRO_FILTER_FAST;
-		        ccm_config_set_string (config, "fast", NULL);
-		    }
-		}
-		else
-		{
-		    if (!g_ascii_strcasecmp (quality, "fast") && 
-		        self->quality != CAIRO_FILTER_FAST)
-		    {
-		        self->quality = CAIRO_FILTER_FAST;
-		    }
-		    else if (!g_ascii_strcasecmp (quality, "good") && 
-		             self->quality != CAIRO_FILTER_GOOD)
-		    {
-		        self->quality = CAIRO_FILTER_GOOD;
-		    }
-		    else if (!g_ascii_strcasecmp (quality, "best") && 
-		             self->quality != CAIRO_FILTER_BEST)
-		    {
-		        self->quality = CAIRO_FILTER_BEST;
-		    }
-		    g_free (quality);
-		}
-	}
-	else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                                 CCM_MAGNIFIER_SHORTCUT))
-	{
-		if (self->shortcut) g_free(self->shortcut);
-		self->shortcut = ccm_config_get_string (config, &error);
-		if (error)
-		{
-		    g_error_free (error);
-		    g_warning ("Error on get magnifier shortcut configuration value");
-		    self->shortcut = g_strdup ("<Super>F12");
-		}
-	}
-	else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                                 CCM_MAGNIFIER_SHADE_DESKTOP))
-	{
-		self->shade = ccm_config_get_boolean (config, NULL);
+        self->enabled = ccm_config_get_boolean(config, NULL);
     }
-	else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                                 CCM_MAGNIFIER_BORDER))
-	{
-		gint val, real = ccm_config_get_integer (config, NULL);
+    else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                     CCM_MAGNIFIER_ZOOM_LEVEL))
+    {
+        gfloat scale, real = ccm_config_get_float (config, &error);
 
-		val = MAX (0, real);
-		val = MIN (self->area.width, val);
-		val = MIN (self->area.height, val);
-		if (val != real) ccm_config_set_integer (config, val, NULL);
+        if (error)
+        {
+            g_error_free (error);
+            g_warning ("Error on get magnifier zoom level configuration value");
+            real = 1.5f;
+        }
+        scale = MAX (1.0f, real);
+        scale = MIN (5.0f, scale);
+        if (real != scale) ccm_config_set_float (config, scale, NULL);
 
-		if (self->border != val) self->border = val;
-	}
-	else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
-	                                                  CCM_MAGNIFIER_WIDTH) ||
+        if (self->new_scale != scale) self->new_scale = scale;
+    }
+    else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                     CCM_MAGNIFIER_ZOOM_QUALITY))
+    {
+        gchar *quality = ccm_config_get_string (config, NULL);
+
+        if (!quality)
+        {
+            if (self->quality != CAIRO_FILTER_FAST)
+            {
+                self->quality = CAIRO_FILTER_FAST;
+                ccm_config_set_string (config, "fast", NULL);
+            }
+        }
+        else
+        {
+            if (!g_ascii_strcasecmp (quality, "fast") && 
+                self->quality != CAIRO_FILTER_FAST)
+            {
+                self->quality = CAIRO_FILTER_FAST;
+            }
+            else if (!g_ascii_strcasecmp (quality, "good") && 
+                     self->quality != CAIRO_FILTER_GOOD)
+            {
+                self->quality = CAIRO_FILTER_GOOD;
+            }
+            else if (!g_ascii_strcasecmp (quality, "best") && 
+                     self->quality != CAIRO_FILTER_BEST)
+            {
+                self->quality = CAIRO_FILTER_BEST;
+            }
+            g_free (quality);
+        }
+    }
+    else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                     CCM_MAGNIFIER_SHORTCUT))
+    {
+        if (self->shortcut) g_free(self->shortcut);
+        self->shortcut = ccm_config_get_string (config, &error);
+        if (error)
+        {
+            g_error_free (error);
+            g_warning ("Error on get magnifier shortcut configuration value");
+            self->shortcut = g_strdup ("<Super>F12");
+        }
+    }
+    else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                     CCM_MAGNIFIER_SHADE_DESKTOP))
+    {
+        self->shade = ccm_config_get_boolean (config, NULL);
+    }
+    else if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                     CCM_MAGNIFIER_BORDER))
+    {
+        gint val, real = ccm_config_get_integer (config, NULL);
+
+        val = MAX (0, real);
+        val = MIN (self->area.width, val);
+        val = MIN (self->area.height, val);
+        if (val != real) ccm_config_set_integer (config, val, NULL);
+
+        if (self->border != val) self->border = val;
+    }
+    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
+                                                      CCM_MAGNIFIER_WIDTH) ||
              config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_MAGNIFIER_HEIGHT) ||
              config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_MAGNIFIER_X) ||
              config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_MAGNIFIER_Y) ||
-	         config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
-	                                                  CCM_MAGNIFIER_RESTRICT_AREA_WIDTH) ||
+             config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
+                                                      CCM_MAGNIFIER_RESTRICT_AREA_WIDTH) ||
              config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_MAGNIFIER_RESTRICT_AREA_HEIGHT) ||
              config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_MAGNIFIER_RESTRICT_AREA_X) ||
              config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_MAGNIFIER_RESTRICT_AREA_Y))
-	{
-		ccm_magnifier_options_get_restrict_area (self);
-		ccm_magnifier_options_get_size (self);
-	}
+    {
+        ccm_magnifier_options_get_restrict_area (self);
+        ccm_magnifier_options_get_size (self);
+    }
 }
 
 static void
@@ -625,39 +625,39 @@ ccm_magnifier_get_keybind (CCMMagnifier * self)
                                            ccm_magnifier_get_option(self)->shortcut, 
                                            TRUE);
 
-	g_signal_connect_swapped (self->priv->keybind, "key_press",
+    g_signal_connect_swapped (self->priv->keybind, "key_press",
                               G_CALLBACK (ccm_magnifier_on_key_press), self);
 }
 
 static void
 ccm_magnifier_get_scale (CCMMagnifier * self)
 {
-	if (ccm_magnifier_get_option(self)->new_scale != ccm_magnifier_get_option(self)->scale)
-	{
-		if (self->priv->timeline
-		    && ccm_timeline_is_playing (self->priv->timeline))
-		{
-		    gdouble progress = ccm_timeline_get_progress (self->priv->timeline);
-		    if (progress > 0.75)
-		        ccm_timeline_advance (self->priv->timeline,
-		                              (progress - 0.75) *
-		                              ccm_timeline_get_n_frames (self->priv->timeline));
-		}
-		else if (ccm_magnifier_get_option (self)->enabled)
-		{
-		    if (!self->priv->timeline)
-		    {
-		        self->priv->timeline = ccm_timeline_new_for_duration (3500);
-		        g_object_set (G_OBJECT (self->priv->timeline), "fps", 30, NULL);
-		        g_signal_connect_swapped (self->priv->timeline, "new-frame",
-		                                  G_CALLBACK
-		                                  (ccm_magnifier_on_new_frame), self);
-		    }
-		    ccm_timeline_start (self->priv->timeline);
-		    ccm_timeline_rewind (self->priv->timeline);
-		}
-		cairo_surface_destroy (self->priv->surface_window_info);
-		self->priv->surface_window_info = NULL;
+    if (ccm_magnifier_get_option(self)->new_scale != ccm_magnifier_get_option(self)->scale)
+    {
+        if (self->priv->timeline
+            && ccm_timeline_is_playing (self->priv->timeline))
+        {
+            gdouble progress = ccm_timeline_get_progress (self->priv->timeline);
+            if (progress > 0.75)
+                ccm_timeline_advance (self->priv->timeline,
+                                      (progress - 0.75) *
+                                      ccm_timeline_get_n_frames (self->priv->timeline));
+        }
+        else if (ccm_magnifier_get_option (self)->enabled)
+        {
+            if (!self->priv->timeline)
+            {
+                self->priv->timeline = ccm_timeline_new_for_duration (3500);
+                g_object_set (G_OBJECT (self->priv->timeline), "fps", 30, NULL);
+                g_signal_connect_swapped (self->priv->timeline, "new-frame",
+                                          G_CALLBACK
+                                          (ccm_magnifier_on_new_frame), self);
+            }
+            ccm_timeline_start (self->priv->timeline);
+            ccm_timeline_rewind (self->priv->timeline);
+        }
+        cairo_surface_destroy (self->priv->surface_window_info);
+        self->priv->surface_window_info = NULL;
     }
 }
 
@@ -774,44 +774,44 @@ ccm_magnifier_on_option_changed (CCMPlugin * plugin, int index)
 {
     CCMMagnifier *self = CCM_MAGNIFIER (plugin);
 
-	switch (index)
-	{
-		case CCM_MAGNIFIER_ENABLE:
-			ccm_screen_damage (self->priv->screen);
-		    ccm_magnifier_set_enable (self, 
-		                              ccm_magnifier_get_option(self)->enabled);
-			break;
-		case CCM_MAGNIFIER_ZOOM_LEVEL:
-			ccm_magnifier_get_scale (self);
-			break;
-		case CCM_MAGNIFIER_ZOOM_QUALITY:
-			ccm_screen_damage (self->priv->screen);
-			break;
-		case CCM_MAGNIFIER_SHORTCUT:
-			ccm_magnifier_get_keybind (self);
-			break;
-		case CCM_MAGNIFIER_BORDER:
-			ccm_screen_damage (self->priv->screen);
-			break;
-		case CCM_MAGNIFIER_SHADE_DESKTOP:
-			ccm_screen_damage (self->priv->screen);
-			break;
-		case CCM_MAGNIFIER_X:
-		case CCM_MAGNIFIER_Y:
-		case CCM_MAGNIFIER_WIDTH:
-		case CCM_MAGNIFIER_HEIGHT:
-		case CCM_MAGNIFIER_RESTRICT_AREA_X:
-		case CCM_MAGNIFIER_RESTRICT_AREA_Y:
-		case CCM_MAGNIFIER_RESTRICT_AREA_WIDTH:
-		case CCM_MAGNIFIER_RESTRICT_AREA_HEIGHT:
-			if (self->priv->surface)
-		        cairo_surface_destroy (self->priv->surface);
-		    self->priv->surface = NULL;
-		    ccm_screen_damage (self->priv->screen);
-			break;
-		default:
-			break;
-	}
+    switch (index)
+    {
+        case CCM_MAGNIFIER_ENABLE:
+            ccm_screen_damage (self->priv->screen);
+            ccm_magnifier_set_enable (self, 
+                                      ccm_magnifier_get_option(self)->enabled);
+            break;
+        case CCM_MAGNIFIER_ZOOM_LEVEL:
+            ccm_magnifier_get_scale (self);
+            break;
+        case CCM_MAGNIFIER_ZOOM_QUALITY:
+            ccm_screen_damage (self->priv->screen);
+            break;
+        case CCM_MAGNIFIER_SHORTCUT:
+            ccm_magnifier_get_keybind (self);
+            break;
+        case CCM_MAGNIFIER_BORDER:
+            ccm_screen_damage (self->priv->screen);
+            break;
+        case CCM_MAGNIFIER_SHADE_DESKTOP:
+            ccm_screen_damage (self->priv->screen);
+            break;
+        case CCM_MAGNIFIER_X:
+        case CCM_MAGNIFIER_Y:
+        case CCM_MAGNIFIER_WIDTH:
+        case CCM_MAGNIFIER_HEIGHT:
+        case CCM_MAGNIFIER_RESTRICT_AREA_X:
+        case CCM_MAGNIFIER_RESTRICT_AREA_Y:
+        case CCM_MAGNIFIER_RESTRICT_AREA_WIDTH:
+        case CCM_MAGNIFIER_RESTRICT_AREA_HEIGHT:
+            if (self->priv->surface)
+                cairo_surface_destroy (self->priv->surface);
+            self->priv->surface = NULL;
+            ccm_screen_damage (self->priv->screen);
+            break;
+        default:
+            break;
+    }
 }
 
 static void
@@ -1077,9 +1077,9 @@ ccm_magnifier_screen_on_cursor_move (CCMScreenPlugin * plugin,
                      ccm_magnifier_get_option (self)->scale) >
                     ccm_magnifier_get_option (self)->restrict_area.width)
                     self->priv->x_offset =
-                        ccm_magnifier_get_option (self)->restrict_area.width -
-                        (ccm_magnifier_get_option (self)->area.width /
-                         ccm_magnifier_get_option (self)->scale);
+                    ccm_magnifier_get_option (self)->restrict_area.width -
+                    (ccm_magnifier_get_option (self)->area.width /
+                     ccm_magnifier_get_option (self)->scale);
                 damaged = TRUE;
             }
             if (self->priv->y_offset +
@@ -1096,9 +1096,9 @@ ccm_magnifier_screen_on_cursor_move (CCMScreenPlugin * plugin,
                      ccm_magnifier_get_option (self)->scale) >
                     ccm_magnifier_get_option (self)->restrict_area.height)
                     self->priv->y_offset =
-                        ccm_magnifier_get_option (self)->restrict_area.height -
-                        (ccm_magnifier_get_option (self)->area.height /
-                         ccm_magnifier_get_option (self)->scale);
+                    ccm_magnifier_get_option (self)->restrict_area.height -
+                    (ccm_magnifier_get_option (self)->area.height /
+                     ccm_magnifier_get_option (self)->scale);
                 damaged = TRUE;
             }
         }
@@ -1111,9 +1111,9 @@ ccm_magnifier_screen_on_cursor_move (CCMScreenPlugin * plugin,
             area.x = self->priv->x_offset;
             area.y = self->priv->y_offset;
             area.width = ccm_magnifier_get_option (self)->area.width / 
-						 ccm_magnifier_get_option (self)->scale;
+                ccm_magnifier_get_option (self)->scale;
             area.height = ccm_magnifier_get_option (self)->area.height /
-                          ccm_magnifier_get_option (self)->scale;
+                ccm_magnifier_get_option (self)->scale;
             damage = ccm_region_rectangle (&area);
             ccm_debug ("MAGNIFIER POSITION CHANGED");
             ccm_screen_damage_region (self->priv->screen, damage);
@@ -1157,66 +1157,66 @@ ccm_magnifier_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
                                                                 CCM_TYPE_MAGNIFIER));
     if (ccm_magnifier_get_option (self)->enabled)
     {
-		CCMRegion *damaged = (CCMRegion*)
-			ccm_drawable_get_damaged(CCM_DRAWABLE(window));
+        CCMRegion *damaged = (CCMRegion*)
+            ccm_drawable_get_damaged(CCM_DRAWABLE(window));
 
-		if (damaged)
-		{
-		    CCMRegion *area = ccm_region_rectangle (&ccm_magnifier_get_option (self)->area);
-		    CCMRegion *tmp = ccm_region_copy (damaged);
-		    cairo_matrix_t matrix;
+        if (damaged)
+        {
+            CCMRegion *area = ccm_region_rectangle (&ccm_magnifier_get_option (self)->area);
+            CCMRegion *tmp = ccm_region_copy (damaged);
+            cairo_matrix_t matrix;
 
-		    cairo_matrix_init_scale (&matrix,
-		                             ccm_magnifier_get_option (self)->scale,
-		                             ccm_magnifier_get_option (self)->scale);
-		    cairo_matrix_translate (&matrix, -self->priv->x_offset,
-		                            -self->priv->y_offset);
-		    ccm_region_transform (tmp, &matrix);
-		    cairo_matrix_init_translate (&matrix, ccm_magnifier_get_option (self)->area.x,
-		                                 ccm_magnifier_get_option (self)->area.y);
-		    ccm_region_transform (tmp, &matrix);
-		    ccm_region_intersect (tmp, area);
+            cairo_matrix_init_scale (&matrix,
+                                     ccm_magnifier_get_option (self)->scale,
+                                     ccm_magnifier_get_option (self)->scale);
+            cairo_matrix_translate (&matrix, -self->priv->x_offset,
+                                    -self->priv->y_offset);
+            ccm_region_transform (tmp, &matrix);
+            cairo_matrix_init_translate (&matrix, ccm_magnifier_get_option (self)->area.x,
+                                         ccm_magnifier_get_option (self)->area.y);
+            ccm_region_transform (tmp, &matrix);
+            ccm_region_intersect (tmp, area);
 
-		    if (!ccm_region_empty (tmp))
-		    {
-		        cairo_t *ctx = cairo_create (self->priv->surface);
-		        cairo_matrix_t translate;
+            if (!ccm_region_empty (tmp))
+            {
+                cairo_t *ctx = cairo_create (self->priv->surface);
+                cairo_matrix_t translate;
 
-		        ccm_debug_window (window, "MAGNIFIER PAINT WINDOW");
+                ccm_debug_window (window, "MAGNIFIER PAINT WINDOW");
 
-		        if (!self->priv->damaged)
-		            self->priv->damaged = ccm_region_copy (tmp);
-		        else
-		            ccm_region_union (self->priv->damaged, tmp);
+                if (!self->priv->damaged)
+                    self->priv->damaged = ccm_region_copy (tmp);
+                else
+                    ccm_region_union (self->priv->damaged, tmp);
 
-		        cairo_rectangle (ctx, 0, 0,
-		                         ccm_magnifier_get_option (self)->area.width /
-		                         ccm_magnifier_get_option (self)->scale,
-		                         ccm_magnifier_get_option (self)->area.height /
-		                         ccm_magnifier_get_option (self)->scale);
-		        cairo_clip (ctx);
+                cairo_rectangle (ctx, 0, 0,
+                                 ccm_magnifier_get_option (self)->area.width /
+                                 ccm_magnifier_get_option (self)->scale,
+                                 ccm_magnifier_get_option (self)->area.height /
+                                 ccm_magnifier_get_option (self)->scale);
+                cairo_clip (ctx);
 
-		        cairo_matrix_init_translate (&translate, -self->priv->x_offset,
-		                                     -self->priv->y_offset);
+                cairo_matrix_init_translate (&translate, -self->priv->x_offset,
+                                             -self->priv->y_offset);
 
-		        cairo_translate (ctx, -self->priv->x_offset, -self->priv->y_offset);
-		        ccm_drawable_get_damage_path (CCM_DRAWABLE (window), ctx);
-		        cairo_clip (ctx);
+                cairo_translate (ctx, -self->priv->x_offset, -self->priv->y_offset);
+                ccm_drawable_get_damage_path (CCM_DRAWABLE (window), ctx);
+                cairo_clip (ctx);
 
-		        ccm_window_set_redirect(window, FALSE);
-		        ccm_drawable_push_matrix (CCM_DRAWABLE (window), "CCMMagnifier",
-		                                  &translate);
+                ccm_window_set_redirect(window, FALSE);
+                ccm_drawable_push_matrix (CCM_DRAWABLE (window), "CCMMagnifier",
+                                          &translate);
 
-		        ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
-		                                 ctx, surface, y_invert);
-		        cairo_destroy (ctx);
-		        ccm_drawable_pop_matrix (CCM_DRAWABLE (window), "CCMMagnifier");
-		        ccm_window_set_redirect(window, TRUE);
-		    }
+                ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
+                                         ctx, surface, y_invert);
+                cairo_destroy (ctx);
+                ccm_drawable_pop_matrix (CCM_DRAWABLE (window), "CCMMagnifier");
+                ccm_window_set_redirect(window, TRUE);
+            }
 
-		    ccm_region_destroy (tmp);
-		    ccm_region_destroy (area);
-		}
+            ccm_region_destroy (tmp);
+            ccm_region_destroy (area);
+        }
     }
 
     return ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,

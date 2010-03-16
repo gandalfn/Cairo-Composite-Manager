@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
  * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
@@ -32,17 +32,14 @@ namespace CCM
         N
     }
 
-    const string[] options_key = {
-        "show"
-    };
-
     class AutomateOptions : PluginOptions
     {
         public string show_shortcut;
 
-		protected override void changed(CCM.Config config)
-		{
-			show_shortcut = "<Super>a";
+        override void
+        changed(CCM.Config config)
+        {
+            show_shortcut = "<Super>a";
 
             try
             {
@@ -52,36 +49,42 @@ namespace CCM
             {
                 CCM.log ("Error on get show shortcut config get default");
             }
-		}
+        }
     }
 
     class Automate : CCM.Plugin, CCM.ScreenPlugin
     {
-        private weak CCM.Screen screen;
+        const string[] options_key = {
+            "show"
+        };
 
-        private bool enable = false;
+        weak CCM.Screen screen;
 
-        private CCM.Keybind show_keybind;
+        bool enable = false;
 
-		private CCM.AutomateDialog dialog;
+        CCM.Keybind show_keybind;
+
+        CCM.AutomateDialog dialog;
 
         class construct
-		{
-			type_options = typeof (AutomateOptions);
-		}
+        {
+            type_options = typeof (AutomateOptions);
+        }
 
-		~Automate ()
+        ~Automate ()
         {
             options_unload ();
         }
 
-        private void option_changed (int index)
+        void
+        option_changed (int index)
         {
             // Reload show shortcut
             get_show_shortcut ();
         }
 
-        private void on_show_shortcut_pressed ()
+        void
+        on_show_shortcut_pressed ()
         {
             enable = !enable;
 
@@ -91,7 +94,8 @@ namespace CCM
                 dialog.hide ();
         }
 
-        private void get_show_shortcut ()
+        void
+        get_show_shortcut ()
         {
             show_keybind = new CCM.Keybind (screen, 
                                             ((AutomateOptions) get_option ()).show_shortcut, 
@@ -99,7 +103,8 @@ namespace CCM
             show_keybind.key_press += on_show_shortcut_pressed;
         }
 
-        protected void screen_load_options (CCM.Screen screen)
+        void
+        screen_load_options (CCM.Screen screen)
         {
             this.screen = screen;
 

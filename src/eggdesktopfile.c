@@ -361,7 +361,7 @@ egg_desktop_file_get_name (EggDesktopFile * desktop_file)
  * Gets the value of @desktop_file's "Icon" key.
  *
  * If the icon string is a full path (that is, if g_path_is_absolute()
- * returns %TRUE when called on it), it points to a file containing an
+                                      * returns %TRUE when called on it), it points to a file containing an
  * unthemed icon. If the icon string is not a full path, it is the
  * name of a themed icon, which can be looked up with %GtkIconTheme,
  * or passed directly to a theme-aware widget like %GtkImage or
@@ -637,50 +637,50 @@ do_percent_subst (EggDesktopFile * desktop_file, char code, GString * str,
         case 'F':
         case 'U':
             for (d = *documents; d; d = d->next)
-            {
-                doc = d->data;
-                g_string_append (str, " ");
-                append_quoted_word (str, doc, in_single_quotes,
-                                    in_double_quotes);
-            }
+        {
+            doc = d->data;
+            g_string_append (str, " ");
+            append_quoted_word (str, doc, in_single_quotes,
+                                in_double_quotes);
+        }
             *documents = NULL;
             break;
 
         case 'f':
         case 'u':
             if (*documents)
-            {
-                doc = (*documents)->data;
-                g_string_append (str, " ");
-                append_quoted_word (str, doc, in_single_quotes,
-                                    in_double_quotes);
-                *documents = (*documents)->next;
-            }
+        {
+            doc = (*documents)->data;
+            g_string_append (str, " ");
+            append_quoted_word (str, doc, in_single_quotes,
+                                in_double_quotes);
+            *documents = (*documents)->next;
+        }
             break;
 
         case 'i':
             if (desktop_file->icon)
-            {
-                g_string_append (str, "--icon ");
-                append_quoted_word (str, desktop_file->icon, in_single_quotes,
-                                    in_double_quotes);
-            }
+        {
+            g_string_append (str, "--icon ");
+            append_quoted_word (str, desktop_file->icon, in_single_quotes,
+                                in_double_quotes);
+        }
             break;
 
         case 'c':
             if (desktop_file->name)
-            {
-                append_quoted_word (str, desktop_file->name, in_single_quotes,
-                                    in_double_quotes);
-            }
+        {
+            append_quoted_word (str, desktop_file->name, in_single_quotes,
+                                in_double_quotes);
+        }
             break;
 
         case 'k':
             if (desktop_file->source)
-            {
-                append_quoted_word (str, desktop_file->source, in_single_quotes,
-                                    in_double_quotes);
-            }
+        {
+            append_quoted_word (str, desktop_file->source, in_single_quotes,
+                                in_double_quotes);
+        }
             break;
 
         case 'D':
@@ -1070,7 +1070,7 @@ egg_desktop_file_launchv (EggDesktopFile * desktop_file, GSList * documents,
 
     /* Read the options: technically it's incorrect for the caller to
      * NULL-terminate the list of options (rather than 0-terminating
-     * it), but NULL-terminating lets us use G_GNUC_NULL_TERMINATED,
+                                           * it), but NULL-terminating lets us use G_GNUC_NULL_TERMINATED,
      * it's more consistent with other glib/gtk methods, and it will
      * work as long as sizeof (int) <= sizeof (NULL), and NULL is
      * represented as 0. (Which is true everywhere we care about.)
@@ -1234,15 +1234,15 @@ egg_desktop_file_launchv (EggDesktopFile * desktop_file, GSList * documents,
     }
     while (docs && current_success);
 
-  out:
-    if (env)
+    out:
+        if (env)
     {
         g_strfreev ((char **) env->pdata);
         g_ptr_array_free (env, FALSE);
     }
-    free_document_list (translated_documents);
+        free_document_list (translated_documents);
 
-    return success;
+        return success;
 }
 
 /**
@@ -1303,9 +1303,9 @@ egg_desktop_file_launchv (EggDesktopFile * desktop_file, GSList * documents,
  * @desktop_file, then egg_desktop_file_launch() will actually launch
  * multiple instances of the application. In that case, the return
  * value (as well as any values passed via
- * %EGG_DESKTOP_FILE_LAUNCH_RETURN_PID, etc) will only reflect the
+          * %EGG_DESKTOP_FILE_LAUNCH_RETURN_PID, etc) will only reflect the
  * first instance of the application that was launched (but the
- * %EGG_DESKTOP_FILE_LAUNCH_SETUP_FUNC will be called for each
+                                                        * %EGG_DESKTOP_FILE_LAUNCH_SETUP_FUNC will be called for each
  * instance).
  *
  * Return value: %TRUE if the application was successfully launched.
@@ -1329,13 +1329,13 @@ egg_desktop_file_launch (EggDesktopFile * desktop_file, GSList * documents,
 
         case EGG_DESKTOP_FILE_TYPE_LINK:
             if (documents)
-            {
-                g_set_error (error, EGG_DESKTOP_FILE_ERROR,
-                             EGG_DESKTOP_FILE_ERROR_NOT_LAUNCHABLE,
-                             _
-                             ("Can't pass document URIs to a 'Type=Link' desktop entry"));
-                return FALSE;
-            }
+        {
+            g_set_error (error, EGG_DESKTOP_FILE_ERROR,
+                         EGG_DESKTOP_FILE_ERROR_NOT_LAUNCHABLE,
+                         _
+                         ("Can't pass document URIs to a 'Type=Link' desktop entry"));
+            return FALSE;
+        }
 
             if (!parse_link
                 (desktop_file, &app_desktop_file, &documents, error))

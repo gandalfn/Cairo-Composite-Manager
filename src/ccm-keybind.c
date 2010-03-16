@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2008 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,12 +61,11 @@ struct _CCMKeybindPrivate
 };
 
 #define CCM_KEYBIND_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_KEYBIND, CCMKeybindPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_KEYBIND, CCMKeybindPrivate))
 
 static void ccm_keybind_ungrab (CCMKeybind * self);
 static void ccm_keybind_on_event (CCMKeybind * self, XEvent * xevent);
-static void ccm_keybind_on_keymap_changed (CCMKeybind * self,
-                                           GdkKeymap * keymap);
+static void ccm_keybind_on_keymap_changed (CCMKeybind * self, GdkKeymap * keymap);
 
 static void
 ccm_keybind_init (CCMKeybind * self)
@@ -179,14 +178,13 @@ ccm_keybind_grab (CCMKeybind * self)
         {
             if (self->priv->button)
             {
-                if (!XGrabButton
-                    (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                     self->priv->button, self->priv->modifiers | mod_masks[cpt],
-                     self->priv->root, !self->priv->exclusive,
-                     ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
-                     GrabModeAsync,
-                     self->priv->exclusive ? GrabModeAsync : GrabModeSync, None,
-                     None))
+                if (!XGrabButton (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                  self->priv->button, self->priv->modifiers | mod_masks[cpt],
+                                  self->priv->root, !self->priv->exclusive,
+                                  ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
+                                  GrabModeAsync,
+                                  self->priv->exclusive ? GrabModeAsync : GrabModeSync, None,
+                                  None))
                 {
                     ccm_keybind_ungrab (self);
                     self->priv->grabbed = FALSE;
@@ -194,12 +192,11 @@ ccm_keybind_grab (CCMKeybind * self)
             }
             else
             {
-                if (!XGrabKey
-                    (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                     self->priv->keycode,
-                     self->priv->modifiers | mod_masks[cpt], self->priv->root,
-                     !self->priv->exclusive, GrabModeAsync,
-                     self->priv->exclusive ? GrabModeAsync : GrabModeSync))
+                if (!XGrabKey (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                               self->priv->keycode,
+                               self->priv->modifiers | mod_masks[cpt], self->priv->root,
+                               !self->priv->exclusive, GrabModeAsync,
+                               self->priv->exclusive ? GrabModeAsync : GrabModeSync))
                 {
                     ccm_keybind_ungrab (self);
                     self->priv->grabbed = FALSE;
@@ -220,161 +217,150 @@ ccm_keybind_on_event (CCMKeybind * self, XEvent * xevent)
     switch (xevent->type)
     {
         case KeyPress:
+        {
+            if (xevent->xkey.root != self->priv->root)
+                return;
+
+            event_mods =
+                xevent->xkey.state & ~(self->priv->caps_lock_mask | self->
+                                       priv->num_lock_mask);
+
+            ccm_debug ("Key Press: window = 0x%lx, keycode = %i, modifiers = %i",
+                       xevent->xkey.window, xevent->xkey.keycode, xevent->xkey.state);
+            if (self->priv->keycode && 
+                self->priv->keycode == xevent->xkey.keycode && 
+                self->priv->modifiers == event_mods)
             {
-                if (xevent->xkey.root != self->priv->root)
-                    return;
-
-                event_mods =
-                    xevent->xkey.state & ~(self->priv->caps_lock_mask | self->
-                                           priv->num_lock_mask);
-
-                ccm_debug
-                    ("Key Press: window = 0x%lx, keycode = %i, modifiers = %i",
-                     xevent->xkey.window, xevent->xkey.keycode,
-                     xevent->xkey.state);
-                if (self->priv->keycode
-                    && self->priv->keycode == xevent->xkey.keycode
-                    && self->priv->modifiers == event_mods)
+                if (!self->priv->key_pressed)
                 {
-                    if (!self->priv->key_pressed)
-                    {
-                        g_signal_emit (self, signals[KEY_PRESS], 0);
-                        self->priv->key_pressed = TRUE;
-                    }
-                    if (!self->priv->exclusive)
-                    {
-                        ccm_keybind_ungrab (self);
-                        XAllowEvents (xevent->xkey.display, ReplayKeyboard,
-                                      CurrentTime);
-                        XSync (xevent->xkey.display, FALSE);
-                        ccm_keybind_grab (self);
-                    }
-                }
-            }
-            break;
-        case ButtonPress:
-            {
-                gint button = xevent->xbutton.button;
-                gint state = xevent->xbutton.state & 0xFF;
-
-                if (xevent->xbutton.root != self->priv->root)
-                    return;
-
-                event_mods =
-                    state & ~(self->priv->caps_lock_mask | self->priv->
-                              num_lock_mask);
-
-                if (self->priv->button && self->priv->button == button
-                    && self->priv->modifiers == event_mods)
-                {
-                    ccm_debug
-                        ("Button Press: window = 0x%lx, button = %i, modifiers = %i",
-                         xevent->xbutton.window, xevent->xbutton.button,
-                         event_mods);
                     g_signal_emit (self, signals[KEY_PRESS], 0);
                     self->priv->key_pressed = TRUE;
-                    if (!self->priv->exclusive)
-                    {
-                        ccm_keybind_ungrab (self);
-                        XAllowEvents (xevent->xbutton.display, ReplayKeyboard,
-                                      CurrentTime);
-                        XSync (xevent->xbutton.display, FALSE);
-                        ccm_keybind_grab (self);
-                    }
+                }
+                if (!self->priv->exclusive)
+                {
+                    ccm_keybind_ungrab (self);
+                    XAllowEvents (xevent->xkey.display, ReplayKeyboard,
+                                  CurrentTime);
+                    XSync (xevent->xkey.display, FALSE);
+                    ccm_keybind_grab (self);
                 }
             }
+        }
+            break;
+        case ButtonPress:
+        {
+            gint button = xevent->xbutton.button;
+            gint state = xevent->xbutton.state & 0xFF;
+
+            if (xevent->xbutton.root != self->priv->root)
+                return;
+
+            event_mods = state & ~(self->priv->caps_lock_mask | self->priv->num_lock_mask);
+
+            if (self->priv->button && self->priv->button == button
+                && self->priv->modifiers == event_mods)
+            {
+                ccm_debug ("Button Press: window = 0x%lx, button = %i, modifiers = %i",
+                           xevent->xbutton.window, xevent->xbutton.button, event_mods);
+                g_signal_emit (self, signals[KEY_PRESS], 0);
+                self->priv->key_pressed = TRUE;
+                if (!self->priv->exclusive)
+                {
+                    ccm_keybind_ungrab (self);
+                    XAllowEvents (xevent->xbutton.display, ReplayKeyboard,
+                                  CurrentTime);
+                    XSync (xevent->xbutton.display, FALSE);
+                    ccm_keybind_grab (self);
+                }
+            }
+        }
             break;
         case KeyRelease:
+        {
+            if (xevent->xkey.root != self->priv->root)
+                return;
+
+            ccm_debug ("Key Release: keycode = %i, modifiers = %i",
+                       xevent->xkey.keycode, xevent->xkey.state);
+            if (self->priv->keycode == xevent->xkey.keycode)
             {
-                if (xevent->xkey.root != self->priv->root)
-                    return;
-
-                ccm_debug ("Key Release: keycode = %i, modifiers = %i",
-                           xevent->xkey.keycode, xevent->xkey.state);
-                if (self->priv->keycode == xevent->xkey.keycode)
-                {
-                    if (self->priv->key_pressed)
-                    {
-                        g_signal_emit (self, signals[KEY_RELEASE], 0);
-                        self->priv->key_pressed = FALSE;
-                    }
-                    if (!self->priv->exclusive)
-                    {
-                        ccm_keybind_ungrab (self);
-                        XAllowEvents (xevent->xkey.display, ReplayKeyboard,
-                                      CurrentTime);
-                        XSync (xevent->xkey.display, FALSE);
-                        ccm_keybind_grab (self);
-                    }
-                }
-            }
-            break;
-        case ButtonRelease:
-            {
-                gint button = xevent->xbutton.button;
-                gint state = xevent->xbutton.state & 0xFF;
-
-                if (xevent->xbutton.root != self->priv->root)
-                    return;
-
-                event_mods =
-                    state & ~(self->priv->caps_lock_mask | self->priv->
-                              num_lock_mask);
-
-                ccm_debug
-                    ("Button Release: window = 0x%lx, button = %i, modifiers = %i",
-                     xevent->xbutton.window, button, event_mods);
-                ccm_debug ("Button Release: button = %i, modifiers = %i",
-                           self->priv->button, self->priv->modifiers);
-
-                if (self->priv->button && self->priv->button == button
-                    && self->priv->modifiers == event_mods)
+                if (self->priv->key_pressed)
                 {
                     g_signal_emit (self, signals[KEY_RELEASE], 0);
                     self->priv->key_pressed = FALSE;
-                    if (!self->priv->exclusive)
-                    {
-                        ccm_keybind_ungrab (self);
-                        XAllowEvents (xevent->xbutton.display, ReplayKeyboard,
-                                      CurrentTime);
-                        XSync (xevent->xbutton.display, FALSE);
-                        ccm_keybind_grab (self);
-                    }
+                }
+                if (!self->priv->exclusive)
+                {
+                    ccm_keybind_ungrab (self);
+                    XAllowEvents (xevent->xkey.display, ReplayKeyboard,
+                                  CurrentTime);
+                    XSync (xevent->xkey.display, FALSE);
+                    ccm_keybind_grab (self);
                 }
             }
+        }
+            break;
+        case ButtonRelease:
+        {
+            gint button = xevent->xbutton.button;
+            gint state = xevent->xbutton.state & 0xFF;
+
+            if (xevent->xbutton.root != self->priv->root)
+                return;
+
+            event_mods = state & ~(self->priv->caps_lock_mask | self->priv->num_lock_mask);
+
+            ccm_debug ("Button Release: window = 0x%lx, button = %i, modifiers = %i",
+                       xevent->xbutton.window, button, event_mods);
+            ccm_debug ("Button Release: button = %i, modifiers = %i",
+                       self->priv->button, self->priv->modifiers);
+
+            if (self->priv->button && 
+                self->priv->button == button && 
+                self->priv->modifiers == event_mods)
+            {
+                g_signal_emit (self, signals[KEY_RELEASE], 0);
+                self->priv->key_pressed = FALSE;
+                if (!self->priv->exclusive)
+                {
+                    ccm_keybind_ungrab (self);
+                    XAllowEvents (xevent->xbutton.display, ReplayKeyboard,
+                                  CurrentTime);
+                    XSync (xevent->xbutton.display, FALSE);
+                    ccm_keybind_grab (self);
+                }
+            }
+        }
             break;
         case MotionNotify:
+        {
+            gint button = xevent->xbutton.state >> 8;
+            gint state = xevent->xbutton.state & 0xFF;
+
+            if (xevent->xbutton.root != self->priv->root)
+                return;
+
+            event_mods = state & ~(self->priv->caps_lock_mask | self->priv->num_lock_mask);
+
+            ccm_debug ("Motion notify: window = 0x%lx, button = %i, modifiers = %i",
+                       xevent->xbutton.windowI, button, event_mods);
+
+            if (self->priv->button && self->priv->button == button && 
+                self->priv->modifiers == event_mods)
             {
-                gint button = xevent->xbutton.state >> 8;
-                gint state = xevent->xbutton.state & 0xFF;
-
-                if (xevent->xbutton.root != self->priv->root)
-                    return;
-
-                event_mods =
-                    state & ~(self->priv->caps_lock_mask | self->priv->
-                              num_lock_mask);
-
-                ccm_debug
-                    ("Motion notify: window = 0x%lx, button = %i, modifiers = %i",
-                     xevent->xbutton.window, button, event_mods);
-
-                if (self->priv->button && self->priv->button == button
-                    && self->priv->modifiers == event_mods)
+                g_signal_emit (self, signals[KEY_MOTION], 0,
+                               xevent->xbutton.x_root,
+                               xevent->xbutton.y_root);
+                if (!self->priv->exclusive)
                 {
-                    g_signal_emit (self, signals[KEY_MOTION], 0,
-                                   xevent->xbutton.x_root,
-                                   xevent->xbutton.y_root);
-                    if (!self->priv->exclusive)
-                    {
-                        ccm_keybind_ungrab (self);
-                        XAllowEvents (xevent->xbutton.display, ReplayKeyboard,
-                                      CurrentTime);
-                        XSync (xevent->xbutton.display, FALSE);
-                        ccm_keybind_grab (self);
-                    }
+                    ccm_keybind_ungrab (self);
+                    XAllowEvents (xevent->xbutton.display, ReplayKeyboard,
+                                  CurrentTime);
+                    XSync (xevent->xbutton.display, FALSE);
+                    ccm_keybind_grab (self);
                 }
             }
+        }
             break;
         default:
             break;
@@ -404,8 +390,8 @@ ccm_keybind_new (CCMScreen * screen, gchar * keystring, gboolean exclusive)
     self->priv->exclusive = exclusive;
     self->priv->keystring = g_strdup (keystring);
 
-    if (!egg_accelerator_parse_virtual
-        (keystring, &keysym, NULL, &self->priv->button, &virtual_mods))
+    if (!egg_accelerator_parse_virtual (keystring, &keysym, NULL, 
+                                        &self->priv->button, &virtual_mods))
     {
         g_warning ("Error on parse keybind %s", self->priv->keystring);
         g_object_unref (self);

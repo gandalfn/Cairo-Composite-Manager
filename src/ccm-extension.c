@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,7 @@ struct _CCMExtensionPrivate
 };
 
 #define CCM_EXTENSION_GET_PRIVATE(o) \
-		(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_EXTENSION, CCMExtensionPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_EXTENSION, CCMExtensionPrivate))
 
 G_DEFINE_TYPE (CCMExtension, ccm_extension, G_TYPE_TYPE_MODULE);
 
@@ -115,11 +115,9 @@ ccm_extension_load (GTypeModule * module)
         return FALSE;
     }
 
-    get_type_func_name =
-        g_strdup_printf ("%s_get_plugin_type", G_TYPE_MODULE (self)->name);
-    if (!g_module_symbol
-        (self->priv->module, get_type_func_name,
-         (gpointer) & self->priv->get_type))
+    get_type_func_name = g_strdup_printf ("%s_get_plugin_type", G_TYPE_MODULE (self)->name);
+    if (!g_module_symbol (self->priv->module, get_type_func_name,
+                          (gpointer) &self->priv->get_type))
     {
         g_free (get_type_func_name);
         return FALSE;
@@ -151,8 +149,8 @@ ccm_extension_new (gchar * filename)
     gchar *dirname = NULL;
 
     /* Load plugin configuration file */
-    if (!g_key_file_load_from_file
-        (plugin_file, filename, G_KEY_FILE_NONE, NULL))
+    if (!g_key_file_load_from_file (plugin_file, filename, 
+                                    G_KEY_FILE_NONE, NULL))
     {
         g_warning ("Error on load %s", filename);
         g_object_unref (self);
@@ -160,9 +158,9 @@ ccm_extension_new (gchar * filename)
     }
 
     /* Get plugin name */
-    if ((self->priv->name =
-         g_key_file_get_string (plugin_file, PLUGIN_SECTION, "Plugin",
-                                NULL)) == NULL)
+    if ((self->priv->name = g_key_file_get_string (plugin_file, 
+                                                   PLUGIN_SECTION, 
+                                                   "Plugin",  NULL)) == NULL)
     {
         g_warning ("Error on get plugin name in %s", filename);
         g_object_unref (self);

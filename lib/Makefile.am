@@ -1,11 +1,11 @@
 cairo_compmgr_includedir = $(includedir)/cairo-compmgr
 
 INCLUDES = \
-	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
-	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
-	-DPACKAGE_PLUGIN_DIR=\""$(libdir)/cairo-compmgr"\" \
+    -DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
+    -DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
+    -DPACKAGE_PLUGIN_DIR=\""$(libdir)/cairo-compmgr"\" \
     -DPACKAGE_PIXMAP_DIR=\""$(datadir)/pixmaps/cairo-compmgr"\" \
-	-DPACKAGE_DATA_DIR=\""$(datadir)"\" \
+    -DPACKAGE_DATA_DIR=\""$(datadir)"\" \
     $(CAIRO_COMPMGR_CFLAGS)
 
 if ENABLE_GCONF
@@ -15,39 +15,39 @@ endif
 lib_LTLIBRARIES = libcairo_compmgr.la
 
 cairo_compmgr_include_HEADERS =  \
-	ccm-config.h \
-	ccm-timeline.h \
-	ccm-config-check-button.h \
-	ccm-config-adjustment.h \
-	ccm-config-color-button.h \
-	ccm-config-entry-shortcut.h \
-	ccm-cairo-utils.h
+    ccm-config.h \
+    ccm-timeline.h \
+    ccm-config-check-button.h \
+    ccm-config-adjustment.h \
+    ccm-config-color-button.h \
+    ccm-config-entry-shortcut.h \
+    ccm-cairo-utils.h
 
 libcairo_compmgr_la_SOURCES =  \
     eggaccelerators.c \
     eggaccelerators.h \
-	ccm-config.h \
-	ccm-config.c \
-	ccm-timeline.h \
-	ccm-timeline.c \
-	ccm-timeout-pool.c \
-	ccm-timeout-pool.h \
-	ccm-timeout-interval.c \
-	ccm-timeout-interval.h \
-	ccm-cairo-utils.c \
-	ccm-cairo-utils.h \
-	ccm-config-key.h \
-	ccm-config-key.c \
-	ccm-config-schema.h \
-	ccm-config-schema.c \
-	ccm-config-check-button.h \
-	ccm-config-check-button.c \
-	ccm-config-adjustment.h \
-	ccm-config-adjustment.c \
-	ccm-config-color-button.h \
-	ccm-config-color-button.c \
-	ccm-config-entry-shortcut.h \
-	ccm-config-entry-shortcut.c
+    ccm-config.h \
+    ccm-config.c \
+    ccm-timeline.h \
+    ccm-timeline.c \
+    ccm-timeout-pool.c \
+    ccm-timeout-pool.h \
+    ccm-timeout-interval.c \
+    ccm-timeout-interval.h \
+    ccm-cairo-utils.c \
+    ccm-cairo-utils.h \
+    ccm-config-key.h \
+    ccm-config-key.c \
+    ccm-config-schema.h \
+    ccm-config-schema.c \
+    ccm-config-check-button.h \
+    ccm-config-check-button.c \
+    ccm-config-adjustment.h \
+    ccm-config-adjustment.c \
+    ccm-config-color-button.h \
+    ccm-config-color-button.c \
+    ccm-config-entry-shortcut.h \
+    ccm-config-entry-shortcut.c
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
 
@@ -56,7 +56,7 @@ libcairo_compmgr_la_LIBADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS)
 if ENABLE_GCONF
 libcairo_compmgr_la_SOURCES += 	\
     ccm-config-gconf.h \
-	ccm-config-gconf.c
+    ccm-config-gconf.c
 
 libcairo_compmgr_la_LIBADD += $(CCM_GCONF_LIBS)
 endif
@@ -67,7 +67,7 @@ glademodule_LTLIBRARIES = libgladeccm.la
 libgladeccm_la_CFLAGS = $(CCM_GLADE_CFLAGS)
 
 libgladeccm_la_SOURCES =  \
-	glade-ccm.c
+    glade-ccm.c
 
 libgladeccm_la_LDFLAGS = -module -avoid-version -no-undefined
 

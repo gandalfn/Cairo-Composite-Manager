@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -192,9 +192,9 @@ ccm_image_get_image (CCMImage * image, CCMPixmap * pixmap, int x, int y)
 
         if (image->image)
             image->pimage =
-                pixman_image_create_bits (pformat, image->width, image->height,
-                                          (guint32 *) image->image->data,
-                                          image->image->bytes_per_line);
+            pixman_image_create_bits (pformat, image->width, image->height,
+                                      (guint32 *) image->image->data,
+                                      image->image->bytes_per_line);
         return image->image != NULL;
     }
 }
@@ -252,17 +252,15 @@ ccm_image_put_image (CCMImage * image, CCMPixmap * pixmap, int x_src, int y_src,
 
     if (image->xshm)
     {
-        ret =
-            XShmPutImage (CCM_DISPLAY_XDISPLAY (image->display),
-                          CCM_PIXMAP_XPIXMAP (pixmap), gc, image->image, x_src,
-                          y_src, x, y, width, height, False);
+        ret = XShmPutImage (CCM_DISPLAY_XDISPLAY (image->display),
+                            CCM_PIXMAP_XPIXMAP (pixmap), gc, image->image, x_src,
+                            y_src, x, y, width, height, False);
     }
     else
     {
-        ret =
-            XPutImage (CCM_DISPLAY_XDISPLAY (image->display),
-                       CCM_PIXMAP_XPIXMAP (pixmap), gc, image->image, x_src,
-                       y_src, x, y, width, height);
+        ret = XPutImage (CCM_DISPLAY_XDISPLAY (image->display),
+                         CCM_PIXMAP_XPIXMAP (pixmap), gc, image->image, x_src,
+                         y_src, x, y, width, height);
     }
 
     ccm_display_sync (image->display);

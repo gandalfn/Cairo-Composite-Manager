@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,10 +46,6 @@ ccm_pixmap_backend_get_type (CCMScreen * screen)
 #ifndef DISABLE_XRENDER_BACKEND
         if (!g_ascii_strcasecmp (backend, "xrender"))
             type = ccm_pixmap_xrender_get_type ();
-#endif
-#ifdef ENABLE_GLITZ_TFP_BACKEND
-        if (!g_ascii_strcasecmp (backend, "glitz"))
-            type = ccm_pixmap_glitz_get_type ();
 #endif
     }
     if (backend)

@@ -271,7 +271,7 @@ egg_accelerator_parse_virtual (const gchar * accelerator,
             {
                 static const guint mod_vals[] = {
                     EGG_VIRTUAL_ALT_MASK, EGG_VIRTUAL_MOD2_MASK,
-                        EGG_VIRTUAL_MOD3_MASK,
+                    EGG_VIRTUAL_MOD3_MASK,
                     EGG_VIRTUAL_MOD4_MASK, EGG_VIRTUAL_MOD5_MASK
                 };
 

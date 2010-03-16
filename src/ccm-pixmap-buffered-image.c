@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,7 +48,7 @@ struct _CCMPixmapBufferedImagePrivate
 };
 
 #define CCM_PIXMAP_BUFFERED_IMAGE_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_BUFFERED_IMAGE, CCMPixmapBufferedImagePrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_BUFFERED_IMAGE, CCMPixmapBufferedImagePrivate))
 
 static gboolean ccm_pixmap_buffered_image_repair (CCMDrawable * drawable,
                                                   CCMRegion * area);
@@ -114,8 +114,7 @@ ccm_pixmap_buffered_image_class_init (CCMPixmapBufferedImageClass * klass)
 
     object_class->set_property = ccm_pixmap_buffered_image_set_property;
 
-    CCM_DRAWABLE_CLASS (klass)->get_surface =
-        ccm_pixmap_buffered_image_get_surface;
+    CCM_DRAWABLE_CLASS (klass)->get_surface = ccm_pixmap_buffered_image_get_surface;
     CCM_DRAWABLE_CLASS (klass)->repair = ccm_pixmap_buffered_image_repair;
 
     g_object_class_install_property (object_class, PROP_BUFFERED,
@@ -137,9 +136,7 @@ ccm_pixmap_buffered_image_repair (CCMDrawable * drawable, CCMRegion * area)
     CCMPixmapBufferedImage *self = CCM_PIXMAP_BUFFERED_IMAGE (drawable);
     gboolean ret;
 
-    ret =
-        CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->
-        repair (drawable, area);
+    ret = CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->repair (drawable, area);
 
     if (self->priv->need_to_sync)
         ccm_region_union (self->priv->need_to_sync, area);
@@ -164,8 +161,7 @@ ccm_pixmap_buffered_image_sync (CCMPixmapBufferedImage * self,
         CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
         CCMWindow *overlay = ccm_screen_get_overlay_window (screen);
 
-        cairo_surface_t *target =
-            ccm_drawable_get_surface (CCM_DRAWABLE (overlay));
+        cairo_surface_t *target = ccm_drawable_get_surface (CCM_DRAWABLE (overlay));
 
         if (target)
         {
@@ -181,8 +177,8 @@ ccm_pixmap_buffered_image_sync (CCMPixmapBufferedImage * self,
             else
                 content = CAIRO_CONTENT_COLOR;
 
-            self->priv->surface =
-                cairo_surface_create_similar (target, content, width, height);
+            self->priv->surface = cairo_surface_create_similar (target, content,
+                                                                width, height);
             cairo_surface_destroy (target);
             sync_all = TRUE;
         }
@@ -206,8 +202,7 @@ ccm_pixmap_buffered_image_sync (CCMPixmapBufferedImage * self,
         ccm_region_destroy (self->priv->need_to_sync);
         self->priv->need_to_sync = NULL;
 
-        if (ccm_drawable_get_format (CCM_DRAWABLE (self)) ==
-            CAIRO_FORMAT_ARGB32)
+        if (ccm_drawable_get_format (CCM_DRAWABLE (self)) == CAIRO_FORMAT_ARGB32)
         {
             cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
             cairo_paint (cr);
@@ -229,9 +224,8 @@ ccm_pixmap_buffered_image_get_surface (CCMDrawable * drawable)
 
     if (self->priv->buffered && !ccm_drawable_is_damaged (drawable))
     {
-        surface =
-            CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->
-            get_surface (drawable);
+        surface = 
+            CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->get_surface (drawable);
         if (surface)
             ccm_pixmap_buffered_image_sync (self, surface);
         if (self->priv->surface)
@@ -242,8 +236,8 @@ ccm_pixmap_buffered_image_get_surface (CCMDrawable * drawable)
     }
     else
         surface =
-            CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->
-            get_surface (drawable);
+        CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->
+        get_surface (drawable);
 
     return surface;
 }

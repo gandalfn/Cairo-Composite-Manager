@@ -7,42 +7,17 @@
     <property name="resizable">False</property>
     <property name="window_position">center</property>
     <property name="type_hint">normal</property>
-    <property name="decorated">False</property>
-    <property name="deletable">False</property>
     <property name="has_separator">False</property>
     <child internal-child="vbox">
       <object class="GtkVBox" id="dialog-vbox">
         <property name="visible">True</property>
+        <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child>
-          <object class="GtkVBox" id="vbox1">
+          <object class="GtkNotebook" id="notebook">
             <property name="visible">True</property>
-            <property name="spacing">5</property>
-            <child>
-              <object class="GtkHBox" id="screen_button_box">
-                <property name="visible">True</property>
-                <property name="spacing">12</property>
-                <child>
-                  <placeholder/>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkNotebook" id="notebook">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="border_width">5</property>
-                <property name="show_tabs">False</property>
-                <property name="show_border">False</property>
-              </object>
-              <packing>
-                <property name="position">1</property>
-              </packing>
-            </child>
+            <property name="can_focus">True</property>
+            <property name="border_width">12</property>
           </object>
           <packing>
             <property name="position">1</property>
@@ -54,7 +29,7 @@
             <property name="layout_style">end</property>
             <child>
               <object class="GtkButton" id="fermer">
-                <property name="label" translatable="yes">gtk-close</property>
+                <property name="label">gtk-close</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -218,6 +193,7 @@
             <child>
               <object class="GtkVBox" id="general_section">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>
                   <object class="GtkFrame" id="frame1">
@@ -253,6 +229,7 @@
                             <child>
                               <object class="GtkVBox" id="vbox3">
                                 <property name="visible">True</property>
+                                <property name="orientation">vertical</property>
                                 <property name="spacing">5</property>
                                 <child>
                                   <object class="GtkCheckButton" id="enable_composite_desktop">
@@ -447,6 +424,7 @@
             <child>
               <object class="GtkVBox" id="desktop_section">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>
                   <placeholder/>
@@ -469,6 +447,7 @@
             <child>
               <object class="GtkVBox" id="windows_section">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>
                   <placeholder/>
@@ -491,6 +470,7 @@
             <child>
               <object class="GtkVBox" id="effects_section">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>
                   <placeholder/>
@@ -513,6 +493,7 @@
             <child>
               <object class="GtkVBox" id="accessibility_section">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>
                   <placeholder/>
@@ -535,6 +516,7 @@
             <child>
               <object class="GtkVBox" id="utilities_section">
                 <property name="visible">True</property>
+                <property name="orientation">vertical</property>
                 <property name="spacing">5</property>
                 <child>
                   <placeholder/>
@@ -573,36 +555,29 @@
     <property name="label_xalign">0.5</property>
     <property name="shadow_type">none</property>
     <child>
-      <object class="GtkEventBox" id="screen_title_event">
+      <object class="GtkHBox" id="hbox10">
         <property name="visible">True</property>
-        <property name="events">GDK_BUTTON_PRESS_MASK | GDK_STRUCTURE_MASK</property>
-        <property name="visible_window">False</property>
         <child>
-          <object class="GtkHBox" id="hbox10">
+          <object class="GtkImage" id="image10">
             <property name="visible">True</property>
-            <child>
-              <object class="GtkImage" id="image10">
-                <property name="visible">True</property>
-                <property name="xpad">5</property>
-                <property name="pixel_size">32</property>
-                <property name="icon_name">video-display</property>
-              </object>
-              <packing>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="screen_name">
-                <property name="visible">True</property>
-                <property name="xpad">5</property>
-                <property name="label" translatable="yes">&lt;span size='x-large'&gt;&lt;b&gt;Screen&lt;/b&gt;&lt;/span&gt;</property>
-                <property name="use_markup">True</property>
-              </object>
-              <packing>
-                <property name="position">1</property>
-              </packing>
-            </child>
+            <property name="xpad">5</property>
+            <property name="pixel_size">32</property>
+            <property name="icon_name">video-display</property>
           </object>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="screen_name">
+            <property name="visible">True</property>
+            <property name="xpad">5</property>
+            <property name="label" translatable="yes">&lt;span size='x-large'&gt;&lt;b&gt;Screen&lt;/b&gt;&lt;/span&gt;</property>
+            <property name="use_markup">True</property>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
         </child>
       </object>
     </child>

@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -52,7 +52,7 @@ GType             ccm_cell_extension_get_type   (void) G_GNUC_CONST;
 
 CCMCellExtension* ccm_cell_extension_new        (const gchar * path, int width);
 void              ccm_cell_extension_set_active (CCMCellExtension * self, 
-			                                     gboolean enable);
+                                                 gboolean enable);
 const gchar*      ccm_cell_extension_get_path   (CCMCellExtension * self);
 gboolean          ccm_cell_extension_get_active (CCMCellExtension * self);
 

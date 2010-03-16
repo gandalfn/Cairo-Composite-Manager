@@ -4,13 +4,11 @@ PLUGIN_SCHEMA = ccm-menu-animation.schema-key.in
 
 PLUGIN_SOURCES = ccm-menu-animation.c ccm-menu-animation.h
 
-include $(top_srcdir)/plugin.make
+include $(top_srcdir)/build/plugin.am
 
-plugin_LTLIBRARIES = \
-	libccm_menu_animation.la 
+plugin_LTLIBRARIES = libccm_menu_animation.la 
 
-libccm_menu_animation_la_SOURCES = \
-	$(PLUGIN_SOURCES)
+libccm_menu_animation_la_SOURCES = $(PLUGIN_SOURCES)
 
 libccm_menu_animation_la_LDFLAGS =  $(PLUGIN_LDFLAGS)
 

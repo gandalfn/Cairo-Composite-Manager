@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
  * Copyright (C) Nicolas Bruguier 2009 <gandalfn@club-internet.fr>
@@ -38,7 +38,7 @@ struct _CCMSnapshotDialogPrivate
 };
 
 #define CCM_SNAPSHOT_DIALOG_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT_DIALOG, CCMSnapshotDialogPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SNAPSHOT_DIALOG, CCMSnapshotDialogPrivate))
 
 static void
 ccm_snapshot_dialog_init (CCMSnapshotDialog * self)
@@ -93,15 +93,12 @@ ccm_snapshot_dialog_on_response (CCMSnapshotDialog * self, int response,
 
     if (response == GTK_RESPONSE_OK)
     {
-        GtkWidget *path =
-            GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
-                                                "path"));
-        GtkWidget *name =
-            GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
-                                                "name"));
+        GtkWidget *path = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
+                                                              "path"));
+        GtkWidget *name = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
+                                                              "name"));
 
-        gchar *dir =
-            gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (path));
+        gchar *dir = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (path));
         const gchar *file = gtk_entry_get_text (GTK_ENTRY (name));
 
         if (dir && file && strlen (file))
@@ -121,23 +118,11 @@ ccm_snapshot_dialog_on_realize (CCMSnapshotDialog * self, GtkWidget * widget)
 {
     GtkWidget *snapshot, *table;
     int width, height;
-    GdkAtom atom_enable = gdk_atom_intern_static_string ("_CCM_SHADOW_ENABLED");
-    gulong enable = 1;
-    GdkPixmap *pixmap;
-    cairo_t *ctx;
-    GtkWidget *title = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
-                                                           "label_notebook"));
-
-    gdk_window_set_focus_on_map (widget->window, TRUE);
-    gdk_window_set_keep_above (widget->window, TRUE);
-    gdk_window_stick (widget->window);
 
     width = cairo_image_surface_get_width (self->priv->surface);
     height = cairo_image_surface_get_height (self->priv->surface);
 
-    snapshot =
-        GTK_WIDGET (gtk_builder_get_object
-                    (self->priv->builder, "snapshot_image"));
+    snapshot = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "snapshot_image"));
     table = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "table"));
 
     if (width >= height)
@@ -147,37 +132,6 @@ ccm_snapshot_dialog_on_realize (CCMSnapshotDialog * self, GtkWidget * widget)
         gtk_widget_set_size_request (snapshot,
                                      table->allocation.width * width / height,
                                      table->allocation.width);
-
-    gdk_property_change (widget->window, atom_enable,
-                         gdk_x11_xatom_to_atom (XA_CARDINAL), 32,
-                         GDK_PROP_MODE_REPLACE, (guchar *) & enable, 1);
-
-    gtk_window_get_size (GTK_WINDOW (widget), &width, &height);
-
-    pixmap = gdk_pixmap_new (NULL, width, height, 1);
-    ctx = gdk_cairo_create (GDK_DRAWABLE (pixmap));
-
-    cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_rgba (ctx, 0, 0, 0, 0);
-    cairo_paint (ctx);
-
-    cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
-    cairo_set_source_rgba (ctx, 1, 1, 1, 1);
-
-    cairo_save (ctx);
-    cairo_notebook_page_round (ctx, 0, 0, width, height, title->allocation.x,
-                               title->allocation.width,
-                               title->allocation.height, 6);
-    cairo_fill (ctx);
-    cairo_restore (ctx);
-    cairo_destroy (ctx);
-
-    gdk_window_shape_combine_mask (widget->window, (GdkBitmap *) 0, 0, 0);
-    gdk_window_input_shape_combine_mask (widget->window, (GdkBitmap *) 0, 0, 0);
-    gdk_window_shape_combine_mask (widget->window, (GdkBitmap *) pixmap, 0, 0);
-    gdk_window_input_shape_combine_mask (widget->window, (GdkBitmap *) pixmap,
-                                         0, 0);
-    g_object_unref (pixmap);
 }
 
 static void
@@ -189,9 +143,7 @@ ccm_snapshot_dialog_paint_snapshot (CCMSnapshotDialog * self, cairo_t * ctx)
     width = cairo_image_surface_get_width (self->priv->surface);
     height = cairo_image_surface_get_height (self->priv->surface);
 
-    snapshot =
-        GTK_WIDGET (gtk_builder_get_object
-                    (self->priv->builder, "snapshot_image"));
+    snapshot = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "snapshot_image"));
     cairo_save (ctx);
     cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
     cairo_translate (ctx, snapshot->allocation.x, snapshot->allocation.y);
@@ -203,80 +155,26 @@ ccm_snapshot_dialog_paint_snapshot (CCMSnapshotDialog * self, cairo_t * ctx)
     cairo_set_source_surface (ctx, self->priv->surface, 0, 0);
     cairo_paint (ctx);
     cairo_restore (ctx);
-
 }
 
 static gboolean
-ccm_snapshot_dialog_on_expose_event (CCMSnapshotDialog * self,
-                                     GdkEventExpose * event, GtkWidget * widget)
+ccm_snapshot_dialog_on_expose_event (GtkWidget * widget,
+                                     GdkEventExpose * event,
+                                     CCMSnapshotDialog * self)
 {
     cairo_t *ctx = gdk_cairo_create (widget->window);
     GtkWidget *child = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
                                                            "dialog-vbox"));
-    GtkWidget *label = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
-                                                           "label_notebook"));
-    cairo_pattern_t *pattern;
-    int width, height;
-
-    gtk_window_get_size (GTK_WINDOW (widget), &width, &height);
 
     gdk_cairo_region (ctx, event->region);
     cairo_clip (ctx);
 
-    cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
-    cairo_paint (ctx);
-    cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-    pattern = cairo_pattern_create_linear (0, 0, 0, height);
-    cairo_pattern_add_color_stop_rgba (pattern, 0,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_SELECTED].red / 65535.0f,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_SELECTED].green / 65535.0f,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_SELECTED].blue / 65535.0f,
-                                       0.8f);
-    cairo_pattern_add_color_stop_rgba (pattern,
-                                       (double) (label->allocation.height -
-                                                 label->allocation.y) /
-                                       (double) height,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_NORMAL].red / 65535.0f,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_NORMAL].green / 65535.0f,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_NORMAL].blue / 65535.0f,
-                                       0.8f);
-    cairo_pattern_add_color_stop_rgba (pattern, 1,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_NORMAL].red / 65535.0f,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_NORMAL].green / 65535.0f,
-                                       (double) widget->style->
-                                       bg[GTK_STATE_NORMAL].blue / 65535.0f,
-                                       0.8f);
-    cairo_set_source (ctx, pattern);
-    cairo_notebook_page_round (ctx, 0, 0, width, height, label->allocation.x,
-                               label->allocation.width,
-                               label->allocation.height, 6);
-    cairo_fill (ctx);
-    cairo_pattern_destroy (pattern);
-    cairo_set_source_rgba (ctx,
-                           (double) widget->style->bg[GTK_STATE_SELECTED].red /
-                           65535.0f,
-                           (double) widget->style->bg[GTK_STATE_SELECTED].
-                           green / 65535.0f,
-                           (double) widget->style->bg[GTK_STATE_SELECTED].blue /
-                           65535.0f, 0.8f);
-    cairo_notebook_page_round (ctx, 0, 0, width, height, label->allocation.x,
-                               label->allocation.width,
-                               label->allocation.height, 6);
-    cairo_stroke (ctx);
     ccm_snapshot_dialog_paint_snapshot (self, ctx);
     cairo_destroy (ctx);
 
     gtk_container_propagate_expose (GTK_CONTAINER (widget), child, event);
 
-    return TRUE;
+    return FALSE;
 }
 
 CCMSnapshotDialog *
@@ -336,9 +234,9 @@ ccm_snapshot_dialog_new (cairo_surface_t * surface, CCMScreen * screen)
     g_signal_connect_swapped (dialog, "realize",
                               G_CALLBACK (ccm_snapshot_dialog_on_realize),
                               self);
-    g_signal_connect_swapped (dialog, "expose-event",
-                              G_CALLBACK (ccm_snapshot_dialog_on_expose_event),
-                              self);
+    g_signal_connect_after (dialog, "expose-event",
+                            G_CALLBACK (ccm_snapshot_dialog_on_expose_event),
+                            self);
 
     name = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "name"));
     if (!name)
@@ -348,9 +246,8 @@ ccm_snapshot_dialog_new (cairo_surface_t * surface, CCMScreen * screen)
         return NULL;
     }
     if (CCM_SNAPSHOT_DIALOG_GET_CLASS (self)->nb > 1)
-        str =
-            g_strdup_printf ("snapshot-%i.png",
-                             CCM_SNAPSHOT_DIALOG_GET_CLASS (self)->nb - 1);
+        str = g_strdup_printf ("snapshot-%i.png",
+                               CCM_SNAPSHOT_DIALOG_GET_CLASS (self)->nb - 1);
     else
         str = g_strdup_printf ("snapshot.png");
     gtk_entry_set_text (GTK_ENTRY (name), str);
@@ -365,8 +262,7 @@ ccm_snapshot_dialog_new (cairo_surface_t * surface, CCMScreen * screen)
         return NULL;
     }
     gtk_file_chooser_set_current_folder (GTK_FILE_CHOOSER (path),
-                                         g_get_user_special_dir
-                                         (G_USER_DIRECTORY_DESKTOP));
+                                         g_get_user_special_dir (G_USER_DIRECTORY_DESKTOP));
 
     gtk_widget_show (dialog);
     gtk_window_set_keep_above (GTK_WINDOW (dialog), TRUE);

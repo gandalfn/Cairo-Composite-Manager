@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@ struct _CCMExtensionLoaderPrivate
 };
 
 #define CCM_EXTENSION_LOADER_GET_PRIVATE(o) \
-		(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_EXTENSION_LOADER, CCMExtensionLoaderPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_EXTENSION_LOADER, CCMExtensionLoaderPrivate))
 
 G_DEFINE_TYPE (CCMExtensionLoader, ccm_extension_loader, G_TYPE_OBJECT);
 
@@ -83,8 +83,7 @@ ccm_extension_loader_new ()
 
         for (item = CCMPluginPath; item; item = item->next)
         {
-            if ((plugins_dir =
-                 g_dir_open ((gchar *) item->data, 0, NULL)) == NULL)
+            if ((plugins_dir = g_dir_open ((gchar *) item->data, 0, NULL)) == NULL)
                 continue;
             while ((filename = (gchar *) g_dir_read_name (plugins_dir)) != NULL)
             {
@@ -98,16 +97,14 @@ ccm_extension_loader_new ()
                     {
                         self->priv->plugins =
                             g_slist_insert_sorted (self->priv->plugins, plugin,
-                                                   (GCompareFunc)
-                                                   _ccm_extension_compare);
+                                                   (GCompareFunc) _ccm_extension_compare);
                     }
                     g_free (file);
                 }
             }
             g_dir_close (plugins_dir);
-            self->priv->plugins =
-                g_slist_sort (self->priv->plugins,
-                              (GCompareFunc) _ccm_extension_compare);
+            self->priv->plugins = g_slist_sort (self->priv->plugins,
+                                                (GCompareFunc) _ccm_extension_compare);
         }
     }
 
@@ -145,8 +142,8 @@ ccm_extension_loader_get_screen_window_plugins (CCMExtensionLoader * self)
     {
         GType plugin = ccm_extension_get_type_object (item->data);
 
-        if (g_type_is_a (plugin, CCM_TYPE_SCREEN_PLUGIN)
-            || g_type_is_a (plugin, CCM_TYPE_WINDOW_PLUGIN))
+        if (g_type_is_a (plugin, CCM_TYPE_SCREEN_PLUGIN) ||
+            g_type_is_a (plugin, CCM_TYPE_WINDOW_PLUGIN))
         {
             plugins = g_slist_prepend (plugins, item->data);
         }
@@ -174,8 +171,8 @@ ccm_extension_loader_get_screen_plugins (CCMExtensionLoader * self,
 
             for (f = filter; f; f = f->next)
             {
-                if (!g_ascii_strcasecmp
-                    (f->data, ccm_extension_get_label (item->data)))
+                if (!g_ascii_strcasecmp (f->data, 
+                                         ccm_extension_get_label (item->data)))
                 {
                     found = TRUE;
                     break;
@@ -209,8 +206,8 @@ ccm_extension_loader_get_window_plugins (CCMExtensionLoader * self,
 
             for (f = filter; f; f = f->next)
             {
-                if (!g_ascii_strcasecmp
-                    (f->data, ccm_extension_get_label (item->data)))
+                if (!g_ascii_strcasecmp (f->data, 
+                                         ccm_extension_get_label (item->data)))
                 {
                     found = TRUE;
                     break;
@@ -230,7 +227,7 @@ ccm_extension_loader_add_plugin_path (gchar * path)
 {
     g_return_if_fail (path != NULL);
 
-    if (g_file_test (path, G_FILE_TEST_EXISTS)
-        && g_file_test (path, G_FILE_TEST_IS_DIR))
+    if (g_file_test (path, G_FILE_TEST_EXISTS) && 
+        g_file_test (path, G_FILE_TEST_IS_DIR))
         CCMPluginPath = g_slist_prepend (CCMPluginPath, g_strdup (path));
 }

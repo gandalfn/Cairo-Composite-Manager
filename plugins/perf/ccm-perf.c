@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -91,14 +91,14 @@ struct _CCMPerfPrivate
 
     gboolean enabled;
     gboolean need_refresh;
-	
-	CCMKeybind *keybind;
+
+    CCMKeybind *keybind;
 
     CCMScreen* screen;
 };
 
 #define CCM_PERF_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PERF, CCMPerfPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PERF, CCMPerfPrivate))
 
 static void
 ccm_perf_options_init (CCMPerfOptions* self)
@@ -178,7 +178,7 @@ ccm_perf_init (CCMPerf * self)
     self->priv->need_refresh = TRUE;
     self->priv->timer = NULL;
     self->priv->screen = NULL;
-	self->priv->keybind = NULL;
+    self->priv->keybind = NULL;
 }
 
 static void
@@ -187,18 +187,18 @@ ccm_perf_finalize (GObject * object)
     CCMPerf *self = CCM_PERF (object);
 
     if (self->priv->screen)
-	    ccm_plugin_options_unload (CCM_PLUGIN (self));
+        ccm_plugin_options_unload (CCM_PLUGIN (self));
 
     if (self->priv->keybind)
-	{
-		g_signal_handlers_disconnect_by_func(self->priv->keybind,
-		                                     ccm_perf_on_key_press,
-		                                     self);
-		g_object_unref (self->priv->keybind);
-		self->priv->keybind = NULL;
-	}
+    {
+        g_signal_handlers_disconnect_by_func(self->priv->keybind,
+                                             ccm_perf_on_key_press,
+                                             self);
+        g_object_unref (self->priv->keybind);
+        self->priv->keybind = NULL;
+    }
 
-	if (self->priv->timer)
+    if (self->priv->timer)
         g_timer_destroy (self->priv->timer);
 
     G_OBJECT_CLASS (ccm_perf_parent_class)->finalize (object);
@@ -332,8 +332,8 @@ ccm_perf_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
     CCMPerf *self = CCM_PERF (plugin);
 
     self->priv->screen = screen;
-	self->priv->timer = g_timer_new ();
-	
+    self->priv->timer = g_timer_new ();
+
     ccm_plugin_options_load (CCM_PLUGIN (self), "perf", CCMPerfOptionKeys,
                              CCM_PERF_OPTION_N, ccm_perf_on_option_changed);
 

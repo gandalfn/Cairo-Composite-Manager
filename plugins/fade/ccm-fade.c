@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -89,7 +89,7 @@ struct _CCMFadePrivate
 };
 
 #define CCM_FADE_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FADE, CCMFadePrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_FADE, CCMFadePrivate))
 
 static void
 ccm_fade_options_init (CCMFadeOptions* self)
@@ -105,7 +105,7 @@ ccm_fade_options_finalize (CCMFadeOptions* self)
 static void
 ccm_fade_options_changed (CCMFadeOptions* self, CCMConfig* config)
 {
-	GError *error = NULL;
+    GError *error = NULL;
     gfloat real_duration;
     gfloat duration;
 
@@ -119,13 +119,13 @@ ccm_fade_options_changed (CCMFadeOptions* self, CCMConfig* config)
     duration = MAX (0.1f, real_duration);
     duration = MIN (2.0f, real_duration);
 
-	if (self->duration != duration)
-	{
-		self->duration = duration;
+    if (self->duration != duration)
+    {
+        self->duration = duration;
 
-		if (duration != real_duration)
-			ccm_config_set_float (config, duration, NULL);
-	}
+        if (duration != real_duration)
+            ccm_config_set_float (config, duration, NULL);
+    }
 }
 
 static void
@@ -387,26 +387,26 @@ ccm_fade_on_event (CCMFade * self, XEvent * event)
     switch (event->type)
     {
         case PropertyNotify:
-            {
-                XPropertyEvent *property_event = (XPropertyEvent *) event;
-                CCMWindow *window;
+        {
+            XPropertyEvent *property_event = (XPropertyEvent *) event;
+            CCMWindow *window;
 
-                if (property_event->atom ==
-                    CCM_FADE_GET_CLASS (self)->fade_disable_atom)
+            if (property_event->atom ==
+                CCM_FADE_GET_CLASS (self)->fade_disable_atom)
+            {
+                window =
+                    ccm_screen_find_window_or_child (self->priv->screen,
+                                                     property_event->
+                                                     window);
+                if (window)
                 {
-                    window =
-                        ccm_screen_find_window_or_child (self->priv->screen,
-                                                         property_event->
-                                                         window);
-                    if (window)
-                    {
-                        CCMFade *plugin =
-                            CCM_FADE (_ccm_window_get_plugin (window,
-                                                              CCM_TYPE_FADE));
-                        ccm_fade_query_force_disable (plugin);
-                    }
+                    CCMFade *plugin =
+                        CCM_FADE (_ccm_window_get_plugin (window,
+                                                          CCM_TYPE_FADE));
+                    ccm_fade_query_force_disable (plugin);
                 }
             }
+        }
             break;
         default:
             break;
@@ -634,8 +634,7 @@ ccm_fade_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
     iface->init_general_section = NULL;
     iface->init_desktop_section = NULL;
     iface->init_windows_section = NULL;
-    iface->init_effects_section =
-        ccm_fade_preferences_page_init_effects_section;
+    iface->init_effects_section = ccm_fade_preferences_page_init_effects_section;
     iface->init_accessibility_section = NULL;
     iface->init_utilities_section = NULL;
 }

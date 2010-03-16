@@ -91,7 +91,7 @@ enum
 static guint signals[LAST_SIGNAL] = { 0 };
 
 #define CCM_TIMELINE_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMELINE, CCMTimelinePrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMELINE, CCMTimelinePrivate))
 
 static CCMTimeoutPool *timeline_pool = NULL;
 
@@ -394,8 +394,8 @@ timeline_timeout_func (CCMTimeline * self)
         self->priv->prev_frame_timeval = timeval;
 
     if ((timeval.tv_sec - self->priv->prev_frame_timeval.tv_sec) < 0)
-         self->priv->prev_frame_timeval = timeval;
-    
+        self->priv->prev_frame_timeval = timeval;
+
     msecs = (timeval.tv_sec - self->priv->prev_frame_timeval.tv_sec) * 1000;
     msecs += (timeval.tv_usec - self->priv->prev_frame_timeval.tv_usec) / 1000;
     self->priv->msecs_delta = msecs;
@@ -478,10 +478,10 @@ timeline_timeout_func (CCMTimeline * self)
         {
             if (saved_direction == CCM_TIMELINE_FORWARD)
                 self->priv->current_frame_num =
-                    overflow_frame_num - self->priv->n_frames;
+                overflow_frame_num - self->priv->n_frames;
             else
                 self->priv->current_frame_num =
-                    self->priv->n_frames + overflow_frame_num;
+                self->priv->n_frames + overflow_frame_num;
 
             if (self->priv->direction != saved_direction)
             {

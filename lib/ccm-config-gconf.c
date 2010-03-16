@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -55,7 +55,7 @@ static void ccm_config_gconf_set_integer_list (CCMConfig * config,
                                                GSList * value, GError ** error);
 
 #define CCM_CONFIG_GCONF_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_GCONF, CCMConfigGConfPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_GCONF, CCMConfigGConfPrivate))
 
 G_DEFINE_TYPE (CCMConfigGConf, ccm_config_gconf, CCM_TYPE_CONFIG);
 
@@ -97,8 +97,7 @@ ccm_config_gconf_class_init (CCMConfigGConfClass * klass)
     g_type_class_add_private (klass, sizeof (CCMConfigGConfPrivate));
 
     klass->client = gconf_client_get_default ();
-    gconf_client_add_dir (klass->client, CCM_CONFIG_GCONF_PREFIX,
-                          GCONF_CLIENT_PRELOAD_RECURSIVE, NULL);
+    gconf_client_add_dir (klass->client, CCM_CONFIG_GCONF_PREFIX, GCONF_CLIENT_PRELOAD_RECURSIVE, NULL);
 
     CCM_CONFIG_CLASS (klass)->initialize = ccm_config_gconf_initialize;
     CCM_CONFIG_CLASS (klass)->get_value_type = ccm_config_gconf_get_value_type;
@@ -110,14 +109,10 @@ ccm_config_gconf_class_init (CCMConfigGConfClass * klass)
     CCM_CONFIG_CLASS (klass)->set_float = ccm_config_gconf_set_float;
     CCM_CONFIG_CLASS (klass)->get_string = ccm_config_gconf_get_string;
     CCM_CONFIG_CLASS (klass)->set_string = ccm_config_gconf_set_string;
-    CCM_CONFIG_CLASS (klass)->get_string_list =
-        ccm_config_gconf_get_string_list;
-    CCM_CONFIG_CLASS (klass)->set_string_list =
-        ccm_config_gconf_set_string_list;
-    CCM_CONFIG_CLASS (klass)->get_integer_list =
-        ccm_config_gconf_get_integer_list;
-    CCM_CONFIG_CLASS (klass)->set_integer_list =
-        ccm_config_gconf_set_integer_list;
+    CCM_CONFIG_CLASS (klass)->get_string_list = ccm_config_gconf_get_string_list;
+    CCM_CONFIG_CLASS (klass)->set_string_list = ccm_config_gconf_set_string_list;
+    CCM_CONFIG_CLASS (klass)->get_integer_list = ccm_config_gconf_get_integer_list;
+    CCM_CONFIG_CLASS (klass)->set_integer_list = ccm_config_gconf_set_integer_list;
 
     object_class->finalize = ccm_config_gconf_finalize;
 }
@@ -224,7 +219,7 @@ ccm_config_gconf_initialize (CCMConfig * config, int screen, gchar * extension,
     }
     else if (screen == -1)
         self->priv->key =
-            g_strdup_printf ("%s/general/%s", CCM_CONFIG_GCONF_PREFIX, key);
+        g_strdup_printf ("%s/general/%s", CCM_CONFIG_GCONF_PREFIX, key);
     else
         self->priv->key = g_strdup (key);
 

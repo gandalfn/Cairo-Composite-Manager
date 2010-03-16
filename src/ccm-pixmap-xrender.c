@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ struct _CCMPixmapXRenderPrivate
 };
 
 #define CCM_PIXMAP_XRENDER_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRenderPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_PIXMAP_XRENDER, CCMPixmapXRenderPrivate))
 
 static cairo_surface_t *ccm_pixmap_xrender_get_surface (CCMDrawable * drawable);
 static void ccm_pixmap_xrender_bind (CCMPixmap * self);

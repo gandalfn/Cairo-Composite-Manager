@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,14 +27,6 @@
 
 #include "ccm-screen.h"
 
-#ifndef DISABLE_GLITZ_BACKEND
-#include "ccm-window-glitz.h"
-#endif
-
-#ifndef DISABLE_OPENVG_BACKEND
-#include "ccm-window-openvg.h"
-#endif
-
 #ifndef DISABLE_XRENDER_BACKEND
 #include "ccm-window-xrender.h"
 #endif
@@ -51,12 +43,6 @@ typedef union _CCMWindowBackendClass CCMWindowBackendClass;
 
 union _CCMWindowBackendClass
 {
-#ifndef DISABLE_GLITZ_BACKEND
-    CCMWindowGlitzClass glitz_class;
-#endif
-#ifndef DISABLE_OPENVG_BACKEND
-    CCMWindowOpenVGClass openvg_class;
-#endif
 #ifndef DISABLE_XRENDER_BACKEND
     CCMWindowXRenderClass xrender_class;
 #endif
@@ -64,12 +50,6 @@ union _CCMWindowBackendClass
 
 union _CCMWindowBackend
 {
-#ifndef DISABLE_GLITZ_BACKEND
-    CCMWindowGlitz glitz;
-#endif
-#ifndef DISABLE_OPENVG_BACKEND
-    CCMWindowOpenVG openvg;
-#endif
 #ifndef DISABLE_XRENDER_BACKEND
     CCMWindowXRender xrender;
 #endif

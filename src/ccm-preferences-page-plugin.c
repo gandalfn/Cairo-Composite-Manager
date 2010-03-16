@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -69,10 +69,8 @@ _ccm_preferences_page_plugin_get_root (CCMPreferencesPagePlugin * self)
 }
 
 void
-ccm_preferences_page_plugin_init_general_section (CCMPreferencesPagePlugin *
-                                                  self,
-                                                  CCMPreferencesPage *
-                                                  preferences,
+ccm_preferences_page_plugin_init_general_section (CCMPreferencesPagePlugin * self,
+                                                  CCMPreferencesPage * preferences,
                                                   GtkWidget * general_section)
 {
     g_return_if_fail (CCM_IS_PREFERENCES_PAGE_PLUGIN (self));
@@ -84,28 +82,23 @@ ccm_preferences_page_plugin_init_general_section (CCMPreferencesPagePlugin *
     for (plugin = self; CCM_IS_PLUGIN (plugin);
          plugin = CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin))
     {
-        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-            init_general_section)
+        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_general_section)
             break;
     }
 
-    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-        init_general_section)
+    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_general_section)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-             init_general_section))
-            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-                init_general_section (plugin, preferences, general_section);
+        if (!_ccm_plugin_method_locked((GObject *) plugin,
+                                       CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_general_section))
+            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_general_section (plugin,
+                                                                                      preferences,
+                                                                                      general_section);
     }
 }
 
 void
-ccm_preferences_page_plugin_init_desktop_section (CCMPreferencesPagePlugin *
-                                                  self,
-                                                  CCMPreferencesPage *
-                                                  preferences,
+ccm_preferences_page_plugin_init_desktop_section (CCMPreferencesPagePlugin * self,
+                                                  CCMPreferencesPage * preferences,
                                                   GtkWidget * desktop_section)
 {
     g_return_if_fail (CCM_IS_PREFERENCES_PAGE_PLUGIN (self));
@@ -117,28 +110,23 @@ ccm_preferences_page_plugin_init_desktop_section (CCMPreferencesPagePlugin *
     for (plugin = self; CCM_IS_PLUGIN (plugin);
          plugin = CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin))
     {
-        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-            init_desktop_section)
+        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_desktop_section)
             break;
     }
 
-    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-        init_desktop_section)
+    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_desktop_section)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-             init_desktop_section))
-            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-                init_desktop_section (plugin, preferences, desktop_section);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)-> init_desktop_section))
+            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_desktop_section (plugin,
+                                                                                      preferences,
+                                                                                      desktop_section);
     }
 }
 
 void
-ccm_preferences_page_plugin_init_windows_section (CCMPreferencesPagePlugin *
-                                                  self,
-                                                  CCMPreferencesPage *
-                                                  preferences,
+ccm_preferences_page_plugin_init_windows_section (CCMPreferencesPagePlugin * self,
+                                                  CCMPreferencesPage * preferences,
                                                   GtkWidget * windows_section)
 {
     g_return_if_fail (CCM_IS_PREFERENCES_PAGE_PLUGIN (self));
@@ -150,28 +138,24 @@ ccm_preferences_page_plugin_init_windows_section (CCMPreferencesPagePlugin *
     for (plugin = self; CCM_IS_PLUGIN (plugin);
          plugin = CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin))
     {
-        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-            init_windows_section)
+        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_windows_section)
             break;
     }
 
     if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
         init_windows_section)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-             init_windows_section))
-            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-                init_windows_section (plugin, preferences, windows_section);
+        if (!_ccm_plugin_method_locked((GObject *) plugin,
+                                       CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_windows_section))
+            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_windows_section (plugin,
+                                                                                      preferences, 
+                                                                                      windows_section);
     }
 }
 
 void
-ccm_preferences_page_plugin_init_effects_section (CCMPreferencesPagePlugin *
-                                                  self,
-                                                  CCMPreferencesPage *
-                                                  preferences,
+ccm_preferences_page_plugin_init_effects_section (CCMPreferencesPagePlugin * self,
+                                                  CCMPreferencesPage * preferences,
                                                   GtkWidget * effects_section)
 {
     g_return_if_fail (CCM_IS_PREFERENCES_PAGE_PLUGIN (self));
@@ -183,30 +167,24 @@ ccm_preferences_page_plugin_init_effects_section (CCMPreferencesPagePlugin *
     for (plugin = self; CCM_IS_PLUGIN (plugin);
          plugin = CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin))
     {
-        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-            init_effects_section)
+        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_effects_section)
             break;
     }
 
-    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-        init_effects_section)
+    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_effects_section)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-             init_effects_section))
-            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-                init_effects_section (plugin, preferences, effects_section);
+        if (!_ccm_plugin_method_locked((GObject *) plugin,
+                                       CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_effects_section))
+            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_effects_section (plugin, 
+                                                                                      preferences, 
+                                                                                      effects_section);
     }
 }
 
 void
-ccm_preferences_page_plugin_init_accessibility_section (CCMPreferencesPagePlugin
-                                                        * self,
-                                                        CCMPreferencesPage *
-                                                        preferences,
-                                                        GtkWidget *
-                                                        accessibility_section)
+ccm_preferences_page_plugin_init_accessibility_section (CCMPreferencesPagePlugin * self,
+                                                        CCMPreferencesPage * preferences,
+                                                        GtkWidget * accessibility_section)
 {
     g_return_if_fail (CCM_IS_PREFERENCES_PAGE_PLUGIN (self));
     g_return_if_fail (preferences != NULL);
@@ -217,31 +195,24 @@ ccm_preferences_page_plugin_init_accessibility_section (CCMPreferencesPagePlugin
     for (plugin = self; CCM_IS_PLUGIN (plugin);
          plugin = CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin))
     {
-        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-            init_accessibility_section)
+        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_accessibility_section)
             break;
     }
 
-    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-        init_effects_section)
+    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_effects_section)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-             init_accessibility_section))
-            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-                init_accessibility_section (plugin, preferences,
-                                            accessibility_section);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_accessibility_section))
+            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_accessibility_section (plugin, 
+                                                                                            preferences,
+                                                                                            accessibility_section);
     }
 }
 
 void
-ccm_preferences_page_plugin_init_utilities_section (CCMPreferencesPagePlugin *
-                                                    self,
-                                                    CCMPreferencesPage *
-                                                    preferences,
-                                                    GtkWidget *
-                                                    utilities_section)
+ccm_preferences_page_plugin_init_utilities_section (CCMPreferencesPagePlugin * self,
+                                                    CCMPreferencesPage * preferences,
+                                                    GtkWidget * utilities_section)
 {
     g_return_if_fail (CCM_IS_PREFERENCES_PAGE_PLUGIN (self));
     g_return_if_fail (preferences != NULL);
@@ -252,19 +223,16 @@ ccm_preferences_page_plugin_init_utilities_section (CCMPreferencesPagePlugin *
     for (plugin = self; CCM_IS_PLUGIN (plugin);
          plugin = CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin))
     {
-        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-            init_utilities_section)
+        if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_utilities_section)
             break;
     }
 
-    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-        init_utilities_section)
+    if (CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_utilities_section)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-             init_utilities_section))
-            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->
-                init_utilities_section (plugin, preferences, utilities_section);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_utilities_section))
+            CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE (plugin)->init_utilities_section (plugin,
+                                                                                        preferences,
+                                                                                        utilities_section);
     }
 }

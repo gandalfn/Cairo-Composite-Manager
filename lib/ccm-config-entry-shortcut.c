@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -53,8 +53,7 @@ enum
     PROP_SCREEN
 };
 
-G_DEFINE_TYPE (CCMConfigEntryShortcut, ccm_config_entry_shortcut,
-               GTK_TYPE_ENTRY);
+G_DEFINE_TYPE (CCMConfigEntryShortcut, ccm_config_entry_shortcut, GTK_TYPE_ENTRY);
 
 struct _CCMConfigEntryShortcutPrivate
 {
@@ -70,7 +69,7 @@ struct _CCMConfigEntryShortcutPrivate
 };
 
 #define CCM_CONFIG_ENTRY_SHORTCUT_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_ENTRY_SHORTCUT, CCMConfigEntryShortcutPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_ENTRY_SHORTCUT, CCMConfigEntryShortcutPrivate))
 
 static void ccm_config_entry_shortcut_on_changed (CCMConfigEntryShortcut * self,
                                                   CCMConfig * config);
@@ -133,13 +132,11 @@ ccm_config_entry_shortcut_set_property (GObject * object, guint prop_id,
             self->priv->mouse = g_value_get_boolean (value);
             break;
         case PROP_KEY:
-            if (self->priv->key)
-                g_free (self->priv->key);
+            if (self->priv->key) g_free (self->priv->key);
             self->priv->key = g_value_dup_string (value);
             break;
         case PROP_PLUGIN:
-            if (self->priv->plugin)
-                g_free (self->priv->plugin);
+            if (self->priv->plugin) g_free (self->priv->plugin);
             self->priv->plugin = g_value_dup_string (value);
             break;
         case PROP_SCREEN:
@@ -154,16 +151,15 @@ ccm_config_entry_shortcut_set_property (GObject * object, guint prop_id,
     {
         if (self->priv->config)
             g_object_unref (self->priv->config);
-        self->priv->config =
-            ccm_config_new (self->priv->screen, self->priv->plugin,
-                            self->priv->key);
+        self->priv->config = ccm_config_new (self->priv->screen, self->priv->plugin,
+                                             self->priv->key);
         if (self->priv->config)
-		{
-			g_signal_connect_swapped (self->priv->config, "changed",
-			                          G_CALLBACK(ccm_config_entry_shortcut_on_changed), 
-			                          self);
-			ccm_config_entry_shortcut_on_changed (self, self->priv->config);
-		}
+        {
+            g_signal_connect_swapped (self->priv->config, "changed",
+                                      G_CALLBACK(ccm_config_entry_shortcut_on_changed), 
+                                      self);
+            ccm_config_entry_shortcut_on_changed (self, self->priv->config);
+        }
     }
 }
 
@@ -206,14 +202,10 @@ ccm_config_entry_shortcut_class_init (CCMConfigEntryShortcutClass * klass)
     object_class->set_property = ccm_config_entry_shortcut_set_property;
     object_class->get_property = ccm_config_entry_shortcut_get_property;
 
-    GTK_WIDGET_CLASS (klass)->focus_out_event =
-        ccm_config_entry_shortcut_focus_out_event;
-    GTK_WIDGET_CLASS (klass)->button_press_event =
-        ccm_config_entry_shortcut_button_press_event;
-    GTK_WIDGET_CLASS (klass)->scroll_event =
-        ccm_config_entry_shortcut_scroll_event;
-    GTK_WIDGET_CLASS (klass)->key_release_event =
-        ccm_config_entry_shortcut_key_release_event;
+    GTK_WIDGET_CLASS (klass)->focus_out_event = ccm_config_entry_shortcut_focus_out_event;
+    GTK_WIDGET_CLASS (klass)->button_press_event = ccm_config_entry_shortcut_button_press_event;
+    GTK_WIDGET_CLASS (klass)->scroll_event = ccm_config_entry_shortcut_scroll_event;
+    GTK_WIDGET_CLASS (klass)->key_release_event = ccm_config_entry_shortcut_key_release_event;
 
     g_object_class_install_property (object_class, PROP_MOUSE,
                                      g_param_spec_boolean ("mouse", "Use mouse",
@@ -229,7 +221,7 @@ ccm_config_entry_shortcut_class_init (CCMConfigEntryShortcutClass * klass)
     g_object_class_install_property (object_class, PROP_PLUGIN,
                                      g_param_spec_string ("plugin",
                                                           "Plugin name ",
-                                                          "Plugin name (screen or ",
+                                                          "Plugin name",
                                                           NULL,
                                                           G_PARAM_READWRITE));
 
@@ -273,11 +265,8 @@ ccm_config_entry_shortcut_focus_out_event (GtkWidget * widget,
         self->priv->button = 0;
     }
 
-    if (GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->
-        focus_out_event)
-        ret =
-            GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->
-            focus_out_event (widget, event);
+    if (GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->focus_out_event)
+        ret = GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->focus_out_event (widget, event);
 
     return ret;
 }
@@ -294,12 +283,10 @@ ccm_config_entry_shortcut_button_press_event (GtkWidget * widget,
         {
             if (self->priv->old_value)
                 g_free (self->priv->old_value);
-            self->priv->old_value =
-                g_strdup (gtk_entry_get_text (GTK_ENTRY (self)));
+            self->priv->old_value = g_strdup (gtk_entry_get_text (GTK_ENTRY (self)));
             gtk_entry_set_text (GTK_ENTRY (self),
-                                self->priv->
-                                mouse ? _("<Press keys and mouse shortcut...>")
-                                : _("<Press keys shortcut...>"));
+                                self->priv->mouse ? _("<Press keys and mouse shortcut...>") : 
+                                                    _("<Press keys shortcut...>"));
             gdk_keyboard_grab (GTK_WIDGET (self)->window, TRUE,
                                GDK_CURRENT_TIME);
             gdk_pointer_grab (GTK_WIDGET (self)->window, TRUE,
@@ -332,8 +319,8 @@ ccm_config_entry_shortcut_scroll_event (GtkWidget * widget,
 
     if (GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->scroll_event)
         ret =
-            GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->
-            scroll_event (widget, event);
+        GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->
+        scroll_event (widget, event);
 
 
     return ret;
@@ -371,8 +358,7 @@ ccm_config_entry_shortcut_key_release_event (GtkWidget * widget,
                                                  event->state, event->group,
                                                  &keyval, NULL, NULL,
                                                  &consumed_modifiers);
-            if (event->keyval != keyval
-                && (consumed_modifiers & GDK_SHIFT_MASK))
+            if (event->keyval != keyval && (consumed_modifiers & GDK_SHIFT_MASK))
                 consumed_modifiers &= ~(GDK_SHIFT_MASK);
 
             mods = event->state & GDK_MODIFIER_MASK & ~(consumed_modifiers);
@@ -458,11 +444,8 @@ ccm_config_entry_shortcut_key_release_event (GtkWidget * widget,
     }
 
 
-    if (GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->
-        key_release_event)
-        ret =
-            GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->
-            key_release_event (widget, event);
+    if (GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->key_release_event)
+        ret = GTK_WIDGET_CLASS (ccm_config_entry_shortcut_parent_class)->key_release_event (widget, event);
 
     return ret;
 }

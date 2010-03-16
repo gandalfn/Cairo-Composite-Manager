@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
  * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
@@ -46,7 +46,7 @@
 G_DEFINE_TYPE (CCMTimedDialog, ccm_timed_dialog, GTK_TYPE_DIALOG);
 
 #define CCM_TIMED_DIALOG_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMED_DIALOG, CCMTimedDialogPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_TIMED_DIALOG, CCMTimedDialogPrivate))
 
 struct _CCMTimedDialogPrivate
 {
@@ -105,8 +105,8 @@ ccm_timed_dialog_set_timeout_string (CCMTimedDialog * self)
 static gboolean
 ccm_timed_dialog_timeout_callback (CCMTimedDialog * self)
 {
-	if (self->priv->timeout == 0) return FALSE;
-	
+    if (self->priv->timeout == 0) return FALSE;
+
     if (!self->priv->timed_out)
     {
         self->priv->time--;
@@ -148,9 +148,8 @@ ccm_timed_dialog_new (GtkWidget * parent, guint seconds)
     label = gtk_label_new (NULL);
     gtk_label_set_markup (GTK_LABEL (label),
                           _("<b>Do you want to keep these settings?</b>"));
-    image =
-        gtk_image_new_from_stock (GTK_STOCK_DIALOG_QUESTION,
-                                  GTK_ICON_SIZE_DIALOG);
+    image = gtk_image_new_from_stock (GTK_STOCK_DIALOG_QUESTION,
+                                      GTK_ICON_SIZE_DIALOG);
     gtk_misc_set_alignment (GTK_MISC (image), 0.5, 0.0);
 
     gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
@@ -178,10 +177,9 @@ ccm_timed_dialog_new (GtkWidget * parent, guint seconds)
 
     gtk_widget_show_all (hbox);
 
-    self->priv->timeout =
-        g_timeout_add_seconds (1,
-                               (GSourceFunc) ccm_timed_dialog_timeout_callback,
-                               self);
+    self->priv->timeout = g_timeout_add_seconds (1,
+                                                 (GSourceFunc) ccm_timed_dialog_timeout_callback,
+                                                 self);
 
     return (GtkWidget *) self;
 }

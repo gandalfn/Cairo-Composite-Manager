@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,21 +39,21 @@ G_BEGIN_DECLS
 
 #define CCM_SCREEN_PLUGIN_LOCK_ROOT_METHOD(plugin, func, callback, data) \
 { \
-	CCMScreenPlugin* r = (CCMScreenPlugin*)_ccm_screen_plugin_get_root((CCMScreenPlugin*)plugin); \
+    CCMScreenPlugin* r = (CCMScreenPlugin*)_ccm_screen_plugin_get_root((CCMScreenPlugin*)plugin); \
 \
-	if (r && CCM_SCREEN_PLUGIN_GET_INTERFACE(r) && \
-		CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func) \
-		_ccm_plugin_lock_method ((GObject*)r, CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func, \
-								 callback, data); \
+    if (r && CCM_SCREEN_PLUGIN_GET_INTERFACE(r) && \
+        CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func) \
+        _ccm_plugin_lock_method ((GObject*)r, CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func, \
+                                 callback, data); \
 }
 
 #define CCM_SCREEN_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func) \
 { \
-	CCMScreenPlugin* r = (CCMScreenPlugin*)_ccm_screen_plugin_get_root((CCMScreenPlugin*)plugin); \
+    CCMScreenPlugin* r = (CCMScreenPlugin*)_ccm_screen_plugin_get_root((CCMScreenPlugin*)plugin); \
 \
-	if (r && CCM_SCREEN_PLUGIN_GET_INTERFACE(r) && \
-		CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func) \
-		_ccm_plugin_unlock_method ((GObject*)r, CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func); \
+    if (r && CCM_SCREEN_PLUGIN_GET_INTERFACE(r) && \
+        CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func) \
+        _ccm_plugin_unlock_method ((GObject*)r, CCM_SCREEN_PLUGIN_GET_INTERFACE(r)->func); \
 }
 
 typedef struct _CCMScreenPluginClass CCMScreenPluginClass;

@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -34,13 +34,11 @@ static void ccm_cell_extension_start_editing (GtkCellEditable * cell,
                                               GdkEvent * event);
 static void ccm_cell_extension_iface_init (GtkCellEditableIface * iface);
 
-G_DEFINE_TYPE_EXTENDED (CCMCellExtension, ccm_cell_extension,
-                        GTK_TYPE_EVENT_BOX, 0,
-                        G_IMPLEMENT_INTERFACE (GTK_TYPE_CELL_EDITABLE,
-                                               ccm_cell_extension_iface_init));
+G_DEFINE_TYPE_EXTENDED (CCMCellExtension, ccm_cell_extension, GTK_TYPE_EVENT_BOX, 0,
+                        G_IMPLEMENT_INTERFACE (GTK_TYPE_CELL_EDITABLE, ccm_cell_extension_iface_init));
 
 #define CCM_CELL_EXTENSION_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CELL_EXTENSION, CCMCellExtensionPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CELL_EXTENSION, CCMCellExtensionPrivate))
 
 static void
 ccm_cell_extension_init (CCMCellExtension * self)
@@ -135,8 +133,7 @@ ccm_cell_extension_new (const gchar * path, int width)
 
     self->priv->enable = gtk_label_new ("");
     gtk_label_set_use_markup (GTK_LABEL (self->priv->enable), TRUE);
-    gtk_label_set_markup (GTK_LABEL (self->priv->enable),
-                          "<span size='small'>Enable</span>");
+    gtk_label_set_markup (GTK_LABEL (self->priv->enable), "<span size='small'>Enable</span>");
     gtk_widget_show (self->priv->enable);
 
     button = gtk_button_new ();
@@ -157,9 +154,8 @@ ccm_cell_extension_set_active (CCMCellExtension * self, gboolean enable)
 
     self->priv->active = enable;
     gtk_label_set_markup (GTK_LABEL (self->priv->enable),
-                          !self->priv->
-                          active ? "<span size='small'>Enable</span>" :
-                          "<span size='small'>Disable</span>");
+                          !self->priv-> active ? "<span size='small'>Enable</span>" :
+                                                 "<span size='small'>Disable</span>");
 }
 
 const gchar *

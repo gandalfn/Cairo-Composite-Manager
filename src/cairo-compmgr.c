@@ -1,18 +1,14 @@
-/***************************************************************************
- *            cairo-compmgr.c
- *
- *  Mon Jul 23 22:35:30 2007
- *  Copyright  2007  Nicolas Bruguier
- *  <gandalfn@club-internet.fr>
- ****************************************************************************/
-
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
- * This program is free software; you can redistribute it and/or modify
+ * cairo-compmgr
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
+ * 
+ * cairo-compmgr is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  * 
- * This program is distributed in the hope that it will be useful,
+ * cairo-compmgr is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Library General Public License for more details.
@@ -110,20 +106,20 @@ main (gint argc, gchar ** argv)
     GOptionContext *option_context;
     GOptionEntry options[] = {
         {"restart", 'r', 0, G_OPTION_ARG_NONE, &restart,
-         N_("Always restart cairo composite manager"),
-         NULL},
+            N_("Always restart cairo composite manager"),
+            NULL},
         {"configure", 'c', 0, G_OPTION_ARG_NONE, &configure,
-         N_("Start cairo composite manager configuration tools"),
-         NULL},
+            N_("Start cairo composite manager configuration tools"),
+            NULL},
 #ifdef ENABLE_GCONF
         {"use-gconf", 'g', 0, G_OPTION_ARG_NONE, &use_gconf,
-         N_("Force use gconf for configuration files"),
-         NULL},
+            N_("Force use gconf for configuration files"),
+            NULL},
 #endif
 #ifdef ENABLE_GOBJECT_INTROSPECTION
         {"introspect-dump", 'i', 0, G_OPTION_ARG_STRING, &gir_output,
-         N_("Dump gobject introspection file"),
-         N_("types.txt,out.xml")},
+            N_("Dump gobject introspection file"),
+            N_("types.txt,out.xml")},
 #endif
         {NULL, '\0', 0, 0, NULL, NULL, NULL}
     };
@@ -138,15 +134,12 @@ main (gint argc, gchar ** argv)
 
     g_type_init ();
 
-    egg_set_desktop_file (PACKAGE_DATA_DIR
-                          "/applications/cairo-compmgr.desktop");
+    egg_set_desktop_file (PACKAGE_DATA_DIR "/applications/cairo-compmgr.desktop");
 
     option_context = g_option_context_new (_("- Cairo composite manager"));
     g_option_context_add_group (option_context, gtk_get_option_group (TRUE));
-    g_option_context_add_group (option_context,
-                                egg_sm_client_get_option_group ());
-    g_option_context_add_main_entries (option_context, options,
-                                       GETTEXT_PACKAGE);
+    g_option_context_add_group (option_context, egg_sm_client_get_option_group ());
+    g_option_context_add_main_entries (option_context, options, GETTEXT_PACKAGE);
 
     if (!g_option_context_parse (option_context, &argc, &argv, &error))
     {
@@ -165,8 +158,7 @@ main (gint argc, gchar ** argv)
 
     ccm_extension_loader_add_plugin_path (PACKAGE_PLUGIN_DIR);
 
-    user_plugin_path =
-        g_strdup_printf ("%s/%s/plugins", g_get_user_data_dir (), PACKAGE);
+    user_plugin_path = g_strdup_printf ("%s/%s/plugins", g_get_user_data_dir (), PACKAGE);
     ccm_extension_loader_add_plugin_path (user_plugin_path);
     g_free (user_plugin_path);
 
@@ -175,8 +167,7 @@ main (gint argc, gchar ** argv)
         CCMPreferences *pref = ccm_preferences_new ();
         if (pref)
         {
-            g_signal_connect (pref, "closed",
-                              G_CALLBACK (on_preferences_closed), NULL);
+            g_signal_connect (pref, "closed", G_CALLBACK (on_preferences_closed), NULL);
 
             ccm_preferences_show (pref);
             gtk_main ();
@@ -206,6 +197,6 @@ main (gint argc, gchar ** argv)
     gtk_main ();
     g_object_unref (trayicon);
     g_option_context_free(option_context);
-    
+
     return 0;
 }

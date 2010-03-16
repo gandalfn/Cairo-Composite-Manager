@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -106,13 +106,13 @@ ccm_config_adjustment_set_property (GObject * object, guint prop_id,
         self->priv->config =
             ccm_config_new (self->priv->screen, self->priv->plugin,
                             self->priv->key);
-		if (self->priv->config)
-		{
-    		g_signal_connect_swapped (self->priv->config, "changed",
-        		                      G_CALLBACK (ccm_config_adjustment_on_changed),
-            		                  self);
-    		ccm_config_adjustment_on_changed (self, self->priv->config);
-		}
+        if (self->priv->config)
+        {
+            g_signal_connect_swapped (self->priv->config, "changed",
+                                      G_CALLBACK (ccm_config_adjustment_on_changed),
+                                      self);
+            ccm_config_adjustment_on_changed (self, self->priv->config);
+        }
     }
 }
 
@@ -163,7 +163,7 @@ ccm_config_adjustment_class_init (CCMConfigAdjustmentClass * klass)
     g_object_class_install_property (object_class, PROP_PLUGIN,
                                      g_param_spec_string ("plugin",
                                                           "Plugin name ",
-                                                          "Plugin name (screen or ",
+                                                          "Plugin name",
                                                           NULL,
                                                           G_PARAM_READWRITE));
 
@@ -200,21 +200,17 @@ ccm_config_adjustment_value_changed (GtkAdjustment * adjustment)
 
     CCMConfigAdjustment *self = CCM_CONFIG_ADJUSTMENT (adjustment);
 
-    if (GTK_ADJUSTMENT_CLASS (ccm_config_adjustment_parent_class)->
-        value_changed)
-        GTK_ADJUSTMENT_CLASS (ccm_config_adjustment_parent_class)->
-            value_changed (adjustment);
+    if (GTK_ADJUSTMENT_CLASS (ccm_config_adjustment_parent_class)->value_changed)
+        GTK_ADJUSTMENT_CLASS (ccm_config_adjustment_parent_class)->value_changed (adjustment);
 
     if (self->priv->config)
     {
-        if (ccm_config_get_value_type (self->priv->config, NULL) ==
-            CCM_CONFIG_VALUE_INTEGER)
+        if (ccm_config_get_value_type (self->priv->config, NULL) == CCM_CONFIG_VALUE_INTEGER)
         {
             gdouble value = gtk_adjustment_get_value (adjustment);
             ccm_config_set_integer (self->priv->config, (gint) value, NULL);
         }
-        else if (ccm_config_get_value_type (self->priv->config, NULL) ==
-                 CCM_CONFIG_VALUE_FLOAT)
+        else if (ccm_config_get_value_type (self->priv->config, NULL) == CCM_CONFIG_VALUE_FLOAT)
         {
             gdouble value = gtk_adjustment_get_value (adjustment);
             ccm_config_set_float (self->priv->config, (gfloat) value, NULL);

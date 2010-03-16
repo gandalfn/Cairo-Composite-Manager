@@ -4,13 +4,11 @@ PLUGIN_SCHEMA = ccm-opacity.schema-key.in
 
 PLUGIN_SOURCES = ccm-opacity.c ccm-opacity.h
 
-include $(top_srcdir)/plugin.make
+include $(top_srcdir)/build/plugin.am
 
-plugin_LTLIBRARIES = \
-	libccm_opacity.la 
+plugin_LTLIBRARIES = libccm_opacity.la 
 
-libccm_opacity_la_SOURCES = \
-	$(PLUGIN_SOURCES)
+libccm_opacity_la_SOURCES = $(PLUGIN_SOURCES)
 
 libccm_opacity_la_LDFLAGS =  $(PLUGIN_LDFLAGS)
 

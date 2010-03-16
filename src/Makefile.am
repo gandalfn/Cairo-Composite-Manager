@@ -3,11 +3,11 @@ cairo_compmgr_includedir = $(includedir)/cairo-compmgr
 
 INCLUDES = \
     -I${top_srcdir}/lib \
-	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
-	-DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
-	-DPACKAGE_PLUGIN_DIR=\""$(libdir)/cairo-compmgr"\" \
+    -DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\" \
+    -DPACKAGE_SRC_DIR=\""$(srcdir)"\" \
+    -DPACKAGE_PLUGIN_DIR=\""$(libdir)/cairo-compmgr"\" \
     -DPACKAGE_PIXMAP_DIR=\""$(datadir)/pixmaps/cairo-compmgr"\" \
-	-DPACKAGE_DATA_DIR=\""$(datadir)"\" \
+    -DPACKAGE_DATA_DIR=\""$(datadir)"\" \
     -DUI_DIR=\""$(uidir)"\" $(CAIRO_COMPMGR_CFLAGS) \
     -DEGG_SM_CLIENT_BACKEND_XSMP
 
@@ -15,30 +15,11 @@ if HAVE_XI2
 INCLUDES += -DHAVE_XI2
 endif
 
-if HAVE_XRENDER_BACKEND    
+if HAVE_XRENDER_BACKEND
 INCLUDES += $(CCM_XRENDER_BACKEND_CFLAGS)
 else
 INCLUDES += -DDISABLE_XRENDER_BACKEND
 endif
-
-if HAVE_OPENVG_BACKEND    
-INCLUDES += $(CCM_OPENVG_BACKEND_CFLAGS)
-else
-INCLUDES += -DDISABLE_OPENVG_BACKEND
-endif
-
-if HAVE_GLITZ_BACKEND
-INCLUDES += $(CCM_GLITZ_BACKEND_CFLAGS)
-else
-INCLUDES += -DDISABLE_GLITZ_BACKEND
-endif
-
-if HAVE_GLITZ_TFP_BACKEND
-INCLUDES += -DENABLE_GLITZ_TFP_BACKEND
-else
-INCLUDES += -DDISABLE_GLITZ_TFP_BACKEND
-endif
-
 
 if ENABLE_GOBJECT_INTROSPECTION
 INCLUDES += $(CCM_GOBJECT_INTROSPECTION_CFLAGS) -DENABLE_GOBJECT_INTROSPECTION
@@ -76,7 +57,7 @@ cairo_compmgr_include_HEADERS =  \
     ccm-preferences-page-plugin.h \
     ccm-preferences-page.h \
     ccm.h
-    
+
 cairo_compmgr_SOURCES = \
     $(BUILT_SOURCES) \
     ccm-debug.h \
@@ -146,31 +127,13 @@ cairo_compmgr_SOURCES = \
     ccm-timed-dialog.h \
     ccm-timed-dialog.c \
     ccm-object.h
-	
-if HAVE_XRENDER_BACKEND    
+
+if HAVE_XRENDER_BACKEND
 cairo_compmgr_SOURCES += \
     ccm-pixmap-xrender.h \
     ccm-pixmap-xrender.c \
     ccm-window-xrender.h \
-	ccm-window-xrender.c
-endif
-
-if HAVE_OPENVG_BACKEND    
-cairo_compmgr_SOURCES += \
-	ccm-window-openvg.h \
-	ccm-window-openvg.c
-endif
-
-if HAVE_GLITZ_BACKEND    
-cairo_compmgr_SOURCES += \
-	ccm-window-glitz.h \
-	ccm-window-glitz.c
-endif
-
-if HAVE_GLITZ_TFP_BACKEND    
-cairo_compmgr_SOURCES += \
-	ccm-pixmap-glitz.h \
-	ccm-pixmap-glitz.c
+    ccm-window-xrender.c
 endif
 
 cairo_compmgr_LDFLAGS = -rdynamic
@@ -181,16 +144,8 @@ if ENABLE_PERF_PLUGIN
 cairo_compmgr_LDADD += $(CCM_PERF_PLUGIN_LIBS)
 endif
 
-if HAVE_XRENDER_BACKEND    
+if HAVE_XRENDER_BACKEND
 cairo_compmgr_LDADD += $(CCM_XRENDER_BACKEND_LIBS)
-endif
-
-if HAVE_OPENVG_BACKEND    
-cairo_compmgr_LDADD += $(CCM_OPENVG_BACKEND_LIBS)
-endif
-
-if HAVE_GLITZ_BACKEND
-cairo_compmgr_LDADD += $(CCM_GLITZ_BACKEND_LIBS) -lGL
 endif
 
 if ENABLE_GOBJECT_INTROSPECTION

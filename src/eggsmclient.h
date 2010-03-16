@@ -70,8 +70,8 @@ struct _EggSMClientClass
     void (*set_restart_command) (EggSMClient * client, int argc,
                                  const char **argv);
     void (*will_quit) (EggSMClient * client, gboolean will_quit);
-     gboolean (*end_session) (EggSMClient * client, EggSMClientEndStyle style,
-                              gboolean request_confirmation);
+    gboolean (*end_session) (EggSMClient * client, EggSMClientEndStyle style,
+                             gboolean request_confirmation);
 
     /* Padding for future expansion */
     void (*_egg_reserved1) (void);
@@ -82,7 +82,7 @@ struct _EggSMClientClass
 
 GType
 egg_sm_client_get_type (void)
-    G_GNUC_CONST;
+G_GNUC_CONST;
 
 GOptionGroup *
 egg_sm_client_get_option_group (void);

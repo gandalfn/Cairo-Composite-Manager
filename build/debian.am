@@ -1,0 +1,50 @@
+## Copyright (c) 2007-2010 Nicolas Bruguier <gandalfn@club-internet.fr>
+##
+## This file is part of cairo-compmgr.
+##
+## cairo-compmgr is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published
+## by the Free Software Foundation, either version 2 of the License,
+## or (at your option) any later version.
+##
+## cairo-compmgr is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with mm-common.  If not, see <http://www.gnu.org/licenses/>.
+
+deb-source: changelog dist 
+	mkdir -p packages
+	cd packages; \
+	rm -rf $(VERSION)-source; \
+	mkdir $(VERSION)-source; \
+	cd $(VERSION)-source; \
+	tar zxvf ../../cairo-compmgr-$(VERSION).tar.gz; \
+	cd cairo-compmgr-$(VERSION); \
+	echo y | debuild -S -sa -kDE69A0FB && \
+	cd .. && \
+	rm -rf cairo-compmgr-$(VERSION)
+
+deb: changelog dist
+	mkdir -p packages
+	cd packages; \
+	rm -rf $(VERSION); \
+	mkdir $(VERSION); \
+	cd $(VERSION); \
+	tar zxvf ../../cairo-compmgr-$(VERSION).tar.gz; \
+	cd cairo-compmgr-$(VERSION); \
+	echo y | debuild -sa && \
+	cd .. && \
+	rm -rf cairo-compmgr-$(VERSION) && \
+	rm -f *$(VERSION)*source* && \
+	rm -f *$(VERSION)*.build && \
+	rm -f *$(VERSION)*.changes
+
+changelog:
+	if [ ! "$(shell dpkg-parsechangelog | grep ^Version | sed 's/.*: //; s/-.*//;')" = "$(VERSION)" ]; \
+	then \
+	    debchange --distribution $(shell lsb_release -c | awk '{print $$2}') -m -v "$(VERSION)-0" "New upstream release."; \
+	    grep -v "^=" NEWS | awk 'BEGIN {show=0}{if ($$0 != ""){ if ($$1 == "Overview"){show++;} else if (show == 1) {gsub("* ", ""); cmd = sprintf("debchange \"%s\"", $$0); system(cmd);}}}'; \
+	fi

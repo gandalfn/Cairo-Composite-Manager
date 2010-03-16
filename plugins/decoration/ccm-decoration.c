@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,9 +57,8 @@ typedef struct
 } CCMDecorationOptions;
 
 static void ccm_decoration_window_iface_init (CCMWindowPluginClass * iface);
-static void
-ccm_decoration_preferences_page_iface_init (CCMPreferencesPagePluginClass *
-                                            iface);
+static void ccm_decoration_preferences_page_iface_init (CCMPreferencesPagePluginClass *
+                                                        iface);
 
 static void ccm_decoration_create_mask (CCMDecoration * self);
 static void ccm_decoration_on_property_changed (CCMDecoration * self,
@@ -80,8 +79,8 @@ struct _CCMDecorationPrivate
 {
     CCMWindow* window;
 
-	gboolean enabled;
-	
+    gboolean enabled;
+
     int top;
     int bottom;
     int left;
@@ -99,7 +98,7 @@ struct _CCMDecorationPrivate
 };
 
 #define CCM_DECORATION_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DECORATION, CCMDecorationPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DECORATION, CCMDecorationPrivate))
 
 static void
 ccm_decoration_options_init (CCMDecorationOptions* self)
@@ -116,37 +115,37 @@ ccm_decoration_options_finalize (CCMDecorationOptions* self)
 static void
 ccm_decoration_options_changed (CCMDecorationOptions* self, CCMConfig* config)
 {
-	GError *error = NULL;
+    GError *error = NULL;
 
-	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                            CCM_DECORATION_GRADIANT))
-	{
-	    self->gradiant = ccm_config_get_boolean (config, NULL);
-	}
+    if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                CCM_DECORATION_GRADIANT))
+    {
+        self->gradiant = ccm_config_get_boolean (config, NULL);
+    }
 
-	if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
-	                                            CCM_DECORATION_OPACITY))
-	{
-		gfloat real_opacity;
-		gfloat opacity;
+    if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                CCM_DECORATION_OPACITY))
+    {
+        gfloat real_opacity;
+        gfloat opacity;
 
-		real_opacity = ccm_config_get_float (config, &error);
-		if (error)
-		{
-		    g_warning ("Error on get opacity configuration value %s",
-		               error->message);
-		    g_error_free (error);
-		    real_opacity = 0.8f;
-		}
-		opacity = MAX (0.0f, real_opacity);
-		opacity = MIN (1.0f, opacity);
-		if (self->opacity != opacity)
-		{
-		    self->opacity = opacity;
-		    if (opacity != real_opacity)
-		        ccm_config_set_float (config, opacity, NULL);
-		}
-	}
+        real_opacity = ccm_config_get_float (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get opacity configuration value %s",
+                       error->message);
+            g_error_free (error);
+            real_opacity = 0.8f;
+        }
+        opacity = MAX (0.0f, real_opacity);
+        opacity = MIN (1.0f, opacity);
+        if (self->opacity != opacity)
+        {
+            self->opacity = opacity;
+            if (opacity != real_opacity)
+                ccm_config_set_float (config, opacity, NULL);
+        }
+    }
 }
 
 
@@ -154,7 +153,7 @@ static void
 ccm_decoration_init (CCMDecoration * self)
 {
     self->priv = CCM_DECORATION_GET_PRIVATE (self);
-	self->priv->enabled = FALSE;
+    self->priv->enabled = FALSE;
     self->priv->window = NULL;
     self->priv->top = 0;
     self->priv->bottom = 0;
@@ -226,61 +225,61 @@ ccm_decoration_on_property_changed (CCMDecoration * self,
 {
     if (changed == CCM_PROPERTY_OPACITY && !self->priv->locked)
     {
-		if (self->priv->enabled)
-		{
-			ccm_decoration_create_mask (self);
-			ccm_drawable_damage (CCM_DRAWABLE(window));
-		}
-	}
+        if (self->priv->enabled)
+        {
+            ccm_decoration_create_mask (self);
+            ccm_drawable_damage (CCM_DRAWABLE(window));
+        }
+    }
     else if (changed == CCM_PROPERTY_FRAME_EXTENDS)
     {
-		if (ccm_window_is_decorated (window) &&
-    		!ccm_window_is_fullscreen (window))
-		{
-			self->priv->enabled = TRUE;
-			if (!self->priv->locked)
-			{
-				ccm_decoration_create_mask (self);
-				ccm_drawable_damage (CCM_DRAWABLE(window));
-			}
-		}
-		else
-		{
-			if (self->priv->opaque)
-				ccm_region_destroy(self->priv->opaque);
-			self->priv->opaque = NULL;
-			self->priv->enabled = FALSE;
-			if (!self->priv->locked)
-			{
-				ccm_window_set_mask(window, NULL);
-				ccm_drawable_damage (CCM_DRAWABLE(window));
-			}
-		}
-	}
-	else if (changed == CCM_PROPERTY_MWM_HINTS)
-	{
-		if (self->priv->enabled && !ccm_window_is_decorated(window))
-		{
-			if (self->priv->opaque)
-				ccm_region_destroy(self->priv->opaque);
-			self->priv->opaque = NULL;
-			self->priv->enabled = FALSE;
-			if (!self->priv->locked)
-			{
-				ccm_window_set_mask(window, NULL);
-				ccm_drawable_damage (CCM_DRAWABLE(window));
-			}
-		}
-		else if (!self->priv->enabled && ccm_window_is_decorated(window))
-		{
-			self->priv->enabled = TRUE;
-			if (!self->priv->locked)
-			{
-				ccm_decoration_create_mask (self);
-				ccm_drawable_damage (CCM_DRAWABLE(window));
-			}
-		}
-	}
+        if (ccm_window_is_decorated (window) &&
+            !ccm_window_is_fullscreen (window))
+        {
+            self->priv->enabled = TRUE;
+            if (!self->priv->locked)
+            {
+                ccm_decoration_create_mask (self);
+                ccm_drawable_damage (CCM_DRAWABLE(window));
+            }
+        }
+        else
+        {
+            if (self->priv->opaque)
+                ccm_region_destroy(self->priv->opaque);
+            self->priv->opaque = NULL;
+            self->priv->enabled = FALSE;
+            if (!self->priv->locked)
+            {
+                ccm_window_set_mask(window, NULL);
+                ccm_drawable_damage (CCM_DRAWABLE(window));
+            }
+        }
+    }
+    else if (changed == CCM_PROPERTY_MWM_HINTS)
+    {
+        if (self->priv->enabled && !ccm_window_is_decorated(window))
+        {
+            if (self->priv->opaque)
+                ccm_region_destroy(self->priv->opaque);
+            self->priv->opaque = NULL;
+            self->priv->enabled = FALSE;
+            if (!self->priv->locked)
+            {
+                ccm_window_set_mask(window, NULL);
+                ccm_drawable_damage (CCM_DRAWABLE(window));
+            }
+        }
+        else if (!self->priv->enabled && ccm_window_is_decorated(window))
+        {
+            self->priv->enabled = TRUE;
+            if (!self->priv->locked)
+            {
+                ccm_decoration_create_mask (self);
+                ccm_drawable_damage (CCM_DRAWABLE(window));
+            }
+        }
+    }
 }
 
 static void
@@ -323,7 +322,7 @@ ccm_decoration_create_mask (CCMDecoration * self)
 
     cairo_surface_t *mask = NULL;
     cairo_surface_t *surface =
-            ccm_drawable_get_surface (CCM_DRAWABLE (self->priv->window));
+        ccm_drawable_get_surface (CCM_DRAWABLE (self->priv->window));
 
     ccm_debug ("CREATE MASK");
 
@@ -354,7 +353,7 @@ ccm_decoration_create_mask (CCMDecoration * self)
         ccm_region_get_clipbox (self->priv->geometry, &clipbox);
         mask = cairo_surface_create_similar (surface, CAIRO_CONTENT_ALPHA,
                                              clipbox.width, clipbox.height);
-		
+
         g_object_set (self->priv->window, "mask", mask, "mask_width",
                       (int) clipbox.width, "mask_height", (int) clipbox.height,
                       NULL);
@@ -409,7 +408,7 @@ ccm_decoration_create_mask (CCMDecoration * self)
         ccm_region_destroy (tmp);
 
         ccm_region_get_rectangles (decoration, &rects, &nb_rects);
-		for (cpt = 0; cpt < nb_rects; ++cpt)
+        for (cpt = 0; cpt < nb_rects; ++cpt)
             cairo_rectangle (ctx, rects[cpt].x, rects[cpt].y, rects[cpt].width,
                              rects[cpt].height);
         if (rects) cairo_rectangles_free (rects, nb_rects);
@@ -428,7 +427,7 @@ ccm_decoration_create_mask (CCMDecoration * self)
 
         cairo_destroy (ctx);
     }
-	if (surface) cairo_surface_destroy (surface);
+    if (surface) cairo_surface_destroy (surface);
 }
 
 static CCMRegion *
@@ -438,34 +437,34 @@ ccm_decoration_window_query_geometry (CCMWindowPlugin * plugin,
     CCMDecoration *self = CCM_DECORATION (plugin);
     CCMRegion *geometry = NULL;
 
-	if (self->priv->geometry)
-	{
-		ccm_region_destroy (self->priv->geometry);
-		self->priv->geometry = NULL;
-	}
-	if (self->priv->opaque)
-	{
-		ccm_region_destroy (self->priv->opaque);
-		self->priv->opaque = NULL;
-	}
-	
+    if (self->priv->geometry)
+    {
+        ccm_region_destroy (self->priv->geometry);
+        self->priv->geometry = NULL;
+    }
+    if (self->priv->opaque)
+    {
+        ccm_region_destroy (self->priv->opaque);
+        self->priv->opaque = NULL;
+    }
+
     geometry = ccm_window_plugin_query_geometry (CCM_WINDOW_PLUGIN_PARENT (plugin),
                                                  window);
-		
-    if (geometry && !ccm_region_empty (geometry))
-	{
-		self->priv->geometry = ccm_region_copy (geometry);
 
-		if (ccm_window_is_decorated (window) && !ccm_window_is_fullscreen (window))
-		{
-			self->priv->enabled = TRUE;
-			ccm_decoration_create_mask (self);
-		}
-		else
-		{
-			self->priv->enabled = FALSE;
-		}
-	}
+    if (geometry && !ccm_region_empty (geometry))
+    {
+        self->priv->geometry = ccm_region_copy (geometry);
+
+        if (ccm_window_is_decorated (window) && !ccm_window_is_fullscreen (window))
+        {
+            self->priv->enabled = TRUE;
+            ccm_decoration_create_mask (self);
+        }
+        else
+        {
+            self->priv->enabled = FALSE;
+        }
+    }
 
     return geometry;
 }
@@ -519,11 +518,11 @@ ccm_decoration_on_map_unmap_unlocked (CCMDecoration * self)
     ccm_debug ("UNLOCK");
 
     self->priv->locked = FALSE;
-	if (self->priv->enabled)
-	{
-		ccm_decoration_create_mask (self);
-		ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
-	}
+    if (self->priv->enabled)
+    {
+        ccm_decoration_create_mask (self);
+        ccm_drawable_damage (CCM_DRAWABLE(self->priv->window));
+    }
 }
 
 static void
@@ -532,22 +531,22 @@ ccm_decoration_window_map (CCMWindowPlugin * plugin, CCMWindow * window)
     CCMDecoration *self = CCM_DECORATION (plugin);
 
     ccm_debug ("MAP");
-	if (self->priv->enabled)
-	{
-		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD (plugin, map,
-		                                    (CCMPluginUnlockFunc)
-		                                    ccm_decoration_on_map_unmap_unlocked,
-		                                    self);
-		self->priv->locked = TRUE;
-		ccm_window_set_mask(window, NULL);
+    if (self->priv->enabled)
+    {
+        CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD (plugin, map,
+                                            (CCMPluginUnlockFunc)
+                                            ccm_decoration_on_map_unmap_unlocked,
+                                            self);
+        self->priv->locked = TRUE;
+        ccm_window_set_mask(window, NULL);
 
-		ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
+        ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 
-		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD (plugin, map);
-		ccm_window_plugin_map ((CCMWindowPlugin *) window, window);
-	}
-	else
-		ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
+        CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD (plugin, map);
+        ccm_window_plugin_map ((CCMWindowPlugin *) window, window);
+    }
+    else
+        ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
 
 static void
@@ -557,18 +556,18 @@ ccm_decoration_window_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
 
     ccm_debug ("UNMAP");
     if (self->priv->enabled)
-	{
-		CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD (plugin, unmap, NULL, NULL);
-		self->priv->locked = TRUE;
-		ccm_window_set_mask(window, NULL);
+    {
+        CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD (plugin, unmap, NULL, NULL);
+        self->priv->locked = TRUE;
+        ccm_window_set_mask(window, NULL);
 
-		ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
+        ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 
-		CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD (plugin, unmap);
-		ccm_window_plugin_unmap ((CCMWindowPlugin *) window, window);
-	}
-	else
-		ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
+        CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD (plugin, unmap);
+        ccm_window_plugin_unmap ((CCMWindowPlugin *) window, window);
+    }
+    else
+        ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
 
 static void
@@ -585,7 +584,7 @@ ccm_decoration_window_set_opaque_region (CCMWindowPlugin * plugin,
         if (area)
         {
             opaque = ccm_region_copy (self->priv->opaque);
-			ccm_region_intersect (opaque, (CCMRegion *) area);
+            ccm_region_intersect (opaque, (CCMRegion *) area);
         }
 
         ccm_window_plugin_set_opaque_region (CCM_WINDOW_PLUGIN_PARENT (plugin),
@@ -725,8 +724,7 @@ ccm_decoration_preferences_page_iface_init (CCMPreferencesPagePluginClass *
 {
     iface->init_general_section = NULL;
     iface->init_desktop_section = NULL;
-    iface->init_windows_section =
-        ccm_decoration_preferences_page_init_windows_section;
+    iface->init_windows_section = ccm_decoration_preferences_page_init_windows_section;
     iface->init_effects_section = NULL;
     iface->init_accessibility_section = NULL;
     iface->init_utilities_section = NULL;

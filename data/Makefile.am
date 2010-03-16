@@ -6,8 +6,8 @@ pkgconfig_DATA = cairo-compmgr.pc
 
 pixmaps_DATA = \
     cairo-compmgr.png \
-	cairo-compmgr-on-24.png \
-	cairo-compmgr-off-24.png 
+    cairo-compmgr-on-24.png \
+    cairo-compmgr-off-24.png 
 
 ui_DATA = ccm-preferences.ui
 
@@ -66,14 +66,14 @@ endif
 EXTRA_DIST = cairo-compmgr.desktop.in \
              $(CAIRO_COMPMGR_SCHEMAS) \
              $(ui_DATA) \
-			 $(pkgconfig_DATA) \
-			 $(pixmaps_DATA) \
+             $(pkgconfig_DATA) \
+             $(pixmaps_DATA) \
              $(gladecatalog_DATA) \
              $(noinst_DATA)
 
 CLEANFILES = $(schemakey_DATA) \
              $(pkgconfig_DATA) \
-			 $(DESKTOP_FILES)
+             $(DESKTOP_FILES)
 
 if ENABLE_GCONF
 CLEANFILES += $(schemas_DATA) \

@@ -65,28 +65,28 @@ egg_sm_client_class_init (EggSMClientClass * klass)
 
     g_type_class_add_private (klass, sizeof (EggSMClientPrivate));
 
-  /**
-   * EggSMClient::save_state:
-   * @client: the client
-   * @state_file: a #GKeyFile to save state information into
-   *
-   * Emitted when the session manager has requested that the
-   * application save information about its current state. The
-   * application should save its state into @state_file, and then the
-   * session manager may then restart the application in a future
-   * session and tell it to initialize itself from that state.
-   *
-   * You should not save any data into @state_file's "start group"
-   * (ie, the %NULL group). Instead, applications should save their
-   * data into groups with names that start with the application name,
-   * and libraries that connect to this signal should save their data
-   * into groups with names that start with the library name.
-   *
-   * Alternatively, rather than (or in addition to) using @state_file,
-   * the application can save its state by calling
-   * egg_sm_client_set_restart_command() during the processing of this
-   * signal (eg, to include a list of files to open).
-   **/
+    /**
+     * EggSMClient::save_state:
+     * @client: the client
+     * @state_file: a #GKeyFile to save state information into
+     *
+     * Emitted when the session manager has requested that the
+     * application save information about its current state. The
+     * application should save its state into @state_file, and then the
+     * session manager may then restart the application in a future
+     * session and tell it to initialize itself from that state.
+     *
+     * You should not save any data into @state_file's "start group"
+     * (ie, the %NULL group). Instead, applications should save their
+     * data into groups with names that start with the application name,
+     * and libraries that connect to this signal should save their data
+     * into groups with names that start with the library name.
+     *
+     * Alternatively, rather than (or in addition to) using @state_file,
+     * the application can save its state by calling
+     * egg_sm_client_set_restart_command() during the processing of this
+     * signal (eg, to include a list of files to open).
+     **/
     signals[SAVE_STATE] =
         g_signal_new ("save_state", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (EggSMClientClass,
@@ -94,66 +94,66 @@ egg_sm_client_class_init (EggSMClientClass * klass)
                       NULL, g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1,
                       G_TYPE_POINTER);
 
-  /**
-   * EggSMClient::quit_requested:
-   * @client: the client
-   *
-   * Emitted when the session manager requests that the application
-   * exit (generally because the user is logging out). The application
-   * should decide whether or not it is willing to quit (perhaps after
-   * asking the user what to do with documents that have unsaved
-   * changes) and then call egg_sm_client_will_quit(), passing %TRUE
-   * or %FALSE to give its answer to the session manager. (It does not
-   * need to give an answer before returning from the signal handler;
-   * it can interact with the user asynchronously and then give its
-   * answer later on.) If the application does not connect to this
-   * signal, then #EggSMClient will automatically return %TRUE on its
-   * behalf.
-   *
-   * The application should not save its session state as part of
-   * handling this signal; if the user has requested that the session
-   * be saved when logging out, then ::save_state will be emitted
-   * separately.
-   * 
-   * If the application agrees to quit, it should then wait for either
-   * the ::quit_cancelled or ::quit signals to be emitted.
-   **/
+    /**
+     * EggSMClient::quit_requested:
+     * @client: the client
+     *
+     * Emitted when the session manager requests that the application
+     * exit (generally because the user is logging out). The application
+     * should decide whether or not it is willing to quit (perhaps after
+                                                           * asking the user what to do with documents that have unsaved
+     * changes) and then call egg_sm_client_will_quit(), passing %TRUE
+     * or %FALSE to give its answer to the session manager. (It does not
+                                                             * need to give an answer before returning from the signal handler;
+     * it can interact with the user asynchronously and then give its
+     * answer later on.) If the application does not connect to this
+     * signal, then #EggSMClient will automatically return %TRUE on its
+     * behalf.
+     *
+     * The application should not save its session state as part of
+     * handling this signal; if the user has requested that the session
+     * be saved when logging out, then ::save_state will be emitted
+     * separately.
+     * 
+     * If the application agrees to quit, it should then wait for either
+     * the ::quit_cancelled or ::quit signals to be emitted.
+     **/
     signals[QUIT_REQUESTED] =
         g_signal_new ("quit_requested", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (EggSMClientClass,
                                                           quit_requested), NULL,
                       NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-  /**
-   * EggSMClient::quit_cancelled:
-   * @client: the client
-   *
-   * Emitted when the session manager decides to cancel a logout after
-   * the application has already agreed to quit. After receiving this
-   * signal, the application can go back to what it was doing before
-   * receiving the ::quit_requested signal.
-   **/
+    /**
+     * EggSMClient::quit_cancelled:
+     * @client: the client
+     *
+     * Emitted when the session manager decides to cancel a logout after
+     * the application has already agreed to quit. After receiving this
+     * signal, the application can go back to what it was doing before
+     * receiving the ::quit_requested signal.
+     **/
     signals[QUIT_CANCELLED] =
         g_signal_new ("quit_cancelled", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (EggSMClientClass,
                                                           quit_cancelled), NULL,
                       NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
-  /**
-   * EggSMClient::quit:
-   * @client: the client
-   *
-   * Emitted when the session manager wants the application to quit
-   * (generally because the user is logging out). The application
-   * should exit as soon as possible after receiving this signal; if
-   * it does not, the session manager may choose to forcibly kill it.
-   *
-   * Normally a GUI application would only be sent a ::quit if it
-   * agreed to quit in response to a ::quit_requested signal. However,
-   * this is not guaranteed; in some situations the session manager
-   * may decide to end the session without giving applications a
-   * chance to object.
-   **/
+    /**
+     * EggSMClient::quit:
+     * @client: the client
+     *
+     * Emitted when the session manager wants the application to quit
+     * (generally because the user is logging out). The application
+     * should exit as soon as possible after receiving this signal; if
+     * it does not, the session manager may choose to forcibly kill it.
+     *
+     * Normally a GUI application would only be sent a ::quit if it
+     * agreed to quit in response to a ::quit_requested signal. However,
+     * this is not guaranteed; in some situations the session manager
+     * may decide to end the session without giving applications a
+     * chance to object.
+     **/
     signals[QUIT] =
         g_signal_new ("quit", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, G_STRUCT_OFFSET (EggSMClientClass,
@@ -205,25 +205,25 @@ egg_sm_client_get_option_group (void)
 {
     const GOptionEntry entries[] = {
         {"sm-client-disable", 0, 0,
-         G_OPTION_ARG_NONE, &sm_client_disable,
-         N_("Disable connection to session manager"), NULL},
+            G_OPTION_ARG_NONE, &sm_client_disable,
+            N_("Disable connection to session manager"), NULL},
         {"sm-client-state-file", 0, 0,
-         G_OPTION_ARG_FILENAME, &sm_client_state_file,
-         N_("Specify file containing saved configuration"), N_("FILE")},
+            G_OPTION_ARG_FILENAME, &sm_client_state_file,
+            N_("Specify file containing saved configuration"), N_("FILE")},
         {"sm-client-id", 0, 0,
-         G_OPTION_ARG_STRING, &sm_client_id,
-         N_("Specify session management ID"), N_("ID")},
+            G_OPTION_ARG_STRING, &sm_client_id,
+            N_("Specify session management ID"), N_("ID")},
         /* GnomeClient compatibility option */
         {"sm-disable", 0, G_OPTION_FLAG_HIDDEN,
-         G_OPTION_ARG_NONE, &sm_client_disable,
-         NULL, NULL},
+            G_OPTION_ARG_NONE, &sm_client_disable,
+            NULL, NULL},
         /* GnomeClient compatibility option. This is a dummy option that only
          * exists so that sessions saved by apps with GnomeClient can be restored
          * later when they've switched to EggSMClient. See bug #575308.
          */
         {"sm-config-prefix", 0, G_OPTION_FLAG_HIDDEN,
-         G_OPTION_ARG_STRING, &sm_config_prefix,
-         NULL, NULL},
+            G_OPTION_ARG_STRING, &sm_config_prefix,
+            NULL, NULL},
         {NULL}
     };
     GOptionGroup *group;
@@ -250,11 +250,11 @@ egg_sm_client_get_option_group (void)
  *    %EGG_SM_CLIENT_MODE_DISABLED: Session management is completely
  *    disabled. The application will not even connect to the session
  *    manager. (egg_sm_client_get() will still return an #EggSMClient,
- *    but it will just be a dummy object.)
+                *    but it will just be a dummy object.)
  *
  *    %EGG_SM_CLIENT_MODE_NO_RESTART: The application will connect to
  *    the session manager (and thus will receive notification when the
- *    user is logging out, etc), but will request to not be
+                           *    user is logging out, etc), but will request to not be
  *    automatically restarted with saved state in future sessions.
  *
  *    %EGG_SM_CLIENT_MODE_NORMAL: The default. #EggSMCLient will
@@ -363,7 +363,7 @@ egg_sm_client_is_resumed (EggSMClient * client)
  * state in the key file, so if you call egg_sm_client_get_groups(),
  * on it, the return value will likely include groups that you did not
  * put there yourself. (It is also not guaranteed that the first
- * group created by the application will still be the "start group"
+                        * group created by the application will still be the "start group"
  * when it is resumed.)
  *
  * Return value: the #GKeyFile containing the application's earlier
@@ -385,24 +385,24 @@ egg_sm_client_get_state_file (EggSMClient * client)
         return priv->state_file;
 
     if (!strncmp (sm_client_state_file, "file://", 7))
-        state_file_path =
-            g_filename_from_uri (sm_client_state_file, NULL, NULL);
-    else
-        state_file_path = g_strdup (sm_client_state_file);
+                  state_file_path =
+                  g_filename_from_uri (sm_client_state_file, NULL, NULL);
+                  else
+                  state_file_path = g_strdup (sm_client_state_file);
 
-    priv->state_file = g_key_file_new ();
-    if (!g_key_file_load_from_file (priv->state_file, state_file_path, 0, &err))
-    {
-        g_warning ("Could not load SM state file '%s': %s",
-                   sm_client_state_file, err->message);
-        g_clear_error (&err);
-        g_key_file_free (priv->state_file);
-        priv->state_file = NULL;
-    }
+                  priv->state_file = g_key_file_new ();
+                  if (!g_key_file_load_from_file (priv->state_file, state_file_path, 0, &err))
+                  {
+                      g_warning ("Could not load SM state file '%s': %s",
+                                 sm_client_state_file, err->message);
+                      g_clear_error (&err);
+                      g_key_file_free (priv->state_file);
+                      priv->state_file = NULL;
+                  }
 
-    g_free (state_file_path);
-    return priv->state_file;
-}
+                  g_free (state_file_path);
+                  return priv->state_file;
+                  }
 
 /**
  * egg_sm_client_set_restart_command:
@@ -415,7 +415,7 @@ egg_sm_client_get_state_file (EggSMClient * client)
  *
  * This can also be used when handling the ::save_state signal, to
  * save the current state via an updated command line. (Eg, providing
- * a list of filenames to open when the application is resumed.)
+                                                        * a list of filenames to open when the application is resumed.)
  **/
 void
 egg_sm_client_set_restart_command (EggSMClient * client, int argc,
@@ -437,11 +437,11 @@ egg_sm_client_set_restart_command (EggSMClient * client, int argc,
  * indicate whether or not the application is willing to quit. The
  * application may call it either directly from the signal handler, or
  * at some later point (eg, after asynchronously interacting with the
- * user).
+                        * user).
  *
  * If the application does not connect to ::quit_requested,
  * #EggSMClient will call this method on its behalf (passing %TRUE
- * for @will_quit).
+                                                     * for @will_quit).
  *
  * After calling this method, the application should wait to receive
  * either ::quit_cancelled or ::quit.

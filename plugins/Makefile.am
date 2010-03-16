@@ -1,16 +1,15 @@
 SUBDIRS = \
-	shadow \
-	opacity\
+    shadow \
+    opacity\
     fade \
     freeze \
     menu-animation \
     window-animation \
-	magnifier \
-	mosaic \
-	perf \
+    magnifier \
+    mosaic \
+    perf \
     decoration \
     snapshot \
     vala-test \
     automate \
     clone
-    

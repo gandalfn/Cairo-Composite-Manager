@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,21 +40,21 @@ G_BEGIN_DECLS
 
 #define CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, func, callback, data) \
 { \
-	CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
+CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
 \
-	if (r && CCM_WINDOW_PLUGIN_GET_INTERFACE(r) && \
-		CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
-		_ccm_plugin_lock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func, \
-								 callback, data); \
+if (r && CCM_WINDOW_PLUGIN_GET_INTERFACE(r) && \
+CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
+_ccm_plugin_lock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func, \
+callback, data); \
 }
 
 #define CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, func) \
 { \
-	CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
+CCMWindowPlugin* r = (CCMWindowPlugin*)_ccm_window_plugin_get_root((CCMWindowPlugin*)plugin); \
 \
-	if (r && CCM_WINDOW_PLUGIN_GET_INTERFACE(r) && \
-		CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
-		_ccm_plugin_unlock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func); \
+if (r && CCM_WINDOW_PLUGIN_GET_INTERFACE(r) && \
+CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func) \
+_ccm_plugin_unlock_method ((GObject*)r, CCM_WINDOW_PLUGIN_GET_INTERFACE(r)->func); \
 }
 
 typedef struct _CCMWindowPluginClass CCMWindowPluginClass;
@@ -91,85 +91,85 @@ CCMWindowPlugin* _ccm_window_plugin_get_root (CCMWindowPlugin* self);
 void 
 ccm_window_plugin_load_options (CCMWindowPlugin * self, CCMWindow * window);
 #define		ccm_window_plugin_lock_load_options(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, load_options, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, load_options, callback, plugin)
 #define		ccm_window_plugin_unlock_load_options(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, load_options)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, load_options)
 
 CCMRegion *
 ccm_window_plugin_query_geometry (CCMWindowPlugin * self, CCMWindow * window);
 #define		ccm_window_plugin_lock_query_geometry(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, query_geometry, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, query_geometry, callback, plugin)
 #define		ccm_window_plugin_unlock_query_geometry(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, query_geometry)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, query_geometry)
 
 gboolean
 ccm_window_plugin_paint (CCMWindowPlugin * self, CCMWindow * window,
                          cairo_t * ctx, cairo_surface_t * surface,
                          gboolean y_invert);
 #define		ccm_window_plugin_lock_paint(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, paint, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, paint, callback, plugin)
 #define		ccm_window_plugin_unlock_paint(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, paint)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, paint)
 
 void
 ccm_window_plugin_map (CCMWindowPlugin * self, CCMWindow * window);
 #define		ccm_window_plugin_lock_map(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, map, callback, plugin)
 #define		ccm_window_plugin_unlock_map(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, map)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, map)
 
 void
 ccm_window_plugin_unmap (CCMWindowPlugin * self, CCMWindow * window);
 #define		ccm_window_plugin_lock_unmap(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, unmap, callback, plugin)
 #define		ccm_window_plugin_unlock_unmap(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, unmap)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, unmap)
 
 void
 ccm_window_plugin_query_opacity (CCMWindowPlugin * self, CCMWindow * window);
 #define		ccm_window_plugin_lock_query_opacity(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, query_opacity, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, query_opacity, callback, plugin)
 #define		ccm_window_plugin_unlock_query_opacity(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, query_opacity)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, query_opacity)
 
 void
 ccm_window_plugin_move (CCMWindowPlugin * self, CCMWindow * window, int x,
                         int y);
 #define		ccm_window_plugin_lock_move(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, move, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, move, callback, plugin)
 #define		ccm_window_plugin_unlock_move(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, move)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, move)
 
 void
 ccm_window_plugin_resize (CCMWindowPlugin * self, CCMWindow * window, int width,
                           int height);
 #define		ccm_window_plugin_lock_resize(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, resize, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, resize, callback, plugin)
 #define		ccm_window_plugin_unlock_resize(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, resize)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, resize)
 
 void
 ccm_window_plugin_set_opaque_region (CCMWindowPlugin * self, CCMWindow * window,
                                      const CCMRegion * area);
 #define		ccm_window_plugin_lock_set_opaque_region(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, set_opaque_region, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, set_opaque_region, callback, plugin)
 #define		ccm_window_plugin_unlock_set_opaque_region(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, set_opaque_region)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, set_opaque_region)
 
 void
 ccm_window_plugin_get_origin (CCMWindowPlugin * self, CCMWindow * window,
                               int *x, int *y);
 #define		ccm_window_plugin_lock_get_origin(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, get_origin, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, get_origin, callback, plugin)
 #define		ccm_window_plugin_unlock_get_origin(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, get_origin)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, get_origin)
 
 CCMPixmap *
 ccm_window_plugin_get_pixmap (CCMWindowPlugin * self, CCMWindow * window);
 #define		ccm_window_plugin_lock_get_pixmap(plugin, callback) \
-	CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, get_pixmap, callback, plugin)
+CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, get_pixmap, callback, plugin)
 #define		ccm_window_plugin_unlock_get_pixmap(plugin) \
-	CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, get_pixmap)
+CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, get_pixmap)
 
 G_END_DECLS
 

@@ -268,8 +268,8 @@ sm_client_xsmp_set_initial_properties (gpointer user_data)
 }
 
 /* This gets called from two different places: xsmp_die() (when the
- * server asks us to disconnect) and process_ice_messages() (when the
- * server disconnects unexpectedly).
+                                                           * server asks us to disconnect) and process_ice_messages() (when the
+                                                                                                                       * server disconnects unexpectedly).
  */
 static void
 sm_client_xsmp_disconnect (EggSMClientXSMP * xsmp)
@@ -327,7 +327,7 @@ sm_client_xsmp_startup (EggSMClient * client, const char *client_id)
     {
         g_warning ("Failed to connect to the session manager: %s\n",
                    error_string_ret[0] ? error_string_ret :
-                   "no error message given");
+                       "no error message given");
         xsmp->state = XSMP_STATE_CONNECTION_CLOSED;
         return;
     }
@@ -358,7 +358,7 @@ sm_client_xsmp_startup (EggSMClient * client, const char *client_id)
     /* Do not set the initial properties until we reach the main loop,
      * so that the application has a chance to call
      * egg_set_desktop_file(). (This may also help the session manager
-     * have a better idea of when the application is fully up and
+                                * have a better idea of when the application is fully up and
      * running.)
      */
     xsmp->waiting_to_set_initial_properties = TRUE;
@@ -536,9 +536,9 @@ idle_do_pending_events (gpointer data)
         do_save_yourself (xsmp);
     }
 
-  out:
-    gdk_threads_leave ();
-    return FALSE;
+    out:
+        gdk_threads_leave ();
+        return FALSE;
 }
 
 static void
@@ -597,8 +597,8 @@ xsmp_save_yourself (SmcConn smc_conn, SmPointer client_data, int save_type,
              interact_style ==
              SmInteractStyleAny ? "SmInteractStyleAny" : interact_style ==
              SmInteractStyleErrors ? "SmInteractStyleErrors" :
-             "SmInteractStyleNone", fast ? "Fast" : "!Fast",
-             EGG_SM_CLIENT_XSMP_STATE (xsmp));
+                 "SmInteractStyleNone", fast ? "Fast" : "!Fast",
+                 EGG_SM_CLIENT_XSMP_STATE (xsmp));
 
     if (xsmp->state != XSMP_STATE_IDLE
         && xsmp->state != XSMP_STATE_SHUTDOWN_CANCELLED)
@@ -647,8 +647,8 @@ xsmp_save_yourself (SmcConn smc_conn, SmPointer client_data, int save_type,
      *
      *   1. Do nothing, because the SM asked us to do something
      *      uninteresting (save open files, but then don't quit
-     *      afterward) or rude (save open files without asking the user
-     *      for confirmation).
+                           *      afterward) or rude (save open files without asking the user
+                                                      *      for confirmation).
      *
      *   2. Request interaction and then emit ::quit_requested. This
      *      perhaps isn't quite correct for the SmInteractStyleErrors
@@ -826,7 +826,7 @@ save_state (EggSMClientXSMP * xsmp)
     }
 
     /* Now write state_file to disk. (We can't use mktemp(), because
-     * that requires the filename to end with "XXXXXX", and we want
+                                      * that requires the filename to end with "XXXXXX", and we want
      * it to end with ".desktop".)
      */
 
@@ -1083,7 +1083,7 @@ delete_properties (EggSMClientXSMP * xsmp, ...)
 
     va_start (ap, xsmp);
     while ((prop = va_arg (ap, char *)))
-         g_ptr_array_add (props, prop);
+        g_ptr_array_add (props, prop);
     va_end (ap);
 
     SmcDeleteProperties (xsmp->connection, props->len, (char **) props->pdata);
@@ -1211,7 +1211,7 @@ card8_prop (const char *name, unsigned char value)
 /* ICE code. This makes no effort to play nice with anyone else trying
  * to use libICE. Fortunately, no one uses libICE for anything other
  * than SM. (DCOP uses ICE, but it has its own private copy of
- * libICE.)
+             * libICE.)
  *
  * When this moves to gtk, it will need to be cleverer, to avoid
  * tripping over old apps that use GnomeClient or that use libSM

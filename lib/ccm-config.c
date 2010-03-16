@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,7 +56,7 @@ struct _CCMConfigPrivate
 };
 
 #define CCM_CONFIG_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG, CCMConfigPrivate))
+	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG, CCMConfigPrivate))
 
 static void
 ccm_config_set_property (GObject * object, guint prop_id, const GValue * value,
@@ -194,15 +194,13 @@ ccm_config_new (int screen, gchar * extension, gchar * key)
     CCMConfig *self;
 
     if (extension)
-        self =
-            g_object_new (backend_type, "screen", screen, "extension",
-                          extension, "key", key, NULL);
+        self = g_object_new (backend_type, "screen", screen, "extension",
+                             extension, "key", key, NULL);
     else
         self = g_object_new (backend_type, "screen", screen, "key", key, NULL);
 
-    if (!CCM_CONFIG_GET_CLASS (self)->initialize
-        || !CCM_CONFIG_GET_CLASS (self)->initialize (self, screen, extension,
-                                                     key))
+    if (!CCM_CONFIG_GET_CLASS (self)->initialize || 
+        !CCM_CONFIG_GET_CLASS (self)->initialize (self, screen, extension, key))
     {
         g_object_unref (self);
         self = NULL;
@@ -217,9 +215,9 @@ ccm_config_get_value_type (CCMConfig * self, GError ** error)
     if (self == NULL)
     {
         if (error)
-            *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            *error = g_error_new (CCM_CONFIG_ERROR_QUARK, 
+                                  CCM_CONFIG_ERROR_IS_NULL,
+                                  "Invalid object");
 
         return CCM_CONFIG_VALUE_INVALID;
     }
@@ -227,9 +225,9 @@ ccm_config_get_value_type (CCMConfig * self, GError ** error)
     if (!CCM_CONFIG_GET_CLASS (self)->get_value_type)
     {
         if (error)
-            *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            *error = g_error_new (CCM_CONFIG_ERROR_QUARK,
+                                  CCM_CONFIG_ERROR_NOT_SUPPORTED, 
+                                  "Not supported");
 
         return CCM_CONFIG_VALUE_INVALID;
     }
@@ -243,9 +241,9 @@ ccm_config_get_boolean (CCMConfig * self, GError ** error)
     if (self == NULL)
     {
         if (error)
-            *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            *error = g_error_new (CCM_CONFIG_ERROR_QUARK, 
+                                  CCM_CONFIG_ERROR_IS_NULL,
+                                  "Invalid object");
 
         return FALSE;
     }
@@ -253,9 +251,9 @@ ccm_config_get_boolean (CCMConfig * self, GError ** error)
     if (!CCM_CONFIG_GET_CLASS (self)->get_boolean)
     {
         if (error)
-            *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            *error = g_error_new (CCM_CONFIG_ERROR_QUARK,
+                                  CCM_CONFIG_ERROR_NOT_SUPPORTED, 
+                                  "Not supported");
 
         return FALSE;
     }
@@ -270,16 +268,16 @@ ccm_config_set_boolean (CCMConfig * self, gboolean value, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
     }
 
     if (!CCM_CONFIG_GET_CLASS (self)->set_boolean)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
     }
     else
         CCM_CONFIG_GET_CLASS (self)->set_boolean (self, value, error);
@@ -292,8 +290,8 @@ ccm_config_get_integer (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
         return 0;
     }
 
@@ -301,8 +299,8 @@ ccm_config_get_integer (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
 
         return 0;
     }
@@ -317,16 +315,16 @@ ccm_config_set_integer (CCMConfig * self, gint value, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
     }
 
     if (!CCM_CONFIG_GET_CLASS (self)->set_integer)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
     }
     else
         CCM_CONFIG_GET_CLASS (self)->set_integer (self, value, error);
@@ -339,8 +337,8 @@ ccm_config_get_float (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
         return 0.0f;
     }
 
@@ -348,8 +346,8 @@ ccm_config_get_float (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
 
         return 0.0f;
     }
@@ -364,16 +362,16 @@ ccm_config_set_float (CCMConfig * self, gfloat value, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
     }
 
     if (!CCM_CONFIG_GET_CLASS (self)->set_float)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
     }
     else
         CCM_CONFIG_GET_CLASS (self)->set_float (self, value, error);
@@ -386,8 +384,8 @@ ccm_config_get_string (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
         return NULL;
     }
 
@@ -395,8 +393,8 @@ ccm_config_get_string (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
 
         return NULL;
     }
@@ -411,16 +409,16 @@ ccm_config_set_string (CCMConfig * self, gchar * value, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
     }
 
     if (!CCM_CONFIG_GET_CLASS (self)->set_string)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
     }
     else
         CCM_CONFIG_GET_CLASS (self)->set_string (self, value, error);
@@ -433,8 +431,8 @@ ccm_config_get_string_list (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
         return NULL;
     }
 
@@ -442,8 +440,8 @@ ccm_config_get_string_list (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
 
         return NULL;
     }
@@ -458,16 +456,16 @@ ccm_config_set_string_list (CCMConfig * self, GSList * value, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
     }
 
     if (!CCM_CONFIG_GET_CLASS (self)->set_string_list)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
     }
     else
         CCM_CONFIG_GET_CLASS (self)->set_string_list (self, value, error);
@@ -480,8 +478,8 @@ ccm_config_get_integer_list (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
         return NULL;
     }
 
@@ -489,8 +487,8 @@ ccm_config_get_integer_list (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
 
         return NULL;
     }
@@ -505,16 +503,16 @@ ccm_config_set_integer_list (CCMConfig * self, GSList * value, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
     }
 
     if (!CCM_CONFIG_GET_CLASS (self)->set_integer_list)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK,
-                             CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
+            g_error_new (CCM_CONFIG_ERROR_QUARK,
+                         CCM_CONFIG_ERROR_NOT_SUPPORTED, "Not supported");
     }
     else
         CCM_CONFIG_GET_CLASS (self)->set_integer_list (self, value, error);
@@ -527,8 +525,8 @@ ccm_config_get_color (CCMConfig * self, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
         return NULL;
     }
 
@@ -561,8 +559,8 @@ ccm_config_set_color (CCMConfig * self, GdkColor * color, GError ** error)
     {
         if (error)
             *error =
-                g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
-                             "Invalid object");
+            g_error_new (CCM_CONFIG_ERROR_QUARK, CCM_CONFIG_ERROR_IS_NULL,
+                         "Invalid object");
         return;
     }
 

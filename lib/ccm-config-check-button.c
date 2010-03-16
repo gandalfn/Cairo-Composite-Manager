@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -40,7 +40,7 @@ struct _CCMConfigCheckButtonPrivate
 };
 
 #define CCM_CONFIG_CHECK_BUTTON_GET_PRIVATE(o)  \
-   (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_CHECK_BUTTON, CCMConfigCheckButtonPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CONFIG_CHECK_BUTTON, CCMConfigCheckButtonPrivate))
 
 static void ccm_config_check_button_on_changed (CCMConfigCheckButton * self,
                                                 CCMConfig * config);
@@ -82,13 +82,11 @@ ccm_config_check_button_set_property (GObject * object, guint prop_id,
     switch (prop_id)
     {
         case PROP_KEY:
-            if (self->priv->key)
-                g_free (self->priv->key);
+            if (self->priv->key) g_free (self->priv->key);
             self->priv->key = g_value_dup_string (value);
             break;
         case PROP_PLUGIN:
-            if (self->priv->plugin)
-                g_free (self->priv->plugin);
+            if (self->priv->plugin) g_free (self->priv->plugin);
             self->priv->plugin = g_value_dup_string (value);
             break;
         case PROP_SCREEN:
@@ -102,16 +100,15 @@ ccm_config_check_button_set_property (GObject * object, guint prop_id,
     {
         if (self->priv->config)
             g_object_unref (self->priv->config);
-        self->priv->config =
-            ccm_config_new (self->priv->screen, self->priv->plugin,
-                            self->priv->key);
+        self->priv->config = ccm_config_new (self->priv->screen, self->priv->plugin,
+                                             self->priv->key);
         if (self->priv->config)
-		{
-			g_signal_connect_swapped (self->priv->config, "changed",
-        		                      G_CALLBACK(ccm_config_check_button_on_changed), 
-			                          self);
-			ccm_config_check_button_on_changed (self, self->priv->config);
-		}
+        {
+            g_signal_connect_swapped (self->priv->config, "changed",
+                                      G_CALLBACK(ccm_config_check_button_on_changed), 
+                                      self);
+            ccm_config_check_button_on_changed (self, self->priv->config);
+        }
     }
 }
 
@@ -161,7 +158,7 @@ ccm_config_check_button_class_init (CCMConfigCheckButtonClass * klass)
     g_object_class_install_property (object_class, PROP_PLUGIN,
                                      g_param_spec_string ("plugin",
                                                           "Plugin name ",
-                                                          "Plugin name (screen or ",
+                                                          "Plugin name",
                                                           NULL,
                                                           G_PARAM_READWRITE));
 
@@ -191,13 +188,11 @@ ccm_config_check_button_toggled (GtkToggleButton * button)
     CCMConfigCheckButton *self = CCM_CONFIG_CHECK_BUTTON (button);
 
     if (GTK_TOGGLE_BUTTON_CLASS (ccm_config_check_button_parent_class)->toggled)
-        GTK_TOGGLE_BUTTON_CLASS (ccm_config_check_button_parent_class)->
-            toggled (button);
+        GTK_TOGGLE_BUTTON_CLASS (ccm_config_check_button_parent_class)->toggled (button);
 
     if (self->priv->config)
     {
-        gboolean active =
-            gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self));
+        gboolean active = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self));
         ccm_config_set_boolean (self->priv->config, active, NULL);
     }
 }

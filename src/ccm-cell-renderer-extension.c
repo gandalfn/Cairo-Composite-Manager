@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -41,16 +41,16 @@ G_DEFINE_TYPE (CCMCellRendererExtension, ccm_cell_renderer_extension,
                GTK_TYPE_CELL_RENDERER_TEXT);
 
 #define CCM_CELL_RENDERER_EXTENSION_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CELL_RENDERER_EXTENSION, CCMCellRendererExtensionPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CELL_RENDERER_EXTENSION, CCMCellRendererExtensionPrivate))
 
 static GtkCellEditable
-    *ccm_cell_renderer_extension_start_editing (GtkCellRenderer * cell,
-                                                GdkEvent * event,
-                                                GtkWidget * widget,
-                                                const gchar * path,
-                                                GdkRectangle * background_area,
-                                                GdkRectangle * cell_area,
-                                                GtkCellRendererState flags);
+*ccm_cell_renderer_extension_start_editing (GtkCellRenderer * cell,
+                                            GdkEvent * event,
+                                            GtkWidget * widget,
+                                            const gchar * path,
+                                            GdkRectangle * background_area,
+                                            GdkRectangle * cell_area,
+                                            GtkCellRendererState flags);
 
 static void
 ccm_cell_renderer_extension_set_gobject_property (GObject * object,
@@ -64,18 +64,15 @@ ccm_cell_renderer_extension_set_gobject_property (GObject * object,
     switch (prop_id)
     {
         case PROP_NAME:
-            if (self->priv->name)
-                g_free (self->priv->name);
+            if (self->priv->name) g_free (self->priv->name);
             self->priv->name = g_value_dup_string (value);
             break;
         case PROP_DESCRIPTION:
-            if (self->priv->description)
-                g_free (self->priv->description);
+            if (self->priv->description) g_free (self->priv->description);
             self->priv->description = g_value_dup_string (value);
             break;
         case PROP_VERSION:
-            if (self->priv->version)
-                g_free (self->priv->version);
+            if (self->priv->version) g_free (self->priv->version);
             self->priv->version = g_value_dup_string (value);
             break;
         case PROP_ENABLED:
@@ -89,18 +86,15 @@ ccm_cell_renderer_extension_set_gobject_property (GObject * object,
     {
         gchar *text =
             g_strdup_printf ("<b>%s</b>\n%s\nVersion: %s\n", self->priv->name,
-                             self->priv->description ? self->priv->
-                             description : "",
+                             self->priv->description ? self->priv->description : "",
                              self->priv->version ? self->priv->version : "");
         g_object_set (object, "markup", text, NULL);
         g_free (text);
     }
 
     g_object_set (object, "foreground-gdk",
-                  &fake->style->text[self->priv->
-                                     enabled ? GTK_STATE_NORMAL :
-                                     GTK_STATE_INSENSITIVE], NULL);
-	gtk_widget_destroy(fake);
+                  &fake->style->text[self->priv->enabled ? GTK_STATE_NORMAL : GTK_STATE_INSENSITIVE], NULL);
+    gtk_widget_destroy(fake);
 }
 
 static void
@@ -144,15 +138,11 @@ ccm_cell_renderer_extension_finalize (GObject * object)
 {
     CCMCellRendererExtension *self = CCM_CELL_RENDERER_EXTENSION (object);
 
-    if (self->priv->name)
-        g_free (self->priv->name);
-    if (self->priv->description)
-        g_free (self->priv->description);
-    if (self->priv->version)
-        g_free (self->priv->version);
+    if (self->priv->name) g_free (self->priv->name);
+    if (self->priv->description) g_free (self->priv->description);
+    if (self->priv->version) g_free (self->priv->version);
 
-    G_OBJECT_CLASS (ccm_cell_renderer_extension_parent_class)->
-        finalize (object);
+    G_OBJECT_CLASS (ccm_cell_renderer_extension_parent_class)->finalize (object);
 }
 
 static void
@@ -162,13 +152,10 @@ ccm_cell_renderer_extension_class_init (CCMCellRendererExtensionClass * klass)
 
     g_type_class_add_private (klass, sizeof (CCMCellRendererExtensionPrivate));
 
-    object_class->get_property =
-        ccm_cell_renderer_extension_get_gobject_property;
-    object_class->set_property =
-        ccm_cell_renderer_extension_set_gobject_property;
+    object_class->get_property = ccm_cell_renderer_extension_get_gobject_property;
+    object_class->set_property = ccm_cell_renderer_extension_set_gobject_property;
 
-    GTK_CELL_RENDERER_CLASS (klass)->start_editing =
-        ccm_cell_renderer_extension_start_editing;
+    GTK_CELL_RENDERER_CLASS (klass)->start_editing = ccm_cell_renderer_extension_start_editing;
 
     object_class->finalize = ccm_cell_renderer_extension_finalize;
 
@@ -208,10 +195,8 @@ ccm_cell_renderer_extension_on_editing_done (CCMCellRendererExtension * self,
     gboolean enabled = ccm_cell_extension_get_active (cell);
     gchar *text;
 
-    text =
-        g_strdup_printf ("<b>%s</b>\n%s", self->priv->name,
-                         self->priv->description ? self->priv->
-                         description : "");
+    text = g_strdup_printf ("<b>%s</b>\n%s", self->priv->name,
+                            self->priv->description ? self->priv->description : "");
     g_object_set (G_OBJECT (self), "enabled", enabled, NULL);
     g_signal_emit_by_name (self, "edited", path, text);
     g_free (text);
@@ -233,8 +218,7 @@ ccm_cell_renderer_extension_start_editing (GtkCellRenderer * cell,
     gboolean editable = FALSE;
 
     g_object_get (G_OBJECT (self), "editable", &editable, NULL);
-    if (!editable)
-        return NULL;
+    if (!editable) return NULL;
 
     cell_editable = ccm_cell_extension_new (path, cell_area->width);
     if (cell_editable)
@@ -244,8 +228,7 @@ ccm_cell_renderer_extension_start_editing (GtkCellRenderer * cell,
         gtk_widget_show (GTK_WIDGET (cell_editable));
 
         g_signal_connect_swapped (cell_editable, "editing-done",
-                                  G_CALLBACK
-                                  (ccm_cell_renderer_extension_on_editing_done),
+                                  G_CALLBACK (ccm_cell_renderer_extension_on_editing_done),
                                   self);
     }
 

@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,53 +32,56 @@ namespace CCM
         N
     }
 
-    const string[] options_key = {
-        "enabled"
-    };
-
     class ValaWindowOptions : PluginOptions
     {
         public bool enabled = false;
 
-		protected override void changed(CCM.Config config)
-		{
-			try
-			{
-				enabled = config.get_boolean ();
-			}
-			catch (GLib.Error err)
-			{
-				CCM.log("%s", err);
-			}
-		}
+        override void
+        changed(CCM.Config config)
+        {
+            try
+            {
+                enabled = config.get_boolean ();
+            }
+            catch (GLib.Error err)
+            {
+                CCM.log("%s", err);
+            }
+        }
     }
 
     private class ValaWindowPlugin : CCM.Plugin, CCM.WindowPlugin
     {
-        private weak CCM.Window window;
+        const string[] options_key = {
+            "enabled"
+        };
 
-        private uint counter = 0;
+        weak CCM.Window window;
 
-		class construct
-		{
-			type_options = typeof (ValaWindowOptions);
-		}
-		
+        uint counter = 0;
+
+        class construct
+        {
+            type_options = typeof (ValaWindowOptions);
+        }
+
         ~ValaWindowPlugin ()
         {
             options_unload ();
         }
 
-        private void option_changed (int index)
+        void
+        option_changed (int index)
         {
             if (!((ValaWindowOptions) get_option ()).enabled)
                 window.get_screen ().damage_all ();
         }
 
         /**
-		 * Implement load_options window plugin interface
-		 **/
-        protected void window_load_options (CCM.Window window)
+         * Implement load_options window plugin interface
+         **/
+        void
+        window_load_options (CCM.Window window)
         {
             this.window = window;
 
@@ -90,10 +93,11 @@ namespace CCM
         }
 
         /**
-		 * Implement paint window plugin interface
-		 **/
-        protected bool window_paint (CCM.Window window, Cairo.Context ctx,
-                                     Cairo.Surface surface, bool y_invert)
+         * Implement paint window plugin interface
+         **/
+        bool 
+        window_paint (CCM.Window window, Cairo.Context ctx,
+                      Cairo.Surface surface, bool y_invert)
         {
             bool ret = false;
 
@@ -133,7 +137,7 @@ namespace CCM
                     {
                         ctx.rectangle (rectangle.x, rectangle.y,
                                        rectangle.width, rectangle.height);
-						ctx.fill ();
+                        ctx.fill ();
                     }
                     rectangles_free (rectangles);
                 }

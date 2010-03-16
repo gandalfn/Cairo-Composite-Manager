@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -42,7 +42,7 @@ struct _CCMCursorPrivate
 };
 
 #define CCM_CURSOR_GET_PRIVATE(o) \
-	(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CURSOR, CCMCursorPrivate))
+(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_CURSOR, CCMCursorPrivate))
 
 
 static void
@@ -60,8 +60,7 @@ ccm_cursor_finalize (GObject * object)
 {
     CCMCursor *self = CCM_CURSOR (object);
 
-    if (self->priv->surface)
-        cairo_surface_destroy (self->priv->surface);
+    if (self->priv->surface) cairo_surface_destroy (self->priv->surface);
     self->priv->surface = NULL;
     self->priv->x_hot = 0;
     self->priv->y_hot = 0;
@@ -159,9 +158,8 @@ ccm_cursor_new (CCMDisplay * display, XFixesCursorImage * cursor)
     guchar *image = NULL;
     gint cpt;
 
-    self =
-        g_object_new (CCM_TYPE_CURSOR, "x-hot", cursor->xhot, "y-hot",
-                      cursor->yhot, "animated", !cursor->atom, NULL);
+    self = g_object_new (CCM_TYPE_CURSOR, "x-hot", cursor->xhot, "y-hot",
+                         cursor->yhot, "animated", !cursor->atom, NULL);
 
     image = g_new0 (guchar, cursor->width * cursor->height * 4);
     for (cpt = 0; cpt < cursor->width * cursor->height; ++cpt)
@@ -172,10 +170,9 @@ ccm_cursor_new (CCMDisplay * display, XFixesCursorImage * cursor)
         image[(cpt * 4) + 1] = (guchar) ((pixval >> 8) & 0xff);
         image[(cpt * 4) + 0] = (guchar) (pixval & 0xff);
     }
-    self->priv->surface =
-        cairo_image_surface_create_for_data (image, CAIRO_FORMAT_ARGB32,
-                                             cursor->width, cursor->height,
-                                             cursor->width * 4);
+    self->priv->surface = cairo_image_surface_create_for_data (image, CAIRO_FORMAT_ARGB32,
+                                                               cursor->width, cursor->height,
+                                                               cursor->width * 4);
     cairo_surface_set_user_data (self->priv->surface, &data_key, image, g_free);
 
     return self;
@@ -186,8 +183,7 @@ ccm_cursor_get_width (CCMCursor * self)
 {
     g_return_val_if_fail (self != NULL, 0);
 
-    return self->priv->surface ? cairo_image_surface_get_width (self->priv->
-                                                                surface) : 0;
+    return self->priv->surface ? cairo_image_surface_get_width (self->priv->surface) : 0;
 }
 
 double
@@ -195,8 +191,7 @@ ccm_cursor_get_height (CCMCursor * self)
 {
     g_return_val_if_fail (self != NULL, 0);
 
-    return self->priv->surface ? cairo_image_surface_get_height (self->priv->
-                                                                 surface) : 0;
+    return self->priv->surface ? cairo_image_surface_get_height (self->priv->surface) : 0;
 }
 
 void
@@ -205,7 +200,8 @@ ccm_cursor_paint (CCMCursor * self, cairo_t * ctx, double x, double y)
     g_return_if_fail (self != NULL);
     g_return_if_fail (ctx != NULL);
 
-    cairo_set_source_surface (ctx, self->priv->surface, x - self->priv->x_hot,
+    cairo_set_source_surface (ctx, 
+                              self->priv->surface, x - self->priv->x_hot,
                               y - self->priv->y_hot);
     cairo_paint (ctx);
 }

@@ -1,7 +1,7 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2007 <gandalfn@club-internet.fr>
+ * Copyright (C) Nicolas Bruguier 2007-2010 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,9 +84,8 @@ ccm_screen_plugin_load_options (CCMScreenPlugin * self, CCMScreen * screen)
 
     if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options))
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options))
             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->load_options (plugin,
                                                                     screen);
     }
@@ -111,9 +110,8 @@ ccm_screen_plugin_paint (CCMScreenPlugin * self, CCMScreen * screen,
 
     if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint))
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint))
             return CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint (plugin,
                                                                     screen,
                                                                     ctx);
@@ -140,9 +138,8 @@ ccm_screen_plugin_add_window (CCMScreenPlugin * self, CCMScreen * screen,
 
     if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window))
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window))
             return CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->add_window (plugin,
                                                                          screen,
                                                                          window);
@@ -170,9 +167,8 @@ ccm_screen_plugin_remove_window (CCMScreenPlugin * self, CCMScreen * screen,
 
     if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window))
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window))
             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->remove_window (plugin,
                                                                      screen,
                                                                      window);
@@ -199,9 +195,8 @@ ccm_screen_plugin_damage (CCMScreenPlugin * self, CCMScreen * screen,
 
     if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->damage)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->damage))
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->damage))
             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->damage (plugin, screen,
                                                               area, window);
     }
@@ -225,9 +220,8 @@ ccm_screen_plugin_on_cursor_move (CCMScreenPlugin * self, CCMScreen * screen,
 
     if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->on_cursor_move)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->on_cursor_move))
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->on_cursor_move))
             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->on_cursor_move (plugin,
                                                                       screen, x,
                                                                       y);
@@ -252,9 +246,8 @@ ccm_screen_plugin_paint_cursor (CCMScreenPlugin * self, CCMScreen * screen,
 
     if (CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint_cursor)
     {
-        if (!_ccm_plugin_method_locked
-            ((GObject *) plugin,
-             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint_cursor))
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,
+                                        CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint_cursor))
             CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->paint_cursor (plugin,
                                                                     screen, ctx,
                                                                     x, y);
