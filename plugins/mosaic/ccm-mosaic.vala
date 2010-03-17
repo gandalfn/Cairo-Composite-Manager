@@ -345,12 +345,12 @@ namespace CCM
                     y += ((win_area.y - y) * progress) - ((progress) * win_area.y);
 
                     // Apply transformation to window
-                    Cairo.Matrix matrix = Cairo.Matrix(scale, 0, 0, scale, x, y);					
+                    Cairo.Matrix matrix = Cairo.Matrix(scale, 0, 0, scale, x, y);
                     area.window.push_matrix("CCMMosaic", matrix);
                     area.window.block_mouse_redirect_event = true;
                     area.plugin.progress = 1.0 - progress;
                 }
-            }	    
+            }
 
             screen.damage_all();
         }
@@ -385,7 +385,7 @@ namespace CCM
                             area.window.push_matrix("CCMMosaic", matrix);
                         }
                     }
-                }	 
+                }
 
                 // Window below the cursor
                 weak CCM.Window? mouse;
@@ -458,7 +458,7 @@ namespace CCM
 
                     // Apply transformation to window
                     area.window.damage();
-                    Cairo.Matrix matrix = Cairo.Matrix(scale, 0, 0, scale, x, y);					
+                    Cairo.Matrix matrix = Cairo.Matrix(scale, 0, 0, scale, x, y);
                     area.window.push_matrix("CCMMosaic", matrix);
                     area.window.damage();
 
