@@ -1881,6 +1881,8 @@ ccm_window_on_transform_changed (CCMWindow * self, GParamSpec * pspec)
         if (!(matrix.x0 == 0 && matrix.xy == 0 && matrix.xx == 1
               && matrix.y0 == 0 && matrix.yx == 0 && matrix.yy == 1))
             ccm_window_redirect_input (self);
+
+        ccm_drawable_damage (CCM_DRAWABLE (self));
     }
 }
 
