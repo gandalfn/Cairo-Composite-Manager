@@ -184,7 +184,7 @@ namespace CCM
         {
             this.window = window;
             this.type = CCM.WindowType.UNKNOWN;
-            this.window.property_changed += on_property_changed;
+            this.window.property_changed.connect (on_property_changed);
 
             options_load ("window-animation", options_key, 
                           (PluginOptionsChangedFunc)option_changed);
@@ -230,8 +230,8 @@ namespace CCM
                 if (timeline == null)
                 {
                     timeline = new CCM.Timeline.for_duration ((uint)(((WindowAnimationOptions) get_option ()).duration * 1000.0));
-                    timeline.new_frame += on_new_frame;
-                    timeline.completed += on_finish;
+                    timeline.new_frame.connect (on_new_frame);
+                    timeline.completed.connect (on_finish);
                 }
 
                 if (timeline.is_playing ())
@@ -277,8 +277,8 @@ namespace CCM
                 if (timeline == null)
                 {
                     timeline = new CCM.Timeline.for_duration ((uint)(((WindowAnimationOptions) get_option ()).duration * 1000.0));
-                    timeline.new_frame += on_new_frame;
-                    timeline.completed += on_finish;
+                    timeline.new_frame.connect (on_new_frame);
+                    timeline.completed.connect (on_finish);
                 }
 
                 if (timeline.is_playing ())
