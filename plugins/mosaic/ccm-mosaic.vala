@@ -242,7 +242,7 @@ namespace CCM
                         area.plugin.enabled = true;
                         area.plugin.mouse_over = false;
                         area.plugin.timeline = new CCM.Timeline.for_duration((int)(((MosaicOptions) get_option ()).duration * 1000.0));
-                        area.plugin.timeline.new_frame += area.plugin.on_window_animation_new_frame;
+                        area.plugin.timeline.new_frame.connect (area.plugin.on_window_animation_new_frame);
                         break;
                     }
                 }
@@ -254,7 +254,7 @@ namespace CCM
                 found.plugin.area = found;
                 found.plugin.enabled = true;
                 found.plugin.timeline = new CCM.Timeline.for_duration((int)(((MosaicOptions) get_option ()).duration * 1000.0));
-                found.plugin.timeline.new_frame += found.plugin.on_window_animation_new_frame;
+                found.plugin.timeline.new_frame.connect (found.plugin.on_window_animation_new_frame);
             }
         }
 
@@ -395,7 +395,7 @@ namespace CCM
                 {
                     if (area.window is CCM.Window)
                     {
-                        area.plugin.mouse_over = area.window == mouse;			
+                        area.plugin.mouse_over = area.window == mouse;
                         if (area.plugin.mouse_over)
                         {
                             area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
@@ -528,13 +528,13 @@ namespace CCM
                     keybind = new CCM.Keybind (screen, 
                                                ((MosaicOptions) get_option ()).shortcut, 
                                                true);
-                    keybind.key_press += on_shortcut_pressed;
+                    keybind.key_press.connect (on_shortcut_pressed);
                     break;
                 case CCM.Options.DURATION:
                     timeline = 
                         new Timeline.for_duration((int)(((MosaicOptions) get_option ()).duration * 1000.0));
-                    timeline.new_frame += on_screen_animation_new_frame;
-                    timeline.completed += on_screen_animation_completed;
+                    timeline.new_frame.connect (on_screen_animation_new_frame);
+                    timeline.completed.connect (on_screen_animation_completed);
                     break;
                 default:
                     break;
@@ -555,7 +555,7 @@ namespace CCM
             ((CCM.ScreenPlugin) parent).screen_load_options (screen);
 
             // set mouse over on enter/leave window
-            screen.enter_window_notify += (window) => { 
+            screen.enter_window_notify.connect ((window) => { 
                 CCM.Mosaic plugin = ((CCM.Mosaic)window.get_plugin(typeof(Mosaic)));
                 if (plugin.enabled)
                 {
@@ -566,8 +566,8 @@ namespace CCM
                     plugin.mouse_over = true; 
                     window.damage();
                 }
-            };
-            screen.leave_window_notify += (window) => { 
+            });
+            screen.leave_window_notify.connect ((window) => { 
                 CCM.Mosaic plugin = ((CCM.Mosaic)window.get_plugin(typeof(Mosaic)));
                 if (plugin.enabled)
                 {
@@ -578,10 +578,10 @@ namespace CCM
                     switch_keep_above(window, false);
                     window.damage();
                 }
-            };
+            });
 
             // disable mosaic on window activate
-            screen.activate_window_notify += on_window_activate_notify;
+            screen.activate_window_notify.connect (on_window_activate_notify);
         }
 
         ////////////////////////////////////////////////////////////////////
