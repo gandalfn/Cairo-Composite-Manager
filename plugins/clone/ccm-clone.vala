@@ -152,7 +152,7 @@ namespace CCM
         screen_load_options (CCM.Screen screen)
         {
             this.screen = screen;
-            this.screen.composite_message += on_composite_message;
+            this.screen.composite_message.connect (on_composite_message);
             if (screen_enable_atom == 0)
             {
                 screen_enable_atom =
