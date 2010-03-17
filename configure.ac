@@ -232,8 +232,6 @@ AC_SUBST(CCM_XRENDER_BACKEND_LIBS)
 AM_CONDITIONAL(HAVE_XRENDER_BACKEND, [test x$xrenderbackend = xyes])
 
 AC_CONFIG_FILES([
-shave
-shave-libtool
 Makefile
 lib/Makefile
 src/Makefile

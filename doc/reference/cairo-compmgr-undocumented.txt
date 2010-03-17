@@ -1,7 +1,7 @@
 35% symbol docs coverage.
-113 symbols documented.
+115 symbols documented.
 3 symbols incomplete.
-211 not documented.
+214 not documented.
 
 
 CCMDisplay
@@ -57,6 +57,9 @@ ccm_debug_atom
 ccm_debug_backtrace
 ccm_debug_region
 ccm_debug_window
+ccm_display_get_device_button_press_type
+ccm_display_get_device_button_release_type
+ccm_display_get_device_motion_notify_type
 ccm_display_get_screen
 ccm_display_get_shape_notify_event_type
 ccm_display_get_xdisplay

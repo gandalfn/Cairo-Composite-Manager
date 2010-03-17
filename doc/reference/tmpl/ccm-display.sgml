@@ -60,6 +60,11 @@ CCMDisplay
 
 </para>
 
+<!-- ##### ARG CCMDisplay:use-xdbe ##### -->
+<para>
+
+</para>
+
 <!-- ##### ARG CCMDisplay:use-xshm ##### -->
 <para>
 

@@ -14,7 +14,7 @@ DOC_SOURCE_DIR=../../src
 
 # Used for dependencies
 HFILE_GLOB= \
-	$(top_srcdir)/src/ccm.h \
+    $(top_srcdir)/src/ccm.h \
     $(top_srcdir)/src/ccm-drawable.h \
     $(top_srcdir)/src/ccm-pixmap.h \
     $(top_srcdir)/src/ccm-window.h \
@@ -31,7 +31,7 @@ HFILE_GLOB= \
     $(top_srcdir)/lib/ccm-cairo-utils.h \
     $(top_srcdir)/lib/ccm-config.h \
     $(top_srcdir)/lib/ccm-timeline.h  
-    
+
 CFILE_GLOB=\
     $(top_srcdir)/src/ccm-drawable.h \
     $(top_srcdir)/src/ccm-drawable.c \
@@ -65,7 +65,7 @@ CFILE_GLOB=\
     $(top_srcdir)/lib/ccm-config.c \
     $(top_srcdir)/lib/ccm-timeline.h \
     $(top_srcdir)/lib/ccm-timeline.c
-     
+
 UNSUPPORTED_HFILES=\
     $(top_srcdir)/src/ccm-debug.h \
     $(top_srcdir)/src/ccm-plugin.h \
@@ -98,7 +98,12 @@ INCLUDES = -I$(top_srcdir)/src \
            -I$(top_srcdir)/lib \
            $(CAIRO_COMPMGR_CFLAGS)
 
-GTKDOC_LIBS = $(CAIRO_COMPMGR_LIBS) $(top_builddir)/src/ccm*.o $(top_builddir)/lib/libcairo_compmgr.la
+GTKDOC_LIBS = \
+    $(CAIRO_COMPMGR_LIBS) \
+    $(M_LIBS) \
+    $(EDEBUG_LIBS) \
+    $(top_builddir)/src/ccm*.o \
+    $(top_builddir)/lib/libcairo_compmgr.la
 
 if ENABLE_PERF_PLUGIN
 GTKDOC_LIBS += $(CCM_PERF_PLUGIN_LIBS)

@@ -45,6 +45,6 @@ deb: changelog dist
 changelog:
 	if [ ! "$(shell dpkg-parsechangelog | grep ^Version | sed 's/.*: //; s/-.*//;')" = "$(VERSION)" ]; \
 	then \
-	    debchange --distribution $(shell lsb_release -c | awk '{print $$2}') -m -v "$(VERSION)-0" "New upstream release."; \
+	    debchange --distribution $(shell lsb_release -s -r) -m -v "$(VERSION)-0" "New upstream release."; \
 	    grep -v "^=" NEWS | awk 'BEGIN {show=0}{if ($$0 != ""){ if ($$1 == "Overview"){show++;} else if (show == 1) {gsub("* ", ""); cmd = sprintf("debchange \"%s\"", $$0); system(cmd);}}}'; \
 	fi
