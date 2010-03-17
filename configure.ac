@@ -240,6 +240,7 @@ gir/Makefile
 vapi/Makefile
 po/Makefile.in
 doc/Makefile
+doc/cairo-compmgr.1
 doc/reference/Makefile
 doc/reference/version.xml
 plugins/Makefile

@@ -1,8 +1,7 @@
 debian/tmp/usr/bin/cairo-compmgr usr/bin
 debian/tmp/usr/share/pixmaps/* usr/share/pixmaps
+debian/tmp/usr/share/man/* usr/share/man
 debian/tmp/usr/share/applications/* usr/share/applications
 debian/tmp/usr/share/cairo-compmgr/ui/ccm-preferences.ui usr/share/cairo-compmgr/ui
 debian/tmp/usr/share/cairo-compmgr/schemas/ccm-display.schema-key usr/share/cairo-compmgr/schemas
 debian/tmp/usr/share/cairo-compmgr/schemas/ccm-screen.schema-key usr/share/cairo-compmgr/schemas
-debian/tmp/etc/gconf/schemas/ccm-display.schemas etc/gconf/schemas
-debian/tmp/etc/gconf/schemas/ccm-screen.schemas etc/gconf/schemas

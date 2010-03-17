@@ -10,12 +10,12 @@ _Description=Shadow offset in pixel.
 
 [radius]
 Type=int
-Default=14
+Default=15
 _Description=Shadow blur radius.
 
 [sigma]
 Type=float
-Default=7
+Default=7.5
 _Description=Shadow blur sigma.
 
 [color]
@@ -25,5 +25,5 @@ _Description=Shadow color.
 
 [alpha]
 Type=float
-Default=0.6
+Default=0.75
 _Description=Shadow alpha.

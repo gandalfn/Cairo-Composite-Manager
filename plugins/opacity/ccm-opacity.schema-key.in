@@ -1,6 +1,6 @@
 [opacity]
 Type=float
-Default=0.85
+Default=0.9
 _Description=Opacity of menus.
 
 [increase]

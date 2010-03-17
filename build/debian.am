@@ -16,24 +16,28 @@
 ## along with mm-common.  If not, see <http://www.gnu.org/licenses/>.
 
 deb-source: changelog dist 
+	@echo GEN deb-source; \
 	mkdir -p packages
 	cd packages; \
 	rm -rf $(VERSION)-source; \
 	mkdir $(VERSION)-source; \
 	cd $(VERSION)-source; \
-	tar zxvf ../../cairo-compmgr-$(VERSION).tar.gz; \
+	cp ../../cairo-compmgr-$(VERSION).tar.gz cairo-compmgr_$(VERSION).orig.tar.gz; \
+	tar zxvf cairo-compmgr_$(VERSION).orig.tar.gz; \
 	cd cairo-compmgr-$(VERSION); \
 	echo y | debuild -S -sa -kDE69A0FB && \
 	cd .. && \
 	rm -rf cairo-compmgr-$(VERSION)
 
 deb: changelog dist
+	@echo GEN deb; \
 	mkdir -p packages
 	cd packages; \
 	rm -rf $(VERSION); \
 	mkdir $(VERSION); \
 	cd $(VERSION); \
-	tar zxvf ../../cairo-compmgr-$(VERSION).tar.gz; \
+	cp ../../cairo-compmgr-$(VERSION).tar.gz cairo-compmgr_$(VERSION).orig.tar.gz; \
+	tar zxvf cairo-compmgr_$(VERSION).orig.tar.gz; \
 	cd cairo-compmgr-$(VERSION); \
 	echo y | debuild -sa && \
 	cd .. && \
@@ -43,8 +47,9 @@ deb: changelog dist
 	rm -f *$(VERSION)*.changes
 
 changelog:
-	if [ ! "$(shell dpkg-parsechangelog | grep ^Version | sed 's/.*: //; s/-.*//;')" = "$(VERSION)" ]; \
+	@if [ ! "$(shell dpkg-parsechangelog | grep ^Version | sed 's/.*: //; s/-.*//;')" = "$(VERSION)" ]; \
 	then \
-	    debchange --distribution $(shell lsb_release -s -r) -m -v "$(VERSION)-0" "New upstream release."; \
+	    echo GEN debian/changelog; \
+	    debchange --distribution $(shell lsb_release -s -r) -m -v "$(VERSION)-1" "New upstream release."; \
 	    grep -v "^=" NEWS | awk 'BEGIN {show=0}{if ($$0 != ""){ if ($$1 == "Overview"){show++;} else if (show == 1) {gsub("* ", ""); cmd = sprintf("debchange \"%s\"", $$0); system(cmd);}}}'; \
 	fi

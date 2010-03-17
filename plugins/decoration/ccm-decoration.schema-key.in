@@ -1,6 +1,6 @@
 [opacity]
 Type=float
-Default=0.6
+Default=0.85
 _Description=Opacity of decoration
 
 [gradiant]

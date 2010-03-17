@@ -1,0 +1,25 @@
+.TH "cairo-compmgr" "1" "@VERSION@" "Nicolas Bruguier" ""
+.SH "NAME"
+.LP 
+cairo-compmgr \- Cairo Composite Manager
+.SH "SYNTAX"
+.LP 
+cairo-compmgr [\fIoption\fP]
+.SH "DESCRIPTION"
+.LP 
+Cairo Composite Manager is a versatile and extensible composite manager which use cairo for rendering.
+.SH "OPTIONS"
+.LP 
+\fB\-\-help, \-?\fR
+Output help information and exit.
+.TP 
+\fB\-\-restart\fR
+Restart cairo-compmgr immediately when it exits (except if logging out)
+.TP
+\fB\-\-configure\fR
+Launch cairo-compmgr configuration dialog
+.TP 
+Cairo Composite Manager supports all the generic GTK options, a full list is available on the Cairo Composite Manager help screen.
+.SH "AUTHORS"
+.LP 
+This man page was originally written by Nicolas Bruguier <gandalfn@club-internet.fr>. Cairo Composite Manager was developed by Nicolas Bruguier <gandalfn@club-internet.fr>
