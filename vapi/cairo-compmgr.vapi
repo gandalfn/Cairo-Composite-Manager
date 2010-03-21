@@ -201,8 +201,8 @@ namespace CCM
         [CCode (has_construct_function = false)]
         public Display (owned string display);
 
-        public weak X.Display get_xdisplay ();
-        public weak CCM.Screen get_screen (uint number);
+        public unowned X.Display get_xdisplay ();
+        public unowned CCM.Screen get_screen (uint number);
 
         public int get_shape_notify_event_type ();
 
@@ -228,7 +228,7 @@ namespace CCM
     public interface ScreenPlugin : GLib.Object
     {
         [CCode (cname = "_ccm_screen_plugin_get_root")]
-        protected weak CCM.ScreenPlugin get_root();
+        protected unowned CCM.ScreenPlugin get_root();
 
         [CCode (cname = "ccm_screen_plugin_load_options", vfunc_name = "load_options")]
         protected virtual void screen_load_options (CCM.Screen screen);
@@ -258,18 +258,18 @@ namespace CCM
         public Screen (CCM.Display display, uint number);
 
         public uint get_number ();
-        public weak X.Screen get_xscreen ();
-        public weak CCM.Display get_display ();
-        public weak CCM.Window get_root_window ();
-        public weak CCM.Window get_overlay_window ();
-        public weak GLib.List<CCM.Window> get_windows ();
+        public unowned X.Screen get_xscreen ();
+        public unowned CCM.Display get_display ();
+        public unowned CCM.Window get_root_window ();
+        public unowned CCM.Window get_overlay_window ();
+        public unowned GLib.List<CCM.Window> get_windows ();
         public X.Visual* get_visual_for_depth (int depth);
 
         public bool add_window (CCM.Window window);
         public void remove_window (CCM.Window window);
-        public weak CCM.Window? find_window (X.Window xwindow);
-        public weak CCM.Window? find_window_or_child (X.Window xwindow);
-        public weak CCM.Window? find_window_at_pos(int x, int y);
+        public unowned CCM.Window? find_window (X.Window xwindow);
+        public unowned CCM.Window? find_window_or_child (X.Window xwindow);
+        public unowned CCM.Window? find_window_at_pos(int x, int y);
 
         public CCM.Region get_damaged ();
         [CCode (cname = "ccm_screen_damage")]
@@ -279,7 +279,7 @@ namespace CCM
         public void add_damaged_region (CCM.Region region);
         public void remove_damaged_region (CCM.Region region);
 
-        public bool query_pointer (out weak CCM.Window below, out int x, out int y);
+        public bool query_pointer (out unowned CCM.Window below, out int x, out int y);
 
         [HasEmitter]
         public signal void plugins_changed ();
@@ -315,8 +315,8 @@ namespace CCM
 
         public X.ID get_xid ();
         public X.Visual* get_visual ();
-        public weak CCM.Display get_display ();
-        public weak CCM.Screen get_screen ();
+        public unowned CCM.Display get_display ();
+        public unowned CCM.Screen get_screen ();
 
         public uint get_depth ();
         public Cairo.Format get_format ();
@@ -442,25 +442,25 @@ namespace CCM
         public Window (CCM.Screen screen, X.Window xwindow);
 
         [CCode (cname = "CCM_WINDOW_XWINDOW")]
-        public weak X.Window get_xwindow();
+        public unowned X.Window get_xwindow();
 
         [CCode (cname = "_ccm_window_get_plugin")]
-        public weak CCM.Plugin? get_plugin(GLib.Type type);
+        public unowned CCM.Plugin? get_plugin(GLib.Type type);
 
         public void activate (GLib.Time timestamp);
         public virtual CCM.Pixmap create_pixmap (int width, int height, int depth);
         public Cairo.Rectangle* get_area ();
         public uint32 get_child_property (X.Atom property_atom, X.Atom req_type, out uint n_items);
         public void get_frame_extends (out int left_frame, out int right_frame, out int top_frame, out int bottom_frame);
-        public weak CCM.Window get_group_leader ();
+        public unowned CCM.Window get_group_leader ();
         public CCM.WindowType get_hint_type ();
         public unowned string get_name ();
         public float get_opacity ();
         public bool get_opaque_clipbox (Cairo.Rectangle clipbox);
-        public weak CCM.Region get_opaque_region ();
-        public weak CCM.Pixmap get_pixmap ();
+        public unowned CCM.Region get_opaque_region ();
+        public unowned CCM.Pixmap get_pixmap ();
         public uint32 get_property (X.Atom property_atom, X.Atom req_type, out uint n_items);
-        public weak GLib.SList<weak CCM.Window?>? get_transients ();
+        public unowned GLib.SList<weak CCM.Window?>? get_transients ();
         public bool is_decorated ();
         public bool is_fullscreen ();
         public bool is_input_only ();
@@ -480,7 +480,7 @@ namespace CCM
         public void query_state ();
         public void query_transient_for ();
         public void query_wm_hints ();
-        public weak X.Window redirect_event (X.Event event, X.Window over);
+        public unowned X.Window redirect_event (X.Event event, X.Window over);
         public void redirect_input ();
         public void redirect_subwindows ();
         public void set_alpha ();
@@ -492,7 +492,7 @@ namespace CCM
         public bool skip_taskbar ();
         public void switch_state (X.Atom state_atom);
         public bool transform (Cairo.Context ctx, bool y_invert);
-        public weak CCM.Window transient_for ();
+        public unowned CCM.Window transient_for ();
         public void unmap ();
         public void unredirect ();
         public void unredirect_input ();
