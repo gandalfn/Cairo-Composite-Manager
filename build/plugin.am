@@ -55,9 +55,11 @@ EXTRA_DIST = $(PLUGIN_VALA_SOURCES) \
              $(ui_DATA) \
              $(plugin_in_files)
 
+PLUGIN_VALAFILES = $(filter %.vala,$(PLUGIN_SOURCES))
+
 CLEANFILES = lib$(subst -,_,$(PLUGIN))_la_vala.stamp \
-             $(PLUGIN_VALA_SOURCES:.vala=.c) \
-             $(PLUGIN_VALA_SOURCES:.vala=.h) \
+             $(PLUGIN_VALAFILES:.vala=.c) \
+             $(PLUGIN_VALAFILES:.vala=.h) \
              $(schemakey_DATA) \
              $(plugin_DATA)
 
