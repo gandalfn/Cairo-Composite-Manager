@@ -90,14 +90,23 @@ AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 
 dnl ***************************************************************************
-dnl check for bfd
+dnl check for debug
 dnl ***************************************************************************
-AC_CHECK_LIB(bfd, main, [BFD_LIBS="-lbfd"], [])
-AC_CHECK_LIB(iberty, main, [IBERTY_LIBS="-liberty"], [])
-EDEBUG_LIBS="$BFD_LIBS $IBERTY_LIBS"
-AC_SUBST(EDEBUG_LIBS)
-if test "$EDEBUG_LIBS" = "-lbfd -liberty"; then
-    AC_DEFINE(HAVE_EDEBUG, 1, [Enhanced debug enabled])
+AC_SEARCH_LIBS(backtrace_symbols, [execinfo])
+AC_CHECK_FUNCS(backtrace_symbols)
+
+AC_ARG_ENABLE(edebug,
+  [  --disable-edebug        Disable enhanced debug message],
+  [edebug=$enableval], [edebug=yes])
+
+if test x"$edebug" = xyes; then
+    AC_CHECK_LIB(bfd, main, [BFD_LIBS="-lbfd"], [])
+    AC_CHECK_LIB(iberty, main, [IBERTY_LIBS="-liberty"], [])
+    EDEBUG_LIBS="$BFD_LIBS $IBERTY_LIBS"
+    AC_SUBST(EDEBUG_LIBS)
+    if test "$EDEBUG_LIBS" = "-lbfd -liberty"; then
+        AC_DEFINE(HAVE_EDEBUG, 1, [Enhanced debug enabled])
+    fi
 fi
 
 dnl ****************************************************************************
@@ -284,6 +293,12 @@ echo " "
 echo "-------------------------------------------------------------------"
 echo "Conditionally built backends:"
 echo "-------------------------------------------------------------------"
+if [ test x$edebug = xyes ]; then
+        echo "Enable enhanced debug messages: .............YES"
+else
+        echo "Enable enhanced debug messages: .............NO"
+fi
+
 if [ test x$gir = xyes ]; then
         echo "Enable GObject introspection: ...............YES"
 else
