@@ -538,7 +538,7 @@ ccm_plugin_options_unload (CCMPlugin * self)
     }
 }
 
-int
+G_GNUC_PURE int
 ccm_plugin_options_get_screen_num (CCMPluginOptions* self)
 {
     g_return_val_if_fail (self != NULL, -1);
@@ -546,7 +546,7 @@ ccm_plugin_options_get_screen_num (CCMPluginOptions* self)
     return self->priv->screen;
 }
 
-CCMConfig *
+G_GNUC_PURE CCMConfig *
 ccm_plugin_options_get_config (CCMPluginOptions * self, int index)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -554,7 +554,7 @@ ccm_plugin_options_get_config (CCMPluginOptions * self, int index)
     return self->priv->configs[index];
 }
 
-CCMPluginOptions *
+G_GNUC_PURE CCMPluginOptions *
 ccm_plugin_get_option (CCMPlugin * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -564,7 +564,7 @@ ccm_plugin_get_option (CCMPlugin * self)
     return klass->options[self->priv->screen];
 }
 
-CCMConfig *
+G_GNUC_PURE CCMConfig *
 ccm_plugin_get_config (CCMPlugin * self, int index)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -574,7 +574,7 @@ ccm_plugin_get_config (CCMPlugin * self, int index)
     return klass->options[self->priv->screen]->priv->configs[index];
 }
 
-GObject *
+G_GNUC_PURE GObject *
 ccm_plugin_get_parent (CCMPlugin * self)
 {
     g_return_val_if_fail (self != NULL, NULL);

@@ -116,19 +116,26 @@ ccm_extension_loader_get_preferences_plugins (CCMExtensionLoader * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
 
-    GSList *item, *plugins = NULL;
+    static GSList* preferences_plugins = NULL;
 
-    for (item = self->priv->plugins; item; item = item->next)
+    if (preferences_plugins == NULL)
     {
-        GType plugin = ccm_extension_get_type_object (item->data);
+        GSList *item;
 
-        if (g_type_is_a (plugin, CCM_TYPE_PREFERENCES_PAGE_PLUGIN))
+        for (item = self->priv->plugins; item; item = item->next)
         {
-            plugins = g_slist_prepend (plugins, GINT_TO_POINTER (plugin));
+            GType plugin = ccm_extension_get_type_object (item->data);
+
+            if (g_type_is_a (plugin, CCM_TYPE_PREFERENCES_PAGE_PLUGIN))
+            {
+                preferences_plugins = g_slist_prepend (preferences_plugins, 
+                                                       GINT_TO_POINTER (plugin));
+            }
+            preferences_plugins = g_slist_reverse (preferences_plugins);
         }
     }
 
-    return g_slist_reverse (plugins);
+    return preferences_plugins ? g_slist_copy (preferences_plugins) : NULL;
 }
 
 GSList *
@@ -136,20 +143,28 @@ ccm_extension_loader_get_screen_window_plugins (CCMExtensionLoader * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
 
-    GSList *item, *plugins = NULL;
+    static GSList* screen_window_plugins = NULL;
 
-    for (item = self->priv->plugins; item; item = item->next)
+    if (screen_window_plugins == NULL)
     {
-        GType plugin = ccm_extension_get_type_object (item->data);
+        GSList *item;
 
-        if (g_type_is_a (plugin, CCM_TYPE_SCREEN_PLUGIN) ||
-            g_type_is_a (plugin, CCM_TYPE_WINDOW_PLUGIN))
+        for (item = self->priv->plugins; item; item = item->next)
         {
-            plugins = g_slist_prepend (plugins, item->data);
+            GType plugin = ccm_extension_get_type_object (item->data);
+
+            if (g_type_is_a (plugin, CCM_TYPE_SCREEN_PLUGIN) ||
+                g_type_is_a (plugin, CCM_TYPE_WINDOW_PLUGIN))
+            {
+                screen_window_plugins = g_slist_prepend (screen_window_plugins,
+                                                         item->data);
+            }
         }
+
+        screen_window_plugins = g_slist_reverse (screen_window_plugins);
     }
 
-    return g_slist_reverse (plugins);
+    return screen_window_plugins ? g_slist_copy (screen_window_plugins) : NULL;
 }
 
 GSList *
@@ -158,29 +173,44 @@ ccm_extension_loader_get_screen_plugins (CCMExtensionLoader * self,
 {
     g_return_val_if_fail (self != NULL, NULL);
 
+    static GSList* screen_plugins = NULL;
     GSList *item, *plugins = NULL;
 
-    for (item = self->priv->plugins; item; item = item->next)
+    if (screen_plugins == NULL)
     {
-        GType plugin = ccm_extension_get_type_object (item->data);
-
-        if (g_type_is_a (plugin, CCM_TYPE_SCREEN_PLUGIN))
+        for (item = self->priv->plugins; item; item = item->next)
         {
-            GSList *f;
-            gboolean found = FALSE;
+            GType plugin = ccm_extension_get_type_object (item->data);
 
-            for (f = filter; f; f = f->next)
+            if (g_type_is_a (plugin, CCM_TYPE_SCREEN_PLUGIN))
             {
-                if (!g_ascii_strcasecmp (f->data, 
-                                         ccm_extension_get_label (item->data)))
-                {
-                    found = TRUE;
-                    break;
-                }
+                screen_plugins = g_slist_prepend (screen_plugins, item->data);
             }
+        }
 
-            if (found)
-                plugins = g_slist_prepend (plugins, GINT_TO_POINTER (plugin));
+        screen_plugins = g_slist_reverse (screen_plugins);
+    }
+
+    for (item = screen_plugins; item; item = item->next)
+    {
+        GSList *f;
+        gboolean found = FALSE;
+
+        for (f = filter; f; f = f->next)
+        {
+            if (!g_ascii_strcasecmp (f->data, 
+                                     ccm_extension_get_label (item->data)))
+            {
+                found = TRUE;
+                break;
+            }
+        }
+
+        if (found)
+        {
+            GType plugin = ccm_extension_get_type_object (item->data);
+
+            plugins = g_slist_prepend (plugins, GINT_TO_POINTER (plugin));
         }
     }
 
@@ -193,29 +223,44 @@ ccm_extension_loader_get_window_plugins (CCMExtensionLoader * self,
 {
     g_return_val_if_fail (self != NULL, NULL);
 
+    static GSList* window_plugins = NULL;
     GSList *item, *plugins = NULL;
 
-    for (item = self->priv->plugins; item; item = item->next)
+    if (window_plugins == NULL)
     {
-        GType plugin = ccm_extension_get_type_object (item->data);
-
-        if (g_type_is_a (plugin, CCM_TYPE_WINDOW_PLUGIN))
+        for (item = self->priv->plugins; item; item = item->next)
         {
-            GSList *f;
-            gboolean found = FALSE;
+            GType plugin = ccm_extension_get_type_object (item->data);
 
-            for (f = filter; f; f = f->next)
+            if (g_type_is_a (plugin, CCM_TYPE_WINDOW_PLUGIN))
             {
-                if (!g_ascii_strcasecmp (f->data, 
-                                         ccm_extension_get_label (item->data)))
-                {
-                    found = TRUE;
-                    break;
-                }
+                window_plugins = g_slist_prepend (window_plugins, item->data);
             }
+        }
 
-            if (found)
-                plugins = g_slist_prepend (plugins, GINT_TO_POINTER (plugin));
+        window_plugins = g_slist_reverse (window_plugins);
+    }
+
+    for (item = window_plugins; item; item = item->next)
+    {
+        GSList *f;
+        gboolean found = FALSE;
+
+        for (f = filter; f; f = f->next)
+        {
+            if (!g_ascii_strcasecmp (f->data, 
+                                     ccm_extension_get_label (item->data)))
+            {
+                found = TRUE;
+                break;
+            }
+        }
+
+        if (found)
+        {
+            GType plugin = ccm_extension_get_type_object (item->data);
+
+            plugins = g_slist_prepend (plugins, GINT_TO_POINTER (plugin));
         }
     }
 

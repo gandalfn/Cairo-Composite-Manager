@@ -2740,7 +2740,7 @@ ccm_screen_new (CCMDisplay * display, guint number)
     return self;
 }
 
-CCMDisplay *
+G_GNUC_PURE CCMDisplay *
 ccm_screen_get_display (CCMScreen * self)
 {
     g_return_val_if_fail (CCM_IS_SCREEN (self), NULL);
@@ -2748,7 +2748,7 @@ ccm_screen_get_display (CCMScreen * self)
     return self->priv->display;
 }
 
-Screen *
+G_GNUC_PURE Screen *
 ccm_screen_get_xscreen (CCMScreen * self)
 {
     g_return_val_if_fail (CCM_IS_SCREEN (self), NULL);
@@ -2756,7 +2756,7 @@ ccm_screen_get_xscreen (CCMScreen * self)
     return self->priv->xscreen;
 }
 
-guint
+G_GNUC_PURE guint
 ccm_screen_get_number (CCMScreen * self)
 {
     g_return_val_if_fail (CCM_IS_SCREEN (self), 0);
@@ -2764,7 +2764,7 @@ ccm_screen_get_number (CCMScreen * self)
     return self->priv->number;
 }
 
-guint
+G_GNUC_PURE guint
 ccm_screen_get_refresh_rate (CCMScreen * self)
 {
     g_return_val_if_fail (CCM_IS_SCREEN (self), 60);
@@ -2772,7 +2772,7 @@ ccm_screen_get_refresh_rate (CCMScreen * self)
     return self->priv->refresh_rate;
 }
 
-CCMWindow *
+G_GNUC_PURE CCMWindow *
 ccm_screen_get_overlay_window (CCMScreen * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -2780,7 +2780,7 @@ ccm_screen_get_overlay_window (CCMScreen * self)
     return self->priv->cow;
 }
 
-CCMWindow *
+G_GNUC_PURE CCMWindow *
 ccm_screen_get_root_window (CCMScreen * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -2905,7 +2905,7 @@ ccm_screen_undamage_region (CCMScreen * self, const CCMRegion * area)
     }
 }
 
-GList *
+G_GNUC_PURE GList *
 ccm_screen_get_windows (CCMScreen * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -2913,7 +2913,7 @@ ccm_screen_get_windows (CCMScreen * self)
     return self->priv->windows;
 }
 
-CCMRegion *
+G_GNUC_PURE CCMRegion *
 ccm_screen_get_damaged (CCMScreen * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -3034,7 +3034,7 @@ ccm_screen_get_visual_for_depth (CCMScreen * self, int depth)
     return vinfo.visual;
 }
 
-const gchar*
+G_GNUC_PURE const gchar*
 ccm_screen_get_backend (CCMScreen* self)
 {
     g_return_val_if_fail(self != NULL, NULL);

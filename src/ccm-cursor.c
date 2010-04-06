@@ -178,7 +178,7 @@ ccm_cursor_new (CCMDisplay * display, XFixesCursorImage * cursor)
     return self;
 }
 
-double
+G_GNUC_PURE double
 ccm_cursor_get_width (CCMCursor * self)
 {
     g_return_val_if_fail (self != NULL, 0);
@@ -186,7 +186,7 @@ ccm_cursor_get_width (CCMCursor * self)
     return self->priv->surface ? cairo_image_surface_get_width (self->priv->surface) : 0;
 }
 
-double
+G_GNUC_PURE double
 ccm_cursor_get_height (CCMCursor * self)
 {
     g_return_val_if_fail (self != NULL, 0);

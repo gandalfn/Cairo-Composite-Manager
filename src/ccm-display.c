@@ -796,7 +796,7 @@ ccm_display_new (gchar * display)
     return self;
 }
 
-Display *
+G_GNUC_PURE Display *
 ccm_display_get_xdisplay (CCMDisplay * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -804,7 +804,7 @@ ccm_display_get_xdisplay (CCMDisplay * self)
     return self->priv->xdisplay;
 }
 
-CCMScreen *
+G_GNUC_PURE CCMScreen *
 ccm_display_get_screen (CCMDisplay * self, guint number)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -813,7 +813,7 @@ ccm_display_get_screen (CCMDisplay * self, guint number)
     return self->priv->screens[number];
 }
 
-int
+G_GNUC_PURE int
 ccm_display_get_shape_notify_event_type (CCMDisplay * self)
 {
     g_return_val_if_fail (self != NULL, 0);
@@ -963,7 +963,7 @@ ccm_display_get_current_cursor (CCMDisplay * self, gboolean initiate)
     return (const CCMCursor *) self->priv->cursor_current;
 }
 
-CCMDisplay*
+G_GNUC_PURE CCMDisplay*
 ccm_display_get_default()
 {
     return CCMDefaultDisplay;

@@ -210,7 +210,7 @@ ccm_extension_new (gchar * filename)
     return self;
 }
 
-const gchar *
+G_GNUC_PURE const gchar *
 ccm_extension_get_label (CCMExtension * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -218,7 +218,7 @@ ccm_extension_get_label (CCMExtension * self)
     return (const gchar *) self->priv->label;
 }
 
-const gchar *
+G_GNUC_PURE const gchar *
 ccm_extension_get_description (CCMExtension * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -226,7 +226,7 @@ ccm_extension_get_description (CCMExtension * self)
     return (const gchar *) self->priv->description;
 }
 
-const gchar *
+G_GNUC_PURE const gchar *
 ccm_extension_get_version (CCMExtension * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -234,7 +234,7 @@ ccm_extension_get_version (CCMExtension * self)
     return (const gchar *) self->priv->version;
 }
 
-const gchar **
+G_GNUC_PURE const gchar **
 ccm_extension_get_backends (CCMExtension * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -242,7 +242,7 @@ ccm_extension_get_backends (CCMExtension * self)
     return (const gchar **) self->priv->backends;
 }
 
-GType
+G_GNUC_PURE GType
 ccm_extension_get_type_object (CCMExtension * self)
 {
     g_return_val_if_fail (self != NULL, 0);

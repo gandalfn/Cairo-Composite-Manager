@@ -50,11 +50,11 @@ struct _CCMPropertyASync
     CCMPropertyASyncPrivate *priv;
 };
 
-GType ccm_property_async_get_type (void) G_GNUC_CONST;
-CCMPropertyASync* ccm_property_async_new (CCMDisplay* display, Window window, 
-                                          Atom property, Atom req_type, 
-                                          long length);
-Atom ccm_property_async_get_property (CCMPropertyASync * self);
+GType             ccm_property_async_get_type     (void) G_GNUC_CONST;
+CCMPropertyASync* ccm_property_async_new          (CCMDisplay* display, Window window, 
+                                                   Atom property, Atom req_type, 
+                                                   long length);
+G_GNUC_PURE Atom  ccm_property_async_get_property (CCMPropertyASync * self);
 
 G_END_DECLS
 

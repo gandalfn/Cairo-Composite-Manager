@@ -171,8 +171,7 @@ ccm_pixmap_buffered_image_sync (CCMPixmapBufferedImage * self,
             width = cairo_image_surface_get_width (surface);
             height = cairo_image_surface_get_height (surface);
 
-            if (ccm_drawable_get_format (CCM_DRAWABLE (self)) ==
-                CAIRO_FORMAT_ARGB32)
+            if (ccm_drawable_get_format (CCM_DRAWABLE (self)) == CAIRO_FORMAT_ARGB32)
                 content = CAIRO_CONTENT_COLOR_ALPHA;
             else
                 content = CAIRO_CONTENT_COLOR;
@@ -224,8 +223,7 @@ ccm_pixmap_buffered_image_get_surface (CCMDrawable * drawable)
 
     if (self->priv->buffered && !ccm_drawable_is_damaged (drawable))
     {
-        surface = 
-            CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->get_surface (drawable);
+        surface = CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->get_surface (drawable);
         if (surface)
             ccm_pixmap_buffered_image_sync (self, surface);
         if (self->priv->surface)
@@ -235,9 +233,7 @@ ccm_pixmap_buffered_image_get_surface (CCMDrawable * drawable)
         }
     }
     else
-        surface =
-        CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->
-        get_surface (drawable);
+        surface = CCM_DRAWABLE_CLASS (ccm_pixmap_buffered_image_parent_class)->get_surface (drawable);
 
     return surface;
 }

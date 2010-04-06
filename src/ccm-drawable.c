@@ -373,9 +373,8 @@ __ccm_drawable_query_geometry (CCMDrawable * self)
         ccm_region_destroy (self->priv->geometry);
     self->priv->geometry = NULL;
 
-    if (!XGetGeometry
-        (CCM_DISPLAY_XDISPLAY (display), self->priv->drawable, &root, &x, &y,
-         &width, &height, &bw, &self->priv->depth))
+    if (!XGetGeometry (CCM_DISPLAY_XDISPLAY (display), self->priv->drawable, 
+                       &root, &x, &y, &width, &height, &bw, &self->priv->depth))
         return;
 
     rectangle.x = (double) x;
@@ -439,7 +438,7 @@ ccm_drawable_foreach_transform (GQuark key, cairo_matrix_t * matrix,
  *
  * Returns: #CCMScreen
  **/
-CCMScreen *
+G_GNUC_PURE CCMScreen*
 ccm_drawable_get_screen (CCMDrawable * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -455,7 +454,7 @@ ccm_drawable_get_screen (CCMDrawable * self)
  *
  * Returns: #CCMDisplay
  **/
-CCMDisplay *
+G_GNUC_PURE CCMDisplay*
 ccm_drawable_get_display (CCMDrawable * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -471,7 +470,7 @@ ccm_drawable_get_display (CCMDrawable * self)
  *
  * Returns: Visual
  **/
-Visual *
+G_GNUC_PURE Visual *
 ccm_drawable_get_visual (CCMDrawable * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -498,7 +497,7 @@ ccm_drawable_set_visual (CCMDrawable * self, Visual* visual)
  *
  * Returns: drawable depth
  **/
-guint
+G_GNUC_PURE guint
 ccm_drawable_get_depth (CCMDrawable * self)
 {
     g_return_val_if_fail (self != NULL, 32);
@@ -570,7 +569,7 @@ ccm_drawable_get_format (CCMDrawable * self)
  *
  * Returns: XID
  **/
-XID
+G_GNUC_PURE XID
 ccm_drawable_get_xid (CCMDrawable * self)
 {
     g_return_val_if_fail (self != NULL, 0);
@@ -605,7 +604,7 @@ ccm_drawable_query_geometry (CCMDrawable * self)
  *
  * Returns: const #CCMRegion
  **/
-const CCMRegion *
+G_GNUC_PURE const CCMRegion *
 ccm_drawable_get_geometry (CCMDrawable * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -648,7 +647,7 @@ ccm_drawable_set_geometry (CCMDrawable* self, CCMRegion* geometry)
  *
  * Returns: const #CCMRegion
  **/
-const CCMRegion *
+G_GNUC_PURE const CCMRegion *
 ccm_drawable_get_device_geometry (CCMDrawable * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -1007,7 +1006,7 @@ ccm_drawable_get_damage_path (CCMDrawable * self, cairo_t * context)
     }
 }
 
-const CCMRegion*
+G_GNUC_PURE const CCMRegion*
 ccm_drawable_get_damaged (CCMDrawable * self)
 {
     g_return_val_if_fail(self != NULL, NULL);

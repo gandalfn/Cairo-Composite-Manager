@@ -91,21 +91,21 @@ struct _CCMPluginOptions
 GType ccm_plugin_get_type (void) G_GNUC_CONST;
 GType ccm_plugin_options_get_type (void) G_GNUC_CONST;
 
-GObject*          ccm_plugin_get_parent              (CCMPlugin* self);
-void              ccm_plugin_set_parent              (CCMPlugin* self, 
-                                                      GObject* parent);
-CCMPluginOptions* ccm_plugin_get_option              (CCMPlugin * self);
-CCMConfig*        ccm_plugin_get_config              (CCMPlugin * self, 
-                                                      int index);
-void              ccm_plugin_options_load            (CCMPlugin* self, 
+G_GNUC_PURE GObject*          ccm_plugin_get_parent   (CCMPlugin* self);
+void                          ccm_plugin_set_parent   (CCMPlugin* self, 
+                                                       GObject* parent);
+G_GNUC_PURE CCMPluginOptions* ccm_plugin_get_option   (CCMPlugin * self);
+G_GNUC_PURE CCMConfig*        ccm_plugin_get_config   (CCMPlugin * self, 
+                                                       int index);
+void                          ccm_plugin_options_load (CCMPlugin* self, 
                                                        gchar* plugin_name,
                                                        const gchar** options_key, 
                                                        int nb_options,
                                                        CCMPluginOptionsChangedFunc callback);
-void              ccm_plugin_options_unload          (CCMPlugin * self);
-int               ccm_plugin_options_get_screen_num  (CCMPluginOptions* self);
-CCMConfig*        ccm_plugin_options_get_config      (CCMPluginOptions * self, 
-                                                        int index);
+void              ccm_plugin_options_unload           (CCMPlugin * self);
+G_GNUC_PURE int   ccm_plugin_options_get_screen_num   (CCMPluginOptions* self);
+CCMConfig*        ccm_plugin_options_get_config       (CCMPluginOptions * self, 
+                                                       int index);
 
 #define CCM_DEFINE_PLUGIN(class_name, prefix, parent_class_type, options_type, CODE) \
 \

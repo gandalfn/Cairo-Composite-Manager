@@ -290,7 +290,7 @@ ccm_property_async_new (CCMDisplay * display, Window window, Atom property,
     return self;
 }
 
-Atom
+G_GNUC_PURE Atom
 ccm_property_async_get_property (CCMPropertyASync * self)
 {
     g_return_val_if_fail (self != NULL, None);

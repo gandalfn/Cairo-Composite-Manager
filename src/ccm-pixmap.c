@@ -415,7 +415,7 @@ ccm_pixmap_image_new (CCMDrawable * drawable, Pixmap xpixmap)
     return self;
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_pixmap_get_y_invert (CCMPixmap * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -433,7 +433,7 @@ ccm_pixmap_set_y_invert (CCMPixmap * self, gboolean y_invert)
     g_object_notify (G_OBJECT (self), "y_invert");
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_pixmap_get_foreign (CCMPixmap * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -451,7 +451,7 @@ ccm_pixmap_set_foreign (CCMPixmap * self, gboolean foreign)
     g_object_notify (G_OBJECT (self), "foreign");
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_pixmap_get_freeze (CCMPixmap * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);

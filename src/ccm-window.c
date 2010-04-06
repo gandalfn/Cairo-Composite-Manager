@@ -784,7 +784,7 @@ create_atoms (CCMWindow * self)
     }
 }
 
-static GSList *
+G_GNUC_PURE static GSList *
 ccm_window_get_state_atom_list (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -1147,10 +1147,10 @@ impl_ccm_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * self)
     if (!ccm_window_get_attribs (self))
         return NULL;
 
-    if (XShapeQueryExtents(CCM_DISPLAY_XDISPLAY (display), 
-                           CCM_WINDOW_XWINDOW (self),
-                           &self->priv->is_shaped, &bx, &by, &bw, &bh, 
-                           &cs, &cx, &cy, &cw, &ch)
+    if (XShapeQueryExtents (CCM_DISPLAY_XDISPLAY (display), 
+                            CCM_WINDOW_XWINDOW (self),
+                            &self->priv->is_shaped, &bx, &by, &bw, &bh, 
+                            &cs, &cx, &cy, &cw, &ch)
         && self->priv->is_shaped)
     {
         gint cpt, nb;
@@ -1162,9 +1162,11 @@ impl_ccm_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * self)
         {
             geometry = ccm_region_new ();
             for (cpt = 0; cpt < nb; ++cpt)
+            {
+                shapes[cpt].x += (int)self->priv->area.x;
+                shapes[cpt].y += (int)self->priv->area.y;
                 ccm_region_union_with_xrect (geometry, &shapes[cpt]);
-            ccm_region_offset (geometry, self->priv->area.x,
-                               self->priv->area.y);
+            }
         }
         else
             self->priv->is_shaped = FALSE;
@@ -1186,7 +1188,7 @@ impl_ccm_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * self)
         ccm_region_destroy (area);
     }
 
-    if (self->priv->pixmap && CCM_IS_PIXMAP (self->priv->pixmap))
+    if (self->priv->pixmap)
     {
         g_object_unref (self->priv->pixmap);
         self->priv->pixmap = NULL;
@@ -1280,7 +1282,7 @@ impl_ccm_window_resize (CCMWindowPlugin * plugin, CCMWindow * self, int width,
             ccm_region_destroy (old_geometry);
         }
 
-        if (CCM_IS_PIXMAP (self->priv->pixmap))
+        if (self->priv->pixmap)
         {
             g_object_unref (self->priv->pixmap);
             self->priv->pixmap = NULL;
@@ -1480,7 +1482,7 @@ impl_ccm_window_unmap (CCMWindowPlugin * plugin, CCMWindow * self)
         self->priv->mask = NULL;
     }
 
-    if (CCM_IS_PIXMAP (self->priv->pixmap))
+    if (self->priv->pixmap)
     {
         g_object_unref (self->priv->pixmap);
         self->priv->pixmap = NULL;
@@ -2056,7 +2058,7 @@ _ccm_window_get_plugin (CCMWindow * self, GType type)
     return NULL;
 }
 
-Window
+G_GNUC_PURE Window
 _ccm_window_get_child (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, None);
@@ -2235,7 +2237,7 @@ ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow)
  *
  * Returns: window is visible
  **/
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_is_viewable (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2251,7 +2253,7 @@ ccm_window_is_viewable (CCMWindow * self)
  *
  * Returns: window is input only
  **/
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_is_input_only (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2267,7 +2269,7 @@ ccm_window_is_input_only (CCMWindow * self)
  *
  * Returns: window is managed
  **/
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_is_managed (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2283,7 +2285,7 @@ ccm_window_is_managed (CCMWindow * self)
  *
  * Returns: const #CCMRegion
  **/
-const CCMRegion *
+G_GNUC_PURE const CCMRegion *
 ccm_window_get_opaque_region (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -2522,7 +2524,7 @@ ccm_window_switch_state (CCMWindow * self, Atom state_atom)
         g_signal_emit (self, signals[PROPERTY_CHANGED], 0, CCM_PROPERTY_STATE);
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_is_shaded (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2530,7 +2532,7 @@ ccm_window_is_shaded (CCMWindow * self)
     return self->priv->is_shaded;
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_is_fullscreen (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2538,7 +2540,7 @@ ccm_window_is_fullscreen (CCMWindow * self)
     return self->priv->is_fullscreen;
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_skip_taskbar (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2546,7 +2548,7 @@ ccm_window_skip_taskbar (CCMWindow * self)
     return self->priv->skip_taskbar;
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_skip_pager (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2554,7 +2556,7 @@ ccm_window_skip_pager (CCMWindow * self)
     return self->priv->skip_pager;
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_keep_above (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2562,7 +2564,7 @@ ccm_window_keep_above (CCMWindow * self)
     return self->priv->keep_above;
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_keep_below (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2599,13 +2601,13 @@ ccm_window_traverse_child (CCMWindow * self, Window parent, Window window)
     return ret;
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_is_child (CCMWindow * self, Window window)
 {
     return ccm_window_traverse_child (self, None, window);
 }
 
-const CCMWindow *
+G_GNUC_PURE const CCMWindow *
 ccm_window_transient_for (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -2613,7 +2615,7 @@ ccm_window_transient_for (CCMWindow * self)
     return self->priv->transient_for;
 }
 
-const CCMWindow *
+G_GNUC_PURE const CCMWindow *
 ccm_window_get_group_leader (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -2707,12 +2709,12 @@ ccm_window_unredirect_subwindows (CCMWindow * self)
                                     CompositeRedirectManual);
 }
 
-CCMPixmap *
+G_GNUC_PURE CCMPixmap *
 ccm_window_get_pixmap (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
 
-    if (!self->priv->pixmap || !CCM_IS_PIXMAP (self->priv->pixmap))
+    if (!self->priv->pixmap)
     {
         self->priv->pixmap =
             ccm_window_plugin_get_pixmap (self->priv->plugin, self);
@@ -2750,7 +2752,7 @@ ccm_window_create_pixmap (CCMWindow * self, int width, int height, int depth)
     return pixmap;
 }
 
-gfloat
+G_GNUC_PURE gfloat
 ccm_window_get_opacity (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, 1.0f);
@@ -2845,7 +2847,7 @@ ccm_window_map (CCMWindow * self)
         self->priv->unmap_pending = FALSE;
 
         ccm_debug_window (self, "WINDOW MAP");
-        if (CCM_IS_PIXMAP (self->priv->pixmap))
+        if (self->priv->pixmap)
         {
             g_object_unref (self->priv->pixmap);
             self->priv->pixmap = NULL;
@@ -2871,7 +2873,7 @@ ccm_window_unmap (CCMWindow * self)
         if (self->priv->is_fullscreen)
             ccm_window_switch_state (self,
                                      CCM_WINDOW_GET_CLASS (self)->state_fullscreen_atom);
-        if (CCM_IS_PIXMAP (self->priv->pixmap))
+        if (self->priv->pixmap)
             g_object_set (self->priv->pixmap, "freeze", TRUE, NULL);
         ccm_debug_window (self, "WINDOW UNMAP");
         ccm_window_plugin_unmap (self->priv->plugin, self);
@@ -2973,7 +2975,7 @@ ccm_window_query_wm_hints (CCMWindow * self)
     }
 }
 
-CCMWindowType
+G_GNUC_PURE CCMWindowType
 ccm_window_get_hint_type (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, CCM_WINDOW_TYPE_NORMAL);
@@ -3057,7 +3059,7 @@ ccm_window_set_opaque (CCMWindow * self)
         ccm_window_set_opaque_region (self, geometry);
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_is_decorated (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, TRUE);
@@ -3236,7 +3238,7 @@ ccm_window_get_child_property (CCMWindow * self, Atom property_atom,
     return result;
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_has_redirect_input (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -3564,7 +3566,7 @@ ccm_window_redirect_event (CCMWindow * self, XEvent * event, Window over)
     return event->xbutton.window;
 }
 
-GSList *
+G_GNUC_PURE GSList *
 ccm_window_get_transients (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -3572,7 +3574,7 @@ ccm_window_get_transients (CCMWindow * self)
     return self->priv->transients;
 }
 
-cairo_surface_t*
+G_GNUC_PURE cairo_surface_t*
 ccm_window_get_mask(CCMWindow* self)
 {
     g_return_val_if_fail(self != NULL, NULL);
@@ -3592,7 +3594,7 @@ ccm_window_set_mask(CCMWindow* self, cairo_surface_t* mask)
     g_object_notify(G_OBJECT(self), "mask");
 }
 
-gboolean 
+G_GNUC_PURE gboolean 
 ccm_window_get_redirect(CCMWindow* self)
 {
     g_return_val_if_fail(self != NULL, FALSE);
@@ -3612,7 +3614,7 @@ ccm_window_set_redirect(CCMWindow* self, gboolean redirect)
     g_object_notify(G_OBJECT(self), "redirect");
 }
 
-gboolean
+G_GNUC_PURE gboolean
 ccm_window_get_no_undamage_sibling(CCMWindow* self)
 {
     g_return_val_if_fail(self != NULL, FALSE);

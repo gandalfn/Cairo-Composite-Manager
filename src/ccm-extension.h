@@ -51,17 +51,17 @@ struct _CCMExtension
     CCMExtensionPrivate *priv;
 };
 
-GType         ccm_extension_get_type        (void) G_GNUC_CONST;
+GType                     ccm_extension_get_type        (void) G_GNUC_CONST;
 
-CCMExtension* ccm_extension_new             (gchar* filename);
-GType         ccm_extension_get_type_object (CCMExtension* self);
-const gchar*  ccm_extension_get_label       (CCMExtension* self);
-const gchar*  ccm_extension_get_description (CCMExtension* self);
-const gchar*  ccm_extension_get_version     (CCMExtension* self);
-const gchar** ccm_extension_get_backends    (CCMExtension* self);
+CCMExtension*             ccm_extension_new             (gchar* filename);
+GType                     ccm_extension_get_type_object (CCMExtension* self);
+G_GNUC_PURE const gchar*  ccm_extension_get_label       (CCMExtension* self);
+G_GNUC_PURE const gchar*  ccm_extension_get_description (CCMExtension* self);
+G_GNUC_PURE const gchar*  ccm_extension_get_version     (CCMExtension* self);
+G_GNUC_PURE const gchar** ccm_extension_get_backends    (CCMExtension* self);
 
-gint          _ccm_extension_compare        (CCMExtension* self, 
-                                             CCMExtension* other);
+gint                      _ccm_extension_compare        (CCMExtension* self, 
+                                                         CCMExtension* other);
 
 G_END_DECLS
 

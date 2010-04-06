@@ -55,7 +55,7 @@ ccm_preferences_page_plugin_get_type (void)
     return ccm_preferences_page_plugin_type;
 }
 
-CCMPreferencesPagePlugin *
+G_GNUC_PURE CCMPreferencesPagePlugin *
 _ccm_preferences_page_plugin_get_root (CCMPreferencesPagePlugin * self)
 {
     g_return_val_if_fail (CCM_IS_PREFERENCES_PAGE_PLUGIN (self), NULL);

@@ -55,7 +55,7 @@ ccm_window_plugin_get_type (void)
     return ccm_window_plugin_type;
 }
 
-CCMWindowPlugin *
+G_GNUC_PURE CCMWindowPlugin *
 _ccm_window_plugin_get_root (CCMWindowPlugin * self)
 {
     g_return_val_if_fail (CCM_IS_WINDOW_PLUGIN (self), NULL);

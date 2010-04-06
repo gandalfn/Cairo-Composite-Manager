@@ -272,7 +272,7 @@ ccm_image_put_image (CCMImage * image, CCMPixmap * pixmap, int x_src, int y_src,
     return ret;
 }
 
-guchar *
+G_GNUC_PURE guchar *
 ccm_image_get_data (CCMImage * image)
 {
     g_return_val_if_fail (image != NULL, NULL);
@@ -280,7 +280,7 @@ ccm_image_get_data (CCMImage * image)
     return image->image ? (guchar *) image->image->data : NULL;
 }
 
-gint
+G_GNUC_PURE gint
 ccm_image_get_width (CCMImage * image)
 {
     g_return_val_if_fail (image != NULL, 0);
@@ -288,7 +288,7 @@ ccm_image_get_width (CCMImage * image)
     return image->width;
 }
 
-gint
+G_GNUC_PURE gint
 ccm_image_get_height (CCMImage * image)
 {
     g_return_val_if_fail (image != NULL, 0);
@@ -296,7 +296,7 @@ ccm_image_get_height (CCMImage * image)
     return image->height;
 }
 
-gint
+G_GNUC_PURE gint
 ccm_image_get_stride (CCMImage * image)
 {
     g_return_val_if_fail (image != NULL, 0);

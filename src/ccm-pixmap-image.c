@@ -98,8 +98,7 @@ ccm_pixmap_image_bind (CCMPixmap * pixmap)
     Visual *visual = ccm_drawable_get_visual (CCM_DRAWABLE (pixmap));
     cairo_rectangle_t geometry;
 
-    if (visual  && 
-        ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (pixmap), &geometry))
+    if (visual && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (pixmap), &geometry))
         self->priv->image = ccm_image_new (display, visual, format,
                                            geometry.width, geometry.height,
                                            depth);
@@ -134,8 +133,7 @@ ccm_pixmap_image_repair (CCMDrawable * drawable, CCMRegion * area)
     {
         if (!self->priv->synced)
         {
-            if (!ccm_image_get_image (self->priv->image, CCM_PIXMAP (self), 
-                                      0, 0))
+            if (!ccm_image_get_image (self->priv->image, CCM_PIXMAP (self), 0, 0))
             {
                 ccm_debug ("IMAGE_REPAIR ERROR");
                 ret = FALSE;
