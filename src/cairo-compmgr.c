@@ -58,6 +58,7 @@
 #endif
 
 gboolean crashed = FALSE;
+CCMDisplay* display = NULL;
 
 static void
 crash (int signum)
@@ -85,6 +86,26 @@ on_preferences_closed (CCMPreferences * pref, gpointer data)
     gtk_main_quit ();
 }
 
+static void
+on_enable_ccm_changed (CCMConfig * config, gpointer data)
+{
+    gboolean val = ccm_config_get_boolean (config, NULL);
+
+    ccm_debug ("CCM ENABLE %i", val);
+
+    if (val)
+    {
+        if (!display)
+            display = ccm_display_new (NULL);
+    }
+    else if (display)
+    {
+        ccm_debug ("UNSET CCM");
+        g_object_unref (display);
+        display = NULL;
+    }
+}
+
 int
 main (gint argc, gchar ** argv)
 {
@@ -96,6 +117,7 @@ main (gint argc, gchar ** argv)
 
     static gboolean configure = FALSE;
     static gboolean restart = FALSE;
+    static gboolean no_tray_icon = FALSE;
 #ifdef ENABLE_GCONF
     static gboolean use_gconf = FALSE;
 #endif
@@ -110,6 +132,9 @@ main (gint argc, gchar ** argv)
             NULL},
         {"configure", 'c', 0, G_OPTION_ARG_NONE, &configure,
             N_("Start cairo composite manager configuration tools"),
+            NULL},
+        {"no-tray-icon", 'n', 0, G_OPTION_ARG_NONE, &no_tray_icon,
+            N_("Disable cairo composite manager tray icon"),
             NULL},
 #ifdef ENABLE_GCONF
         {"use-gconf", 'g', 0, G_OPTION_ARG_NONE, &use_gconf,
@@ -193,9 +218,30 @@ main (gint argc, gchar ** argv)
     }
 #endif
 
-    trayicon = ccm_tray_icon_new ();
-    gtk_main ();
-    g_object_unref (trayicon);
+    if (!no_tray_icon)
+    {
+        trayicon = ccm_tray_icon_new ();
+        gtk_main ();
+        g_object_unref (trayicon);
+    }
+    else
+    {
+        gboolean val;
+        CCMConfig* config = ccm_config_new (-1, NULL, "enable");
+
+        g_signal_connect (config, "changed",
+                          (GCallback) on_enable_ccm_changed,
+                          NULL);
+        val = ccm_config_get_boolean (config, NULL);
+
+        if (val)
+            display = ccm_display_new (NULL);
+
+        gtk_main ();
+
+        if (display) g_object_unref (display);
+        g_object_unref (config);
+    }
     g_option_context_free(option_context);
 
     return 0;
