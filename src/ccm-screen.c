@@ -2536,7 +2536,6 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                     if (CCM_WINDOW_XWINDOW (self->priv->root) ==
                         client_event->data.l[1])
                     {
-
                         CCMWindow *window =
                             ccm_screen_find_window_or_child (self,
                                                              client_event->data.l[4]);

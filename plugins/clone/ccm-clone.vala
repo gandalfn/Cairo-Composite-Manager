@@ -30,17 +30,27 @@ namespace CCM
 {
     public class Output
     {
+        public weak CCM.Window client;
         public weak CCM.Window window;
         public CCM.Pixmap pixmap;
+        public int x;
+        public int y;
+        public int scale_x;
+        public int scale_y;
 
-        public Output (CCM.Screen screen, CCM.Window window, X.Pixmap xpixmap,
-                       int depth)
+        public Output (CCM.Screen screen, CCM.Window client, CCM.Window window,
+                       X.Pixmap xpixmap, int depth)
         {
             X.Visual * visual = screen.get_visual_for_depth (depth);
 
+            this.client = client;
             this.window = window;
             this.pixmap = new CCM.Pixmap.from_visual (screen, *visual, xpixmap);
             this.pixmap.foreign = true;
+            this.x = 0;
+            this.y = 0;
+            this.scale_x = 0;
+            this.scale_y = 0;
         }
     }
 
@@ -50,6 +60,10 @@ namespace CCM
         class X.Atom screen_disable_atom;
         class X.Atom enable_atom;
         class X.Atom disable_atom;
+        class X.Atom offset_x_atom;
+        class X.Atom offset_y_atom;
+        class X.Atom scale_x_atom;
+        class X.Atom scale_y_atom;
 
         weak CCM.Screen screen;
         ArrayList < Output > screen_outputs = null;
@@ -93,14 +107,15 @@ namespace CCM
         {
             X.Atom atom = (X.Atom) l1;
             X.Pixmap xpixmap = (X.Pixmap) l2;
-            int depth = (int) l3;
 
             if (atom == enable_atom)
             {
+                int depth = (int) l3;
+
                 CCM.log ("ENABLE CLONE");
                 var clone = (Clone) window.get_plugin (typeof (Clone));
                 var output =
-                    new Output (window.get_screen (), window, xpixmap, depth);
+                    new Output (window.get_screen (), client, window, xpixmap, depth);
                 if (clone.window_outputs == null)
                     clone.window_outputs = new ArrayList < Output > ();
                 clone.window_outputs.add (output);
@@ -122,11 +137,73 @@ namespace CCM
                     }
                 }
             }
+            else if (atom == offset_x_atom)
+            {
+                CCM.log ("OFFSET X CLONE");
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        output.x = (int) l3;
+                        break;
+                    }
+                }
+                window.damage ();
+            }
+            else if (atom == offset_y_atom)
+            {
+                CCM.log ("OFFSET Y CLONE");
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        output.y = (int) l3;
+                        break;
+                    }
+                }
+                window.damage ();
+            }
+            else if (atom == scale_x_atom)
+            {
+                CCM.log ("SCALE X CLONE");
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        output.scale_x = (int) l3;
+                        break;
+                    }
+                }
+                window.damage ();
+            }
+            else if (atom == scale_y_atom)
+            {
+                CCM.log ("SCALE Y CLONE");
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        output.scale_y = (int) l3;
+                        break;
+                    }
+                }
+                window.damage ();
+            }
             else if (atom == screen_enable_atom)
             {
+                int depth = (int) l3;
+
                 CCM.log ("ENABLE SCREEN CLONE");
                 var output =
-                    new Output (window.get_screen (), window, xpixmap, depth);
+                    new Output (window.get_screen (), client, window, xpixmap, depth);
                 window.no_undamage_sibling = true;
                 add_screen_output (output);
             }
@@ -167,6 +244,18 @@ namespace CCM
                 disable_atom =
                     screen.get_display ().get_xdisplay ().
                     intern_atom ("_CCM_CLONE_DISABLE", false);
+                offset_x_atom =
+                    screen.get_display ().get_xdisplay ().
+                    intern_atom ("_CCM_CLONE_OFFSET_X", false);
+                offset_y_atom =
+                    screen.get_display ().get_xdisplay ().
+                    intern_atom ("_CCM_CLONE_OFFSET_Y", false);
+                scale_x_atom =
+                    screen.get_display ().get_xdisplay ().
+                    intern_atom ("_CCM_CLONE_SCALE_X", false);
+                scale_y_atom =
+                    screen.get_display ().get_xdisplay ().
+                    intern_atom ("_CCM_CLONE_SCALE_Y", false);
             }
             ((CCM.ScreenPlugin) parent).screen_load_options (screen);
         }
@@ -198,23 +287,29 @@ namespace CCM
                         {
                             Cairo.Rectangle clipbox = Cairo.Rectangle ();
 
-                            if (output.pixmap.
-                                get_device_geometry_clipbox (out clipbox))
+                            if (output.pixmap.get_device_geometry_clipbox (out clipbox))
                             {
-                                Cairo.Context ctx =
-                                    output.pixmap.create_context ();
+                                Cairo.Context ctx = output.pixmap.create_context ();
 
                                 if (ctx != null)
                                 {
-                                    ctx.scale (clipbox.width / area->width,
-                                               clipbox.height / area->height);
+                                    double scale_x = clipbox.width / area->width;
+                                    double scale_y = clipbox.height / area->height;
+
+                                    if (output.scale_x != 0)
+                                        scale_x = (double)output.scale_x / (double)100;
+                                    if (output.scale_y != 0)
+                                        scale_y = (double)output.scale_y / (double)100;
+
+                                    ctx.scale (scale_x, scale_y);
+                                    ctx.translate (output.x, output.y);
                                     ctx.translate (-area->x, -area->y);
                                     window.get_damage_path (ctx);
                                     ctx.clip ();
                                     ctx.translate (area->x, area->y);
                                     ctx.set_source_surface (surface, 
-                                                            -(geometry.width - area->width) / 2.0,
-                                                            -(geometry.height - area->height) / 2.0);
+                                                            - (geometry.width - area->width) / 2.0,
+                                                            - (geometry.height - area->height) / 2.0);
                                     ctx.paint ();
                                 }
                             }

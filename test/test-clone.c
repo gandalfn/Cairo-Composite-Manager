@@ -19,7 +19,7 @@
 #include <X11/extensions/Xdamage.h>
 
 static GdkPixmap* pixmap = NULL;
-static GtkWidget* main_window = NULL;
+static GtkWidget* main_window = NULL, *eventbox = NULL;
 static GdkWindow* clone_window = NULL;
 static Damage damage = None;
 int event_base;
@@ -69,7 +69,7 @@ on_expose_event(GtkWidget* widget, GdkEventExpose* event, gpointer data)
 {
     gboolean ret = FALSE;
     
-    if (clone_window)
+    if (0 && clone_window)
     {
         cairo_t* clone = gdk_cairo_create(GDK_DRAWABLE(pixmap));
         cairo_t* ctx = gdk_cairo_create(GDK_DRAWABLE(widget->window));
@@ -78,10 +78,6 @@ on_expose_event(GtkWidget* widget, GdkEventExpose* event, gpointer data)
         cairo_paint(ctx);
         cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
         cairo_set_source_surface(ctx, cairo_get_target(clone), 0, 0);
-        gchar* filename = g_strdup_printf("%05d.png", count);
-        cairo_surface_write_to_png(cairo_get_target(clone), filename);
-        count++;
-        g_free(filename);
         cairo_paint(ctx);
         cairo_destroy(ctx);
         cairo_destroy(clone);
@@ -107,14 +103,70 @@ clone(GdkWindow* window, gboolean enable)
     event.client.data_format = 32;
     event.client.data.l[0] = gdk_x11_atom_to_xatom(clone_atom);
     event.client.data.l[1] = GDK_WINDOW_XWINDOW(window);
-    event.client.data.l[2] = GDK_DRAWABLE_XID(pixmap);
-    event.client.data.l[3] = gdk_drawable_get_depth(GDK_DRAWABLE(pixmap));
+    event.client.data.l[2] = GDK_DRAWABLE_XID(eventbox->window);
+    event.client.data.l[3] = gdk_drawable_get_depth(GDK_DRAWABLE(eventbox->window));
     event.client.data.l[4] = GDK_WINDOW_XWINDOW(main_window->window);
 
     gdk_event_send_clientmessage_toall(&event);
     gtk_widget_queue_draw(main_window);
 }
-      
+
+void
+clone_pos(GdkWindow* window, int x, int y)
+{
+    GdkEvent event;
+    GdkAtom ccm_atom = gdk_atom_intern_static_string("_CCM_CLIENT_MESSAGE");
+    GdkAtom offset_x_atom = gdk_atom_intern_static_string("_CCM_CLONE_OFFSET_X");
+    GdkAtom offset_y_atom = gdk_atom_intern_static_string("_CCM_CLONE_OFFSET_Y");
+
+    event.client.type = GDK_CLIENT_EVENT;
+    event.client.window = window;
+    event.client.send_event = TRUE;
+    event.client.message_type = ccm_atom;
+    event.client.data_format = 32;
+    event.client.data.l[0] = gdk_x11_atom_to_xatom(offset_x_atom);
+    event.client.data.l[1] = GDK_WINDOW_XWINDOW(window);
+    event.client.data.l[2] = GDK_DRAWABLE_XID(eventbox->window);
+    event.client.data.l[3] = x;
+    event.client.data.l[4] = GDK_WINDOW_XWINDOW(main_window->window);
+
+    gdk_event_send_clientmessage_toall(&event);
+
+    event.client.data.l[0] = gdk_x11_atom_to_xatom(offset_y_atom);
+    event.client.data.l[3] = y;
+    
+    gdk_event_send_clientmessage_toall(&event);
+    gtk_widget_queue_draw(main_window);
+}
+
+void
+clone_scale(GdkWindow* window, double scale_x, int scale_y)
+{
+    GdkEvent event;
+    GdkAtom ccm_atom = gdk_atom_intern_static_string("_CCM_CLIENT_MESSAGE");
+    GdkAtom scale_x_atom = gdk_atom_intern_static_string("_CCM_CLONE_SCALE_X");
+    GdkAtom scale_y_atom = gdk_atom_intern_static_string("_CCM_CLONE_SCALE_Y");
+
+    event.client.type = GDK_CLIENT_EVENT;
+    event.client.window = window;
+    event.client.send_event = TRUE;
+    event.client.message_type = ccm_atom;
+    event.client.data_format = 32;
+    event.client.data.l[0] = gdk_x11_atom_to_xatom(scale_x_atom);
+    event.client.data.l[1] = GDK_WINDOW_XWINDOW(window);
+    event.client.data.l[2] = GDK_DRAWABLE_XID(eventbox->window);
+    event.client.data.l[3] = (int)(scale_x * 100);
+    event.client.data.l[4] = GDK_WINDOW_XWINDOW(main_window->window);
+
+    gdk_event_send_clientmessage_toall(&event);
+
+    event.client.data.l[0] = gdk_x11_atom_to_xatom(scale_y_atom);
+    event.client.data.l[3] = (int)(scale_y * 100);
+
+    gdk_event_send_clientmessage_toall(&event);
+    gtk_widget_queue_draw(main_window);
+}
+
 gboolean 
 on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
 {
@@ -127,7 +179,6 @@ on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
         width = event->width;
         height = event->height;
 
-        
         clone (clone_window, FALSE);
         if (pixmap) g_object_unref(pixmap);
         XDamageDestroy(GDK_DISPLAY_XDISPLAY(display), damage);
@@ -143,6 +194,8 @@ on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
                                    XDamageReportNonEmpty);
         
         clone (clone_window, TRUE);
+        clone_pos (clone_window, 0, 20);
+        clone_scale (clone_window, 0.5, 0.5);
     }
 
     return FALSE;
@@ -164,6 +217,8 @@ on_filter_event(XEvent* xevent, GdkEvent* event, gpointer data)
             gtk_window_get_size(GTK_WINDOW(main_window), &width, &height);
             gtk_window_resize(GTK_WINDOW(main_window), width*ratio, height);
             clone (clone_window, TRUE);
+            clone_pos (clone_window, 0, 20);
+            clone_scale (clone_window, 0.5, 0.5);
             XUngrabPointer(xevent->xany.display, GDK_CURRENT_TIME);
         }
         break;
@@ -192,9 +247,12 @@ main(gint argc, gchar** argv)
     g_signal_connect(main_window, "expose-event", G_CALLBACK(on_expose_event), NULL);
     g_signal_connect(main_window, "configure-event", G_CALLBACK(on_configure_event), NULL);
 
+    eventbox = gtk_event_box_new ();
+    gtk_widget_show (eventbox);
+    gtk_container_add(GTK_CONTAINER(main_window), eventbox);
     label = gtk_label_new("Click on the window to clone");
     gtk_widget_show(label);
-    gtk_container_add(GTK_CONTAINER(main_window), label);
+    gtk_container_add(GTK_CONTAINER(eventbox), label);
     
     gdk_window_add_filter(NULL, (GdkFilterFunc)on_filter_event, NULL);
 
