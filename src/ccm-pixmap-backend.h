@@ -27,10 +27,6 @@
 
 #include "ccm-screen.h"
 
-#ifdef ENABLE_GLITZ_TFP_BACKEND
-#include "ccm-pixmap-glitz.h"
-#endif
-
 #ifndef DISABLE_XRENDER_BACKEND
 #include "ccm-pixmap-xrender.h"
 #endif
