@@ -301,6 +301,9 @@ namespace CCM
                                     if (output.scale_y != 0)
                                         scale_y = (double)output.scale_y / (double)100;
 
+                                    ctx.set_operator (Cairo.Operator.SOURCE);
+                                    ctx.rectangle (0, 0, clipbox.width, clipbox.height);
+                                    ctx.clip ();
                                     ctx.scale (scale_x, scale_y);
                                     ctx.translate (output.x, output.y);
                                     ctx.translate (-area->x, -area->y);
