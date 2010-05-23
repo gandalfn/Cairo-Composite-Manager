@@ -3040,3 +3040,11 @@ ccm_screen_get_backend (CCMScreen* self)
 
     return (const gchar*)self->priv->backend;
 }
+
+G_GNUC_PURE CCMWindow*
+ccm_screen_get_active_window (CCMScreen* self)
+{
+    g_return_val_if_fail(self != NULL, NULL);
+
+    return self->priv->active;
+}

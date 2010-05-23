@@ -264,6 +264,7 @@ namespace CCM
         public unowned CCM.Window get_overlay_window ();
         public unowned GLib.List<CCM.Window> get_windows ();
         public X.Visual* get_visual_for_depth (int depth);
+        public unowned CCM.Window get_active_window ();
 
         public bool add_window (CCM.Window window);
         public void remove_window (CCM.Window window);
@@ -362,7 +363,7 @@ namespace CCM
         public Pixmap.image (CCM.Drawable drawable, X.Pixmap xpixmap);
 
         public virtual void bind ();
-        public virtual void release ();		
+        public virtual void release ();
     }
 
     public interface WindowPlugin : GLib.Object
@@ -419,7 +420,7 @@ namespace CCM
         protected virtual CCM.Pixmap get_pixmap (CCM.Window window);
         protected void lock_get_pixmap(PluginUnlockFunc? func);
         protected void unlock_get_pixmap();
-    }	
+    }
 
     [CCode (cheader_filename = "ccm.h,ccm-window.h,ccm-window-plugin.h")]
     public class Window : CCM.Drawable, CCM.WindowPlugin 

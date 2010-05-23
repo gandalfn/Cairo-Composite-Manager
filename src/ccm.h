@@ -213,6 +213,7 @@ void                    ccm_screen_manage_cursors       (CCMScreen* self);
 void                    ccm_screen_unmanage_cursors     (CCMScreen* self);
 Visual*                 ccm_screen_get_visual_for_depth (CCMScreen* self,
                                                          int depth);
+G_GNUC_PURE CCMWindow*  ccm_screen_get_active_window    (CCMScreen* self);
 /******************************************************************************/
 
 /****************************** Drawable**************************************/
