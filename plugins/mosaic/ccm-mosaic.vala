@@ -442,6 +442,7 @@ namespace CCM
                 }
 
                 // Window below the cursor
+                bool found_window = false;
                 weak CCM.Window? mouse;
                 int x_mouse, y_mouse;
                 screen.query_pointer(out mouse, out x_mouse, out y_mouse);
@@ -457,6 +458,27 @@ namespace CCM
                             area.plugin.timeline.start();
                             switch_keep_above(area.window, true);
                             area.window.damage();
+                            found_window = true;
+                            break;
+                        }
+                    }
+                }
+
+                // No window over the cursor
+                weak CCM.Window? active = screen.get_active_window ();
+                if (!found_window && active != null)
+                {
+                    foreach (MosaicArea area in areas)
+                    {
+                        if (area.window == active)
+                        {
+                            area.plugin.mouse_over = true;
+                            area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                            area.plugin.timeline.rewind();
+                            area.plugin.timeline.start();
+                            switch_keep_above(area.window, true);
+                            area.window.damage();
+                            break;
                         }
                     }
                 }
