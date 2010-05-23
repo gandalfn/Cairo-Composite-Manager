@@ -33,6 +33,9 @@ namespace CCM
         SPACING,
         SHORTCUT,
         DURATION,
+        SHORTCUT_LEFT,
+        SHORTCUT_RIGHT,
+        SHORTCUT_RETURN,
         N
     }
 
@@ -41,6 +44,9 @@ namespace CCM
         public int spacing = 5;
         public string shortcut = "<Super>Tab";
         public double duration = 0.3;
+        public string shortcut_left = "Left";
+        public string shortcut_right = "Right";
+        public string shortcut_return = "Return";
 
         ////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////
@@ -119,6 +125,48 @@ namespace CCM
                     }
                 }
             }
+
+            if (config == get_config (Options.SHORTCUT_LEFT))
+            {
+                shortcut_left = "Left";
+
+                try
+                {
+                    shortcut_left = config.get_string ();
+                }
+                catch (GLib.Error ex)
+                {
+                    CCM.log ("Error on get left config get default");
+                }
+            }
+
+            if (config == get_config (Options.SHORTCUT_RIGHT))
+            {
+                shortcut_right = "Right";
+
+                try
+                {
+                    shortcut_right = config.get_string ();
+                }
+                catch (GLib.Error ex)
+                {
+                    CCM.log ("Error on get right config get default");
+                }
+            }
+
+            if (config == get_config (Options.SHORTCUT_RETURN))
+            {
+                shortcut_return = "Return";
+
+                try
+                {
+                    shortcut_return = config.get_string ();
+                }
+                catch (GLib.Error ex)
+                {
+                    CCM.log ("Error on get activate config get default");
+                }
+            }
         }
     }
 
@@ -134,13 +182,19 @@ namespace CCM
         const string[] options_key = {
             "spacing",
             "shortcut",
-            "duration"
+            "duration",
+            "left",
+            "right",
+            "activate"
         };
 
         weak CCM.MosaicArea?    area = null;
         weak CCM.Screen         screen;
         bool                    enabled = false;
         CCM.Keybind             keybind;
+        CCM.Keybind             keybind_left = null;
+        CCM.Keybind             keybind_right = null;
+        CCM.Keybind             keybind_return = null;
         ArrayList <MosaicArea>  areas;
         bool                    mouse_over = false;
         Timeline                timeline;
@@ -475,6 +529,9 @@ namespace CCM
             if (enabled)
             {
                 enabled = false;
+                keybind_left = null;
+                keybind_right = null;
+                keybind_return = null;
 
                 if (timeline.is_playing())
                 {
@@ -483,6 +540,122 @@ namespace CCM
                 timeline.set_direction(CCM.TimelineDirection.FORWARD);
                 timeline.rewind();
                 timeline.start();
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        void
+        on_right_pressed ()
+        {
+            if (enabled)
+            {
+                bool activate_next = false;
+                bool found_next = false;
+                foreach (MosaicArea area in areas)
+                {
+                    if (area.plugin.mouse_over)
+                    {
+                        activate_next = true;
+                        // Start leave
+                        area.plugin.mouse_over = false; 
+                        area.plugin.timeline.set_direction(CCM.TimelineDirection.BACKWARD);
+                        area.plugin.timeline.rewind();
+                        area.plugin.timeline.start();
+                        switch_keep_above(area.window, false);
+                        area.window.damage();
+                    }
+                    else if (activate_next)
+                    {
+                        // Start enter window
+                        area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                        area.plugin.timeline.rewind();
+                        area.plugin.timeline.start();
+                        switch_keep_above(area.window, true);
+                        area.plugin.mouse_over = true; 
+                        area.window.damage();
+                        found_next = true;
+                        break;
+                    }
+                }
+                if (!found_next && areas [0] != null)
+                {
+                    MosaicArea area = areas [0];
+
+                    // Start enter window
+                    area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                    area.plugin.timeline.rewind();
+                    area.plugin.timeline.start();
+                    switch_keep_above(area.window, true);
+                    area.plugin.mouse_over = true; 
+                    area.window.damage();
+                }
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        void
+        on_left_pressed ()
+        {
+            if (enabled)
+            {
+                weak MosaicArea area_prev = null;
+                foreach (MosaicArea area in areas)
+                {
+                    if (area.plugin.mouse_over)
+                    {
+                        // Start leave
+                        area.plugin.mouse_over = false; 
+                        area.plugin.timeline.set_direction(CCM.TimelineDirection.BACKWARD);
+                        area.plugin.timeline.rewind();
+                        area.plugin.timeline.start();
+                        switch_keep_above(area.window, false);
+                        area.window.damage();
+
+                        if (area_prev != null)
+                        {
+                            // Start enter window
+                            area_prev.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                            area_prev.plugin.timeline.rewind();
+                            area_prev.plugin.timeline.start();
+                            switch_keep_above(area_prev.window, true);
+                            area_prev.plugin.mouse_over = true; 
+                            area_prev.window.damage();
+                        }
+                        break;
+                    }
+                    area_prev = area;
+                }
+                if (area_prev == null && areas [areas.size - 1] != null)
+                {
+                    MosaicArea area = areas [areas.size - 1];
+
+                    // Start enter window
+                    area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                    area.plugin.timeline.rewind();
+                    area.plugin.timeline.start();
+                    switch_keep_above(area.window, true);
+                    area.plugin.mouse_over = true; 
+                    area.window.damage();
+                }
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
+        void
+        on_return_pressed ()
+        {
+            if (enabled)
+            {
+                foreach (MosaicArea area in areas)
+                {
+                    if (area.plugin.mouse_over)
+                    {
+                        area.window.activate(X.CURRENT_TIME);
+                    }
+                }
             }
         }
 
@@ -500,9 +673,24 @@ namespace CCM
             if (enabled) 
             {
                 create_areas();
+                keybind_left = new CCM.Keybind (screen,
+                                                ((MosaicOptions) get_option ()).shortcut_left, 
+                                                true);
+                keybind_left.key_press.connect (on_left_pressed);
+                keybind_right = new CCM.Keybind (screen,
+                                                ((MosaicOptions) get_option ()).shortcut_right, 
+                                                true);
+                keybind_right.key_press.connect (on_right_pressed);
+                keybind_return = new CCM.Keybind (screen,
+                                                ((MosaicOptions) get_option ()).shortcut_return, 
+                                                true);
+                keybind_return.key_press.connect (on_return_pressed);
             }
             else
             {
+                keybind_left = null;
+                keybind_right = null;
+                keybind_return = null;
                 foreach (MosaicArea area in areas)
                 {
                     if (area is CCM.Window &&
@@ -640,6 +828,15 @@ namespace CCM
 
                     var shortcut = builder.get_object ("shortcut") as CCM.ConfigEntryShortcut;
                     shortcut.screen = screen_num;
+
+                    var shortcut_left = builder.get_object ("shortcut_left") as CCM.ConfigEntryShortcut;
+                    shortcut_left.screen = screen_num;
+
+                    var shortcut_right = builder.get_object ("shortcut_right") as CCM.ConfigEntryShortcut;
+                    shortcut_right.screen = screen_num;
+
+                    var shortcut_return = builder.get_object ("shortcut_return") as CCM.ConfigEntryShortcut;
+                    shortcut_return.screen = screen_num;
 
                     preferences.section_register_widget(PreferencesPageSection.DESKTOP,
                                                         widget, "mosaic");

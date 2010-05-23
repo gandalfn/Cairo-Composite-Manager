@@ -447,7 +447,7 @@ namespace CCM
         [CCode (cname = "_ccm_window_get_plugin")]
         public unowned CCM.Plugin? get_plugin(GLib.Type type);
 
-        public void activate (GLib.Time timestamp);
+        public void activate (ulong timestamp);
         public virtual CCM.Pixmap create_pixmap (int width, int height, int depth);
         public Cairo.Rectangle* get_area ();
         public uint32 get_child_property (X.Atom property_atom, X.Atom req_type, out uint n_items);
