@@ -33,8 +33,11 @@ namespace CCM
         public weak CCM.Window client;
         public weak CCM.Window window;
         public CCM.Pixmap pixmap;
+        public bool paint_parent;
         public int x;
         public int y;
+        public int max_width;
+        public int max_height;
         public int scale_x;
         public int scale_y;
 
@@ -47,8 +50,11 @@ namespace CCM
             this.window = window;
             this.pixmap = new CCM.Pixmap.from_visual (screen, *visual, xpixmap);
             this.pixmap.foreign = true;
+            this.paint_parent = true;
             this.x = 0;
             this.y = 0;
+            this.max_width = 0;
+            this.max_height = 0;
             this.scale_x = 0;
             this.scale_y = 0;
         }
@@ -60,8 +66,11 @@ namespace CCM
         class X.Atom screen_disable_atom;
         class X.Atom enable_atom;
         class X.Atom disable_atom;
+        class X.Atom paint_parent_atom;
         class X.Atom offset_x_atom;
         class X.Atom offset_y_atom;
+        class X.Atom max_width_atom;
+        class X.Atom max_height_atom;
         class X.Atom scale_x_atom;
         class X.Atom scale_y_atom;
 
@@ -139,7 +148,7 @@ namespace CCM
             }
             else if (atom == offset_x_atom)
             {
-                CCM.log ("OFFSET X CLONE");
+                CCM.log ("OFFSET X CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
@@ -154,7 +163,7 @@ namespace CCM
             }
             else if (atom == offset_y_atom)
             {
-                CCM.log ("OFFSET Y CLONE");
+                CCM.log ("OFFSET Y CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
@@ -167,9 +176,39 @@ namespace CCM
                 }
                 window.damage ();
             }
+            else if (atom == max_width_atom)
+            {
+                CCM.log ("MAX WIDTH CLONE %i", (int)l3);
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        output.max_width = (int) l3;
+                        break;
+                    }
+                }
+                window.damage ();
+            }
+            else if (atom == max_height_atom)
+            {
+                CCM.log ("MAX HEIGHT CLONE %i", (int)l3);
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        output.max_height = (int) l3;
+                        break;
+                    }
+                }
+                window.damage ();
+            }
             else if (atom == scale_x_atom)
             {
-                CCM.log ("SCALE X CLONE");
+                CCM.log ("SCALE X CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
@@ -184,7 +223,7 @@ namespace CCM
             }
             else if (atom == scale_y_atom)
             {
-                CCM.log ("SCALE Y CLONE");
+                CCM.log ("SCALE Y CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
@@ -192,6 +231,21 @@ namespace CCM
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
                         output.scale_y = (int) l3;
+                        break;
+                    }
+                }
+                window.damage ();
+            }
+            else if (atom == paint_parent_atom)
+            {
+                CCM.log ("PAINT PARENT CLONE");
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        output.paint_parent = (bool) l3;
                         break;
                     }
                 }
@@ -244,12 +298,21 @@ namespace CCM
                 disable_atom =
                     screen.get_display ().get_xdisplay ().
                     intern_atom ("_CCM_CLONE_DISABLE", false);
+                paint_parent_atom =
+                    screen.get_display ().get_xdisplay ().
+                    intern_atom ("_CCM_CLONE_PAINT_PARENT", false);
                 offset_x_atom =
                     screen.get_display ().get_xdisplay ().
                     intern_atom ("_CCM_CLONE_OFFSET_X", false);
                 offset_y_atom =
                     screen.get_display ().get_xdisplay ().
                     intern_atom ("_CCM_CLONE_OFFSET_Y", false);
+                max_width_atom =
+                    screen.get_display ().get_xdisplay ().
+                    intern_atom ("_CCM_CLONE_MAX_WIDTH", false);
+                max_height_atom =
+                    screen.get_display ().get_xdisplay ().
+                    intern_atom ("_CCM_CLONE_MAX_HEIGHT", false);
                 scale_x_atom =
                     screen.get_display ().get_xdisplay ().
                     intern_atom ("_CCM_CLONE_SCALE_X", false);
@@ -267,14 +330,8 @@ namespace CCM
         window_paint (CCM.Window window, Cairo.Context context,
                       Cairo.Surface surface, bool y_invert)
         {
-            bool ret = false;
-
-            /* Chain call to next plugin */
-            ret = ((CCM.WindowPlugin) parent).window_paint (window, context,
-                                                            surface, y_invert);
-
             if (((window_outputs != null && window_outputs.size > 0) ||
-                 (screen_outputs != null && screen_outputs.size > 0)) && ret)
+                 (screen_outputs != null && screen_outputs.size > 0)))
             {
                 var area = window.get_area ();
                 Cairo.Rectangle geometry = Cairo.Rectangle ();
@@ -293,6 +350,15 @@ namespace CCM
 
                                 if (ctx != null)
                                 {
+                                    double width = clipbox.width;
+                                    double height = clipbox.height;
+
+                                    if (output.max_width > 0 && width - output.x > output.max_width)
+                                         width = output.max_width;
+
+                                    if (output.max_height > 0 && height - output.y > output.max_height)
+                                         height = output.max_height;
+
                                     double scale_x = clipbox.width / area->width;
                                     double scale_y = clipbox.height / area->height;
 
@@ -302,7 +368,7 @@ namespace CCM
                                         scale_y = (double)output.scale_y / (double)100;
 
                                     ctx.set_operator (Cairo.Operator.SOURCE);
-                                    ctx.rectangle (0, 0, clipbox.width, clipbox.height);
+                                    ctx.rectangle (0, 0, width, height);
                                     ctx.clip ();
                                     ctx.scale (scale_x, scale_y);
                                     ctx.translate (output.x, output.y);
@@ -314,6 +380,14 @@ namespace CCM
                                                             - (geometry.width - area->width) / 2.0,
                                                             - (geometry.height - area->height) / 2.0);
                                     ctx.paint ();
+
+                                    if (!output.paint_parent)
+                                    {
+                                        CCM.Region region = new CCM.Region (-output.x, -output.y, (int)width, (int)height);
+                                        window.undamage_region (region);
+                                        window.get_damage_path (context);
+                                        context.clip ();
+                                    }
                                 }
                             }
                         }
@@ -355,7 +429,9 @@ namespace CCM
                 }
             }
 
-            return ret;
+            /* Chain call to next plugin */
+            return ((CCM.WindowPlugin) parent).window_paint (window, context,
+                                                             surface, y_invert);
         }
     }
 }
