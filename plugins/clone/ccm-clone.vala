@@ -33,6 +33,7 @@ namespace CCM
         public weak CCM.Window client;
         public weak CCM.Window window;
         public CCM.Pixmap pixmap;
+        public bool need_clear;
         public bool paint_parent;
         public int x;
         public int y;
@@ -50,6 +51,7 @@ namespace CCM
             this.window = window;
             this.pixmap = new CCM.Pixmap.from_visual (screen, *visual, xpixmap);
             this.pixmap.foreign = true;
+            this.need_clear = true;
             this.paint_parent = true;
             this.x = 0;
             this.y = 0;
@@ -156,6 +158,7 @@ namespace CCM
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
                         output.x = (int) l3;
+                        output.need_clear = true;
                         break;
                     }
                 }
@@ -171,6 +174,7 @@ namespace CCM
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
                         output.y = (int) l3;
+                        output.need_clear = true;
                         break;
                     }
                 }
@@ -186,6 +190,7 @@ namespace CCM
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
                         output.max_width = (int) l3;
+                        output.need_clear = true;
                         break;
                     }
                 }
@@ -201,6 +206,7 @@ namespace CCM
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
                         output.max_height = (int) l3;
+                        output.need_clear = true;
                         break;
                     }
                 }
@@ -216,6 +222,7 @@ namespace CCM
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
                         output.scale_x = (int) l3;
+                        output.need_clear = true;
                         break;
                     }
                 }
@@ -231,6 +238,7 @@ namespace CCM
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
                         output.scale_y = (int) l3;
+                        output.need_clear = true;
                         break;
                     }
                 }
@@ -352,38 +360,49 @@ namespace CCM
                                 {
                                     double width = clipbox.width;
                                     double height = clipbox.height;
-
-                                    if (output.max_width > 0 && width - output.x > output.max_width)
-                                         width = output.max_width;
-
-                                    if (output.max_height > 0 && height - output.y > output.max_height)
-                                         height = output.max_height;
-
-                                    double scale_x = clipbox.width / area->width;
-                                    double scale_y = clipbox.height / area->height;
+                                    double scale_x = width / area->width;
+                                    double scale_y = height / area->height;
 
                                     if (output.scale_x != 0)
                                         scale_x = (double)output.scale_x / (double)100;
                                     if (output.scale_y != 0)
                                         scale_y = (double)output.scale_y / (double)100;
 
+                                    if (output.max_width > 0 && width > output.max_width * scale_x)
+                                         width = output.max_width * scale_x;
+
+                                    if (output.max_height > 0 && height > output.max_height * scale_y)
+                                         height = output.max_height * scale_y;
+
                                     ctx.set_operator (Cairo.Operator.SOURCE);
+                                    if (output.need_clear)
+                                    {
+                                        ctx.set_source_rgb (0, 0, 0);
+                                        ctx.paint ();
+                                        output.need_clear = false;
+                                    }
+
+                                    ctx.translate ((clipbox.width - width) / 2.0f, 0);
                                     ctx.rectangle (0, 0, width, height);
                                     ctx.clip ();
+
                                     ctx.scale (scale_x, scale_y);
-                                    ctx.translate (output.x, output.y);
+                                    surface.set_device_offset (output.x, output.y);
                                     ctx.translate (-area->x, -area->y);
                                     window.get_damage_path (ctx);
                                     ctx.clip ();
+
                                     ctx.translate (area->x, area->y);
                                     ctx.set_source_surface (surface, 
                                                             - (geometry.width - area->width) / 2.0,
                                                             - (geometry.height - area->height) / 2.0);
                                     ctx.paint ();
 
+                                    surface.set_device_offset (0, 0);
+
                                     if (!output.paint_parent)
                                     {
-                                        CCM.Region region = new CCM.Region (-output.x, -output.y, (int)width, (int)height);
+                                        CCM.Region region = new CCM.Region (output.x, output.y, (int)width, (int)height);
                                         window.undamage_region (region);
                                         window.get_damage_path (context);
                                         context.clip ();
