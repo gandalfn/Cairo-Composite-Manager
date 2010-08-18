@@ -35,7 +35,6 @@
 #include "ccm-display.h"
 #include "ccm-cursor.h"
 #include "ccm-screen.h"
-#include "ccm-watch.h"
 #include "ccm-config.h"
 #include "ccm-window.h"
 
@@ -90,36 +89,36 @@ typedef struct
 
 struct _CCMDisplayPrivate
 {
-    Display *xdisplay;
+    Display*         xdisplay;
+    GIOChannel*      channel;
 
-    gint nb_screens;
-    CCMScreen **screens;
+    gint             nb_screens;
+    CCMScreen**      screens;
 
-    CCMExtension shape;
-    CCMExtension composite;
-    CCMExtension damage;
-    CCMExtension shm;
-    gboolean shm_shared_pixmap;
-    CCMExtension dbe;
-    CCMExtension fixes;
-    CCMExtension input;
+    CCMExtension     shape;
+    CCMExtension     composite;
+    CCMExtension     damage;
+    CCMExtension     shm;
+    gboolean         shm_shared_pixmap;
+    CCMExtension     dbe;
+    CCMExtension     fixes;
+    CCMExtension     input;
 
-    GSList *pointers;
-    int type_button_press;
-    int type_button_release;
-    int type_motion_notify;
+    GSList*          pointers;
+    int              type_button_press;
+    int              type_button_release;
+    int              type_motion_notify;
     CCMPointerEvents last_events;
 
-    gchar *cursors_theme;
-    gint cursors_size;
-    CCMCursor *cursor_current;
-    GHashTable *cursors;
+    gchar*           cursors_theme;
+    gint             cursors_size;
+    CCMCursor*       cursor_current;
+    GHashTable*      cursors;
 
-    gboolean use_shm;
-    gboolean use_dbe;
+    gboolean         use_shm;
+    gboolean         use_dbe;
 
-    gint fd;
-    CCMConfig *options[CCM_DISPLAY_OPTION_N];
+    CCMConfig*       options[CCM_DISPLAY_OPTION_N];
 };
 
 static gint CCMLastXError = 0;
@@ -196,8 +195,8 @@ ccm_display_init (CCMDisplay * self)
     self->priv = CCM_DISPLAY_GET_PRIVATE (self);
 
     self->priv->xdisplay = NULL;
+    self->priv->channel = NULL;
     self->priv->nb_screens = 0;
-    self->priv->fd = 0;
     self->priv->screens = NULL;
     self->priv->shm_shared_pixmap = FALSE;
     self->priv->use_shm = FALSE;
@@ -256,8 +255,8 @@ ccm_display_finalize (GObject * object)
     for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; ++cpt)
         g_object_unref (self->priv->options[cpt]);
 
-    if (self->priv->fd)
-        fd_remove_watch (self->priv->fd);
+    if (self->priv->channel)
+        g_io_channel_unref (self->priv->channel);
 
     G_OBJECT_CLASS (ccm_display_parent_class)->finalize (object);
 }
@@ -558,8 +557,8 @@ ccm_display_error_handler (Display * dpy, XErrorEvent * evt)
     return 0;
 }
 
-static void
-ccm_display_process_events (CCMDisplay * self)
+static gboolean
+ccm_display_process_events (GIOChannel* channel, GIOCondition condition, CCMDisplay * self)
 {
     g_return_if_fail (self != NULL);
 
@@ -687,6 +686,8 @@ ccm_display_process_events (CCMDisplay * self)
                 g_signal_emit (self, signals[EVENT], 0, &xevent);
         }
     }
+
+    return TRUE;
 }
 
 CCMDisplay *
@@ -786,12 +787,8 @@ ccm_display_new (gchar * display)
     }
     g_slist_free (unmanaged);
 
-    self->priv->fd = ConnectionNumber (CCM_DISPLAY_XDISPLAY (self));
-    fd_add_watch (self->priv->fd, self);
-    fd_set_read_callback (self->priv->fd,
-                          (CCMWatchCallback) ccm_display_process_events);
-    fd_set_poll_callback (self->priv->fd,
-                          (CCMWatchCallback) ccm_display_process_events);
+    self->priv->channel = g_io_channel_unix_new (ConnectionNumber (CCM_DISPLAY_XDISPLAY (self)));
+    g_io_add_watch (self->priv->channel, G_IO_IN, (GIOFunc)ccm_display_process_events, self);
 
     return self;
 }

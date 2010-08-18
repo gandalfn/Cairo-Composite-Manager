@@ -85,8 +85,6 @@ cairo_compmgr_SOURCES = \
     ccm-screen-plugin.c \
     ccm-display.h \
     ccm-display.c \
-    ccm-watch.c \
-    ccm-watch.h \
     ccm-extension.h \
     ccm-extension.c \
     ccm-extension-loader.h \
