@@ -21,10 +21,9 @@
  */
 
 #include "ccm-debug.h"
-#include "ccm-object.h"
 #include "ccm-plugin.h"
 
-CCM_DEFINE_TYPE(CCMPluginOptions, ccm_plugin_options, G_TYPE_OBJECT);
+G_DEFINE_TYPE(CCMPluginOptions, ccm_plugin_options, G_TYPE_OBJECT);
 
 typedef struct
 {
@@ -219,7 +218,7 @@ typedef struct
     GSList *callbacks;
 } CCMPluginLock;
 
-CCM_DEFINE_TYPE(CCMPlugin, ccm_plugin, G_TYPE_OBJECT);
+G_DEFINE_TYPE(CCMPlugin, ccm_plugin, G_TYPE_OBJECT);
 
 struct _CCMPluginPrivate
 {

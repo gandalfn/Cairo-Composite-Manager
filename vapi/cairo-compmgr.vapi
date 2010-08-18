@@ -155,6 +155,15 @@ namespace CCM
         public signal void key_release ();
     }
 
+    [CCode (cheader_filename = "ccm-object.h")]
+    public abstract class Object : GLib.Object
+    {
+        public Object ();
+
+        public static bool register (GLib.Type inObjectType, GLib.Type inType);
+        public static bool unregister (GLib.Type inObjectType);
+    }
+
     [CCode (has_target = "false")]
     public delegate void PluginUnlockFunc (void* data);
 
@@ -244,12 +253,7 @@ namespace CCM
     [CCode (cheader_filename = "ccm.h,ccm-screen.h")]
     public class Screen : GLib.Object, CCM.ScreenPlugin 
     {
-        public string backend { get; }
-        public bool buffered_pixmap { get; set; }
         public X.Display display { get; set; }
-        public bool filtered_damage { get; set; }
-        public bool indirect_rendering { get; }
-        public bool native_pixmap_bind { get; }
         public uint number { get; set; }
         public uint refresh_rate { get; }
         public void* window_plugins { get; }
@@ -301,7 +305,7 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm.h,ccm-drawable.h")]
-    public class Drawable : GLib.Object 
+    public class Drawable : CCM.Object 
     {
         public weak CCM.Region damaged { get; }
         public uint depth { get; set construct; }
@@ -352,7 +356,6 @@ namespace CCM
     public class Pixmap : CCM.Drawable 
     {
         public bool freeze { get; set; }
-        public bool y_invert { get; set; }
         public bool foreign { get; set; }
 
         [CCode (has_construct_function = false)]
@@ -391,7 +394,7 @@ namespace CCM
         protected void unlock_move();
 
         [CCode (cname = "ccm_window_plugin_paint", vfunc_name = "paint")]
-        protected virtual bool window_paint (CCM.Window window, Cairo.Context ctx, Cairo.Surface surface, bool y_invert);
+        protected virtual bool window_paint (CCM.Window window, Cairo.Context ctx, Cairo.Surface surface);
         [CCode (cname = "ccm_window_plugin_lock_paint")]
         protected void lock_window_paint(PluginUnlockFunc? func);
         [CCode (cname = "ccm_window_plugin_unlock_paint")]
@@ -492,7 +495,7 @@ namespace CCM
         public bool skip_pager ();
         public bool skip_taskbar ();
         public void switch_state (X.Atom state_atom);
-        public bool transform (Cairo.Context ctx, bool y_invert);
+        public bool transform (Cairo.Context ctx);
         public unowned CCM.Window transient_for ();
         public void unmap ();
         public void unredirect ();

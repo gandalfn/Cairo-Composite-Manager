@@ -346,9 +346,6 @@ ccm_decoration_create_mask (CCMDecoration * self)
         gint cpt, nb_rects;
         gfloat opacity = ccm_window_get_opacity (self->priv->window);
         CCMRegion *decoration, *tmp;
-        gboolean y_invert;
-
-        g_object_get (self->priv->window, "mask_y_invert", &y_invert, NULL);
 
         ccm_region_get_clipbox (self->priv->geometry, &clipbox);
         mask = cairo_surface_create_similar (surface, CAIRO_CONTENT_ALPHA,
@@ -359,11 +356,6 @@ ccm_decoration_create_mask (CCMDecoration * self)
                       NULL);
 
         ctx = cairo_create (mask);
-        if (y_invert)
-        {
-            cairo_scale (ctx, 1, -1);
-            cairo_translate (ctx, 0.0f, -clipbox.height);
-        }
         cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
         cairo_set_source_rgba (ctx, 0, 0, 0, 0);
         cairo_paint (ctx);
@@ -471,8 +463,7 @@ ccm_decoration_window_query_geometry (CCMWindowPlugin * plugin,
 
 static gboolean
 ccm_decoration_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
-                             cairo_t * context, cairo_surface_t * surface,
-                             gboolean y_invert)
+                             cairo_t * context, cairo_surface_t * surface)
 {
     CCMDecoration *self = CCM_DECORATION (plugin);
     gboolean ret = FALSE;
@@ -503,9 +494,8 @@ ccm_decoration_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
         ccm_region_destroy (decoration);
     }
 
-    ret =
-        ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
-                                 context, surface, y_invert);
+    ret = ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
+                                   context, surface);
 
     if (mask) ccm_window_set_mask(window, mask);
 

@@ -797,14 +797,12 @@ namespace CCM
         ////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////
         bool
-        window_paint (CCM.Window window, Cairo.Context ctx,
-                      Cairo.Surface surface, bool y_invert)
+        window_paint (CCM.Window window, Cairo.Context ctx, Cairo.Surface surface)
         {
             bool ret = false;
 
             /* Chain call to next plugin */
-            ret = ((CCM.WindowPlugin) parent).window_paint (window, ctx, 
-                                                            surface, y_invert);
+            ret = ((CCM.WindowPlugin) parent).window_paint (window, ctx, surface);
             if (ret && enabled && !mouse_over)
             {
                 unowned Cairo.Rectangle[] rectangles;

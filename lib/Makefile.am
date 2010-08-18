@@ -26,6 +26,8 @@ cairo_compmgr_include_HEADERS =  \
 libcairo_compmgr_la_SOURCES =  \
     eggaccelerators.c \
     eggaccelerators.h \
+    ccm-object.c \
+    ccm-object.h \
     ccm-config.h \
     ccm-config.c \
     ccm-timeline.h \

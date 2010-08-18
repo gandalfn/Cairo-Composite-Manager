@@ -419,15 +419,13 @@ ccm_freeze_window_load_options (CCMWindowPlugin * plugin, CCMWindow * window)
 
 static gboolean
 ccm_freeze_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
-                         cairo_t * context, cairo_surface_t * surface,
-                         gboolean y_invert)
+                         cairo_t * context, cairo_surface_t * surface)
 {
     CCMFreeze *self = CCM_FREEZE (plugin);
     gboolean ret;
 
-    ret =
-        ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
-                                 context, surface, y_invert);
+    ret = ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
+                                   context, surface);
 
     if (ccm_window_is_viewable (window) && !self->priv->alive)
     {

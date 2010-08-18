@@ -28,6 +28,7 @@
 #include <glib-object.h>
 
 #include "ccm.h"
+#include "ccm-object.h"
 
 G_BEGIN_DECLS
 
@@ -41,7 +42,7 @@ G_BEGIN_DECLS
 
 struct _CCMDrawableClass
 {
-    GObjectClass parent_class;
+    CCMObjectClass parent_class;
 
     cairo_t*         (*create_context) (CCMDrawable * self);
     cairo_surface_t* (*get_surface)    (CCMDrawable * self);
@@ -57,7 +58,7 @@ typedef struct _CCMDrawablePrivate CCMDrawablePrivate;
 
 struct _CCMDrawable
 {
-    GObject parent_instance;
+    CCMObject parent_instance;
 
     CCMDrawablePrivate *priv;
 };

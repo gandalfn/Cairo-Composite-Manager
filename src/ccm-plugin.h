@@ -25,7 +25,6 @@
 
 #include <glib-object.h>
 
-#include "ccm-object.h"
 #include "ccm-config.h"
 
 G_BEGIN_DECLS
@@ -145,7 +144,7 @@ prefix##_get_plugin_type (GTypeModule * plugin) \
             NULL, \
             NULL, \
             sizeof (class_name), \
-            CCM_OBJECT_PREFETCH, \
+            0, \
             (GInstanceInitFunc)prefix##_init \
         }; \
         prefix##_type = g_type_module_register_type (plugin, \
@@ -262,7 +261,7 @@ prefix##_get_plugin_type (GTypeModule * plugin) \
             NULL, \
             NULL, \
             sizeof (class_name), \
-            CCM_OBJECT_PREFETCH, \
+            0, \
             (GInstanceInitFunc)prefix##_init \
         }; \
         prefix##_type = g_type_module_register_type (plugin, \

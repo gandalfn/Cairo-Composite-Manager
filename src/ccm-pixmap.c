@@ -29,18 +29,15 @@
 
 #include "ccm-debug.h"
 #include "ccm-pixmap.h"
-#include "ccm-pixmap-backend.h"
 #include "ccm-window.h"
 #include "ccm-screen.h"
 #include "ccm-display.h"
-#include "ccm-object.h"
 
-CCM_DEFINE_TYPE (CCMPixmap, ccm_pixmap, CCM_TYPE_DRAWABLE);
+G_DEFINE_TYPE (CCMPixmap, ccm_pixmap, CCM_TYPE_DRAWABLE);
 
 enum
 {
     PROP_0,
-    PROP_Y_INVERT,
     PROP_FREEZE,
     PROP_FOREIGN,
 };
@@ -51,7 +48,6 @@ struct _CCMPixmapPrivate
 
     Damage damage;
 
-    gboolean y_invert;
     gboolean freeze;
 
     gulong id_damage;
@@ -73,11 +69,6 @@ ccm_pixmap_set_property (GObject * object, guint prop_id, const GValue * value,
 
     switch (prop_id)
     {
-        case PROP_Y_INVERT:
-            {
-                self->priv->y_invert = g_value_get_boolean (value);
-            }
-            break;
         case PROP_FREEZE:
             {
                 self->priv->freeze = g_value_get_boolean (value);
@@ -100,11 +91,6 @@ ccm_pixmap_get_property (GObject * object, guint prop_id, GValue * value,
 
     switch (prop_id)
     {
-        case PROP_Y_INVERT:
-            {
-                g_value_set_boolean (value, self->priv->y_invert);
-            }
-            break;
         case PROP_FREEZE:
             {
                 g_value_set_boolean (value, self->priv->freeze);
@@ -127,7 +113,6 @@ ccm_pixmap_init (CCMPixmap * self)
 
     self->priv->foreign = FALSE;
     self->priv->damage = 0;
-    self->priv->y_invert = FALSE;
     self->priv->freeze = FALSE;
     self->priv->id_damage = 0;
 }
@@ -140,15 +125,12 @@ ccm_pixmap_finalize (GObject * object)
 
     ccm_pixmap_release (self);
 
-    if (CCM_IS_DISPLAY (display) && 
-        G_OBJECT (display)->ref_count && 
-        self->priv->damage)
+    if (CCM_IS_DISPLAY (display) &&  G_OBJECT (display)->ref_count && self->priv->damage)
     {
         XDamageDestroy (CCM_DISPLAY_XDISPLAY (display), self->priv->damage);
         g_signal_handler_disconnect (display, self->priv->id_damage);
         self->priv->damage = None;
     }
-    self->priv->y_invert = FALSE;
     self->priv->freeze = FALSE;
 
     if (!self->priv->foreign)
@@ -166,19 +148,6 @@ ccm_pixmap_class_init (CCMPixmapClass * klass)
 
     object_class->set_property = ccm_pixmap_set_property;
     object_class->get_property = ccm_pixmap_get_property;
-
-    /**
-     * CCMPixmap:y_invert:
-     *
-     * This property indicate if the pixmap paint is y inverted.
-     */
-    g_object_class_install_property (object_class, PROP_Y_INVERT,
-                                     g_param_spec_boolean ("y_invert",
-                                                           "Y Invert",
-                                                           "Get if pixmap is y inverted",
-                                                           FALSE,
-                                                           G_PARAM_READABLE |
-                                                           G_PARAM_WRITABLE));
 
     /**
      * CCMPixmap:freeze:
@@ -311,7 +280,7 @@ ccm_pixmap_new (CCMDrawable * drawable, Pixmap xpixmap)
 
     g_return_val_if_fail (screen != NULL && visual != None, NULL);
 
-    self = g_object_new (ccm_pixmap_backend_get_type (screen), 
+    self = g_object_new (CCM_TYPE_PIXMAP, 
                          "screen", screen,
                          "drawable", xpixmap, 
                          "visual", visual, NULL);
@@ -353,7 +322,7 @@ ccm_pixmap_new_from_visual (CCMScreen * screen, Visual * visual, Pixmap xpixmap)
 
     CCMPixmap *self;
 
-    self = g_object_new (ccm_pixmap_backend_get_type (screen), 
+    self = g_object_new (CCM_TYPE_PIXMAP, 
                          "screen", screen,
                          "drawable", xpixmap,
                          "visual", visual, NULL);
@@ -413,24 +382,6 @@ ccm_pixmap_image_new (CCMDrawable * drawable, Pixmap xpixmap)
     ccm_drawable_damage (CCM_DRAWABLE (self));
 
     return self;
-}
-
-G_GNUC_PURE gboolean
-ccm_pixmap_get_y_invert (CCMPixmap * self)
-{
-    g_return_val_if_fail (self != NULL, FALSE);
-
-    return self->priv->y_invert;
-}
-
-void
-ccm_pixmap_set_y_invert (CCMPixmap * self, gboolean y_invert)
-{
-    g_return_if_fail (self != NULL);
-
-    self->priv->y_invert = y_invert;
-
-    g_object_notify (G_OBJECT (self), "y_invert");
 }
 
 G_GNUC_PURE gboolean

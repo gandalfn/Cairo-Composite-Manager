@@ -60,8 +60,6 @@ CCMPixmap*             ccm_pixmap_new             (CCMDrawable* drawable, Pixmap
 CCMPixmap*             ccm_pixmap_image_new       (CCMDrawable* drawable, Pixmap xpixmap);
 CCMPixmap*             ccm_pixmap_new_from_visual (CCMScreen* screen, Visual* visual,
                                                    Pixmap xpixmap);
-G_GNUC_PURE gboolean   ccm_pixmap_get_y_invert    (CCMPixmap* self);
-void                   ccm_pixmap_set_y_invert    (CCMPixmap* self, gboolean y_invert);
 G_GNUC_PURE gboolean   ccm_pixmap_get_foreign     (CCMPixmap* self);
 void                   ccm_pixmap_set_foreign     (CCMPixmap* self, gboolean foreign);
 G_GNUC_PURE gboolean   ccm_pixmap_get_freeze      (CCMPixmap * self);

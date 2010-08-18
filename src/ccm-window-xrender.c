@@ -30,9 +30,8 @@
 #include "ccm-screen.h"
 #include "ccm-pixmap.h"
 #include "ccm-window-xrender.h"
-#include "ccm-object.h"
 
-CCM_DEFINE_TYPE (CCMWindowXRender, ccm_window_xrender, CCM_TYPE_WINDOW);
+G_DEFINE_TYPE (CCMWindowXRender, ccm_window_xrender, CCM_TYPE_WINDOW);
 
 struct _CCMWindowXRenderPrivate
 {

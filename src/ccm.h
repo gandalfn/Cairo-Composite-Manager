@@ -182,7 +182,6 @@ G_GNUC_PURE CCMDisplay* ccm_screen_get_display          (CCMScreen* self);
 G_GNUC_PURE Screen*     ccm_screen_get_xscreen          (CCMScreen* self);
 G_GNUC_PURE guint       ccm_screen_get_number           (CCMScreen* self);
 G_GNUC_PURE guint       ccm_screen_get_refresh_rate     (CCMScreen* self);
-G_GNUC_PURE const gchar*ccm_screen_get_backend          (CCMScreen* self);
 G_GNUC_PURE CCMWindow*  ccm_screen_get_root_window      (CCMScreen* self);
 G_GNUC_PURE CCMWindow*  ccm_screen_get_overlay_window   (CCMScreen* self);
 gboolean                ccm_screen_add_window           (CCMScreen* self,
@@ -335,8 +334,7 @@ void                    ccm_window_get_frame_extends    (CCMWindow* self,
                                                          int*top_frame,
                                                          int*bottom_frame);
 gboolean                ccm_window_transform            (CCMWindow* self,
-                                                         cairo_t* ctx,
-                                                         gboolean y_invert);
+                                                         cairo_t* ctx);
 guint32*                ccm_window_get_property         (CCMWindow* self, 
                                                          Atom property_atom,
                                                          Atom req_type,

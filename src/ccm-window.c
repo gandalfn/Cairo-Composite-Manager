@@ -36,14 +36,11 @@
 
 #include "ccm-debug.h"
 #include "ccm-window.h"
-#include "ccm-window-backend.h"
 #include "ccm-window-plugin.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"
 #include "ccm-pixmap.h"
-#include "ccm-pixmap-backend.h"
 #include "ccm-property-async.h"
-#include "ccm-object.h"
 
 #define MWM_HINTS_DECORATIONS (1L << 1)
 
@@ -65,8 +62,7 @@ static CCMRegion *impl_ccm_window_query_geometry (CCMWindowPlugin * plugin,
                                                   CCMWindow * self);
 static gboolean impl_ccm_window_paint (CCMWindowPlugin * plugin,
                                        CCMWindow * self, cairo_t * context,
-                                       cairo_surface_t * surface,
-                                       gboolean y_invert);
+                                       cairo_surface_t * surface);
 static void impl_ccm_window_map (CCMWindowPlugin * plugin, CCMWindow * self);
 static void impl_ccm_window_unmap (CCMWindowPlugin * plugin, CCMWindow * self);
 static void impl_ccm_window_query_opacity (CCMWindowPlugin * plugin,
@@ -107,8 +103,7 @@ enum
     PROP_IMAGE,
     PROP_MASK,
     PROP_MASK_WIDTH,
-    PROP_MASK_HEIGHT,
-    PROP_MASK_Y_INVERT
+    PROP_MASK_HEIGHT
 };
 
 enum
@@ -122,9 +117,9 @@ enum
 
 static guint signals[N_SIGNALS] = { 0 };
 
-CCM_DEFINE_TYPE_EXTENDED (CCMWindow, ccm_window, CCM_TYPE_DRAWABLE,
-                          G_IMPLEMENT_INTERFACE (CCM_TYPE_WINDOW_PLUGIN,
-                                                 ccm_window_iface_init))
+G_DEFINE_TYPE_EXTENDED (CCMWindow, ccm_window, CCM_TYPE_DRAWABLE, 0,
+                        G_IMPLEMENT_INTERFACE (CCM_TYPE_WINDOW_PLUGIN,
+                                               ccm_window_iface_init))
 struct _CCMWindowPrivate
 {
     CCMWindowType hint_type;
@@ -178,7 +173,6 @@ struct _CCMWindowPrivate
     cairo_surface_t *mask;
     gint mask_width;
     gint mask_height;
-    gboolean mask_y_invert;
 
     gulong id_plugins_changed;
     gulong id_transient_transform_changed;
@@ -244,9 +238,6 @@ ccm_window_set_gobject_property (GObject * object, guint prop_id,
         case PROP_MASK_HEIGHT:
             priv->mask_height = g_value_get_int (value);
             break;
-        case PROP_MASK_Y_INVERT:
-            priv->mask_y_invert = g_value_get_boolean (value);
-            break;
         default:
             break;
     }
@@ -277,9 +268,6 @@ ccm_window_get_gobject_property (GObject * object, guint prop_id,
             break;
         case PROP_MASK_HEIGHT:
             g_value_set_int (value, priv->mask_height);
-            break;
-        case PROP_MASK_Y_INVERT:
-            g_value_set_boolean (value, priv->mask_y_invert);
             break;
         default:
             break;
@@ -335,7 +323,6 @@ ccm_window_init (CCMWindow * self)
     self->priv->mask = NULL;
     self->priv->mask_width = 0;
     self->priv->mask_height = 0;
-    self->priv->mask_y_invert = FALSE;
     self->priv->id_plugins_changed = 0;
     self->priv->id_transient_transform_changed = 0;
 }
@@ -538,19 +525,6 @@ ccm_window_class_init (CCMWindowClass * klass)
                                                        "Window mask width",
                                                        G_MININT, G_MAXINT, 0,
                                                        G_PARAM_READWRITE));
-
-    /**
-     * CCMWindow:mask_y_invert:
-     *
-     * This property indicate if the mask paint is y inverted.
-     */
-    g_object_class_install_property (object_class, PROP_MASK_Y_INVERT,
-                                     g_param_spec_boolean ("mask_y_invert",
-                                                           "Mask Y Invert",
-                                                           "Get if mask is y inverted",
-                                                           FALSE,
-                                                           G_PARAM_READABLE |
-                                                           G_PARAM_WRITABLE));
 
     /**
      * CCMWindow:mask_height:
@@ -1208,10 +1182,6 @@ impl_ccm_window_move (CCMWindowPlugin * plugin, CCMWindow * self, int x, int y)
         CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
         CCMRegion *old_geometry = ccm_region_rectangle (&geometry);
 
-        if (screen && self->priv->is_viewable && !self->priv->is_input_only
-            && self->priv->is_decorated && !self->priv->override_redirect)
-            g_object_set (G_OBJECT (screen), "buffered_pixmap", TRUE, NULL);
-
         CCM_DRAWABLE_CLASS (ccm_window_parent_class)->move (CCM_DRAWABLE (self),
                                                             x, y);
 
@@ -1394,8 +1364,7 @@ ccm_window_check_mask (CCMWindow * self)
 
 static gboolean
 impl_ccm_window_paint (CCMWindowPlugin * plugin, CCMWindow * self,
-                       cairo_t * context, cairo_surface_t * surface,
-                       gboolean y_invert)
+                       cairo_t * context, cairo_surface_t * surface)
 {
     g_return_val_if_fail (self != NULL, FALSE);
 
@@ -1406,7 +1375,7 @@ impl_ccm_window_paint (CCMWindowPlugin * plugin, CCMWindow * self,
 
     cairo_save (context);
     ccm_debug_window (self, "PAINT WINDOW %f", self->priv->opacity);
-    if (ccm_window_transform (self, context, y_invert))
+    if (ccm_window_transform (self, context))
     {
         cairo_set_source_surface (context, surface, 0.0f, 0.0f);
         if (self->priv->mask && self->priv->mask_width > 0
@@ -1675,8 +1644,7 @@ ccm_window_on_get_property_async (CCMWindow * self, guint n_items,
             CCMWindow* new = NULL;
 
             memcpy (&transient, result, sizeof (Window));
-            new = transient != None ?
-                ccm_screen_find_window_or_child(screen, transient) : NULL;
+            new = transient != None ? ccm_screen_find_window_or_child(screen, transient) : NULL;
             updated = new != self->priv->transient_for;
 
             if (self->priv->transient_for && self->priv->id_transient_transform_changed)
@@ -2111,7 +2079,7 @@ ccm_window_new (CCMScreen * screen, Window xwindow)
     g_return_val_if_fail (xwindow != None, NULL);
 
     CCMDisplay *display = ccm_screen_get_display (screen);
-    CCMWindow *self = g_object_new (CCM_TYPE_WINDOW_BACKEND (screen),
+    CCMWindow *self = g_object_new (CCM_TYPE_WINDOW,
                                     "screen", screen,
                                     "drawable", xwindow,
                                     NULL);
@@ -2185,7 +2153,7 @@ ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow)
     g_return_val_if_fail (xwindow != None, NULL);
 
     CCMDisplay *display = ccm_screen_get_display (screen);
-    CCMWindow *self = g_object_new (CCM_TYPE_WINDOW_BACKEND (screen),
+    CCMWindow *self = g_object_new (CCM_TYPE_WINDOW,
                                     "screen", screen,
                                     "drawable", xwindow,
                                     NULL);
@@ -2796,10 +2764,6 @@ ccm_window_paint (CCMWindow * self, cairo_t * context, gboolean buffered)
         if (pixmap)
         {
             cairo_surface_t *surface;
-            gboolean y_invert = ccm_pixmap_get_y_invert(pixmap);
-
-            if (CCM_IS_PIXMAP_BUFFERED (pixmap))
-                g_object_set (pixmap, "buffered", buffered, NULL);
 
             surface = ccm_drawable_get_surface (CCM_DRAWABLE (pixmap));
 
@@ -2811,7 +2775,7 @@ ccm_window_paint (CCMWindow * self, cairo_t * context, gboolean buffered)
                 ccm_drawable_get_damage_path (CCM_DRAWABLE (self), context);
                 cairo_clip (context);
                 ret = ccm_window_plugin_paint (self->priv->plugin, self, 
-                                               context, surface, y_invert);
+                                               context, surface);
                 cairo_surface_destroy (surface);
                 cairo_restore (context);
             }
@@ -3130,7 +3094,7 @@ ccm_window_get_frame_extends (CCMWindow * self, int *left_frame,
 }
 
 gboolean
-ccm_window_transform (CCMWindow * self, cairo_t * ctx, gboolean y_invert)
+ccm_window_transform (CCMWindow * self, cairo_t * ctx)
 {
     g_return_val_if_fail (self != NULL, FALSE);
     g_return_val_if_fail (ctx != NULL, FALSE);
@@ -3142,12 +3106,6 @@ ccm_window_transform (CCMWindow * self, cairo_t * ctx, gboolean y_invert)
         cairo_matrix_t matrix;
 
         matrix = ccm_drawable_get_transform (CCM_DRAWABLE (self));
-        if (y_invert)
-        {
-            cairo_matrix_scale (&matrix, 1.0, -1.0);
-            cairo_matrix_translate (&matrix, 0.0f, -self->priv->area.height);
-        }
-
         cairo_identity_matrix (ctx);
         cairo_translate (ctx, geometry.x, geometry.y);
         cairo_transform (ctx, &matrix);

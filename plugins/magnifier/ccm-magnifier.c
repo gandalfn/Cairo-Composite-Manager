@@ -1149,8 +1149,7 @@ ccm_magnifier_screen_paint_cursor (CCMScreenPlugin * plugin, CCMScreen * screen,
 
 static gboolean
 ccm_magnifier_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
-                            cairo_t * context, cairo_surface_t * surface,
-                            gboolean y_invert)
+                            cairo_t * context, cairo_surface_t * surface)
 {
     CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (window));
     CCMMagnifier *self = CCM_MAGNIFIER (_ccm_screen_get_plugin (screen,
@@ -1207,8 +1206,7 @@ ccm_magnifier_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
                 ccm_drawable_push_matrix (CCM_DRAWABLE (window), "CCMMagnifier",
                                           &translate);
 
-                ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
-                                         ctx, surface, y_invert);
+                ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window, ctx, surface);
                 cairo_destroy (ctx);
                 ccm_drawable_pop_matrix (CCM_DRAWABLE (window), "CCMMagnifier");
                 ccm_window_set_redirect(window, TRUE);
@@ -1219,8 +1217,7 @@ ccm_magnifier_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
         }
     }
 
-    return ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
-                                    context, surface, y_invert);
+    return ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window, context, surface);
 }
 
 static void

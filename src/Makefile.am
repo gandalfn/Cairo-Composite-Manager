@@ -42,7 +42,6 @@ bin_PROGRAMS = cairo-compmgr
 cairo_compmgr_include_HEADERS =  \
     ccm-debug.h \
     ccm-region.h \
-    ccm-object.h \
     ccm-drawable.h \
     ccm-image.h \
     ccm-pixmap.h \
@@ -72,16 +71,12 @@ cairo_compmgr_SOURCES = \
     ccm-image.c \
     ccm-pixmap.h \
     ccm-pixmap.c \
-    ccm-pixmap-backend.h \
-    ccm-pixmap-backend.c \
     ccm-pixmap-image.h \
     ccm-pixmap-image.c \
     ccm-pixmap-buffered-image.h \
     ccm-pixmap-buffered-image.c \
     ccm-window.h \
     ccm-window.c \
-    ccm-window-backend.h \
-    ccm-window-backend.c \
     ccm-window-plugin.h \
     ccm-window-plugin.c \
     ccm-screen.h \
@@ -125,8 +120,7 @@ cairo_compmgr_SOURCES = \
     eggsmclient.c \
     eggsmclient.h \
     ccm-timed-dialog.h \
-    ccm-timed-dialog.c \
-    ccm-object.h
+    ccm-timed-dialog.c
 
 if HAVE_XRENDER_BACKEND
 cairo_compmgr_SOURCES += \

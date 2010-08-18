@@ -118,8 +118,7 @@ ccm_window_plugin_query_geometry (CCMWindowPlugin * self, CCMWindow * window)
 
 gboolean
 ccm_window_plugin_paint (CCMWindowPlugin * self, CCMWindow * window,
-                         cairo_t * ctx, cairo_surface_t * surface,
-                         gboolean y_invert)
+                         cairo_t * ctx, cairo_surface_t * surface)
 {
     g_return_val_if_fail (CCM_IS_WINDOW_PLUGIN (self), FALSE);
     g_return_val_if_fail (window != NULL, FALSE);
@@ -141,8 +140,7 @@ ccm_window_plugin_paint (CCMWindowPlugin * self, CCMWindow * window,
                                         CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint))
             return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint (plugin,
                                                                     window, ctx,
-                                                                    surface,
-                                                                    y_invert);
+                                                                    surface);
     }
 
     return FALSE;

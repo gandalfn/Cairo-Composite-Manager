@@ -335,8 +335,7 @@ namespace CCM
          * Implement paint window plugin interface
          **/
         bool 
-        window_paint (CCM.Window window, Cairo.Context context,
-                      Cairo.Surface surface, bool y_invert)
+        window_paint (CCM.Window window, Cairo.Context context, Cairo.Surface surface)
         {
             if (((window_outputs != null && window_outputs.size > 0) ||
                  (screen_outputs != null && screen_outputs.size > 0)))
@@ -438,8 +437,7 @@ namespace CCM
                                     ctx.clip ();
                                     ctx.identity_matrix ();
                                     window.push_matrix ("CCMClone", matrix);
-                                    ((CCM.WindowPlugin) parent).window_paint (window, ctx, 
-                                                                              surface, y_invert);
+                                    ((CCM.WindowPlugin) parent).window_paint (window, ctx, surface);
                                     window.pop_matrix ("CCMClone");
                                 }
                             }
@@ -449,8 +447,7 @@ namespace CCM
             }
 
             /* Chain call to next plugin */
-            return ((CCM.WindowPlugin) parent).window_paint (window, context,
-                                                             surface, y_invert);
+            return ((CCM.WindowPlugin) parent).window_paint (window, context, surface);
         }
     }
 }

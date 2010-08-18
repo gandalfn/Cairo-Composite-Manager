@@ -68,8 +68,7 @@ struct _CCMWindowPluginClass
     void       (*load_options)     (CCMWindowPlugin* self, CCMWindow* window);
     CCMRegion* (*query_geometry)   (CCMWindowPlugin* self, CCMWindow* window);
     gboolean   (*paint)            (CCMWindowPlugin* self, CCMWindow* window,
-                                    cairo_t* ctx, cairo_surface_t* surface,
-                                    gboolean y_invert);
+                                    cairo_t* ctx, cairo_surface_t* surface);
     void       (*map)              (CCMWindowPlugin* self, CCMWindow* window);
     void       (*unmap)            (CCMWindowPlugin* self, CCMWindow* window);
     void       (*query_opacity)    (CCMWindowPlugin* self, CCMWindow* window);
@@ -104,8 +103,7 @@ CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD(plugin, query_geometry)
 
 gboolean
 ccm_window_plugin_paint (CCMWindowPlugin * self, CCMWindow * window,
-                         cairo_t * ctx, cairo_surface_t * surface,
-                         gboolean y_invert);
+                         cairo_t * ctx, cairo_surface_t * surface);
 #define		ccm_window_plugin_lock_paint(plugin, callback) \
 CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, paint, callback, plugin)
 #define		ccm_window_plugin_unlock_paint(plugin) \
