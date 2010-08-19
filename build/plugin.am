@@ -9,8 +9,6 @@ INCLUDES = \
 plugindir = $(libdir)/cairo-compmgr
 
 VALAFLAGS = \
-    --header=$(PLUGIN).h \
-    --use-header \
     --vapidir=${top_srcdir}/vapi \
     --pkg=config \
     --pkg=cairo-compmgr

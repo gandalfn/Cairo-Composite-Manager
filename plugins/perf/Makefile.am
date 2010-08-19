@@ -12,7 +12,11 @@ plugin_LTLIBRARIES = libccm_perf.la
 libccm_perf_la_CFLAGS = \
     -DPACKAGE_PIXMAP_DIR=\""$(datadir)/pixmaps/cairo-compmgr"\" \
     $(CCM_PERF_PLUGIN_CFLAGS)
-    
+
+if ENABLE_CUDA_PERF
+    libccm_perf_la_CFLAGS += -DHAVE_CUDA
+endif
+
 libccm_perf_la_SOURCES = $(PLUGIN_SOURCES)
 
 libccm_perf_la_LDFLAGS =  $(PLUGIN_LDFLAGS)

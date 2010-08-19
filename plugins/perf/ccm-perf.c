@@ -32,6 +32,9 @@
 #include <libwnck/libwnck.h>
 #include <sys/types.h>
 #include <unistd.h>
+#ifdef HAVE_CUDA
+#include <cuda.h>
+#endif
 
 #include "ccm-drawable.h"
 #include "ccm-config.h"
@@ -69,7 +72,7 @@ typedef struct
 
 static void ccm_perf_screen_iface_init (CCMScreenPluginClass * iface);
 static void ccm_perf_on_option_changed (CCMPlugin * plugin, int index);
-static void ccm_perf_on_key_press	   (CCMPerf * self);
+static void ccm_perf_on_key_press      (CCMPerf * self);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMPerf, ccm_perf, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_perf, CCM_TYPE_SCREEN_PLUGIN,
@@ -89,6 +92,11 @@ struct _CCMPerfPrivate
     guint64 mem_size;
     guint64 mem_xorg;
 
+#ifdef HAVE_CUDA
+    CUcontext cuda_ctx;
+    guint mem_cuda_free_size;
+    guint mem_cuda_used_size;
+#endif
     gboolean enabled;
     gboolean need_refresh;
 
@@ -143,7 +151,11 @@ ccm_perf_options_changed (CCMPerfOptions* self, CCMConfig* config)
             self->area.y = 20;
         }
         self->area.width = 280;
+#ifdef HAVE_CUDA
+        self->area.height = 120;
+#else
         self->area.height = 100;
+#endif
     }
 
     if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
@@ -179,6 +191,12 @@ ccm_perf_init (CCMPerf * self)
     self->priv->timer = NULL;
     self->priv->screen = NULL;
     self->priv->keybind = NULL;
+
+#ifdef HAVE_CUDA
+    self->priv->mem_cuda_free_size = 0;
+    self->priv->mem_cuda_used_size = 0;
+    cuCtxCreate(&self->priv->cuda_ctx, 0, 0);
+#endif
 }
 
 static void
@@ -201,6 +219,12 @@ ccm_perf_finalize (GObject * object)
     if (self->priv->timer)
         g_timer_destroy (self->priv->timer);
 
+#ifdef HAVE_CUDA
+    if (self->priv->cuda_ctx)
+        cuCtxDestroy(self->priv->cuda_ctx);
+    self->priv->cuda_ctx = NULL;
+#endif
+
     G_OBJECT_CLASS (ccm_perf_parent_class)->finalize (object);
 }
 
@@ -212,6 +236,10 @@ ccm_perf_class_init (CCMPerfClass * klass)
     g_type_class_add_private (klass, sizeof (CCMPerfPrivate));
 
     object_class->finalize = ccm_perf_finalize;
+
+#ifdef HAVE_CUDA
+    cuInit (0);
+#endif
 }
 
 static void
@@ -293,6 +321,19 @@ ccm_perf_get_mem_info (CCMPerf * self)
     g_free (maps);
 }
 
+#ifdef HAVE_CUDA
+static void
+ccm_perf_get_cuda_info (CCMPerf * self)
+{
+    g_return_if_fail (self != NULL);
+
+    self->priv->mem_cuda_free_size = 0;
+    self->priv->mem_cuda_used_size = 0;
+
+    cuMemGetInfo(&self->priv->mem_cuda_free_size, &self->priv->mem_cuda_used_size);
+}
+#endif
+
 static void
 ccm_perf_on_key_press (CCMPerf * self)
 {
@@ -366,9 +407,7 @@ ccm_perf_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
         g_timer_start (self->priv->timer);
     }
 
-    ret =
-        ccm_screen_plugin_paint (CCM_SCREEN_PLUGIN_PARENT (plugin), screen,
-                                 context);
+    ret = ccm_screen_plugin_paint (CCM_SCREEN_PLUGIN_PARENT (plugin), screen, context);
     if (self->priv->enabled)
     {
         if (ret)
@@ -418,16 +457,23 @@ ccm_perf_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
             g_free (text);
 
             ccm_perf_get_mem_info (self);
-            text =
-                g_strdup_printf ("Mem : %li Kb",
-                                 (glong) (self->priv->mem_size / 1024));
+            text = g_strdup_printf ("Mem : %li Kb",
+                                    (glong) (self->priv->mem_size / 1024));
             ccm_perf_show_text (self, context, text, 2);
             g_free (text);
-            text =
-                g_strdup_printf ("XMem : %li Kb",
-                                 (glong) (self->priv->mem_xorg / 1024));
+            text = g_strdup_printf ("XMem : %li Kb",
+                                    (glong) (self->priv->mem_xorg / 1024));
             ccm_perf_show_text (self, context, text, 3);
             g_free (text);
+
+#ifdef HAVE_CUDA
+            ccm_perf_get_cuda_info (self);
+            text = g_strdup_printf ("Cuda : %li/%li Mb",
+                                    (glong) (self->priv->mem_cuda_free_size / (1024*1024)),
+                                    (glong) (self->priv->mem_cuda_used_size / (1024*1024)));
+            ccm_perf_show_text (self, context, text, 4);
+            g_free (text);
+#endif
 
             cairo_restore (context);
             self->priv->need_refresh = FALSE;

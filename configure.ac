@@ -224,7 +224,19 @@ if [ test x$perfplugin = xyes ]; then
            [perfplugin="no"])
     AC_SUBST(CCM_PERF_PLUGIN_CFLAGS)
     AC_SUBST(CCM_PERF_PLUGIN_LIBS)
+
+    AC_ARG_ENABLE(perf-cuda,
+      [  --enable-perf-cuda          Enable cuda checker in perf plugin],
+      [cudaperf=$enableval], [cudaperf=no])
+
+    if [ test x$cudaperf = xyes ]; then
+        AC_CHECK_LIB(cuda, main, [CUDA_LIBS="-lcuda"], [cudaperf=no])
+        CCM_PERF_PLUGIN_LIBS="$CCM_PERF_PLUGIN_LIBS $CUDA_LIBS"
+    fi
+else
+    cudaperf="no"
 fi
+AM_CONDITIONAL(ENABLE_CUDA_PERF, [test x$cudaperf = xyes])
 AM_CONDITIONAL(ENABLE_PERF_PLUGIN, [test x$perfplugin = xyes])
 
 dnl ****************************************************************************
@@ -317,6 +329,12 @@ if [ test x$perfplugin = xyes ]; then
         echo "Building perf plugin: .......................YES"
 else
         echo "Building perf plugin: .......................NO"
+fi
+
+if [ test x$cudaperf = xyes ]; then
+        echo "Building CUDA perf: .......................  YES"
+else
+        echo "Building CUDA perf: .......................  NO"
 fi
 
 if [ test x$xrenderbackend = xyes ]; then
