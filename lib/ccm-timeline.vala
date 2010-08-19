@@ -169,6 +169,12 @@ public class CCM.Timeline : Object
         GLib.Object (duration: inDuration);
     }
 
+    ~Timeline ()
+    {
+        if (m_Timeout != null)
+            s_TimeoutPool.remove (m_Timeout);
+    }
+
     private void
     add_timeout ()
     {
