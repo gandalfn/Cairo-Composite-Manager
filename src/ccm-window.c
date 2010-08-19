@@ -996,9 +996,7 @@ ccm_window_query_child (CCMWindow * self)
     self->priv->child = None;
 
     if (!self->priv->override_redirect &&
-        (self->priv->hint_type == CCM_WINDOW_TYPE_NORMAL ||
-         self->priv->hint_type == CCM_WINDOW_TYPE_DIALOG ||
-         self->priv->hint_type == CCM_WINDOW_TYPE_UTILITY) &&
+        self->priv->hint_type != CCM_WINDOW_TYPE_DESKTOP &&
         XQueryTree (CCM_DISPLAY_XDISPLAY (display), CCM_WINDOW_XWINDOW (self),
                     &w, &p, &windows, &n_windows) && 
         n_windows > 0)
@@ -1034,6 +1032,7 @@ ccm_window_query_child (CCMWindow * self)
         if (managed)
             g_free (managed);
     }
+
     if (windows)
         XFree (windows);
 }
@@ -1630,8 +1629,6 @@ ccm_window_on_get_property_async (CCMWindow * self, guint n_items,
                 self->priv->hint_type = CCM_WINDOW_TYPE_COMBO;
             else if (atom == CCM_WINDOW_GET_CLASS (self)->type_dnd_atom)
                 self->priv->hint_type = CCM_WINDOW_TYPE_DND;
-
-            ccm_window_query_child (self);
 
             if (old != self->priv->hint_type)
             {

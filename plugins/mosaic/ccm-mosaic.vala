@@ -250,15 +250,14 @@ namespace CCM
         void
         find_area(CCM.Window window)
         {
-            Cairo.Rectangle* win_area = window.get_area();
+            unowned Cairo.Rectangle? win_area = window.get_area();
             weak MosaicArea? found = null;
             double search = double.MAX;
 
             // Calculate the less scale area
             foreach (MosaicArea area in areas)
             {
-                double dist = pow(area.geometry.x - win_area->x, 2) +
-                    pow(area.geometry.y - win_area->y, 2);
+                double dist = pow(area.geometry.x - win_area.x, 2) + pow(area.geometry.y - win_area.y, 2);
                 if (dist < search)
                 {
                     if (area.window == null)
@@ -270,9 +269,8 @@ namespace CCM
                     else
                     {
 
-                        Cairo.Rectangle* awa = area.window.get_area();
-                        if (dist < pow(area.geometry.x - awa->x, 2) +
-                            pow(area.geometry.y - awa->y, 2))
+                        unowned Cairo.Rectangle? awa = area.window.get_area();
+                        if (dist < pow(area.geometry.x - awa.x, 2) + pow(area.geometry.y - awa.y, 2))
                         {
                             weak CCM.Window conflict = area.window;
                             area.window = window;
@@ -379,7 +377,7 @@ namespace CCM
                 Cairo.Rectangle win_area;
                 if (area.window.get_device_geometry_clipbox(out win_area))
                 {
-                    double progress = timeline.get_progress();
+                    double progress = timeline.progress;
 
                     // Calculate window scale
                     double scale = double.min(area.geometry.width / win_area.width,
@@ -414,7 +412,7 @@ namespace CCM
         void
         on_screen_animation_completed ()
         {
-            if (timeline.get_direction() == CCM.TimelineDirection.BACKWARD)
+            if (timeline.direction == CCM.TimelineDirection.BACKWARD)
             {
                 foreach (MosaicArea area in areas)
                 {
@@ -453,7 +451,7 @@ namespace CCM
                         area.plugin.mouse_over = area.window == mouse;
                         if (area.plugin.mouse_over)
                         {
-                            area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                            area.plugin.timeline.direction = CCM.TimelineDirection.FORWARD;
                             area.plugin.timeline.rewind();
                             area.plugin.timeline.start();
                             switch_keep_above(area.window, true);
@@ -473,7 +471,7 @@ namespace CCM
                         if (area.window == active)
                         {
                             area.plugin.mouse_over = true;
-                            area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                            area.plugin.timeline.direction = CCM.TimelineDirection.FORWARD;
                             area.plugin.timeline.rewind();
                             area.plugin.timeline.start();
                             switch_keep_above(area.window, true);
@@ -512,7 +510,7 @@ namespace CCM
                 Cairo.Rectangle win_area;
                 if (area.window.get_device_geometry_clipbox(out win_area))
                 {
-                    double progress = timeline.get_progress();
+                    double progress = timeline.progress;
                     double spacing = ((MosaicOptions) get_option ()).spacing;
 
                     double width = area.geometry.width + ((2.5 * spacing) * progress);
@@ -555,11 +553,11 @@ namespace CCM
                 keybind_right = null;
                 keybind_return = null;
 
-                if (timeline.is_playing())
+                if (timeline.is_playing)
                 {
                     timeline.stop();
                 }
-                timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                timeline.direction = CCM.TimelineDirection.FORWARD;
                 timeline.rewind();
                 timeline.start();
             }
@@ -581,7 +579,7 @@ namespace CCM
                         activate_next = true;
                         // Start leave
                         area.plugin.mouse_over = false; 
-                        area.plugin.timeline.set_direction(CCM.TimelineDirection.BACKWARD);
+                        area.plugin.timeline.direction = CCM.TimelineDirection.BACKWARD;
                         area.plugin.timeline.rewind();
                         area.plugin.timeline.start();
                         switch_keep_above(area.window, false);
@@ -590,7 +588,7 @@ namespace CCM
                     else if (activate_next)
                     {
                         // Start enter window
-                        area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                        area.plugin.timeline.direction = CCM.TimelineDirection.FORWARD;
                         area.plugin.timeline.rewind();
                         area.plugin.timeline.start();
                         switch_keep_above(area.window, true);
@@ -605,7 +603,7 @@ namespace CCM
                     MosaicArea area = areas [0];
 
                     // Start enter window
-                    area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                    area.plugin.timeline.direction = CCM.TimelineDirection.FORWARD;
                     area.plugin.timeline.rewind();
                     area.plugin.timeline.start();
                     switch_keep_above(area.window, true);
@@ -629,7 +627,7 @@ namespace CCM
                     {
                         // Start leave
                         area.plugin.mouse_over = false; 
-                        area.plugin.timeline.set_direction(CCM.TimelineDirection.BACKWARD);
+                        area.plugin.timeline.direction = CCM.TimelineDirection.BACKWARD;
                         area.plugin.timeline.rewind();
                         area.plugin.timeline.start();
                         switch_keep_above(area.window, false);
@@ -638,7 +636,7 @@ namespace CCM
                         if (area_prev != null)
                         {
                             // Start enter window
-                            area_prev.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                            area_prev.plugin.timeline.direction = CCM.TimelineDirection.FORWARD;
                             area_prev.plugin.timeline.rewind();
                             area_prev.plugin.timeline.start();
                             switch_keep_above(area_prev.window, true);
@@ -654,7 +652,7 @@ namespace CCM
                     MosaicArea area = areas [areas.size - 1];
 
                     // Start enter window
-                    area.plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                    area.plugin.timeline.direction = CCM.TimelineDirection.FORWARD;
                     area.plugin.timeline.rewind();
                     area.plugin.timeline.start();
                     switch_keep_above(area.window, true);
@@ -688,7 +686,7 @@ namespace CCM
         {
             enabled = !enabled;
 
-            if (timeline.is_playing())
+            if (timeline.is_playing)
             {
                 timeline.stop();
             }
@@ -722,7 +720,7 @@ namespace CCM
                     }
                 }
             }
-            timeline.set_direction(enabled ? CCM.TimelineDirection.BACKWARD : CCM.TimelineDirection.FORWARD);
+            timeline.direction = enabled ? CCM.TimelineDirection.BACKWARD : CCM.TimelineDirection.FORWARD;
             timeline.rewind();
             timeline.start();
         }
@@ -769,7 +767,7 @@ namespace CCM
                 CCM.Mosaic plugin = ((CCM.Mosaic)window.get_plugin(typeof(Mosaic)));
                 if (plugin.enabled)
                 {
-                    plugin.timeline.set_direction(CCM.TimelineDirection.FORWARD);
+                    plugin.timeline.direction = CCM.TimelineDirection.FORWARD;
                     plugin.timeline.rewind();
                     plugin.timeline.start();
                     switch_keep_above(window, true);
@@ -782,7 +780,7 @@ namespace CCM
                 if (plugin.enabled)
                 {
                     plugin.mouse_over = false; 
-                    plugin.timeline.set_direction(CCM.TimelineDirection.BACKWARD);
+                    plugin.timeline.direction = CCM.TimelineDirection.BACKWARD;
                     plugin.timeline.rewind();
                     plugin.timeline.start();
                     switch_keep_above(window, false);

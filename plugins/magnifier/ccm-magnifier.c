@@ -635,7 +635,7 @@ ccm_magnifier_get_scale (CCMMagnifier * self)
     if (ccm_magnifier_get_option(self)->new_scale != ccm_magnifier_get_option(self)->scale)
     {
         if (self->priv->timeline
-            && ccm_timeline_is_playing (self->priv->timeline))
+            && ccm_timeline_get_is_playing (self->priv->timeline))
         {
             gdouble progress = ccm_timeline_get_progress (self->priv->timeline);
             if (progress > 0.75)
@@ -731,7 +731,7 @@ ccm_magnifier_create_window_info (CCMMagnifier * self)
 static void
 ccm_magnifier_paint_window_info (CCMMagnifier * self, cairo_t * context)
 {
-    if (self->priv->timeline && ccm_timeline_is_playing (self->priv->timeline))
+    if (self->priv->timeline && ccm_timeline_get_is_playing (self->priv->timeline))
     {
         if (!self->priv->surface_window_info)
         {

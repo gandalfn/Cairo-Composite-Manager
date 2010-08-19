@@ -235,7 +235,7 @@ ccm_freeze_on_event (CCMFreeze * self, XEvent * event, CCMDisplay * display)
                     freeze->priv->last_ping = 0;
                     freeze->priv->opacity = 0.0f;
                     if (freeze->priv->timeline && 
-                        ccm_timeline_is_playing (freeze->priv->timeline))
+                        ccm_timeline_get_is_playing (freeze->priv->timeline))
                         ccm_timeline_stop (freeze->priv->timeline);
                 }
             }
@@ -305,7 +305,7 @@ ccm_freeze_ping (CCMFreeze * self)
 
             self->priv->alive = TRUE;
             if (self->priv->timeline
-                && ccm_timeline_is_playing (self->priv->timeline))
+                && ccm_timeline_get_is_playing (self->priv->timeline))
                 ccm_timeline_stop (self->priv->timeline);
             return FALSE;
         }
@@ -337,7 +337,7 @@ ccm_freeze_ping (CCMFreeze * self)
                                           G_CALLBACK (ccm_freeze_on_new_frame),
                                           self);
             }
-            if (!ccm_timeline_is_playing (self->priv->timeline))
+            if (!ccm_timeline_get_is_playing (self->priv->timeline))
                 ccm_timeline_start (self->priv->timeline);
         }
         else
@@ -349,7 +349,7 @@ ccm_freeze_ping (CCMFreeze * self)
             self->priv->opacity = 0.0f;
 
             if (self->priv->timeline
-                && ccm_timeline_is_playing (self->priv->timeline))
+                && ccm_timeline_get_is_playing (self->priv->timeline))
                 ccm_timeline_stop (self->priv->timeline);
         }
 

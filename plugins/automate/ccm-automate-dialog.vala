@@ -48,10 +48,10 @@ namespace CCM
         {
             this.screen = screen;
             this.timeline = new CCM.Timeline (10, 60);
-            this.timeline.set_direction (CCM.TimelineDirection.BACKWARD);
+            this.timeline.direction = CCM.TimelineDirection.BACKWARD;
 
-            this.timeline.new_frame += on_new_frame;
-            this.timeline.completed += on_completed;
+            this.timeline.new_frame.connect (on_new_frame);
+            this.timeline.completed.connect (on_completed);
 
             construct_ui ();
         }
@@ -69,14 +69,14 @@ namespace CCM
             main.window.get_origin (out x, out y);
             main.window.get_size (out width, out height);
             height -= close.allocation.height;
-            main.move (x, -(int) ((double) height * timeline.get_progress ()));
+            main.move (x, -(int) ((double) height * timeline.progress));
         }
 
         private void on_completed (CCM.Timeline timeline)
         {
             string stock;
 
-            if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
+            if (timeline.direction == CCM.TimelineDirection.FORWARD)
                 stock = Gtk.STOCK_GO_DOWN;
             else
                 stock = Gtk.STOCK_GO_UP;
@@ -176,10 +176,10 @@ namespace CCM
 
         private bool on_close (Gtk.Widget widget, Gdk.EventButton event)
         {
-            if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
-                timeline.set_direction (CCM.TimelineDirection.BACKWARD);
+            if (timeline.direction == CCM.TimelineDirection.FORWARD)
+                timeline.direction  = CCM.TimelineDirection.BACKWARD;
             else
-                timeline.set_direction (CCM.TimelineDirection.FORWARD);
+                timeline.direction = CCM.TimelineDirection.FORWARD;
             timeline.stop ();
             timeline.start ();
 
@@ -221,22 +221,22 @@ namespace CCM
                 Gdk.Colormap colormap = screen.get_rgba_colormap ();
                 main.set_colormap (colormap);
 
-                ((Gtk.Widget) main).realize += on_realize;
-                ((Gtk.Widget) main).expose_event += on_expose_event;
+                ((Gtk.Widget) main).realize.connect (on_realize);
+                ((Gtk.Widget) main).expose_event.connect (on_expose_event);
 
                 // Get close event area
                 close = builder.get_object ("close") as Gtk.Widget;
-                close.button_press_event += on_close;
+                close.button_press_event.connect (on_close);
 
                 close_image = builder.get_object ("close_image") as Gtk.Image;
 
                 // Get record button press
                 Gtk.Button record = builder.get_object ("record") as Gtk.Button;
-                record.clicked += on_record_clicked;
+                record.clicked.connect (on_record_clicked);
 
                 // Get record button press
                 Gtk.Button stop = builder.get_object ("stop") as Gtk.Button;
-                stop.clicked += on_stop_clicked;
+                stop.clicked.connect (on_stop_clicked);
 
                 // Get record button press
                 hint_motion =

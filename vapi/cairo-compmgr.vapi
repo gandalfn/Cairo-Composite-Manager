@@ -330,7 +330,7 @@ namespace CCM
         public void push_matrix (string key, Cairo.Matrix matrix);
         public void pop_matrix (string key);
 
-        public unowned CCM.Region? get_geometry ();
+        public unowned CCM.Region get_geometry ();
         public bool get_geometry_clipbox (out Cairo.Rectangle area);
         public unowned CCM.Region? get_device_geometry ();
         public bool get_device_geometry_clipbox (out Cairo.Rectangle area);
@@ -453,7 +453,7 @@ namespace CCM
 
         public void activate (ulong timestamp);
         public virtual CCM.Pixmap create_pixmap (int width, int height, int depth);
-        public Cairo.Rectangle* get_area ();
+        public unowned Cairo.Rectangle? get_area ();
         public uint32 get_child_property (X.Atom property_atom, X.Atom req_type, out uint n_items);
         public void get_frame_extends (out int left_frame, out int right_frame, out int top_frame, out int bottom_frame);
         public unowned CCM.Window get_group_leader ();
@@ -546,65 +546,29 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm-timeline.h")]
-    public class Timeline : GLib.Object 
-    {
-        public uint delay { get; set; }
-        public uint direction { get; set; }
-        public uint duration { get; set; }
-        public uint fps { get; set; }
-        public bool loop { get; set; }
-        public uint num_frames { get; set; }
-        public bool master { get; set; }
-
-        [CCode (has_construct_function = false)]
-        public Timeline (uint n_frames, uint fps);
-        [CCode (has_construct_function = false)]
-        public Timeline.for_duration (uint msecs);
-
-        public CCM.Timeline clone ();
-
-        public bool is_playing ();
-        public int get_current_frame ();
-        public uint get_delay ();
-        public uint get_delta (out uint msecs);
-        public CCM.TimelineDirection get_direction ();
-        public uint get_duration ();
-        public bool get_loop ();
-        public uint get_n_frames ();
-        public double get_progress ();
-        public uint get_speed ();
-
-        public void set_delay (uint msecs);
-        public void set_direction (CCM.TimelineDirection direction);
-        public void set_duration (uint msecs);
-        public void set_loop (bool loop);
-        public void set_n_frames (uint n_frames);
-        public void set_speed (uint fps);
-
-        public void add_marker_at_frame (string marker_name, uint frame_num);
-        public void add_marker_at_time (string marker_name, uint msecs);
-        public string list_markers (int frame_num, out uint n_markers);
-        public void remove_marker (string marker_name);
-
-        public void advance (uint frame_num);
-        public void advance_to_marker (string marker_name);
-
+    public class Timeline : GLib.Object {
+        public Timeline (uint inNbFrames, uint inFps);
+        public void advance (uint inNumFrame);
+        public Timeline.for_duration (uint inDuration);
         public void pause ();
         public void rewind ();
-        public void skip (uint n_frames);
+        public static void set_priority (int inPriority);
+        public void skip (int inNbFrames);
         public void start ();
         public void stop ();
-
-        [HasEmitter]
-        public virtual signal void completed ();
-        [HasEmitter]
-        public virtual signal void marker_reached (uint object, void* p0);
-        [HasEmitter]
-        public virtual signal void new_frame (int object);
-        [HasEmitter]
-        public virtual signal void paused ();
-        [HasEmitter]
-        public virtual signal void started ();
+        public uint current_frame { get; }
+        public CCM.TimelineDirection direction { get; set; }
+        public uint duration { get; set; }
+        public bool is_playing { get; }
+        public bool loop { get; set; }
+        public bool master { get; set; }
+        public uint n_frames { get; set; }
+        public double progress { get; }
+        public uint speed { get; set; }
+        public signal void completed ();
+        public signal void new_frame (int inNumFrame);
+        public signal void paused ();
+        public signal void started ();
     }
 
     [Compact]
@@ -681,7 +645,7 @@ namespace CCM
         FRAME_EXTENDS
     }
 
-    [CCode (cprefix = "CCM_TIMELINE_", cheader_filename = "ccm.h")]
+    [CCode (cprefix = "CCM_TIMELINE_DIRECTION_", cheader_filename = "ccm-timeline.h")]
     public enum TimelineDirection {
         FORWARD,
         BACKWARD

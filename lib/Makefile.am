@@ -23,32 +23,28 @@ cairo_compmgr_include_HEADERS =  \
     ccm-config-entry-shortcut.h \
     ccm-cairo-utils.h
 
+libcairo_compmgr_la_VALAFLAGS = \
+    --header=ccm-timeline.h \
+    --use-header \
+    --vapidir=${top_srcdir}/vapi \
+    --pkg=config \
+    --pkg=source
+
 libcairo_compmgr_la_SOURCES =  \
     eggaccelerators.c \
-    eggaccelerators.h \
     ccm-object.c \
-    ccm-object.h \
-    ccm-config.h \
     ccm-config.c \
-    ccm-timeline.h \
-    ccm-timeline.c \
-    ccm-timeout-pool.c \
-    ccm-timeout-pool.h \
-    ccm-timeout-interval.c \
-    ccm-timeout-interval.h \
+    ccm-source.c \
+    ccm-timeline.vala \
+    ccm-timeout-pool.vala \
+    ccm-timeout-interval.vala \
+    ccm-timeout.vala \
     ccm-cairo-utils.c \
-    ccm-cairo-utils.h \
-    ccm-config-key.h \
     ccm-config-key.c \
-    ccm-config-schema.h \
     ccm-config-schema.c \
-    ccm-config-check-button.h \
     ccm-config-check-button.c \
-    ccm-config-adjustment.h \
     ccm-config-adjustment.c \
-    ccm-config-color-button.h \
     ccm-config-color-button.c \
-    ccm-config-entry-shortcut.h \
     ccm-config-entry-shortcut.c
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
@@ -57,7 +53,6 @@ libcairo_compmgr_la_LIBADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS)
 
 if ENABLE_GCONF
 libcairo_compmgr_la_SOURCES += 	\
-    ccm-config-gconf.h \
     ccm-config-gconf.c
 
 libcairo_compmgr_la_LIBADD += $(CCM_GCONF_LIBS)
@@ -93,3 +88,11 @@ test_config_widget_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
 test_timeline_SOURCES = test-timeline.c
 
 test_timeline_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
+
+VALAFILES = \
+    $(filter %.vala,$(libcairo_compmgr_la_SOURCES))
+
+CLEANFILES = \
+    ccm-timeline.h \
+    libcairo_compmgr_la_vala.stamp \
+    $(VALAFILES:.vala=.c)

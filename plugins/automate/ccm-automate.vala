@@ -100,7 +100,7 @@ namespace CCM
             show_keybind = new CCM.Keybind (screen, 
                                             ((AutomateOptions) get_option ()).show_shortcut, 
                                             true);
-            show_keybind.key_press += on_show_shortcut_pressed;
+            show_keybind.key_press.connect (on_show_shortcut_pressed);
         }
 
         void

@@ -491,7 +491,7 @@ ccm_menu_animation_finish (CCMMenuAnimation * self)
 
     ccm_window_set_redirect(self->priv->window, TRUE);
     if (ccm_timeline_get_direction (self->priv->timeline) ==
-        CCM_TIMELINE_FORWARD)
+        CCM_TIMELINE_DIRECTION_FORWARD)
     {
         CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD (self, map);
         ccm_window_plugin_map ((CCMWindowPlugin *) self->priv->window,
@@ -524,7 +524,7 @@ ccm_menu_animation_on_property_changed (CCMMenuAnimation * self,
 static void
 ccm_menu_animation_on_error (CCMMenuAnimation * self, CCMWindow * window)
 {
-    if (self->priv->timeline && ccm_timeline_is_playing (self->priv->timeline))
+    if (self->priv->timeline && ccm_timeline_get_is_playing (self->priv->timeline))
     {
         ccm_timeline_stop (self->priv->timeline);
         ccm_menu_animation_finish (self);
@@ -665,7 +665,7 @@ ccm_menu_animation_map (CCMWindowPlugin * plugin, CCMWindow * window)
 
         if (!self->priv->forced_animation)
             ccm_menu_animation_get_position (self);
-        if (ccm_timeline_is_playing (self->priv->timeline))
+        if (ccm_timeline_get_is_playing (self->priv->timeline))
         {
             current_frame =
                 ccm_timeline_get_current_frame (self->priv->timeline);
@@ -688,7 +688,7 @@ ccm_menu_animation_map (CCMWindowPlugin * plugin, CCMWindow * window)
 
         ccm_debug_window (window, "MENU ANIMATION MAP");
 
-        ccm_timeline_set_direction (self->priv->timeline, CCM_TIMELINE_FORWARD);
+        ccm_timeline_set_direction (self->priv->timeline, CCM_TIMELINE_DIRECTION_FORWARD);
         ccm_timeline_rewind (self->priv->timeline);
         ccm_timeline_start (self->priv->timeline);
         if (current_frame > 0)
@@ -726,7 +726,7 @@ ccm_menu_animation_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
                                       (ccm_menu_animation_on_completed), self);
         }
 
-        if (ccm_timeline_is_playing (self->priv->timeline))
+        if (ccm_timeline_get_is_playing (self->priv->timeline))
         {
             current_frame =
                 ccm_timeline_get_current_frame (self->priv->timeline);
@@ -744,7 +744,7 @@ ccm_menu_animation_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
 
         ccm_debug_window (window, "MENU ANIMATION UNMAP");
         ccm_timeline_set_direction (self->priv->timeline,
-                                    CCM_TIMELINE_BACKWARD);
+                                    CCM_TIMELINE_DIRECTION_BACKWARD);
         ccm_timeline_rewind (self->priv->timeline);
         ccm_timeline_start (self->priv->timeline);
         if (current_frame > 0)

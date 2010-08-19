@@ -217,8 +217,7 @@ ccm_fade_finish (CCMFade * self)
     g_return_if_fail (self != NULL);
 
     ccm_debug_window (self->priv->window, "FADE FINISH");
-    if (ccm_timeline_get_direction (self->priv->timeline) ==
-        CCM_TIMELINE_FORWARD)
+    if (ccm_timeline_get_direction (self->priv->timeline) == CCM_TIMELINE_DIRECTION_FORWARD)
     {
         CCM_WINDOW_PLUGIN_UNLOCK_ROOT_METHOD (self, map);
         ccm_window_plugin_map ((CCMWindowPlugin *) self->priv->window,
@@ -250,17 +249,14 @@ ccm_fade_on_property_changed (CCMFade * self, CCMPropertyType changed,
         ccm_debug_window (window, "FADE OPACITY %f", self->priv->origin);
         if (!self->priv->timeline)
         {
-            self->priv->timeline =
-                ccm_timeline_new_for_duration ((guint)
-                                               (ccm_fade_get_option (self)->
-                                                duration * 1000.0));
+            self->priv->timeline = ccm_timeline_new_for_duration ((guint)(ccm_fade_get_option (self)->duration * 1000.0));
 
             g_signal_connect_swapped (self->priv->timeline, "new-frame",
                                       G_CALLBACK (ccm_fade_on_new_frame), self);
             g_signal_connect_swapped (self->priv->timeline, "completed",
                                       G_CALLBACK (ccm_fade_on_completed), self);
         }
-        if (ccm_timeline_is_playing (self->priv->timeline))
+        if (ccm_timeline_get_is_playing (self->priv->timeline))
         {
             gdouble progress = ccm_timeline_get_progress (self->priv->timeline);
             gfloat opacity = self->priv->origin * progress;
@@ -483,7 +479,7 @@ ccm_fade_window_map (CCMWindowPlugin * plugin, CCMWindow * window)
             g_signal_connect_swapped (self->priv->timeline, "completed",
                                       G_CALLBACK (ccm_fade_on_completed), self);
         }
-        if (ccm_timeline_is_playing (self->priv->timeline))
+        if (ccm_timeline_get_is_playing (self->priv->timeline))
         {
             current_frame =
                 ccm_timeline_get_current_frame (self->priv->timeline);
@@ -502,7 +498,7 @@ ccm_fade_window_map (CCMWindowPlugin * plugin, CCMWindow * window)
                                             self);
 
         ccm_debug_window (window, "FADE MAP %i", current_frame);
-        ccm_timeline_set_direction (self->priv->timeline, CCM_TIMELINE_FORWARD);
+        ccm_timeline_set_direction (self->priv->timeline, CCM_TIMELINE_DIRECTION_FORWARD);
         ccm_timeline_rewind (self->priv->timeline);
         ccm_timeline_start (self->priv->timeline);
 
@@ -533,7 +529,7 @@ ccm_fade_window_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
             g_signal_connect_swapped (self->priv->timeline, "completed",
                                       G_CALLBACK (ccm_fade_on_completed), self);
         }
-        if (ccm_timeline_is_playing (self->priv->timeline))
+        if (ccm_timeline_get_is_playing (self->priv->timeline))
         {
             current_frame =
                 ccm_timeline_get_current_frame (self->priv->timeline);
@@ -550,7 +546,7 @@ ccm_fade_window_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
 
         ccm_debug_window (window, "FADE UNMAP %i", current_frame);
         ccm_timeline_set_direction (self->priv->timeline,
-                                    CCM_TIMELINE_BACKWARD);
+                                    CCM_TIMELINE_DIRECTION_BACKWARD);
         ccm_timeline_rewind (self->priv->timeline);
         ccm_timeline_start (self->priv->timeline);
         if (current_frame > 0)

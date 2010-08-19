@@ -123,13 +123,13 @@ namespace CCM
         void
         on_new_frame (int frame)
         {
-            double progress = timeline.get_progress ();
+            double progress = timeline.progress;
             double x0 = (geometry.width / 2.0) * (1.0 - progress), 
                    y0 = (geometry.height / 2.0) * (1.0 - progress);
             Cairo.Matrix matrix;
             CCM.Region damaged = new CCM.Region.empty();
 
-            if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
+            if (timeline.direction == CCM.TimelineDirection.FORWARD)
                 matrix = Cairo.Matrix (progress, 0, 0, progress, x0, y0);
             else
                 matrix = Cairo.Matrix (progress, 0, 0, 1, x0, 0);
@@ -167,7 +167,7 @@ namespace CCM
         on_finish ()
         {
             window.redirect = true;
-            if (timeline.get_direction () == CCM.TimelineDirection.FORWARD)
+            if (timeline.direction == CCM.TimelineDirection.FORWARD)
             {
                 unlock_map ();
                 (window as CCM.WindowPlugin).map (window);
@@ -225,7 +225,7 @@ namespace CCM
             if (!desktop_changed && window.is_decorated() &&
                 (type == CCM.WindowType.NORMAL || type == CCM.WindowType.DIALOG))
             {
-                int current_frame = 0;
+                uint current_frame = 0;
 
                 if (timeline == null)
                 {
@@ -234,9 +234,9 @@ namespace CCM
                     timeline.completed.connect (on_finish);
                 }
 
-                if (timeline.is_playing ())
+                if (timeline.is_playing)
                 {
-                    current_frame = timeline.get_current_frame ();
+                    current_frame = timeline.current_frame;
                     timeline.stop ();
                     on_finish ();
                 }
@@ -254,7 +254,7 @@ namespace CCM
 
                 lock_map (on_unlock);
 
-                timeline.set_direction (CCM.TimelineDirection.FORWARD);
+                timeline.direction = CCM.TimelineDirection.FORWARD;
                 timeline.rewind ();
                 timeline.start ();
                 if (current_frame > 0)
@@ -272,7 +272,7 @@ namespace CCM
             if (!desktop_changed && window.is_decorated() &&
                 (type == CCM.WindowType.NORMAL || type == CCM.WindowType.DIALOG))
             {
-                int current_frame = 0;
+                uint current_frame = 0;
 
                 if (timeline == null)
                 {
@@ -281,9 +281,9 @@ namespace CCM
                     timeline.completed.connect (on_finish);
                 }
 
-                if (timeline.is_playing ())
+                if (timeline.is_playing)
                 {
-                    current_frame = timeline.get_current_frame ();
+                    current_frame = timeline.current_frame;
                     timeline.stop ();
                     on_finish ();
                 }
@@ -292,11 +292,11 @@ namespace CCM
 
                 lock_unmap (on_unlock);
 
-                timeline.set_direction (CCM.TimelineDirection.BACKWARD);
+                timeline.direction = CCM.TimelineDirection.BACKWARD;
                 timeline.rewind ();
                 timeline.start ();
                 if (current_frame > 0)
-                    timeline.advance (timeline.get_n_frames () - current_frame);
+                    timeline.advance (timeline.n_frames - current_frame);
                 window.redirect = false;
             }
 

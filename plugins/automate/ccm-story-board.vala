@@ -48,7 +48,7 @@ namespace CCM
             this.ignore = ignore.copy ();
 
             CCM.Display display = screen.get_display ();
-            display.event += on_event;
+            display.event.connect (on_event);
         }
 
         private void on_event (CCM.Display display, X.Event event)

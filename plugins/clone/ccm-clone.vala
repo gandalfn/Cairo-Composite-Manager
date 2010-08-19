@@ -340,7 +340,7 @@ namespace CCM
             if (((window_outputs != null && window_outputs.size > 0) ||
                  (screen_outputs != null && screen_outputs.size > 0)))
             {
-                var area = window.get_area ();
+                unowned Cairo.Rectangle? area = window.get_area ();
                 Cairo.Rectangle geometry = Cairo.Rectangle ();
 
                 if (area != null && window.get_device_geometry_clipbox (out geometry))
@@ -359,8 +359,8 @@ namespace CCM
                                 {
                                     double width = clipbox.width;
                                     double height = clipbox.height;
-                                    double scale_x = width / area->width;
-                                    double scale_y = height / area->height;
+                                    double scale_x = width / area.width;
+                                    double scale_y = height / area.height;
 
                                     if (output.scale_x != 0)
                                         scale_x = (double)output.scale_x / (double)100;
@@ -387,14 +387,14 @@ namespace CCM
 
                                     ctx.scale (scale_x, scale_y);
                                     surface.set_device_offset (output.x, output.y);
-                                    ctx.translate (-area->x, -area->y);
+                                    ctx.translate (-area.x, -area.y);
                                     window.get_damage_path (ctx);
                                     ctx.clip ();
 
-                                    ctx.translate (area->x, area->y);
+                                    ctx.translate (area.x, area.y);
                                     ctx.set_source_surface (surface, 
-                                                            - (geometry.width - area->width) / 2.0,
-                                                            - (geometry.height - area->height) / 2.0);
+                                                            - (geometry.width - area.width) / 2.0,
+                                                            - (geometry.height - area.height) / 2.0);
                                     ctx.paint ();
 
                                     surface.set_device_offset (0, 0);
