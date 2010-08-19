@@ -154,35 +154,35 @@ ccm_display_get_property (GObject * object, guint prop_id, GValue * value,
     switch (prop_id)
     {
         case PROP_XDISPLAY:
-        {
-            g_value_set_pointer (value, priv->xdisplay);
-        }
+            {
+                g_value_set_pointer (value, priv->xdisplay);
+            }
             break;
         case PROP_USE_XSHM:
-        {
-            g_value_set_boolean (value, priv->use_shm);
-        }
+            {
+                g_value_set_boolean (value, priv->use_shm);
+            }
             break;
         case PROP_USE_XDBE:
-        {
-            g_value_set_boolean (value, priv->use_dbe);
-        }
+            {
+                g_value_set_boolean (value, priv->use_dbe);
+            }
             break;
         case PROP_SHM_SHARED_PIXMAP:
-        {
-            GError *error = NULL;
-            gboolean xshm =
-                ccm_config_get_boolean (priv->options[CCM_DISPLAY_OPTION_USE_XSHM],
-                                        &error);
-
-            if (error)
             {
-                g_warning ("Error on get xshm configuration value");
-                g_error_free (error);
-                xshm = FALSE;
+                GError *error = NULL;
+                gboolean xshm =
+                    ccm_config_get_boolean (priv->options[CCM_DISPLAY_OPTION_USE_XSHM],
+                                            &error);
+
+                if (error)
+                {
+                    g_warning ("Error on get xshm configuration value");
+                    g_error_free (error);
+                    xshm = FALSE;
+                }
+                g_value_set_boolean (value, xshm && priv->shm.available && priv->shm_shared_pixmap);
             }
-            g_value_set_boolean (value, xshm && priv->shm.available && priv->shm_shared_pixmap);
-        }
             break;
         default:
             break;

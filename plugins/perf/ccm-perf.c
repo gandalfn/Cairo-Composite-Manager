@@ -33,7 +33,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #ifdef HAVE_CUDA
-#include <cuda.h>
+#include <cuda/cuda.h>
 #endif
 
 #include "ccm-drawable.h"
@@ -152,7 +152,7 @@ ccm_perf_options_changed (CCMPerfOptions* self, CCMConfig* config)
         }
         self->area.width = 280;
 #ifdef HAVE_CUDA
-        self->area.height = 120;
+        self->area.height = 110;
 #else
         self->area.height = 100;
 #endif
@@ -195,7 +195,7 @@ ccm_perf_init (CCMPerf * self)
 #ifdef HAVE_CUDA
     self->priv->mem_cuda_free_size = 0;
     self->priv->mem_cuda_used_size = 0;
-    cuCtxCreate(&self->priv->cuda_ctx, 0, 0);
+    self->priv->cuda_ctx = NULL;
 #endif
 }
 
@@ -345,6 +345,18 @@ ccm_perf_on_key_press (CCMPerf * self)
 
         ccm_screen_damage_region (self->priv->screen, area);
         ccm_region_destroy (area);
+
+#ifdef HAVE_CUDA
+        if (self->priv->cuda_ctx)
+            cuCtxDestroy(self->priv->cuda_ctx);
+        self->priv->cuda_ctx = NULL;
+#endif
+    }
+    else
+    {
+#ifdef HAVE_CUDA
+        cuCtxCreate(&self->priv->cuda_ctx, 0, 0);
+#endif
     }
 }
 
