@@ -45,6 +45,7 @@
 
 #include "ccm-window-xrender.h"
 #include "ccm-pixmap-xrender.h"
+#include "ccm-pixmap-buffered-image.h"
 #include "ccm-pixmap-image.h"
 
 #define DEFAULT_PLUGINS "opacity,fade,shadow,menu-animation,magnifier"
@@ -91,6 +92,8 @@ G_DEFINE_TYPE_EXTENDED (CCMScreen, ccm_screen, G_TYPE_OBJECT, 0,
 enum
 {
     CCM_SCREEN_BACKEND,
+    CCM_SCREEN_PIXMAP,
+    CCM_SCREEN_USE_BUFFERED,
     CCM_SCREEN_PLUGINS,
     CCM_SCREEN_REFRESH_RATE,
     CCM_SCREEN_USE_ROOT_BACKGROUND,
@@ -103,6 +106,8 @@ enum
 
 static gchar *CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
     "backend",
+    "native_pixmap_bind",
+    "use_buffered_pixmap",
     "plugins",
     "refresh_rate",
     "use_root_background",
@@ -577,18 +582,37 @@ ccm_screen_update_backend (CCMScreen * self)
         backend = g_strdup ("xrender");
     }
 
+    gboolean native_pixmap_bind = ccm_config_get_boolean (self->priv->options[CCM_SCREEN_PIXMAP], &error);
+    if (error)
+    {
+        g_warning ("Error on get native backend conf : %s", error->message);
+        g_error_free (error);
+        error = NULL;
+        native_pixmap_bind = TRUE;
+     }
+
+    gboolean use_buffered = ccm_config_get_boolean (self->priv->options[CCM_SCREEN_USE_BUFFERED], &error);
+    if (error)
+    {
+        g_warning ("Error on get use buffered conf : %s", error->message);
+        g_error_free (error);
+        error = NULL;
+        use_buffered = TRUE;
+    }
+    
     ccm_object_unregister (CCM_TYPE_WINDOW);
     ccm_object_unregister (CCM_TYPE_PIXMAP);
 
-    if (!g_ascii_strcasecmp (backend, "xrender"))
+    //if (!g_ascii_strcasecmp (backend, "xrender"))
     {
         ccm_object_register (CCM_TYPE_WINDOW, CCM_TYPE_WINDOW_X_RENDER);
-        ccm_object_register (CCM_TYPE_PIXMAP, CCM_TYPE_PIXMAP_XRENDER);
-    }
-    else
-    {
-        ccm_object_register (CCM_TYPE_WINDOW, CCM_TYPE_WINDOW_X_RENDER);
-        ccm_object_register (CCM_TYPE_PIXMAP, CCM_TYPE_PIXMAP_IMAGE);
+
+        if (native_pixmap_bind)
+            ccm_object_register (CCM_TYPE_PIXMAP, CCM_TYPE_PIXMAP_XRENDER);
+        else if (use_buffered)
+            ccm_object_register (CCM_TYPE_PIXMAP, CCM_TYPE_PIXMAP_BUFFERED_IMAGE);
+        else
+            ccm_object_register (CCM_TYPE_PIXMAP, CCM_TYPE_PIXMAP_IMAGE);
     }
 }
 
