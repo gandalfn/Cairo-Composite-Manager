@@ -19,6 +19,7 @@ cairo_compmgr_include_HEADERS =  \
     ccm-object.h \
     ccm-config.h \
     ccm-source.h \
+    ccm-watch.h \
     ccm-timeline.h \
     ccm-config-key.h \
     ccm-config-schema.h \
@@ -28,22 +29,46 @@ cairo_compmgr_include_HEADERS =  \
     ccm-config-entry-shortcut.h \
     ccm-cairo-utils.h
 
-libcairo_compmgr_la_VALAFLAGS = \
+noinst_LTLIBRARIES = \
+    libccm-timeline.la \
+    libccm-watch.la
+
+libccm_timeline_la_VALAFLAGS = \
     --header=ccm-timeline.h \
     --use-header \
     --vapidir=${top_srcdir}/vapi \
     --pkg=config \
     --pkg=source
 
+libccm_timeline_la_SOURCES =  \
+    ccm-timeline.vala \
+    ccm-timeout-pool.vala \
+    ccm-timeout-interval.vala \
+    ccm-timeout.vala
+
+libccm_timeline_la_LIBADD = \
+    $(CAIRO_COMPMGR_LIBS) \
+    $(M_LIBS)
+
+libccm_watch_la_VALAFLAGS = \
+    --header=ccm-watch.h \
+    --use-header \
+    --vapidir=${top_srcdir}/vapi \
+    --pkg=config \
+    --pkg=source
+
+libccm_watch_la_SOURCES =  \
+    ccm-watch.vala
+
+libccm_watch_la_LIBADD = \
+    $(CAIRO_COMPMGR_LIBS) \
+    $(M_LIBS)
+
 libcairo_compmgr_la_SOURCES =  \
     eggaccelerators.c \
     ccm-object.c \
     ccm-config.c \
     ccm-source.c \
-    ccm-timeline.vala \
-    ccm-timeout-pool.vala \
-    ccm-timeout-interval.vala \
-    ccm-timeout.vala \
     ccm-cairo-utils.c \
     ccm-config-key.c \
     ccm-config-schema.c \
@@ -54,7 +79,11 @@ libcairo_compmgr_la_SOURCES =  \
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
 
-libcairo_compmgr_la_LIBADD = $(CAIRO_COMPMGR_LIBS) $(M_LIBS)
+libcairo_compmgr_la_LIBADD = \
+    $(CAIRO_COMPMGR_LIBS) \
+    $(M_LIBS) \
+    libccm-timeline.la \
+    libccm-watch.la
 
 if ENABLE_GCONF
 libcairo_compmgr_la_SOURCES += 	\
@@ -95,9 +124,12 @@ test_timeline_SOURCES = test-timeline.c
 test_timeline_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
 
 VALAFILES = \
-    $(filter %.vala,$(libcairo_compmgr_la_SOURCES))
+    $(filter %.vala,$(libccm_timeline_la_SOURCES)) \
+    $(filter %.vala,$(libccm_watch_la_SOURCES))
 
 CLEANFILES = \
     ccm-timeline.h \
-    libcairo_compmgr_la_vala.stamp \
+    ccm-watch.h \
+    libccm_timeline_la_vala.stamp \
+    libccm_watch_la_vala.stamp \
     $(VALAFILES:.vala=.c)

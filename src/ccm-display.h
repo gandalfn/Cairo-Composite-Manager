@@ -27,6 +27,7 @@
 #include <X11/X.h>
 
 #include "ccm.h"
+#include "ccm-watch.h"
 
 G_BEGIN_DECLS
 
@@ -40,14 +41,14 @@ G_BEGIN_DECLS
 
 struct _CCMDisplayClass
 {
-    GObjectClass parent_class;
+    CCMWatchClass parent_class;
 };
 
 typedef struct _CCMDisplayPrivate CCMDisplayPrivate;
 
 struct _CCMDisplay
 {
-    GObject parent_instance;
+    CCMWatch parent_instance;
 
     CCMDisplayPrivate *priv;
 };

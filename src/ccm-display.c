@@ -33,13 +33,12 @@
 
 #include "ccm-debug.h"
 #include "ccm-display.h"
-#include "ccm-source.h"
 #include "ccm-cursor.h"
 #include "ccm-screen.h"
 #include "ccm-config.h"
 #include "ccm-window.h"
 
-G_DEFINE_TYPE (CCMDisplay, ccm_display, G_TYPE_OBJECT);
+G_DEFINE_TYPE (CCMDisplay, ccm_display, CCM_TYPE_WATCH);
 
 enum
 {
@@ -91,9 +90,6 @@ typedef struct
 struct _CCMDisplayPrivate
 {
     Display*         xdisplay;
-    CCMSource*       source;
-    GPollFD          fd;
-    CCMSourceFuncs   watch_funcs;
 
     gint             nb_screens;
     CCMScreen**      screens;
@@ -127,8 +123,9 @@ struct _CCMDisplayPrivate
 static gint CCMLastXError = 0;
 static CCMDisplay* CCMDefaultDisplay = NULL;
 
-#define CCM_DISPLAY_GET_PRIVATE(o)  \
-(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayPrivate))
+static void ccm_display_process_events (CCMWatch* watch);
+
+#define CCM_DISPLAY_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayPrivate))
 
 static void
 ccm_display_set_property (GObject * object, guint prop_id, const GValue * value,
@@ -198,7 +195,6 @@ ccm_display_init (CCMDisplay * self)
     self->priv = CCM_DISPLAY_GET_PRIVATE (self);
 
     self->priv->xdisplay = NULL;
-    self->priv->source = NULL;
     self->priv->nb_screens = 0;
     self->priv->screens = NULL;
     self->priv->shm_shared_pixmap = FALSE;
@@ -258,10 +254,6 @@ ccm_display_finalize (GObject * object)
     for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; ++cpt)
         g_object_unref (self->priv->options[cpt]);
 
-    if (self->priv->source)
-        ccm_source_destroy (self->priv->source);
-    self->priv->source = NULL;
-
     G_OBJECT_CLASS (ccm_display_parent_class)->finalize (object);
 }
 
@@ -272,6 +264,7 @@ ccm_display_class_init (CCMDisplayClass * klass)
 
     g_type_class_add_private (klass, sizeof (CCMDisplayPrivate));
 
+    CCM_WATCH_CLASS (klass)->process_watch = ccm_display_process_events;
     object_class->get_property = ccm_display_get_property;
     object_class->set_property = ccm_display_set_property;
     object_class->finalize = ccm_display_finalize;
@@ -561,11 +554,12 @@ ccm_display_error_handler (Display * dpy, XErrorEvent * evt)
     return 0;
 }
 
-static gboolean
-ccm_display_process_events (CCMDisplay * self)
+static void
+ccm_display_process_events (CCMWatch* watch)
 {
-    g_return_if_fail (self != NULL);
+    g_return_if_fail (watch != NULL);
 
+    CCMDisplay* self = CCM_DISPLAY (watch);
     XEvent xevent;
 
     while (XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
@@ -690,48 +684,6 @@ ccm_display_process_events (CCMDisplay * self)
                 g_signal_emit (self, signals[EVENT], 0, &xevent);
         }
     }
-
-    return TRUE;
-}
-
-static gboolean
-ccm_display_source_prepare_func (CCMDisplay* self, gint* timeout)
-{
-    ccm_display_process_events (self);
-    *timeout = -1;
-
-    return FALSE;
-}
-
-static gboolean
-ccm_display_source_check_func (CCMDisplay* self)
-{
-    gboolean ret = FALSE;
-
-    if ((self->priv->fd.revents & G_IO_NVAL) == G_IO_NVAL)
-    {
-        ccm_source_unref (self->priv->source);
-        self->priv->source = NULL;
-    }
-    else if ((self->priv->fd.revents & G_IO_IN) == G_IO_IN)
-    {
-        ret = ccm_display_process_events (self);
-    }
-
-    return ret;
-}
-
-static gboolean
-ccm_display_source_dispatch_func (CCMDisplay* self, GSourceFunc inCallback, void* inCallback_target)
-{
-    gboolean ret = FALSE;
-
-    if ((self->priv->fd.revents & G_IO_IN) == G_IO_IN)
-    {
-        ret = ccm_display_process_events (self);
-    }
-
-    return TRUE;
 }
 
 CCMDisplay *
@@ -741,7 +693,6 @@ ccm_display_new (gchar * display)
     gint cpt;
     GSList *unmanaged = NULL;
     Display *xdisplay;
-    CCMSourceFuncs funcs;
 
     xdisplay = XOpenDisplay (display);
     if (!xdisplay)
@@ -832,17 +783,7 @@ ccm_display_new (gchar * display)
     }
     g_slist_free (unmanaged);
 
-    self->priv->fd.fd = ConnectionNumber (CCM_DISPLAY_XDISPLAY (self));
-    self->priv->fd.events = G_IO_IN;
-
-    funcs.prepare = ccm_display_source_prepare_func;
-    funcs.check = ccm_display_source_check_func;
-    funcs.dispatch = ccm_display_source_dispatch_func;
-    funcs.finalize = NULL;
-
-    self->priv->source = ccm_source_new_from_pollfd (funcs, &self->priv->fd, self);
-    g_source_attach ((GSource*)self->priv->source, NULL);
-    ccm_source_unref (self->priv->source);
+    ccm_watch_watch (CCM_WATCH (self), ConnectionNumber (CCM_DISPLAY_XDISPLAY (self)), NULL);
 
     return self;
 }
