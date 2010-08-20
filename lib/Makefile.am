@@ -15,8 +15,13 @@ endif
 lib_LTLIBRARIES = libcairo_compmgr.la
 
 cairo_compmgr_include_HEADERS =  \
+    eggaccelerators.h \
+    ccm-object.h \
     ccm-config.h \
+    ccm-source.h \
     ccm-timeline.h \
+    ccm-config-key.h \
+    ccm-config-schema.h \
     ccm-config-check-button.h \
     ccm-config-adjustment.h \
     ccm-config-color-button.h \

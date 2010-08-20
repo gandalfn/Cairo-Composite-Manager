@@ -52,12 +52,14 @@ endif
 
 ui_DATA = $(PLUGIN_UI)
 
-EXTRA_DIST = $(PLUGIN_VALA_SOURCES) \
-             $(PLUGIN_SCHEMA) \
+PLUGIN_VALAFILES = $(filter %.vala,$(PLUGIN_SOURCES))
+
+noinst_HEADERS = \
+    $(PLUGIN).h
+
+EXTRA_DIST = $(PLUGIN_SCHEMA) \
              $(ui_DATA) \
              $(plugin_in_files)
-
-PLUGIN_VALAFILES = $(filter %.vala,$(PLUGIN_SOURCES))
 
 CLEANFILES = lib$(subst -,_,$(PLUGIN))_la_vala.stamp \
              $(PLUGIN_VALAFILES:.vala=.c) \
