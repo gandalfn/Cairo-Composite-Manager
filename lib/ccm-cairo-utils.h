@@ -47,7 +47,9 @@ cairo_surface_t *cairo_image_surface_blur (cairo_surface_t * surface,
 cairo_surface_t *cairo_image_surface_blur2 (cairo_surface_t * surface,
                                             double radius, int x, int y,
                                             int width, int height);
-
+void             cairo_blur_image_surface  (cairo_surface_t *surface,
+                                            int radius,
+                                            cairo_rectangle_t clip);
 cairo_surface_t *cairo_blur_path (cairo_surface_t * surface,
                                   cairo_path_t * path, cairo_path_t * clip,
                                   int border, double step, double width,

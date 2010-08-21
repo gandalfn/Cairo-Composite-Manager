@@ -69,9 +69,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <property name="use_alpha">True</property>
                         <property name="key">color</property>
-                        <property name="key_alpha">alpha</property>
                         <property name="plugin">shadow</property>
                         <property name="screen">0</property>
                       </object>
@@ -89,7 +87,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton" id="radiu">
+                  <object class="GtkSpinButton" id="radius">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="adjustment">radius-adjustment</property>
@@ -106,7 +104,7 @@
                   <object class="GtkLabel" id="label3">
                     <property name="visible">True</property>
                     <property name="xalign">1</property>
-                    <property name="label" translatable="yes">Sigma:</property>
+                    <property name="label" translatable="yes">Border:</property>
                   </object>
                   <packing>
                     <property name="left_attach">2</property>
@@ -118,11 +116,11 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton" id="sigm">
+                  <object class="GtkSpinButton" id="border">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="adjustment">sigma-adjustment</property>
-                    <property name="digits">1</property>
+                    <property name="adjustment">border-adjustment</property>
+                    <property name="digits">0</property>
                   </object>
                   <packing>
                     <property name="left_attach">3</property>
@@ -172,19 +170,19 @@
   </object>
   <object class="CCMConfigAdjustment" id="radius-adjustment">
     <property name="lower">1</property>
-    <property name="upper">30</property>
+    <property name="upper">128</property>
     <property name="step_increment">1</property>
-    <property name="page_increment">2</property>
+    <property name="page_increment">5</property>
     <property name="key">radius</property>
     <property name="plugin">shadow</property>
     <property name="screen">0</property>
   </object>
-  <object class="CCMConfigAdjustment" id="sigma-adjustment">
+  <object class="CCMConfigAdjustment" id="border-adjustment">
     <property name="lower">1</property>
-    <property name="upper">15</property>
-    <property name="step_increment">0.5</property>
-    <property name="page_increment">1</property>
-    <property name="key">sigma</property>
+    <property name="upper">32</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">5</property>
+    <property name="key">border</property>
     <property name="plugin">shadow</property>
     <property name="screen">0</property>
   </object>

@@ -3,7 +3,7 @@
 #include "ccm-cairo-utils.h"
 #include <time.h>
 #include <sys/time.h>
-
+#include <stdlib.h>
 static double
 timevalToSeconds (struct timeval inTimeval)
 {
@@ -78,6 +78,71 @@ main (int argc, char **argv)
     }
     cairo_surface_write_to_png (surface, "test-blur3.png");
     cairo_surface_destroy (surface);
+
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    cr = cairo_create (surface);
+    cairo_set_source_rgba (cr, 0, 0, 0, 1);
+    cairo_rectangle (cr, 50, 50, 200, 200);
+    cairo_fill (cr);
+    cairo_destroy (cr);
+    {
+        cairo_rectangle_t clip;
+        clip.x = 0;
+        clip.y = 0;
+        clip.width = 0;
+        clip.height = 0;
+        GET_TIME_START cairo_blur_image_surface (surface, 15, clip);
+        GET_TIME_END g_print ("krh blur = %f\n", GET_TIME_DIFF);
+    }
+    cairo_surface_write_to_png (surface, "test-blur4.png");
+    cairo_surface_destroy (surface);
+
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width, height);
+    cr = cairo_create (surface);
+    cairo_set_source_rgba (cr, 0, 0, 0, 1);
+    cairo_rectangle (cr, 50, 50, 200, 200);
+    cairo_fill (cr);
+    cairo_destroy (cr);
+    {
+        cairo_rectangle_t clip;
+        clip.x = 50 + 8;
+        clip.y = 50 + 8;
+        clip.width = 200 - 16;
+        clip.height = 200 - 16;
+        GET_TIME_START cairo_blur_image_surface (surface, 15, clip);
+        GET_TIME_END g_print ("krh blur clipped = %f\n", GET_TIME_DIFF);
+    }
+    cairo_surface_write_to_png (surface, "test-blur5.png");
+    cairo_surface_destroy (surface);    
+
+    int stride;
+    unsigned char *data;
+
+    stride = cairo_format_stride_for_width (CAIRO_FORMAT_A8, width);
+    data = malloc (stride * height);
+    surface = cairo_image_surface_create_for_data (data, CAIRO_FORMAT_A8,
+                                                   width, height,
+                                                   stride);
+    cr = cairo_create (surface);
+    cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
+    cairo_paint (cr);
+    cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgba (cr, 0, 0, 0, 1);
+    cairo_rectangle (cr, 50, 50, 200, 200);
+    cairo_fill (cr);
+    cairo_destroy (cr);
+    {
+        cairo_rectangle_t clip;
+        clip.x = 0;
+        clip.y = 0;
+        clip.width = 0;
+        clip.height = 0;
+        GET_TIME_START cairo_blur_image_surface (surface, 64, clip);
+        GET_TIME_END g_print ("krh blur a8 = %f\n", GET_TIME_DIFF);
+    }
+    cairo_surface_write_to_png (surface, "test-blur6.png");
+    cairo_surface_destroy (surface);
+    free (data);
 
     surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 400, 400);
     cr = cairo_create (surface);
