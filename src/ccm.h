@@ -287,8 +287,7 @@ CCMPixmap*              ccm_window_create_pixmap        (CCMWindow* self,
                                                          int width, int height,
                                                          int depth);
 gboolean                ccm_window_paint                (CCMWindow* self,
-                                                         cairo_t* ctx,
-                                                         gboolean buffered);
+                                                         cairo_t* ctx);
 void                    ccm_window_map                  (CCMWindow* self);
 void                    ccm_window_unmap                (CCMWindow* self);
 void                    ccm_window_query_opacity        (CCMWindow* self,

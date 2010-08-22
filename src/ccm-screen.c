@@ -146,7 +146,6 @@ struct _CCMScreenPrivate
     GList*              windows;
     GList*              last_windows;
     GList*              removed;
-    gboolean            buffered;
     gint                nb_redirect_input;
 
     guint               refresh_rate;
@@ -260,7 +259,6 @@ ccm_screen_init (CCMScreen* self)
     self->priv->windows = NULL;
     self->priv->last_windows = NULL;
     self->priv->removed = NULL;
-    self->priv->buffered = FALSE;
     self->priv->nb_redirect_input = 0;
     self->priv->refresh_rate = 0;
     self->priv->paint = NULL;
@@ -1396,8 +1394,7 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
                 }
 
                 ccm_debug_window (window, "PAINT SCREEN");
-                ret |= ccm_window_paint (window, self->priv->ctx,
-                                         self->priv->buffered);
+                ret |= ccm_window_paint (window, self->priv->ctx);
             }
         }
     }
@@ -1421,7 +1418,6 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
     }
 
     ccm_debug ("PAINT SCREEN END");
-    self->priv->buffered = FALSE;
 
     return ret;
 }

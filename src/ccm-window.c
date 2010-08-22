@@ -2746,7 +2746,7 @@ ccm_window_set_opacity (CCMWindow * self, gfloat opacity)
 }
 
 gboolean
-ccm_window_paint (CCMWindow * self, cairo_t * context, gboolean buffered)
+ccm_window_paint (CCMWindow * self, cairo_t * context)
 {
     g_return_val_if_fail (self != NULL, FALSE);
     g_return_val_if_fail (context != NULL, FALSE);
