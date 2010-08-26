@@ -46,8 +46,8 @@ struct _CCMObject
 
 CCMObject* ccm_object_construct (GType inObjectType);
 
-gboolean ccm_object_register (GType inObjectType, GType inType);
-gboolean ccm_object_unregister (GType inObjectType);
+void ccm_object_register (GType inObjectType, GType inType);
+void ccm_object_unregister (GType inObjectType);
 
 G_END_DECLS
 
