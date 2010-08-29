@@ -2688,8 +2688,7 @@ ccm_window_get_pixmap (CCMWindow * self)
 
     if (!self->priv->pixmap)
     {
-        self->priv->pixmap =
-            ccm_window_plugin_get_pixmap (self->priv->plugin, self);
+        self->priv->pixmap = ccm_window_plugin_get_pixmap (self->priv->plugin, self);
         if (self->priv->pixmap)
         {
             g_object_set_qdata_full (G_OBJECT (self->priv->pixmap), 
@@ -2782,16 +2781,16 @@ ccm_window_paint (CCMWindow * self, cairo_t * context)
                                                context, surface);
                 cairo_surface_destroy (surface);
                 cairo_restore (context);
+                g_object_unref (pixmap);
             }
             else
             {
                 g_object_unref (self->priv->pixmap);
+                g_object_unref (self->priv->pixmap);
                 self->priv->pixmap = NULL;
                 g_signal_emit (self, signals[ERROR], 0);
             }
-            g_object_unref (pixmap);
         }
-
     }
 
     if (ret)
@@ -2842,7 +2841,7 @@ ccm_window_unmap (CCMWindow * self)
             ccm_window_switch_state (self,
                                      CCM_WINDOW_GET_CLASS (self)->state_fullscreen_atom);
         if (self->priv->pixmap)
-            g_object_set (self->priv->pixmap, "freeze", TRUE, NULL);
+            ccm_pixmap_set_freeze (self->priv->pixmap, TRUE);
         ccm_debug_window (self, "WINDOW UNMAP");
         ccm_window_plugin_unmap (self->priv->plugin, self);
     }
@@ -2907,9 +2906,8 @@ ccm_window_query_wm_hints (CCMWindow * self)
     CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
     CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
 
-    hints =
-        XGetWMHints (CCM_DISPLAY_XDISPLAY (display),
-                     self->priv->child ? self->priv->child : CCM_WINDOW_XWINDOW (self));
+    hints = XGetWMHints (CCM_DISPLAY_XDISPLAY (display),
+                         self->priv->child ? self->priv->child : CCM_WINDOW_XWINDOW (self));
     if (hints)
     {
         CCMWindow* old = self->priv->group_leader;
@@ -2920,8 +2918,7 @@ ccm_window_query_wm_hints (CCMWindow * self)
 
         if (old)
         {
-            old->priv->group = g_slist_remove (old->priv->transients, 
-                                               self);
+            old->priv->group = g_slist_remove (old->priv->transients, self);
         }
 
         self->priv->group_leader = group_leader != None ? ccm_screen_find_window_or_child(screen, group_leader) : NULL;
