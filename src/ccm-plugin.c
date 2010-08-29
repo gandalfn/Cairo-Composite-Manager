@@ -391,10 +391,14 @@ _ccm_plugin_lock_free (CCMPluginLock * lock)
 
     if (lock->callbacks != NULL)
     {
-        g_slist_foreach (lock->callbacks, (GFunc) g_free, NULL);
+        GSList* item;
+        for (item = lock->callbacks; item; item = item->next)
+        {
+            g_slice_free (CCMPluginLockCallback, item->data);
+        }
         g_slist_free (lock->callbacks);
     }
-    g_free (lock);
+    g_slice_free (CCMPluginLock, lock);
 }
 
 static GHashTable *
@@ -449,15 +453,16 @@ _ccm_plugin_lock_method (GObject * obj, gpointer func,
     }
     else
     {
-        lock = g_new0 (CCMPluginLock, 1);
+        lock = g_slice_new (CCMPluginLock);
         lock->func = func;
         lock->count = 1;
+        lock->callbacks = NULL;
         g_hash_table_insert (lock_table, func, lock);
     }
 
     if (callback)
     {
-        CCMPluginLockCallback *cb = g_new (CCMPluginLockCallback, 1);
+        CCMPluginLockCallback *cb = g_slice_new (CCMPluginLockCallback);
 
         cb->callback = callback;
         cb->data = data;
@@ -486,7 +491,7 @@ _ccm_plugin_unlock_method (GObject * obj, gpointer func)
 
             for (item = lock->callbacks; item; item = item->next)
             {
-                CCMPluginLockCallback *cb = (CCMPluginLockCallback *) item->data;
+                const CCMPluginLockCallback *cb = (const CCMPluginLockCallback *) item->data;
 
                 if (cb->callback)
                     cb->callback (cb->data);
