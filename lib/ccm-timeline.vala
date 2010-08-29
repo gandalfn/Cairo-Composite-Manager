@@ -187,7 +187,7 @@ public class CCM.Timeline : Object
             m_Timeout = s_TimeoutPool.add (m_Fps, on_timeout, this, null);
     }
 
-    private bool
+    private inline bool
     is_complete ()
     {
         return ((m_Direction == TimelineDirection.FORWARD) && 

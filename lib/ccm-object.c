@@ -47,13 +47,14 @@ ccm_object_factory_get (GType inObjectType)
         {
             while (right >= left)
             {
-                int medium = (left + right) / 2;
+                const int medium = (left + right) / 2;
+                CCMObjectTypeNode* node = &s_ObjectFactory[medium];
 
-                if (inObjectType == s_ObjectFactory[medium].m_Orig)
+                if (inObjectType == node->m_Orig)
                 {
-                    return &s_ObjectFactory[medium];
+                    return node;
                 }
-                else if (inObjectType < s_ObjectFactory[medium].m_Orig)
+                else if (inObjectType < node->m_Orig)
                 {
                     right = medium - 1;
                 }
@@ -80,7 +81,7 @@ ccm_object_constructor (GType inType, guint inNConstructProperties,
     GObject* object;
     GObjectClass* parent_class;
     GType type = inType;
-    CCMObjectTypeNode* node = ccm_object_factory_get (type);
+    const CCMObjectTypeNode* node = ccm_object_factory_get (type);
 
     if (node != NULL && node->m_Derived != 0) type = node->m_Derived;
 

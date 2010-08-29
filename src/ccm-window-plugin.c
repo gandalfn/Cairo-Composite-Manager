@@ -75,20 +75,19 @@ ccm_window_plugin_load_options (CCMWindowPlugin * self, CCMWindow * window)
     g_return_if_fail (window != NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options)
+        if (plugin_class->load_options)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options)
+    if (plugin_class->load_options)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options))
-            CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->load_options (plugin,
-                                                                    window);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->load_options))
+            plugin_class->load_options (plugin, window);
     }
 }
 
@@ -99,19 +98,19 @@ ccm_window_plugin_query_geometry (CCMWindowPlugin * self, CCMWindow * window)
     g_return_val_if_fail (window != NULL, NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry)
+        if (plugin_class->query_geometry)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry)
+    if (plugin_class->query_geometry)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry))
-            return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_geometry (plugin, window);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->query_geometry))
+            return plugin_class->query_geometry (plugin, window);
     }
     return NULL;
 }
@@ -126,21 +125,19 @@ ccm_window_plugin_paint (CCMWindowPlugin * self, CCMWindow * window,
     g_return_val_if_fail (surface != NULL, FALSE);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint)
+        if (plugin_class->paint)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint)
+    if (plugin_class->paint)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint))
-            return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->paint (plugin,
-                                                                    window, ctx,
-                                                                    surface);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->paint))
+            return plugin_class->paint (plugin, window, ctx, surface);
     }
 
     return FALSE;
@@ -153,21 +150,19 @@ ccm_window_plugin_map (CCMWindowPlugin * self, CCMWindow * window)
     g_return_if_fail (window != NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map)
+        if (plugin_class->map)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map)
+    if (plugin_class->map)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin, 
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map))
-            CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->map (plugin, window);
-        else
-            ccm_debug ("LOCKED");
+        if (!_ccm_plugin_method_locked ((GObject *) plugin,  plugin_class->map))
+            plugin_class->map (plugin, window);
     }
 }
 
@@ -178,23 +173,19 @@ ccm_window_plugin_unmap (CCMWindowPlugin * self, CCMWindow * window)
     g_return_if_fail (window != NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap)
+        if (plugin_class->unmap)
             break;
-        else
-            ccm_debug ("PLUGIN NEXT");
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap)
+    if (plugin_class->unmap)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap))
-            CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->unmap (plugin, window);
-        else
-            ccm_debug ("LOCKED");
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->unmap))
+            plugin_class->unmap (plugin, window);
     }
 }
 
@@ -205,20 +196,19 @@ ccm_window_plugin_query_opacity (CCMWindowPlugin * self, CCMWindow * window)
     g_return_if_fail (window != NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity)
+        if (plugin_class->query_opacity)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity)
+    if (plugin_class->query_opacity)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity))
-            CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->query_opacity (plugin,
-                                                                     window);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->query_opacity))
+            plugin_class->query_opacity (plugin, window);
     }
 }
 
@@ -230,19 +220,19 @@ ccm_window_plugin_move (CCMWindowPlugin * self, CCMWindow * window, int x,
     g_return_if_fail (window != NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
         if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move)
+    if (plugin_class->move)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move))
-            CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->move (plugin, window, x, y);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->move))
+            plugin_class->move (plugin, window, x, y);
     }
 }
 
@@ -254,20 +244,19 @@ ccm_window_plugin_resize (CCMWindowPlugin * self, CCMWindow * window, int width,
     g_return_if_fail (window != NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize)
+        if (plugin_class->resize)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize)
+    if (plugin_class->resize)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize))
-            CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->resize (plugin, window,
-                                                              width, height);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->resize))
+            plugin_class->resize (plugin, window, width, height);
     }
 }
 
@@ -279,21 +268,19 @@ ccm_window_plugin_set_opaque_region (CCMWindowPlugin * self, CCMWindow * window,
     g_return_if_fail (window != NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque_region)
+        if (plugin_class->set_opaque_region)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque_region)
+    if (plugin_class->set_opaque_region)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque_region))
-            CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->set_opaque_region (plugin,
-                                                                         window,
-                                                                         area);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->set_opaque_region))
+            plugin_class->set_opaque_region (plugin, window, area);
     }
 }
 
@@ -306,20 +293,19 @@ ccm_window_plugin_get_origin (CCMWindowPlugin * self, CCMWindow * window,
     g_return_if_fail (x != NULL && y != NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_origin)
+        if (plugin_class->get_origin)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_origin)
+    if (plugin_class->get_origin)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_origin))
-            CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_origin (plugin,
-                                                                  window, x, y);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->get_origin))
+            plugin_class->get_origin (plugin, window, x, y);
     }
 }
 
@@ -330,20 +316,19 @@ ccm_window_plugin_get_pixmap (CCMWindowPlugin * self, CCMWindow * window)
     g_return_val_if_fail (window != NULL, NULL);
 
     CCMWindowPlugin *plugin;
+    CCMWindowPluginClass *plugin_class;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
          plugin = CCM_WINDOW_PLUGIN_PARENT (plugin))
     {
-        if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_pixmap)
+        if (plugin_class->get_pixmap)
             break;
     }
 
-    if (CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_pixmap)
+    if (plugin_class->get_pixmap)
     {
-        if (!_ccm_plugin_method_locked ((GObject *) plugin,
-                                        CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_pixmap))
-            return CCM_WINDOW_PLUGIN_GET_INTERFACE (plugin)->get_pixmap (plugin,
-                                                                         window);
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->get_pixmap))
+            return plugin_class->get_pixmap (plugin, window);
     }
 
     return NULL;

@@ -33,7 +33,7 @@ internal struct CCM.TimeoutInterval
         m_FrameCount = 0;
     }
 
-    private uint
+    private inline uint
     get_ticks (TimeVal inCurrentTime)
     {
         return (uint)((inCurrentTime.tv_sec - m_StartTime.tv_sec) * 1000 + 

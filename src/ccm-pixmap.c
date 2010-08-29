@@ -202,8 +202,7 @@ ccm_pixmap_on_damage (CCMPixmap * self, Damage damage, CCMDisplay * display)
     if (!self->priv->freeze && self->priv->damage == damage)
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
-        XserverRegion region =
-            XFixesCreateRegion (CCM_DISPLAY_XDISPLAY (display), NULL, 0);
+        XserverRegion region = XFixesCreateRegion (CCM_DISPLAY_XDISPLAY (display), NULL, 0);
 
         if (region)
         {
@@ -251,9 +250,9 @@ ccm_pixmap_register_damage (CCMPixmap * self)
         XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
                          None, None);
 
-        self->priv->id_damage =
-            g_signal_connect_swapped (display, "damage-event",
-                                      G_CALLBACK (ccm_pixmap_on_damage), self);
+        self->priv->id_damage = g_signal_connect_swapped (display, "damage-event",
+                                                          G_CALLBACK (ccm_pixmap_on_damage),
+                                                          self);
     }
     else
         self->priv->damage = None;
