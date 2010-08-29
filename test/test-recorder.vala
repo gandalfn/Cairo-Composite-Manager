@@ -39,9 +39,11 @@ public class WindowRecorder : Gtk.Window
             clone_window = Gdk.Window.foreign_new ((Gdk.NativeWindow)value);
             clone_window.get_size(out window_width,  out window_height);
             get_size(out width, out height);
+            event_box.remove (label);
+            label = null;
             clone (true);
-            clone_offset (0, -24);
-            clone_scale (width / (double)window_width, height / (double)(window_height - 28));
+            clone_offset (0, 0);
+            clone_scale (width / (double)window_width, height / (double)window_height);
             queue_draw ();
         }
     }
@@ -51,6 +53,8 @@ public class WindowRecorder : Gtk.Window
         resize (width, height);
         event_box = new Gtk.EventBox ();
         event_box.show ();
+        event_box.above_child = false;
+        event_box.visible_window = true;
         add (event_box);
         label = new Gtk.Label ("Click on the window to clone");
         label.show ();
@@ -82,8 +86,8 @@ public class WindowRecorder : Gtk.Window
             clone_window.get_size(out window_width,  out window_height);
             get_size(out width, out height);
             clone (true);
-            clone_offset (0, -24);
-            clone_scale ((double)width / window_width, (double)height / (window_height - 28));
+            clone_offset (0, 0);
+            clone_scale ((double)width / window_width, (double)height / window_height);
         }
 
         return ret;
