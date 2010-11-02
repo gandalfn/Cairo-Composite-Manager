@@ -114,9 +114,13 @@ ccm_object_register (GType inObjectType, GType inType)
 
         s_ObjectFactoryLength++;
         if (s_ObjectFactory == NULL)
-            s_ObjectFactory = g_slice_alloc (s_ObjectFactoryLength * sizeof (CCMObjectTypeNode));
+        {
+            s_ObjectFactory = g_malloc0 (s_ObjectFactoryLength * sizeof (CCMObjectTypeNode));
+        }
         else
-            s_ObjectFactory = g_slice_copy (s_ObjectFactoryLength * sizeof (CCMObjectTypeNode), s_ObjectFactory);
+        {
+            s_ObjectFactory = g_realloc (s_ObjectFactory, s_ObjectFactoryLength * sizeof (CCMObjectTypeNode));
+        }
 
         while (index > 0 && s_ObjectFactory[index - 1].m_Orig > inObjectType)
         {
