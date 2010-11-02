@@ -16,7 +16,7 @@ VALAFLAGS = \
     --pkg=cairo-compmgr
 
 PLUGIN_LDFLAGS = -module -avoid-version -no-undefined
-PLUGIN_LIBADD = ${top_builddir}/lib/libcairo_compmgr.la
+PLUGIN_LIBADD = $(CAIRO_COMPMGR_LIBS) ${top_builddir}/lib/libcairo_compmgr.la
 
 plugin_in_files = $(PLUGIN).plugin.desktop.in
 %.plugin: %.plugin.desktop $(INTLTOOL_MERGE) $(wildcard $(top_srcdir)/po/*po) ; $(INTLTOOL_MERGE) $(top_srcdir)/po $< $@ -d -u -c $(top_builddir)/po/.intltool-merge-cache

@@ -36,7 +36,7 @@ namespace CCM
     {
         public bool enabled = false;
 
-        override void
+        public override void
         changed(CCM.Config config)
         {
             try

@@ -67,7 +67,7 @@ public abstract class CCM.Watch : GLib.Object
         return ret;
     }
 
-    private abstract void
+    public abstract void
     process_watch ();
 
     protected void

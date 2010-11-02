@@ -48,7 +48,7 @@ CAIRO_XLIB_REQUIRED=1.8.0
 CAIRO_XLIB_XRENDER_REQUIRED=1.8.0
 GOBJECT_INTROSPECTION_REQUIRED=0.6.2
 GLADEUI_REQUIRED=3.6.7
-VALA_REQUIRED=0.9.7
+VALA_REQUIRED=0.10.0
 
 dnl ****************************************************************************
 dnl Check for build

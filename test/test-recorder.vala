@@ -61,7 +61,7 @@ public class WindowRecorder : Gtk.Window
         event_box.add (label);
     }
 
-    private override void
+    public override void
     realize ()
     {
         base.realize ();
@@ -69,7 +69,7 @@ public class WindowRecorder : Gtk.Window
         get_clone_window_xid ();
     }
 
-    private override bool 
+    public override bool 
     configure_event(Gdk.EventConfigure event)
     {
         bool ret = base.configure_event (event);
@@ -93,7 +93,7 @@ public class WindowRecorder : Gtk.Window
         return ret;
     }
 
-    private override bool
+    public override bool
     delete_event (Gdk.Event event)
     {
         clone (false);

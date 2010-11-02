@@ -37,7 +37,7 @@ namespace CCM
     {
         public double duration = 0.4;
 
-        override void 
+        public override void 
         changed(CCM.Config config)
         {
             var real_duration = 0.4;

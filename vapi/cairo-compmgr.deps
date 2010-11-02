@@ -10,5 +10,5 @@ gdk-x11-2.0
 atk
 gtk+-2.0
 gconf-2.0
-vala-1.0
+vala-0.10
 x11

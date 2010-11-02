@@ -36,7 +36,7 @@ namespace CCM
     {
         public string show_shortcut;
 
-        override void
+        public override void
         changed(CCM.Config config)
         {
             show_shortcut = "<Super>a";

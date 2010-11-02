@@ -63,7 +63,7 @@ internal class CCM.TimeoutPool
     private bool 
     check ()
     {
-        foreach (Timeout timeout in m_Timeouts)
+        foreach (unowned Timeout timeout in m_Timeouts)
         {
             int val;
 
