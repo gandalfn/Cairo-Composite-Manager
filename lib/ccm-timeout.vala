@@ -28,45 +28,10 @@ internal class CCM.Timeout
 {
     private TimeoutFlags m_Flags;
 
-    private TimeoutInterval m_Interval;
-    internal TimeoutInterval? interval { 
-        get {
-            return m_Interval; 
-        }
-        set {
-            m_Interval = value;
-        }
-    }
-
-    private TimeoutFunc m_Callback;
-    internal TimeoutFunc callback {
-        get {
-            return m_Callback;
-        }
-        set {
-            m_Callback = value;
-        }
-    }
-
-    private void* m_Data;
-    internal void* data {
-        get {
-            return m_Data;
-        }
-        set {
-            m_Data = value;
-        }
-    }
-
-    private DestroyNotify m_Notify;
-    internal new DestroyNotify notify {
-        get {
-            return m_Notify;
-        }
-        set {
-            m_Notify = value;
-        }
-    }
+    internal TimeoutInterval interval;
+    internal TimeoutFunc callback;
+    internal void* data;
+    internal new DestroyNotify notify;
 
     internal bool ready {
         get {
@@ -94,13 +59,13 @@ internal class CCM.Timeout
 
     internal Timeout (uint inFps)
     {
-        m_Interval = TimeoutInterval (inFps);
+        interval = TimeoutInterval (inFps);
         m_Flags = TimeoutFlags.NONE;
     }
 
     ~Timeout ()
     {
-        if (m_Notify != null) m_Notify (m_Data);
+        if (notify != null) notify (data);
     }
 
     internal static int
@@ -121,7 +86,7 @@ internal class CCM.Timeout
 
         if (inB.master) return 1;
 
-        return inA.m_Interval.compare(inB.m_Interval);
+        return inA.interval.compare(inB.interval);
     }
 
     internal bool 
@@ -131,6 +96,6 @@ internal class CCM.Timeout
 
         inSource.get_current_time(out now);
 
-        return m_Interval.prepare(now, out outNextTimeout);
+        return interval.prepare(now, out outNextTimeout);
     }
 }

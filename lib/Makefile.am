@@ -35,7 +35,6 @@ noinst_LTLIBRARIES = \
 
 libccm_timeline_la_VALAFLAGS = \
     --header=ccm-timeline.h \
-    --use-header \
     --vapidir=${top_srcdir}/vapi \
     --pkg=config \
     --pkg=source
@@ -52,7 +51,6 @@ libccm_timeline_la_LIBADD = \
 
 libccm_watch_la_VALAFLAGS = \
     --header=ccm-watch.h \
-    --use-header \
     --vapidir=${top_srcdir}/vapi \
     --pkg=config \
     --pkg=source

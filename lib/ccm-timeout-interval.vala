@@ -33,26 +33,26 @@ internal struct CCM.TimeoutInterval
         m_FrameCount = 0;
     }
 
-    private inline uint
+    private inline ulong
     get_ticks (TimeVal inCurrentTime)
     {
-        return (uint)((inCurrentTime.tv_sec - m_StartTime.tv_sec) * 1000 + 
-                      (inCurrentTime.tv_usec - m_StartTime.tv_usec) / 1000);
+        return (ulong)((inCurrentTime.tv_sec - m_StartTime.tv_sec) * 1000 + 
+                       (inCurrentTime.tv_usec - m_StartTime.tv_usec) / 1000);
     }
 
     public bool
     prepare (TimeVal inCurrentTime, out int outDelay)
     {
         bool ret = false;
-        uint elapsed_time = get_ticks (inCurrentTime);
-        uint new_frame_num = elapsed_time * m_Fps / 1000;
+        ulong elapsed_time = get_ticks (inCurrentTime);
+        uint new_frame_num = (uint)(elapsed_time * m_Fps / 1000);
 
         if (new_frame_num < m_FrameCount || new_frame_num - m_FrameCount > 2)
         {
-            uint frame_time = (1000 + m_Fps - 1) / m_Fps;
+            long frame_time = (1000 + m_Fps - 1) / m_Fps;
 
             m_StartTime = inCurrentTime;
-            m_StartTime.add(-(int)frame_time * 1000);
+            m_StartTime.add(-frame_time * 1000);
 
             m_FrameCount = 0;
             outDelay = 0;
@@ -88,17 +88,14 @@ internal struct CCM.TimeoutInterval
     public int
     compare (TimeoutInterval inTimeoutInterval)
     {
-        uint a_delay = 1000 / m_Fps;
-        uint b_delay = 1000 / inTimeoutInterval.m_Fps;
+        long a_delay = 1000 / m_Fps;
+        long b_delay = 1000 / inTimeoutInterval.m_Fps;
         long b_difference;
-        int comparison;
 
         b_difference = ((m_StartTime.tv_sec - inTimeoutInterval.m_StartTime.tv_sec) * 1000
                         + (m_StartTime.tv_usec - inTimeoutInterval.m_StartTime.tv_usec) / 1000);
 
-        comparison = ((int) ((m_FrameCount + 1) * a_delay) -
-                      (int) ((inTimeoutInterval.m_FrameCount + 1) * b_delay + b_difference));
-
-        return comparison < 0 ? -1 : comparison > 0 ? 1 : 0;
+        return (int)(((m_FrameCount + 1) * a_delay) -
+                           ((inTimeoutInterval.m_FrameCount + 1) * b_delay + b_difference));
     }
 }

@@ -267,7 +267,7 @@ namespace CCM
         public unowned CCM.Window get_root_window ();
         public unowned CCM.Window get_overlay_window ();
         public unowned GLib.List<CCM.Window> get_windows ();
-        public X.Visual* get_visual_for_depth (int depth);
+        public unowned X.Visual? get_visual_for_depth (int depth);
         public unowned CCM.Window get_active_window ();
 
         public bool add_window (CCM.Window window);
@@ -361,7 +361,7 @@ namespace CCM
         [CCode (has_construct_function = false)]
         public Pixmap (CCM.Drawable drawable, X.Pixmap xpixmap);
         [CCode (has_construct_function = false)]
-        public Pixmap.from_visual (CCM.Screen screen, X.Visual visual, X.Pixmap xpixmap);
+        public Pixmap.from_visual (CCM.Screen screen, X.Visual? visual, X.Pixmap xpixmap);
         [CCode (has_construct_function = false, cname="ccm_pixmap_image_new")]
         public Pixmap.image (CCM.Drawable drawable, X.Pixmap xpixmap);
 

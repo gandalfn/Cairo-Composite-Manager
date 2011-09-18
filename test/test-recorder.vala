@@ -194,7 +194,7 @@ get_clone_window_xid ()
     Gdk.Screen screen = Gdk.Screen.get_default ();
     Gdk.Window root = screen.get_root_window ();
     Gdk.Cursor cursor = new Gdk.Cursor.for_display(display, Gdk.CursorType.CROSSHAIR);
-    X.Display xdisplay = Gdk.x11_display_get_xdisplay (display);
+    unowned X.Display xdisplay = Gdk.x11_display_get_xdisplay (display);
     xdisplay.grab_pointer((X.Window)Gdk.x11_drawable_get_xid (root), 
                           false,
                           X.EventMask.ButtonPressMask | 

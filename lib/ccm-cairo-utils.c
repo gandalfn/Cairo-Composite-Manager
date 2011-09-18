@@ -410,6 +410,8 @@ cairo_image_surface_blur2 (cairo_surface_t * surface, double radius, int x_orig,
         case CAIRO_FORMAT_A1:
             nchan = 1;
             break;
+        default:
+            break;
     }
     w = width <= 0 ? cairo_image_surface_get_width (surface) : width;
     h = height <= 0 ? cairo_image_surface_get_height (surface) : height;

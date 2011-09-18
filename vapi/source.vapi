@@ -23,7 +23,7 @@ namespace CCM
     public class Source : GLib.Source
     {
         public Source(SourceFuncs inFuncs, void* inData);
-        public Source.from_pollfd(SourceFuncs inFuncs, GLib.PollFD inFd, void* inData);
+        public Source.from_pollfd(SourceFuncs inFuncs, GLib.PollFD? inFd, void* inData);
         public Source @ref();
         public void unref();
         public void destroy();

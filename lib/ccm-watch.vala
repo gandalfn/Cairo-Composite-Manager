@@ -27,12 +27,10 @@ public abstract class CCM.Watch : GLib.Object
     private bool
     on_source_prepare (out int inTimeout)
     {
-        bool ret = false;
-
-        inTimeout = -1;
         process_watch ();
+        inTimeout = -1;
 
-        return ret;
+        return false;
     }
 
     private bool
@@ -56,15 +54,12 @@ public abstract class CCM.Watch : GLib.Object
     private bool
     on_source_dispatch(SourceFunc inCallback)
     {
-        bool ret = false;
-
         if ((m_Fd.revents & IOCondition.IN) == IOCondition.IN)
         {
             process_watch ();
-            ret = true;
         }
 
-        return ret;
+        return true;
     }
 
     public abstract void

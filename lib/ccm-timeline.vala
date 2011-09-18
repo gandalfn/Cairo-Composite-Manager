@@ -26,12 +26,13 @@ public enum CCM.TimelineDirection
 public class CCM.Timeline : Object
 {
     static TimeoutPool s_TimeoutPool = null;
+    static bool        s_HaveDefault = false;
+    static int         s_DefaultPriority = 0;
 
     private Timeout? m_Timeout = null;
     private TimelineDirection m_Direction = TimelineDirection.FORWARD;
     private int m_CurrentFrameNum = 0;
     private uint m_Fps = 60;
-    private uint m_NFrames = 0;
     private uint m_Duration = 0;
     private TimeVal m_PrevFrameTimeVal;
 
@@ -46,7 +47,7 @@ public class CCM.Timeline : Object
             if (m_Direction != value)
             {
                 m_Direction = value;
-                if (m_CurrentFrameNum == 0) m_CurrentFrameNum = (int)m_NFrames;
+                if (m_CurrentFrameNum == 0) m_CurrentFrameNum = (int)n_frames;
             }
         }
     }
@@ -139,13 +140,19 @@ public class CCM.Timeline : Object
 
     static construct
     {
-        s_TimeoutPool = new TimeoutPool (Priority.DEFAULT + 10);
+        s_TimeoutPool = new TimeoutPool (s_HaveDefault ? s_DefaultPriority : Priority.DEFAULT + 10);
     }
 
-    public signal void started ();
-    public signal void paused ();
-    public signal void new_frame (int inNumFrame);
-    public signal void completed ();
+    public virtual signal void started () {}
+    public virtual signal void paused ()  {}
+    public virtual signal void new_frame (int inNumFrame)  {}
+    public virtual signal void completed () {}
+
+    public static void initialize (int inPriority)
+    {
+        s_DefaultPriority = inPriority;
+        s_HaveDefault = true;
+    }
 
     /**
      * Construct a new timeline
@@ -200,7 +207,7 @@ public class CCM.Timeline : Object
     on_timeout ()
     {
         TimeVal now = TimeVal ();
-        uint n_frames;
+        uint nb_frames;
         ulong msecs, speed;
 
         now.get_current_time ();
@@ -215,15 +222,15 @@ public class CCM.Timeline : Object
         msecs += (now.tv_usec - m_PrevFrameTimeVal.tv_usec) / 1000;
 
         speed = uint.max (1000 / m_Fps, 1);
-        n_frames = (uint)(msecs / speed);
-        if (n_frames == 0) n_frames = 1;
+        nb_frames = (uint)(msecs / speed);
+        if (nb_frames == 0) nb_frames = 1;
 
         m_PrevFrameTimeVal = now;
 
         if (m_Direction == TimelineDirection.FORWARD)
-            m_CurrentFrameNum += (int)n_frames;
+            m_CurrentFrameNum += (int)nb_frames;
         else
-            m_CurrentFrameNum -= (int)n_frames;
+            m_CurrentFrameNum -= (int)nb_frames;
 
         if (!is_complete ())
         {

@@ -342,9 +342,6 @@ ccm_keybind_on_event (CCMKeybind * self, XEvent * xevent)
 
             event_mods = state & ~(self->priv->caps_lock_mask | self->priv->num_lock_mask);
 
-            ccm_debug ("Motion notify: window = 0x%lx, button = %i, modifiers = %i",
-                       xevent->xbutton.windowI, button, event_mods);
-
             if (self->priv->button && self->priv->button == button && 
                 self->priv->modifiers == event_mods)
             {

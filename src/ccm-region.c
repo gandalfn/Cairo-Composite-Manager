@@ -361,7 +361,7 @@ ccm_region_transform (CCMRegion * self, cairo_matrix_t * matrix)
             boxes[cpt].x2 = pixman_double_to_fixed (x2);
             boxes[cpt].y2 = pixman_double_to_fixed (y2);
         }
-    }	
+    }
 }
 
 gboolean
