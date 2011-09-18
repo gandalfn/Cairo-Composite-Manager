@@ -953,6 +953,22 @@ ccm_screen_unset_selection_owner (CCMScreen * self)
 
         XSetSelectionOwner (CCM_DISPLAY_XDISPLAY (self->priv->display), cm_atom,
                             None, 0);
+
+        XClientMessageEvent event;
+        event.type = ClientMessage;
+        event.window = RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                   self->priv->number);
+        event.message_type = cm_atom;
+        event.format = 32;
+        event.data.l[0] = CurrentTime;
+        event.data.l[1] = cm_atom;
+        event.data.l[2] = None;
+        event.data.l[3] = 0;
+        event.data.l[4] = 0;
+        XSendEvent(CCM_DISPLAY_XDISPLAY (self->priv->display),
+                   RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                               self->priv->number),
+                   False, StructureNotifyMask, (XEvent*)&event);
     }
 }
 
@@ -992,6 +1008,21 @@ ccm_screen_set_selection_owner (CCMScreen * self)
         XSetSelectionOwner (CCM_DISPLAY_XDISPLAY (self->priv->display), cm_atom,
                             self->priv->selection_owner, 0);
 
+        XClientMessageEvent event;
+        event.type = ClientMessage;
+        event.window = RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                   self->priv->number);
+        event.message_type = cm_atom;
+        event.format = 32;
+        event.data.l[0] = CurrentTime;
+        event.data.l[1] = cm_atom;
+        event.data.l[2] = self->priv->selection_owner;
+        event.data.l[3] = 0;
+        event.data.l[4] = 0;
+        XSendEvent(CCM_DISPLAY_XDISPLAY (self->priv->display),
+                   RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                               self->priv->number),
+                   False, StructureNotifyMask, (XEvent*)&event);
     }
 
     return TRUE;
