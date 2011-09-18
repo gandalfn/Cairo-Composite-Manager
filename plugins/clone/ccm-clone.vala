@@ -28,11 +28,12 @@ using Vala;
 
 namespace CCM
 {
-    public class Output
+    class Output
     {
         public weak CCM.Window client;
         public weak CCM.Window window;
         public CCM.Pixmap pixmap;
+        public bool freeze;
         public bool need_clear;
         public bool paint_parent;
         public int x;
@@ -41,16 +42,18 @@ namespace CCM
         public int max_height;
         public int scale_x;
         public int scale_y;
+        public Cairo.Filter scale_quality;
 
         public Output (CCM.Screen screen, CCM.Window client, CCM.Window window,
                        X.Pixmap xpixmap, int depth)
         {
-            X.Visual * visual = screen.get_visual_for_depth (depth);
+            unowned X.Visual? visual = screen.get_visual_for_depth (depth);
 
             this.client = client;
             this.window = window;
-            this.pixmap = new CCM.Pixmap.from_visual (screen, *visual, xpixmap);
+            this.pixmap = new CCM.Pixmap.from_visual (screen, visual, xpixmap);
             this.pixmap.foreign = true;
+            this.freeze = true;
             this.need_clear = true;
             this.paint_parent = true;
             this.x = 0;
@@ -59,6 +62,7 @@ namespace CCM
             this.max_height = 0;
             this.scale_x = 0;
             this.scale_y = 0;
+            this.scale_quality = Cairo.Filter.GOOD;
         }
     }
 
@@ -68,6 +72,7 @@ namespace CCM
         class X.Atom screen_disable_atom;
         class X.Atom enable_atom;
         class X.Atom disable_atom;
+        class X.Atom freeze_atom;
         class X.Atom paint_parent_atom;
         class X.Atom offset_x_atom;
         class X.Atom offset_y_atom;
@@ -75,6 +80,7 @@ namespace CCM
         class X.Atom max_height_atom;
         class X.Atom scale_x_atom;
         class X.Atom scale_y_atom;
+        class X.Atom scale_quality_atom;
 
         weak CCM.Screen screen;
         ArrayList < Output > screen_outputs = null;
@@ -123,19 +129,37 @@ namespace CCM
             {
                 int depth = (int) l3;
 
-                CCM.log ("ENABLE CLONE");
+                CCM.debug ("ENABLE CLONE");
                 var clone = (Clone) window.get_plugin (typeof (Clone));
-                var output =
-                    new Output (window.get_screen (), client, window, xpixmap, depth);
-                if (clone.window_outputs == null)
+                bool found = false;
+                if (clone.window_outputs != null)
+                {
+                    foreach (Output output in clone.window_outputs)
+                    {
+                        if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                        {
+                            found = true;
+                            output.freeze = false;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
                     clone.window_outputs = new ArrayList < Output > ();
-                clone.window_outputs.add (output);
-                client.no_undamage_sibling = true;
-                window.damage ();
+                }
+
+                if (!found)
+                {
+                    Output output = new Output (window.get_screen (), client, window, xpixmap, depth);
+                    clone.window_outputs.add (output);
+                    client.no_undamage_sibling = true;
+                    window.damage ();
+                }
             }
             else if (atom == disable_atom)
             {
-                CCM.log ("DISABLE CLONE");
+                CCM.debug ("DISABLE CLONE");
                 var clone = (Clone) window.get_plugin (typeof (Clone));
                 client.no_undamage_sibling = false;
 
@@ -148,105 +172,158 @@ namespace CCM
                     }
                 }
             }
-            else if (atom == offset_x_atom)
+            else if (atom == freeze_atom)
             {
-                CCM.log ("OFFSET X CLONE %i", (int)l3);
+                bool freeze = (bool)l3;
+
+                CCM.debug ("FREEZE CLONE %s", freeze.to_string ());
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
-                        output.x = (int) l3;
-                        output.need_clear = true;
+                        output.need_clear = freeze && freeze != output.freeze;
+                        output.freeze = freeze;
+                        if (output.need_clear)
+                            window.damage ();
                         break;
                     }
                 }
-                window.damage ();
+            }
+            else if (atom == offset_x_atom)
+            {
+                CCM.debug ("OFFSET X CLONE %i", (int)l3);
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        int x =  (int) l3;
+                        output.need_clear = x != output.x;
+                        output.x = x;
+                        if (output.need_clear && !output.freeze)
+                            window.damage ();
+                        break;
+                    }
+                }
             }
             else if (atom == offset_y_atom)
             {
-                CCM.log ("OFFSET Y CLONE %i", (int)l3);
+                CCM.debug ("OFFSET Y CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
-                        output.y = (int) l3;
-                        output.need_clear = true;
+                        int y =  (int) l3;
+                        output.need_clear = y != output.y;
+                        output.y = y;
+                        if (output.need_clear && !output.freeze)
+                            window.damage ();
                         break;
                     }
                 }
-                window.damage ();
             }
             else if (atom == max_width_atom)
             {
-                CCM.log ("MAX WIDTH CLONE %i", (int)l3);
+                CCM.debug ("MAX WIDTH CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
-                        output.max_width = (int) l3;
-                        output.need_clear = true;
+                        int max_width =  (int) l3;
+                        output.need_clear = max_width != output.max_width;
+                        output.max_width = max_width;
+                        if (output.need_clear && !output.freeze)
+                            window.damage ();
                         break;
                     }
                 }
-                window.damage ();
             }
             else if (atom == max_height_atom)
             {
-                CCM.log ("MAX HEIGHT CLONE %i", (int)l3);
+                CCM.debug ("MAX HEIGHT CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
-                        output.max_height = (int) l3;
-                        output.need_clear = true;
+                        int max_height =  (int) l3;
+                        output.need_clear = max_height != output.max_height;
+                        output.max_height = max_height;
+                        if (output.need_clear && !output.freeze)
+                            window.damage ();
                         break;
                     }
                 }
-                window.damage ();
             }
             else if (atom == scale_x_atom)
             {
-                CCM.log ("SCALE X CLONE %i", (int)l3);
+                CCM.debug ("SCALE X CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
-                        output.scale_x = (int) l3;
-                        output.need_clear = true;
+                        int scale_x =  (int) l3;
+                        output.need_clear = scale_x != output.scale_x;
+                        output.scale_x = scale_x;
+                        if (output.need_clear && !output.freeze)
+                            window.damage ();
                         break;
                     }
                 }
-                window.damage ();
             }
             else if (atom == scale_y_atom)
             {
-                CCM.log ("SCALE Y CLONE %i", (int)l3);
+                CCM.debug ("SCALE Y CLONE %i", (int)l3);
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
                     {
-                        output.scale_y = (int) l3;
-                        output.need_clear = true;
+                        int scale_y =  (int) l3;
+                        output.need_clear = scale_y != output.scale_y;
+                        output.scale_y = scale_y;
+                        if (output.need_clear && !output.freeze)
+                            window.damage ();
                         break;
                     }
                 }
-                window.damage ();
+            }
+            else if (atom == scale_quality_atom)
+            {
+                CCM.debug ("SCALE QUALITY CLONE %i", (int)l3);
+                var clone = (Clone) window.get_plugin (typeof (Clone));
+
+                foreach (Output output in clone.window_outputs)
+                {
+                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    {
+                        Cairo.Filter scale_quality =  Cairo.Filter.FAST;
+                        if ((int)l3 == 1)
+                            scale_quality = Cairo.Filter.GOOD;
+                        else if ((int)l3 == 2)
+                            scale_quality = Cairo.Filter.BEST;
+                        output.need_clear = scale_quality != output.scale_quality;
+                        output.scale_quality = scale_quality;
+                        if (output.need_clear && !output.freeze)
+                            window.damage ();
+                        break;
+                    }
+                }
             }
             else if (atom == paint_parent_atom)
             {
-                CCM.log ("PAINT PARENT CLONE");
+                CCM.debug ("PAINT PARENT CLONE");
                 var clone = (Clone) window.get_plugin (typeof (Clone));
 
                 foreach (Output output in clone.window_outputs)
@@ -263,7 +340,7 @@ namespace CCM
             {
                 int depth = (int) l3;
 
-                CCM.log ("ENABLE SCREEN CLONE");
+                CCM.debug ("ENABLE SCREEN CLONE");
                 var output =
                     new Output (window.get_screen (), client, window, xpixmap, depth);
                 window.no_undamage_sibling = true;
@@ -271,7 +348,7 @@ namespace CCM
             }
             else if (atom == screen_disable_atom)
             {
-                CCM.log ("DISABLE SCREEN CLONE");
+                CCM.debug ("DISABLE SCREEN CLONE");
                 foreach (Output output in screen_outputs)
                 {
                     if (output.pixmap.get_xid () == (X.ID) xpixmap)
@@ -294,39 +371,19 @@ namespace CCM
             this.screen.composite_message.connect (on_composite_message);
             if (screen_enable_atom == 0)
             {
-                screen_enable_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_SCREEN_ENABLE", false);
-                screen_disable_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_SCREEN_DISABLE", false);
-                enable_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_ENABLE", false);
-                disable_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_DISABLE", false);
-                paint_parent_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_PAINT_PARENT", false);
-                offset_x_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_OFFSET_X", false);
-                offset_y_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_OFFSET_Y", false);
-                max_width_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_MAX_WIDTH", false);
-                max_height_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_MAX_HEIGHT", false);
-                scale_x_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_SCALE_X", false);
-                scale_y_atom =
-                    screen.get_display ().get_xdisplay ().
-                    intern_atom ("_CCM_CLONE_SCALE_Y", false);
+                screen_enable_atom  = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_SCREEN_ENABLE", false);
+                screen_disable_atom = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_SCREEN_DISABLE", false);
+                enable_atom         = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_ENABLE", false);
+                disable_atom        = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_DISABLE", false);
+                freeze_atom         = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_FREEZE", false);
+                paint_parent_atom   = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_PAINT_PARENT", false);
+                offset_x_atom       = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_OFFSET_X", false);
+                offset_y_atom       = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_OFFSET_Y", false);
+                max_width_atom      = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_MAX_WIDTH", false);
+                max_height_atom     = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_MAX_HEIGHT", false);
+                scale_x_atom        = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_SCALE_X", false);
+                scale_y_atom        = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_SCALE_Y", false);
+                scale_quality_atom  = screen.get_display ().get_xdisplay ().intern_atom ("_CCM_CLONE_SCALE_QUALITY", false);
             }
             ((CCM.ScreenPlugin) parent).screen_load_options (screen);
         }
@@ -351,7 +408,7 @@ namespace CCM
                         {
                             Cairo.Rectangle clipbox = Cairo.Rectangle ();
 
-                            if (output.pixmap.get_device_geometry_clipbox (out clipbox))
+                            if (!output.freeze && output.pixmap.get_device_geometry_clipbox (out clipbox))
                             {
                                 Cairo.Context ctx = output.pixmap.create_context ();
 
@@ -395,6 +452,7 @@ namespace CCM
                                     ctx.set_source_surface (surface, 
                                                             - (geometry.width - area.width) / 2.0,
                                                             - (geometry.height - area.height) / 2.0);
+                                    ctx.get_source ().set_filter (output.scale_quality);
                                     ctx.paint ();
 
                                     surface.set_device_offset (0, 0);
