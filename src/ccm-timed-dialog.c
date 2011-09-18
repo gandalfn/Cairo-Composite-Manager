@@ -1,7 +1,7 @@
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
- * cairo-compmgr
- * Copyright (C) Nicolas Bruguier 2009 <nicolas.bruguier@supersonicimagine.fr>
+ * ccm-timed-dialog.c
+ * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
  * 
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
