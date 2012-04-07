@@ -3,6 +3,7 @@ uidir = $(datadir)/cairo-compmgr/ui
 INCLUDES = \
     -I${top_srcdir}/src \
     -I${top_srcdir}/lib \
+    -I${top_srcdir}/vapi \
     -DUI_DIR=\"$(uidir)\" \
     $(CAIRO_COMPMGR_CFLAGS)
 
@@ -71,3 +72,4 @@ if ENABLE_GCONF
 CLEANFILES += $(schemas_DATA) \
               $(schemas_in_files)
 endif
+

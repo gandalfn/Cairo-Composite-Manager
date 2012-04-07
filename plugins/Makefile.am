@@ -12,4 +12,6 @@ SUBDIRS = \
     snapshot \
     vala-test \
     automate \
-    clone
+    clone \
+    stats
+

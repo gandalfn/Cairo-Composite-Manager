@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: Vala; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * ccm-mosaic.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
@@ -236,9 +236,9 @@ namespace CCM
             event.xclient.data.l[3] = 0;
             event.xclient.data.l[4] = 0;
 
-            display.get_xdisplay().send_event (root.get_xwindow(), true, 
-                                               X.EventMask.SubstructureRedirectMask | 
-                                               X.EventMask.SubstructureNotifyMask, 
+            display.get_xdisplay().send_event (root.get_xwindow(), true,
+                                               X.EventMask.SubstructureRedirectMask |
+                                               X.EventMask.SubstructureNotifyMask,
                                                ref event);
             display.flush();
         }
@@ -280,7 +280,7 @@ namespace CCM
                     }
                 }
             }
-            if (found == null) 
+            if (found == null)
             {
                 foreach (MosaicArea area in areas)
                 {
@@ -385,9 +385,9 @@ namespace CCM
                     scale += (1.0 - scale) * progress;
 
                     // Calculate window position
-                    double x = (area.geometry.x - win_area.x) - 
+                    double x = (area.geometry.x - win_area.x) -
                         (((win_area.width * scale) - area.geometry.width) / 2.0);
-                    double y = (area.geometry.y - win_area.y) - 
+                    double y = (area.geometry.y - win_area.y) -
                         (((win_area.height * scale) - area.geometry.height) / 2.0);
 
                     // Add progress offset to position
@@ -425,9 +425,9 @@ namespace CCM
                                                       area.geometry.height / win_area.height);
 
                             // Calculate window position
-                            double x = (area.geometry.x - win_area.x) - 
+                            double x = (area.geometry.x - win_area.x) -
                                 (((win_area.width * scale) - area.geometry.width) / 2.0);
-                            double y = (area.geometry.y - win_area.y) - 
+                            double y = (area.geometry.y - win_area.y) -
                                 (((win_area.height * scale) - area.geometry.height) / 2.0);
 
                             // Apply transformation to window
@@ -519,12 +519,12 @@ namespace CCM
                                               height / win_area.height);
 
                     // Calculate window position
-                    double x = (area.geometry.x - win_area.x) - 
+                    double x = (area.geometry.x - win_area.x) -
                         (((win_area.width * scale) - width) / 2.0);
-                    double y = (area.geometry.y - win_area.y) - 
+                    double y = (area.geometry.y - win_area.y) -
                         (((win_area.height * scale) - height) / 2.0);
 
-                    // Recenter window if in border 
+                    // Recenter window if in border
                     x -= (width - area.geometry.width) / 2.0;
                     y -= (height - area.geometry.height) / 2.0;
 
@@ -576,7 +576,7 @@ namespace CCM
                     {
                         activate_next = true;
                         // Start leave
-                        area.plugin.mouse_over = false; 
+                        area.plugin.mouse_over = false;
                         area.plugin.timeline.direction = CCM.TimelineDirection.BACKWARD;
                         area.plugin.timeline.rewind();
                         area.plugin.timeline.start();
@@ -590,7 +590,7 @@ namespace CCM
                         area.plugin.timeline.rewind();
                         area.plugin.timeline.start();
                         switch_keep_above(area.window, true);
-                        area.plugin.mouse_over = true; 
+                        area.plugin.mouse_over = true;
                         area.window.damage();
                         found_next = true;
                         break;
@@ -605,7 +605,7 @@ namespace CCM
                     area.plugin.timeline.rewind();
                     area.plugin.timeline.start();
                     switch_keep_above(area.window, true);
-                    area.plugin.mouse_over = true; 
+                    area.plugin.mouse_over = true;
                     area.window.damage();
                 }
             }
@@ -624,7 +624,7 @@ namespace CCM
                     if (area.plugin.mouse_over)
                     {
                         // Start leave
-                        area.plugin.mouse_over = false; 
+                        area.plugin.mouse_over = false;
                         area.plugin.timeline.direction = CCM.TimelineDirection.BACKWARD;
                         area.plugin.timeline.rewind();
                         area.plugin.timeline.start();
@@ -638,7 +638,7 @@ namespace CCM
                             area_prev.plugin.timeline.rewind();
                             area_prev.plugin.timeline.start();
                             switch_keep_above(area_prev.window, true);
-                            area_prev.plugin.mouse_over = true; 
+                            area_prev.plugin.mouse_over = true;
                             area_prev.window.damage();
                         }
                         break;
@@ -654,7 +654,7 @@ namespace CCM
                     area.plugin.timeline.rewind();
                     area.plugin.timeline.start();
                     switch_keep_above(area.window, true);
-                    area.plugin.mouse_over = true; 
+                    area.plugin.mouse_over = true;
                     area.window.damage();
                 }
             }
@@ -688,19 +688,19 @@ namespace CCM
             {
                 timeline.stop();
             }
-            if (enabled) 
+            if (enabled)
             {
                 create_areas();
                 keybind_left = new CCM.Keybind (screen,
-                                                ((MosaicOptions) get_option ()).shortcut_left, 
+                                                ((MosaicOptions) get_option ()).shortcut_left,
                                                 true);
                 keybind_left.key_press.connect (on_left_pressed);
                 keybind_right = new CCM.Keybind (screen,
-                                                ((MosaicOptions) get_option ()).shortcut_right, 
+                                                ((MosaicOptions) get_option ()).shortcut_right,
                                                 true);
                 keybind_right.key_press.connect (on_right_pressed);
                 keybind_return = new CCM.Keybind (screen,
-                                                ((MosaicOptions) get_option ()).shortcut_return, 
+                                                ((MosaicOptions) get_option ()).shortcut_return,
                                                 true);
                 keybind_return.key_press.connect (on_return_pressed);
             }
@@ -731,13 +731,13 @@ namespace CCM
             switch (index)
             {
                 case CCM.Options.SHORTCUT:
-                    keybind = new CCM.Keybind (screen, 
-                                               ((MosaicOptions) get_option ()).shortcut, 
+                    keybind = new CCM.Keybind (screen,
+                                               ((MosaicOptions) get_option ()).shortcut,
                                                true);
                     keybind.key_press.connect (on_shortcut_pressed);
                     break;
                 case CCM.Options.DURATION:
-                    timeline = 
+                    timeline =
                         new Timeline.for_duration((int)(((MosaicOptions) get_option ()).duration * 1000.0));
                     timeline.new_frame.connect (on_screen_animation_new_frame);
                     timeline.completed.connect (on_screen_animation_completed);
@@ -761,7 +761,7 @@ namespace CCM
             ((CCM.ScreenPlugin) parent).screen_load_options (screen);
 
             // set mouse over on enter/leave window
-            screen.enter_window_notify.connect ((window) => { 
+            screen.enter_window_notify.connect ((window) => {
                 CCM.Mosaic plugin = ((CCM.Mosaic)window.get_plugin(typeof(Mosaic)));
                 if (plugin.enabled)
                 {
@@ -769,15 +769,15 @@ namespace CCM
                     plugin.timeline.rewind();
                     plugin.timeline.start();
                     switch_keep_above(window, true);
-                    plugin.mouse_over = true; 
+                    plugin.mouse_over = true;
                     window.damage();
                 }
             });
-            screen.leave_window_notify.connect ((window) => { 
+            screen.leave_window_notify.connect ((window) => {
                 CCM.Mosaic plugin = ((CCM.Mosaic)window.get_plugin(typeof(Mosaic)));
                 if (plugin.enabled)
                 {
-                    plugin.mouse_over = false; 
+                    plugin.mouse_over = false;
                     plugin.timeline.direction = CCM.TimelineDirection.BACKWARD;
                     plugin.timeline.rewind();
                     plugin.timeline.start();
@@ -878,3 +878,4 @@ ccm_mosaic_get_plugin_type (TypeModule module)
 {
     return typeof (Mosaic);
 }
+

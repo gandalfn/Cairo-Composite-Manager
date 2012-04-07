@@ -1,7 +1,7 @@
 m4_define(ccm_version_major, 0)
 m4_define(ccm_version_minor, 3)
 m4_define(ccm_version_micro, 0)
-AC_INIT([cairo-compmgr],[ccm_version_major.ccm_version_minor.ccm_version_micro], [http://cairo-compmgr.tuxfamily.org/bugs/], [cairo-compmgr], [http://cairo-compmgr.tuxfamily.org])
+AC_INIT([cairo-compmgr], [ccm_version_major.ccm_version_minor.ccm_version_micro], [gandalfn@club-internet.fr], [cairo-compmgr])
 AC_PREREQ(2.63)
 
 dnl ****************************************************************************
@@ -76,7 +76,7 @@ LT_INIT([disable-static])
 dnl ****************************************************************************
 dnl Check for packages
 dnl ****************************************************************************
-PKG_CHECK_MODULES(CAIRO_COMPMGR, 
+PKG_CHECK_MODULES(CAIRO_COMPMGR,
        [xcomposite,
         xdamage,
         xext,
@@ -155,7 +155,7 @@ AC_ARG_ENABLE(gobject-introspection,
   [gir=$enableval], [gir=no])
 
 if [ test x$gir = xyes ]; then
-    PKG_CHECK_MODULES(CCM_GOBJECT_INTROSPECTION, 
+    PKG_CHECK_MODULES(CCM_GOBJECT_INTROSPECTION,
            [gobject-introspection-1.0 >= $GOBJECT_INTROSPECTION_REQUIRED],
            [gir="yes"],
            [gir="no"])
@@ -163,7 +163,7 @@ if [ test x$gir = xyes ]; then
     AC_SUBST(CCM_GOBJECT_INTROSPECTION_LIBS)
 fi
 
-if [ test x$gir = xyes ]; then    
+if [ test x$gir = xyes ]; then
     G_IR_SCANNER=`$PKG_CONFIG --variable=g_ir_scanner gobject-introspection-1.0`
     AC_SUBST(G_IR_SCANNER)
     G_IR_COMPILER=`$PKG_CONFIG --variable=g_ir_compiler gobject-introspection-1.0`
@@ -186,9 +186,9 @@ fi
 AM_CONDITIONAL(ENABLE_GOBJECT_INTROSPECTION, [test x$gir = xyes])
 
 dnl ****************************************************************************
-dnl Check glade3 
+dnl Check glade3
 dnl ****************************************************************************
-PKG_CHECK_MODULES(CCM_GLADE, 
+PKG_CHECK_MODULES(CCM_GLADE,
            [gladeui-1.0 >= $GLADEUI_REQUIRED],
            [gladeui="yes"],
            [gladeui="no"])
@@ -202,7 +202,7 @@ if [ test x$gladeui = xyes ]; then
         glademoduledir=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=moduledir gladeui-1.0`
         gladecatalogdir=`$PKG_CONFIG --define-variable=prefix=$prefix --variable=catalogdir gladeui-1.0`
     fi
-    
+
     AC_SUBST(glademoduledir)
     AC_SUBST(gladecatalogdir)
     AC_SUBST(CCM_GLADE_CFLAGS)
@@ -219,7 +219,7 @@ AC_ARG_ENABLE(perf-plugin,
   [perfplugin=$enableval], [perfplugin=no])
 
 if [ test x$perfplugin = xyes ]; then
-    PKG_CHECK_MODULES(CCM_PERF_PLUGIN, 
+    PKG_CHECK_MODULES(CCM_PERF_PLUGIN,
            [libgtop-2.0,
             libwnck-1.0],
            [perfplugin="yes"],
@@ -240,6 +240,30 @@ else
 fi
 AM_CONDITIONAL(ENABLE_CUDA_PERF, [test x$cudaperf = xyes])
 AM_CONDITIONAL(ENABLE_PERF_PLUGIN, [test x$perfplugin = xyes])
+
+dnl ****************************************************************************
+dnl Check for build stats plugin
+dnl ****************************************************************************
+AC_ARG_ENABLE(stats-plugin,
+  [  --enable-stats-plugin        Enable stats plugin],
+  [statsplugin=$enableval], [statsplugin=no])
+
+if [ test x$statsplugin = xyes ]; then
+    PKG_CHECK_MODULES(CCM_STATS_PLUGIN,
+           [libgtop-2.0],
+           [statsplugin="yes"],
+           [statsplugin="no"])
+    AC_SUBST(CCM_STATS_PLUGIN_CFLAGS)
+    AC_SUBST(CCM_STATS_PLUGIN_LIBS)
+
+    nvmlstats=yes
+    AC_CHECK_LIB(nvidia-ml, nvmlInit, [NVIDIA_LIBS="-lnvidia-ml"], [nvmlstats=no])
+    if [ test x$nvmlstats = xyes ]; then
+        CCM_STATS_PLUGIN_LIBS="$CCM_STATS_PLUGIN_LIBS $NVIDIA_LIBS"
+    fi
+fi
+AM_CONDITIONAL(ENABLE_STATS_PLUGIN, [test x$statsplugin = xyes])
+AM_CONDITIONAL(HAVE_NVML, [test x$nvmlstats = xyes])
 
 dnl ****************************************************************************
 dnl Check for xrender backend
@@ -296,6 +320,8 @@ plugins/automate/Makefile
 plugins/automate/ccm-automate.plugin.desktop
 plugins/clone/Makefile
 plugins/clone/ccm-clone.plugin.desktop
+plugins/stats/Makefile
+plugins/stats/ccm-stats.plugin.desktop
 test/Makefile
 data/Makefile
 data/cairo-compmgr.desktop.in
@@ -339,8 +365,21 @@ else
         echo "Building CUDA perf: .......................  NO"
 fi
 
+if [ test x$statsplugin = xyes ]; then
+        echo "Building stats plugin: ......................YES"
+else
+        echo "Building stats plugin: ......................NO"
+fi
+
+if [ test x$nvmlstats = xyes ]; then
+        echo "Building NVML stats: ......................  YES"
+else
+        echo "Building NVML stats: ......................  NO"
+fi
+
 if [ test x$xrenderbackend = xyes ]; then
         echo "Building XRender backend: ...................YES"
 else
         echo "Building XRender backend: ...................NO"
 fi
+

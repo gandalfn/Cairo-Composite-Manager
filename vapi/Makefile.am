@@ -7,8 +7,12 @@ vapi_DATA = \
 noinst_DATA = \
     config.vapi \
     source.vapi \
-    math.vapi
+    math.vapi \
+    libgtop-2.0.vapi \
+    nvml.vapi \
+    nvml.h
 
 EXTRA_DIST = \
     $(vapi_DATA) \
     $(noinst_DATA)
+

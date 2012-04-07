@@ -53,6 +53,7 @@ enum
     PROP_DISPLAY,
     PROP_NUMBER,
     PROP_REFRESH_RATE,
+    PROP_CURRENT_FRAME,
     PROP_WINDOW_PLUGINS
 };
 
@@ -219,6 +220,11 @@ ccm_screen_get_property (GObject* object, guint prop_id, GValue* value, GParamSp
                 g_value_set_uint (value, priv->refresh_rate);
             }
             break;
+        case PROP_CURRENT_FRAME:
+            {
+                g_value_set_uint (value, ccm_timeline_get_current_frame (priv->paint));
+            }
+            break;
         case PROP_WINDOW_PLUGINS:
             {
                 g_value_set_pointer (value, ccm_screen_get_window_plugins (CCM_SCREEN (object)));
@@ -304,7 +310,7 @@ ccm_screen_finalize (GObject * object)
 
     if (self->priv->stack)
     {
-        g_slice_free1 (sizeof (Window) * self->priv->n_windows, 
+        g_slice_free1 (sizeof (Window) * self->priv->n_windows,
                        self->priv->stack);
         self->priv->stack = NULL;
         self->priv->n_windows = 0;
@@ -379,6 +385,13 @@ ccm_screen_class_init (CCMScreenClass * klass)
                                                         0, G_MAXUINT, None,
                                                         G_PARAM_READABLE));
 
+    g_object_class_install_property (object_class, PROP_CURRENT_FRAME,
+                                     g_param_spec_uint ("current_frame",
+                                                        "Current frame",
+                                                        "Current frame number",
+                                                        0, G_MAXUINT, None,
+                                                        G_PARAM_READABLE));
+
     g_object_class_install_property (object_class, PROP_WINDOW_PLUGINS,
                                      g_param_spec_pointer ("window_plugins",
                                                            "WindowPlugins",
@@ -425,7 +438,7 @@ ccm_screen_class_init (CCMScreenClass * klass)
         g_signal_new ("composite-message", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
                       ccm_cclosure_marshal_VOID__OBJECT_OBJECT_LONG_LONG_LONG,
-                      G_TYPE_NONE, 5, CCM_TYPE_WINDOW, CCM_TYPE_WINDOW, 
+                      G_TYPE_NONE, 5, CCM_TYPE_WINDOW, CCM_TYPE_WINDOW,
                       G_TYPE_LONG, G_TYPE_LONG, G_TYPE_LONG);
 
     signals[DESKTOP_CHANGED] =
@@ -472,7 +485,7 @@ ccm_screen_update_background (CCMScreen * self)
 
         data =
             ccm_window_get_property (self->priv->root,
-                                     CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom, 
+                                     CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom,
                                      XA_PIXMAP, &n_items);
         if (data)
         {
@@ -490,7 +503,7 @@ ccm_screen_update_background (CCMScreen * self)
         int x, y;
         GError *error = NULL;
 
-        x = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_X], 
+        x = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_X],
                                     &error);
         if (error)
         {
@@ -500,7 +513,7 @@ ccm_screen_update_background (CCMScreen * self)
             g_free (color);
             return;
         }
-        y = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_Y], 
+        y = ccm_config_get_integer (self->priv->options[CCM_SCREEN_BACKGROUND_Y],
                                     &error);
         if (error)
         {
@@ -921,7 +934,7 @@ ccm_screen_find_window_at_pos (CCMScreen * self, int x, int y)
     for (item = self->priv->last_windows; item && !found;
          item = item->prev)
     {
-        if (ccm_window_is_viewable (item->data) && 
+        if (ccm_window_is_viewable (item->data) &&
             !ccm_window_is_input_only (item->data))
         {
             CCMRegion *geometry = (CCMRegion *)ccm_drawable_get_geometry (item->data);
@@ -987,7 +1000,7 @@ ccm_screen_set_selection_owner (CCMScreen * self)
 
         g_free (cm_atom_name);
 
-        if (XGetSelectionOwner (CCM_DISPLAY_XDISPLAY (self->priv->display), 
+        if (XGetSelectionOwner (CCM_DISPLAY_XDISPLAY (self->priv->display),
                                 cm_atom) != None)
         {
             g_critical
@@ -1038,12 +1051,12 @@ ccm_screen_update_stack (CCMScreen * self)
     guint n_windows = 0;
     CCMWindow *root = ccm_screen_get_root_window (self);
 
-    if (XQueryTree (CCM_DISPLAY_XDISPLAY (self->priv->display), 
+    if (XQueryTree (CCM_DISPLAY_XDISPLAY (self->priv->display),
                     CCM_WINDOW_XWINDOW (root),
                     &w, &p, &stack, &n_windows) && stack && n_windows)
     {
         if (self->priv->stack)
-            g_slice_free1 (sizeof (Window) * self->priv->n_windows, 
+            g_slice_free1 (sizeof (Window) * self->priv->n_windows,
                            self->priv->stack);
 
         self->priv->n_windows = n_windows;
@@ -1077,7 +1090,7 @@ ccm_screen_query_stack (CCMScreen * self)
         {
             if (!ccm_screen_add_window (self, window))
                 g_object_unref (window);
-            else if (ccm_window_is_viewable (window) && 
+            else if (ccm_window_is_viewable (window) &&
                      !ccm_window_is_input_only (window))
                 ccm_window_map (window);
         }
@@ -1146,7 +1159,7 @@ ccm_screen_check_stack (CCMScreen * self)
     {
         CCMWindow *window = ccm_screen_find_window (self, self->priv->stack[cpt]);
 
-        if (window && !ccm_window_is_input_only (window) && 
+        if (window && !ccm_window_is_input_only (window) &&
             !g_list_find (stack, window))
         {
             stack = g_list_prepend (stack, window);
@@ -1243,12 +1256,12 @@ ccm_screen_check_stack (CCMScreen * self)
 
         if (transient &&
             ccm_window_is_viewable((CCMWindow*)transient) &&
-            !ccm_window_is_input_only((CCMWindow*)transient) && 
+            !ccm_window_is_input_only((CCMWindow*)transient) &&
             g_list_index (stack, item->data) < g_list_index (stack, transient))
         {
             ccm_debug ("RESTACK TRANSIENT");
             stack = g_list_remove (stack, item->data);
-            stack = g_list_insert_before (stack, 
+            stack = g_list_insert_before (stack,
                                           g_list_find (stack, transient)->next,
                                           item->data);
         }
@@ -1266,7 +1279,7 @@ ccm_screen_check_stack (CCMScreen * self)
                 {
                     ccm_debug ("RESTACK LEADER");
                     stack = g_list_remove (stack, item->data);
-                    stack = g_list_insert_before (stack, 
+                    stack = g_list_insert_before (stack,
                                                   g_list_find (stack, iter->data)->next,
                                                   item->data);
                     break;
@@ -1391,8 +1404,7 @@ impl_ccm_screen_paint_cursor (CCMScreenPlugin * plugin, CCMScreen * self,
 }
 
 static gboolean
-impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
-                       cairo_t * ctx)
+impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self, cairo_t * ctx)
 {
     g_return_val_if_fail (plugin != NULL, FALSE);
     g_return_val_if_fail (self != NULL, FALSE);
@@ -1408,8 +1420,7 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self,
         {
             CCMWindow *window = CCM_WINDOW (item->data);
 
-            if (ccm_window_is_viewable (window) &&
-                !ccm_window_is_input_only (window))
+            if (ccm_window_is_viewable (window) && !ccm_window_is_input_only (window))
             {
                 if (ccm_drawable_is_damaged (CCM_DRAWABLE (window)))
                 {
@@ -2252,11 +2263,11 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                 {
                     XEvent ce;
 
-                    while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), 
+                    while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(self->priv->display),
                                                   configure_event->window,
-                                                  event->type, &ce)) 
+                                                  event->type, &ce))
                     {
-                        if (ce.xconfigure.above != configure_event->above) 
+                        if (ce.xconfigure.above != configure_event->above)
                         {
                             XPutBackEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), &ce);
                             break;
@@ -2314,7 +2325,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                     ccm_screen_add_check_pending (self);
                     data =
                         ccm_window_get_property (self->priv->root,
-                                                 CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom, 
+                                                 CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom,
                                                  XA_WINDOW, &n_items);
                     if (data)
                     {
@@ -2335,7 +2346,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                 else if (property_event->atom ==
                          CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom)
                 {
-                    if (self->priv->background) 
+                    if (self->priv->background)
                         g_object_unref (self->priv->background);
                     self->priv->background = NULL;
                     ccm_screen_damage (self);
@@ -2471,7 +2482,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                                                              client_event->data.l[4]);
                         if (window)
                             g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
-                                           client, window, 
+                                           client, window,
                                            client_event->data.l[0],
                                            client_event->data.l[2],
                                            client_event->data.l[3]);
@@ -2877,7 +2888,7 @@ ccm_screen_query_pointer (CCMScreen * self, CCMWindow ** below, gint * x,
     gint xw, yw;
     guint state;
 
-    if (XQueryPointer (CCM_DISPLAY_XDISPLAY (self->priv->display), 
+    if (XQueryPointer (CCM_DISPLAY_XDISPLAY (self->priv->display),
                        CCM_WINDOW_XWINDOW (root),
                        &r, &w, x, y, &xw, &yw, &state))
     {
@@ -2955,3 +2966,4 @@ ccm_screen_get_active_window (CCMScreen* self)
 
     return self->priv->active;
 }
+

@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: Vala; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * ccm-timeline.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
@@ -7,12 +7,12 @@
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -39,9 +39,9 @@ public class CCM.Timeline : Object
     /**
      * Timeline direction
      */
-    public TimelineDirection direction { 
+    public TimelineDirection direction {
         get {
-            return m_Direction; 
+            return m_Direction;
         }
         set {
             if (m_Direction != value)
@@ -55,7 +55,7 @@ public class CCM.Timeline : Object
     /**
      * Timeline speed in frame per second
      */
-    public uint speed { 
+    public uint speed {
         get {
             return m_Fps;
         }
@@ -73,23 +73,23 @@ public class CCM.Timeline : Object
     }
 
     /**
-     * Number of frame in Timeline 
+     * Number of frame in Timeline
      */
     public uint n_frames { get; set; default = 0; }
 
     /**
      * Timeline duration in msecs
      */
-    public uint duration { 
+    public uint duration {
         get {
-            return m_Duration; 
+            return m_Duration;
         }
         set {
             if (m_Duration != value)
             {
                 m_Duration = value;
                 n_frames = m_Duration * m_Fps / 1000;
-            } 
+            }
         }
     }
 
@@ -122,7 +122,7 @@ public class CCM.Timeline : Object
     }
 
     /**
-     * Timeline progress 
+     * Timeline progress
      */
     public double progress {
         get {
@@ -197,9 +197,9 @@ public class CCM.Timeline : Object
     private inline bool
     is_complete ()
     {
-        return ((m_Direction == TimelineDirection.FORWARD) && 
-                (m_CurrentFrameNum >= n_frames)) || 
-               ((m_Direction == TimelineDirection.BACKWARD) && 
+        return ((m_Direction == TimelineDirection.FORWARD) &&
+                (m_CurrentFrameNum >= n_frames)) ||
+               ((m_Direction == TimelineDirection.BACKWARD) &&
                 (m_CurrentFrameNum <= 0));
     }
 
@@ -370,7 +370,7 @@ public class CCM.Timeline : Object
     }
 
     /**
-     * Skip inNbFrames 
+     * Skip inNbFrames
      *
      * @param inNbFrames number of frames to skip
      */
@@ -404,3 +404,4 @@ public class CCM.Timeline : Object
         s_TimeoutPool.set_priority (inPriority);
     }
 }
+

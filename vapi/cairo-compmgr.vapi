@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: Vala; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * cairo-compmgr.vapi
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
@@ -23,7 +23,7 @@ using GLib;
 public const double M_PI;
 
 [CCode (cheader_filename = "cairo.h,ccm.h")]
-namespace Cairo 
+namespace Cairo
 {
     public static void rectangles_free(Rectangle[] rects);
 
@@ -59,10 +59,10 @@ namespace Cairo
 }
 
 [CCode (cprefix = "CCM", lower_case_cprefix = "ccm_")]
-namespace CCM 
+namespace CCM
 {
     [CCode (cheader_filename = "ccm-config-adjustment.h")]
-    public class ConfigAdjustment : Gtk.Adjustment 
+    public class ConfigAdjustment : Gtk.Adjustment
     {
         [CCode (type = "GtkAdjustment*", has_construct_function = false)]
         public ConfigAdjustment (int screen, string plugin, string key);
@@ -115,7 +115,7 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm-config.h")]
-    public class Config : GLib.Object 
+    public class Config : GLib.Object
     {
         [CCode (has_construct_function = false)]
         public Config (int screen, owned string? extension, owned string key);
@@ -139,7 +139,7 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm-keybind.h")]
-    public class Keybind : GLib.Object 
+    public class Keybind : GLib.Object
     {
         [CCode (has_construct_function = false)]
         public Keybind (CCM.Screen screen, string keystring, bool exclusive);
@@ -168,7 +168,7 @@ namespace CCM
     public delegate void PluginOptionsChangedFunc (CCM.Plugin plugin, int index);
 
     [CCode (cheader_filename = "ccm-plugin.h")]
-    public class PluginOptions : GLib.Object 
+    public class PluginOptions : GLib.Object
     {
         [CCode (has_construct_function = false)]
         public PluginOptions ();
@@ -199,7 +199,7 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm.h,ccm-display.h")]
-    public class Display : GLib.Object 
+    public class Display : GLib.Object
     {
         public bool shm_shared_pixmap { get; set; }
         public bool use_xshm { get; set; }
@@ -248,11 +248,12 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm.h,ccm-screen.h")]
-    public class Screen : GLib.Object, CCM.ScreenPlugin 
+    public class Screen : GLib.Object, CCM.ScreenPlugin
     {
         public X.Display display { get; set; }
         public uint number { get; set; }
         public uint refresh_rate { get; }
+        public uint current_frame { get; }
         public void* window_plugins { get; }
 
         [CCode (has_construct_function = false)]
@@ -302,7 +303,7 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm.h,ccm-drawable.h")]
-    public class Drawable : CCM.Object 
+    public class Drawable : CCM.Object
     {
         public weak CCM.Region damaged { get; }
         public uint depth { get; set construct; }
@@ -350,7 +351,7 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm.h,ccm-pixmap.h")]
-    public class Pixmap : CCM.Drawable 
+    public class Pixmap : CCM.Drawable
     {
         public bool freeze { get; set; }
         public bool foreign { get; set; }
@@ -423,7 +424,7 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm.h,ccm-window.h,ccm-window-plugin.h")]
-    public class Window : CCM.Drawable, CCM.WindowPlugin 
+    public class Window : CCM.Drawable, CCM.WindowPlugin
     {
         public class X.Atom state_atom;
         public class X.Atom state_above_atom;
@@ -519,7 +520,7 @@ namespace CCM
         public void hide ();
     }
 
-    public interface PreferencesPagePlugin 
+    public interface PreferencesPagePlugin
     {
         protected virtual void init_general_section (CCM.PreferencesPage preferences, Gtk.Widget general_section);
         protected virtual void init_desktop_section (CCM.PreferencesPage preferences, Gtk.Widget desktop_section);
@@ -586,7 +587,7 @@ namespace CCM
     }
 
     [CCode (cheader_filename = "ccm.h, ccm-region.h")]
-    public struct RegionBox 
+    public struct RegionBox
     {
         public int16 x1;
         public int16 y1;
@@ -604,7 +605,7 @@ namespace CCM
         public Region.empty ();
         [CCode (cname = "ccm_region_rectangle")]
         public Region.rectangle (Cairo.Rectangle rectangle);
-        [CCode (cname = "ccm_region_xrectangle")]  
+        [CCode (cname = "ccm_region_xrectangle")]
         public Region.xrectangle (X.Rectangle rectangle);
         public Region copy();
 
@@ -700,3 +701,4 @@ namespace CCM
     [CCode (cheader_filename = "ccm-debug.h")]
     public static void log_window (CCM.Window window, string format, ...);
 }
+

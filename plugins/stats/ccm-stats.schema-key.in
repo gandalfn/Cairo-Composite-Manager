@@ -1,0 +1,5 @@
+[shortcut]
+Type=string
+Default=<Super>s
+_Description=The stats shortcut key.
+

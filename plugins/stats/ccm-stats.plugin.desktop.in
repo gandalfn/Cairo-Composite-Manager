@@ -1,0 +1,8 @@
+[CCMPlugin]
+Plugin=ccm-stats
+Version=@VERSION@
+_Name=Stats
+_Description=Display some system statistics
+Backends=xrender;glitz
+Depends=
+

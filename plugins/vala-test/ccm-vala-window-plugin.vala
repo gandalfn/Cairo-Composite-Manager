@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: Vala; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * ccm-vala-window-plugin.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
@@ -82,7 +82,7 @@ namespace CCM
         {
             this.window = window;
 
-            options_load ("vala-window-plugin", options_key, 
+            options_load ("vala-window-plugin", options_key,
                           (PluginOptionsChangedFunc)option_changed);
 
             /* Chain call to next plugin */
@@ -92,7 +92,7 @@ namespace CCM
         /**
          * Implement paint window plugin interface
          **/
-        bool 
+        bool
         window_paint (CCM.Window window, Cairo.Context ctx, Cairo.Surface surface)
         {
             bool ret = false;
@@ -152,3 +152,4 @@ ccm_vala_window_plugin_get_plugin_type (TypeModule module)
 {
     return typeof (ValaWindowPlugin);
 }
+

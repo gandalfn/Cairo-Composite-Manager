@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: Vala; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * ccm-clone.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
@@ -104,7 +104,7 @@ namespace CCM
             }
         }
 
-        void 
+        void
         remove_screen_output (Output output)
         {
             screen_outputs.remove (output);
@@ -116,7 +116,7 @@ namespace CCM
         }
 
         void
-        on_composite_message (CCM.Window client, CCM.Window window, 
+        on_composite_message (CCM.Window client, CCM.Window window,
                               long l1, long l2, long l3)
         {
             X.Atom atom = (X.Atom) l1;
@@ -388,7 +388,7 @@ namespace CCM
         /**
          * Implement paint window plugin interface
          **/
-        bool 
+        bool
         window_paint (CCM.Window window, Cairo.Context context, Cairo.Surface surface)
         {
             if (((window_outputs != null && window_outputs.size > 0) ||
@@ -446,7 +446,7 @@ namespace CCM
                                     ctx.clip ();
 
                                     ctx.translate (area.x, area.y);
-                                    ctx.set_source_surface (surface, 
+                                    ctx.set_source_surface (surface,
                                                             - (geometry.width - area.width) / 2.0,
                                                             - (geometry.height - area.height) / 2.0);
                                     ctx.get_source ().set_filter (output.scale_quality);
@@ -474,7 +474,7 @@ namespace CCM
                             int width = window.get_screen ().get_xscreen ().width;
                             int height = window.get_screen ().get_xscreen ().height;
 
-                            if (output.window != window && 
+                            if (output.window != window &&
                                 output.pixmap.get_device_geometry_clipbox (out clipbox))
                             {
                                 Cairo.Context ctx = output.pixmap.create_context ();
@@ -516,3 +516,4 @@ ccm_clone_get_plugin_type (TypeModule module)
 {
     return typeof (Clone);
 }
+
