@@ -37,7 +37,7 @@ namespace CCM
 
         ////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////
-        override void
+        public override void
         changed(CCM.Config config)
         {
             if (config == get_config (Options.SHORTCUT))
@@ -186,4 +186,3 @@ ccm_stats_get_plugin_type (TypeModule module)
 {
     return typeof (Stats);
 }
-

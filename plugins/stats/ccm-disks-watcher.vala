@@ -53,7 +53,7 @@ namespace CCM
             // get mount list
             m_Mounts = {};
             GLibTop.mountlist mountlist;
-            GLibTop.mountentry[] entries = (GLibTop.mountentry[])GLibTop.get_mountlist (out mountlist, 1);
+            unowned GLibTop.mountentry[] entries = (GLibTop.mountentry[])GLibTop.get_mountlist (out mountlist, 1);
             for (int cpt = 0; cpt < mountlist.number; ++cpt)
             {
                 if (entries[cpt].type != "smbfs" && entries[cpt].type != "nfs" && entries[cpt].type != "cifs")
@@ -105,4 +105,3 @@ namespace CCM
 
     }
 }
-

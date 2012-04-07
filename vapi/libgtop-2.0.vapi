@@ -2,110 +2,109 @@
 
 [CCode (cprefix = "glibtop_", lower_case_cprefix = "glibtop_")]
 namespace GLibTop {
-	[CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_cpu")]
-	public static void get_cpu (out cpu buf);
+    [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_cpu")]
+    public static void get_cpu (out cpu buf);
 
-	[CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_mem")]
-	public static void get_mem (out mem buf);
+    [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_mem")]
+    public static void get_mem (out mem buf);
 
-	[CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_sysinfo")]
-	public static unowned sysinfo? get_sysinfo ();
+    [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_sysinfo")]
+    public static unowned sysinfo? get_sysinfo ();
 
-	[CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_fsusage")]
-	public static void get_fsusage (out fsusage buf, string mount_dir);
+    [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_fsusage")]
+    public static void get_fsusage (out fsusage buf, string mount_dir);
 
-	[CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_mountlist")]
-	public static mountentry* get_mountlist (out mountlist buf, int all_fs);
+    [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_mountlist")]
+    public static mountentry* get_mountlist (out mountlist buf, int all_fs);
 
-	[CCode (cheader_filename = "glibtop/cpu.h", destroy_function = "")]
-	public struct cpu {
-		public uint64 flags;
-		public uint64 total;
-		public uint64 user;
-		public uint64 nice;
-		public uint64 sys;
-		public uint64 idle;
-		public uint64 iowait;
-		public uint64 irq;
-		public uint64 softirq;
-		public uint64 frequency;
-		[NoArrayLength]
-		public uint64[] xcpu_total;
-		[NoArrayLength]
-		public uint64[] xcpu_user;
-		[NoArrayLength]
-		public uint64[] xcpu_nice;
-		[NoArrayLength]
-		public uint64[] xcpu_sys;
-		[NoArrayLength]
-		public uint64[] xcpu_idle;
-		[NoArrayLength]
-		public uint64[] xcpu_iowait;
-		[NoArrayLength]
-		public uint64[] xcpu_irq;
-		[NoArrayLength]
-		public uint64[] xcpu_softirq;
-		public uint64 xcpu_flags;
-	}
+    [CCode (cheader_filename = "glibtop/cpu.h", destroy_function = "")]
+    public struct cpu {
+        public uint64 flags;
+        public uint64 total;
+        public uint64 user;
+        public uint64 nice;
+        public uint64 sys;
+        public uint64 idle;
+        public uint64 iowait;
+        public uint64 irq;
+        public uint64 softirq;
+        public uint64 frequency;
+        [NoArrayLength]
+        public unowned uint64[] xcpu_total;
+        [NoArrayLength]
+        public unowned uint64[] xcpu_user;
+        [NoArrayLength]
+        public unowned uint64[] xcpu_nice;
+        [NoArrayLength]
+        public unowned uint64[] xcpu_sys;
+        [NoArrayLength]
+        public unowned uint64[] xcpu_idle;
+        [NoArrayLength]
+        public unowned uint64[] xcpu_iowait;
+        [NoArrayLength]
+        public unowned uint64[] xcpu_irq;
+        [NoArrayLength]
+        public unowned uint64[] xcpu_softirq;
+        public uint64 xcpu_flags;
+    }
 
-	[CCode (cheader_filename = "glibtop/mem.h", destroy_function = "")]
-	public struct mem {
-		public uint64 flags;
-		public uint64 total;
-		public uint64 used;
-		public uint64 free;
-		public uint64 shared;
-		public uint64 buffer;
-		public uint64 cached;
-		public uint64 user;
-		public uint64 locked;
-	}
+    [CCode (cheader_filename = "glibtop/mem.h", destroy_function = "")]
+    public struct mem {
+        public uint64 flags;
+        public uint64 total;
+        public uint64 used;
+        public uint64 free;
+        public uint64 shared;
+        public uint64 buffer;
+        public uint64 cached;
+        public uint64 user;
+        public uint64 locked;
+    }
 
-	[CCode (cheader_filename = "glibtop/sysinfo.h", destroy_function = "")]
-	public struct entry {
-		public GLib.PtrArray labels;
-		public GLib.HashTable values;
-		public GLib.HashTable descriptions;
-	}
+    [CCode (cheader_filename = "glibtop/sysinfo.h", destroy_function = "")]
+    public struct entry {
+        public GLib.PtrArray labels;
+        public GLib.HashTable values;
+        public GLib.HashTable descriptions;
+    }
 
-	[CCode (cheader_filename = "glibtop/sysinfo.h", destroy_function = "")]
-	public struct sysinfo {
-		public uint64 flags;
-		public uint64 ncpu;
-		[NoArrayLength]
-		public entry[] cpuinfo;
-	}
+    [CCode (cheader_filename = "glibtop/sysinfo.h", destroy_function = "")]
+    public struct sysinfo {
+        public uint64 flags;
+        public uint64 ncpu;
+        [NoArrayLength]
+        public unowned entry[] cpuinfo;
+    }
 
-	[CCode (cheader_filename = "glibtop/mountlist.h", destroy_function = "")]
-	public struct mountentry {
-		public uint64 dev;
-		[NoArrayLength]
-		public string devname;
-		[NoArrayLength]
-		public string mountdir;
-		[NoArrayLength]
-		public string type;
-	}
+    [CCode (cheader_filename = "glibtop/mountlist.h", destroy_function = "")]
+    public struct mountentry {
+        public uint64 dev;
+        [NoArrayLength]
+        public string devname;
+        [NoArrayLength]
+        public string mountdir;
+        [NoArrayLength]
+        public string type;
+    }
 
-	[CCode (cheader_filename = "glibtop/mountlist.h", destroy_function = "")]
-	public struct mountlist {
-		public uint64 flags;
-		public uint64 number;
-		public uint64 total;
-		public uint64 size;
-	}
+    [CCode (cheader_filename = "glibtop/mountlist.h", destroy_function = "")]
+    public struct mountlist {
+        public uint64 flags;
+        public uint64 number;
+        public uint64 total;
+        public uint64 size;
+    }
 
-	[CCode (cheader_filename = "glibtop/fsusage.h", destroy_function = "")]
-	public struct fsusage {
-		public uint64 flags;
-		public uint64 blocks;
-		public uint64 bfree;
-		public uint64 bavail;
-		public uint64 files;
-		public uint64 ffree;
-		public uint block_size;
-		public uint64 read;
-		public uint64 write;
-	}
+    [CCode (cheader_filename = "glibtop/fsusage.h", destroy_function = "")]
+    public struct fsusage {
+        public uint64 flags;
+        public uint64 blocks;
+        public uint64 bfree;
+        public uint64 bavail;
+        public uint64 files;
+        public uint64 ffree;
+        public uint block_size;
+        public uint64 read;
+        public uint64 write;
+    }
 }
-
