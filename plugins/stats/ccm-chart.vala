@@ -34,6 +34,7 @@ namespace CCM
         private string          m_Title;
         private int             m_NbPoints = 0;
         private int             m_NbCharts = 0;
+        private int             m_Count = 0;
         private int[,,]         m_Vals;
         private int[,]          m_Limits;
         private string          m_AbsUnit;
@@ -116,10 +117,11 @@ namespace CCM
 
             m_Title = inTitle;
 
-            m_Timeline = new Timeline (inNbPoints * inFps, inFps);
+            m_Timeline = new Timeline (inNbPoints, inFps);
             m_Timeline.loop = true;
             m_Timeline.new_frame.connect (() => {
                 inScreen.damage_region (m_Area);
+                m_Count++;
             });
             m_Timeline.start ();
         }
@@ -346,12 +348,10 @@ namespace CCM
                     inCtx.new_path ();
                     inCtx.save ();
                     {
-                        inCtx.scale ((double)(m_GraphArea.width) / (double)(m_NbPoints - 1),
+                        inCtx.scale ((double)(m_GraphArea.width) / (double)m_NbPoints,
                                      -(double)(m_GraphArea.height) / (double)(m_Limits[chart, 1] - m_Limits[chart, 0]));
-                        double offset_x = (double)m_NbPoints * (((double)m_LastPoint[chart] / m_NbPoints) - m_Timeline.progress);
-                        if (offset_x > 0)
-                            offset_x -= m_NbPoints;
-                        inCtx.translate (offset_x + 1, -m_Limits[chart, 1]);
+                        double offset_x = 1.0 - ((double)m_Count / (double)m_NbPoints);
+                        inCtx.translate (offset_x, -m_Limits[chart, 1]);
 
                         for (int point = 0; point < m_NbPoints; ++point)
                         {
@@ -392,6 +392,7 @@ namespace CCM
             m_Vals [inChartNum, n, 0] = inVal;
             m_Vals [inChartNum, n, 1] = 1;
             m_LastPoint[inChartNum] = n;
+            m_Count = 0;
 
             if (m_Limits[inChartNum, 0] > inVal)
             {

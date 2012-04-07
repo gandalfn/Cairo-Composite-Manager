@@ -56,7 +56,7 @@ namespace CCM
             GLibTop.mountentry[] entries = (GLibTop.mountentry[])GLibTop.get_mountlist (out mountlist, 1);
             for (int cpt = 0; cpt < mountlist.number; ++cpt)
             {
-                if (entries[cpt].type == "reiserfs")
+                if (entries[cpt].type != "smbfs" && entries[cpt].type != "nfs" && entries[cpt].type != "cifs")
                 {
                     m_Mounts += entries[cpt].mountdir;
                     GLibTop.fsusage usage;
