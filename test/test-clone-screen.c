@@ -2,17 +2,17 @@
 /*
  * test-clone-screen.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,6 +29,8 @@ int error_base;
 int width = 400, height = 400;
 Window main_xwindow;
 
+void start_clone(gboolean enable);
+
 void
 on_realize(GtkWidget* widget, gpointer data)
 {
@@ -36,21 +38,21 @@ on_realize(GtkWidget* widget, gpointer data)
     cairo_t* clone_ctx;
 
     main_xwindow = GDK_WINDOW_XWINDOW(widget->window);
-        
+
     pixmap = gdk_pixmap_new(widget->window, width, height, -1);
     clone_ctx = gdk_cairo_create(GDK_DRAWABLE(pixmap));
     cairo_set_operator(clone_ctx, CAIRO_OPERATOR_CLEAR);
     cairo_paint(clone_ctx);
     cairo_destroy(clone_ctx);
-    
-    XDamageQueryExtension (GDK_DISPLAY_XDISPLAY(display), 
+
+    XDamageQueryExtension (GDK_DISPLAY_XDISPLAY(display),
                            &event_base, &error_base);
-    
-    damage = XDamageCreate(GDK_DISPLAY_XDISPLAY(display), 
-                           GDK_PIXMAP_XID(pixmap), 
+
+    damage = XDamageCreate(GDK_DISPLAY_XDISPLAY(display),
+                           GDK_PIXMAP_XID(pixmap),
                            XDamageReportBoundingBox);
-    clone(TRUE);
-    
+    start_clone(TRUE);
+
     gtk_window_resize(GTK_WINDOW(main_window), width, height);
 }
 
@@ -65,7 +67,7 @@ gboolean
 on_expose_event(GtkWidget* widget, GdkEventExpose* event, gpointer data)
 {
     gboolean ret = FALSE;
-    
+
     if (pixmap)
     {
         cairo_t* clone = gdk_cairo_create(GDK_DRAWABLE(pixmap));
@@ -85,15 +87,15 @@ on_expose_event(GtkWidget* widget, GdkEventExpose* event, gpointer data)
 }
 
 void
-clone(gboolean enable)
+start_clone(gboolean enable)
 {
     GdkScreen* screen = gdk_screen_get_default();
     GdkEvent event;
     GdkAtom ccm_atom = gdk_atom_intern_static_string("_CCM_CLIENT_MESSAGE");
-    GdkAtom clone_atom = enable ? 
+    GdkAtom clone_atom = enable ?
                          gdk_atom_intern_static_string("_CCM_CLONE_SCREEN_ENABLE") :
                          gdk_atom_intern_static_string("_CCM_CLONE_SCREEN_DISABLE");
-    
+
     event.client.type = GDK_CLIENT_EVENT;
     event.client.window = gdk_screen_get_root_window(screen);
     event.client.send_event = TRUE;
@@ -108,20 +110,20 @@ clone(gboolean enable)
     gdk_event_send_clientmessage_toall(&event);
     gtk_widget_queue_draw(main_window);
 }
-      
-gboolean 
+
+gboolean
 on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
 {
-    if (pixmap && 
+    if (pixmap &&
         (event->width != width || event->height != height))
     {
         GdkDisplay* display = gdk_display_get_default();
         cairo_t* ctx;
-        
+
         width = event->width;
         height = event->height;
-        
-        clone (FALSE);
+
+        start_clone (FALSE);
         if (pixmap) g_object_unref(pixmap);
         XDamageDestroy(GDK_DISPLAY_XDISPLAY(display), damage);
 
@@ -131,11 +133,11 @@ on_configure_event(GtkWidget* widget, GdkEventConfigure* event, gpointer data)
         cairo_paint(ctx);
         cairo_destroy(ctx);
 
-        damage = XDamageCreate(GDK_DISPLAY_XDISPLAY(display), 
-                                   GDK_PIXMAP_XID(pixmap), 
+        damage = XDamageCreate(GDK_DISPLAY_XDISPLAY(display),
+                                   GDK_PIXMAP_XID(pixmap),
                                    XDamageReportBoundingBox);
-        
-        clone (TRUE);
+
+        start_clone (TRUE);
     }
 
     return FALSE;
@@ -149,7 +151,7 @@ on_filter_event(XEvent* xevent, GdkEvent* event, gpointer data)
         XDamageSubtract(xevent->xany.display, damage, None, None);
         gtk_widget_queue_draw(main_window);
     }
-    
+
     return GDK_FILTER_CONTINUE;
 }
 
@@ -163,7 +165,7 @@ main(gint argc, gchar** argv)
     g_signal_connect(main_window, "delete-event", G_CALLBACK(on_delete_event), NULL);
     g_signal_connect(main_window, "expose-event", G_CALLBACK(on_expose_event), NULL);
     g_signal_connect(main_window, "configure-event", G_CALLBACK(on_configure_event), NULL);
-  
+
     gdk_window_add_filter(NULL, (GdkFilterFunc)on_filter_event, NULL);
 
     gtk_widget_set_app_paintable(main_window, TRUE);
@@ -173,8 +175,8 @@ main(gint argc, gchar** argv)
 
     gtk_main();
 
-    clone (FALSE);
+    start_clone (FALSE);
     if (pixmap) g_object_unref(pixmap);
-            
+
     return 0;
 }

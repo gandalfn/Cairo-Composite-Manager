@@ -2,17 +2,17 @@
 /*
  * ccm-screen.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -22,8 +22,11 @@
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/XInput.h>
+#include <X11/extensions/Xrandr.h>
+#include <GL/glx.h>
 #include <gdk/gdk.h>
 #include <strings.h>
+#include <string.h>
 #include <math.h>
 
 #include "ccm.h"
@@ -46,6 +49,9 @@
 #include "ccm-pixmap-image.h"
 
 #define DEFAULT_PLUGINS "opacity,fade,shadow,menu-animation,magnifier"
+
+typedef gint (*WaitVideoSyncFunc) (gint, gint, guint*);
+typedef gint (*GetVideoSyncFunc) (guint*);
 
 enum
 {
@@ -93,7 +99,9 @@ enum
     CCM_SCREEN_PIXMAP,
     CCM_SCREEN_USE_BUFFERED,
     CCM_SCREEN_PLUGINS,
+    CCM_SCREEN_AUTO_REFRESH_RATE,
     CCM_SCREEN_REFRESH_RATE,
+    CCM_SCREEN_SYNC_WITH_VBLANK,
     CCM_SCREEN_USE_ROOT_BACKGROUND,
     CCM_SCREEN_BACKGROUND,
     CCM_SCREEN_COLOR_BACKGROUND,
@@ -107,7 +115,9 @@ static gchar *CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
     "native_pixmap_bind",
     "use_buffered_pixmap",
     "plugins",
+    "auto_refresh_rate",
     "refresh_rate",
+    "sync_with_vblank",
     "use_root_background",
     "background",
     "color_background",
@@ -146,6 +156,11 @@ struct _CCMScreenPrivate
     GList*              removed;
     gint                nb_redirect_input;
 
+    gboolean            sync_with_vblank;
+    Window              vblank_window;
+    GLXContext          vblank_context;
+    WaitVideoSyncFunc   wait_video_sync;
+    GetVideoSyncFunc    get_video_sync;
     guint               refresh_rate;
     CCMTimeline*        paint;
     guint               id_pendings;
@@ -264,6 +279,11 @@ ccm_screen_init (CCMScreen* self)
     self->priv->removed = NULL;
     self->priv->nb_redirect_input = 0;
     self->priv->refresh_rate = 0;
+    self->priv->sync_with_vblank = FALSE;
+    self->priv->vblank_context = NULL;
+    self->priv->wait_video_sync = NULL;
+    self->priv->get_video_sync = NULL;
+    self->priv->vblank_window = None;
     self->priv->paint = NULL;
     self->priv->id_pendings = 0;
     self->priv->plugin_loader = NULL;
@@ -332,6 +352,18 @@ ccm_screen_finalize (GObject * object)
         ccm_region_destroy (self->priv->damaged);
     if (self->priv->root_damage)
         ccm_region_destroy (self->priv->root_damage);
+
+    if (self->priv->vblank_window != None)
+    {
+        XDestroyWindow(CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->vblank_window);
+        self->priv->vblank_window = None;
+    }
+
+    if (self->priv->vblank_context != NULL)
+    {
+        glXDestroyContext(CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->vblank_context);
+        self->priv->vblank_context = NULL;
+    }
 
     if (self->priv->cow)
     {
@@ -607,7 +639,7 @@ ccm_screen_update_backend (CCMScreen * self)
         error = NULL;
         use_buffered = TRUE;
     }
-    
+
     ccm_object_unregister (CCM_TYPE_WINDOW);
     ccm_object_unregister (CCM_TYPE_PIXMAP);
 
@@ -629,18 +661,50 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
 
+    gboolean have_randr;
+    gboolean auto_refresh_rate;
+    guint refresh_rate = 0;
     GError *error = NULL;
-    guint refresh_rate = ccm_config_get_integer (self->priv->options[CCM_SCREEN_REFRESH_RATE],
-                                                 &error);
 
+    auto_refresh_rate = ccm_config_get_boolean (self->priv->options[CCM_SCREEN_AUTO_REFRESH_RATE],
+                                                &error);
     if (error)
     {
-        g_warning ("Error on get refresh rate configuration");
+        g_warning ("Error on get auto refresh rate configuration");
         g_error_free (error);
-        refresh_rate = 60;
+        auto_refresh_rate = FALSE;
+        error = NULL;
     }
-    refresh_rate = MAX (20, refresh_rate);
-    refresh_rate = MIN (100, refresh_rate);
+
+    if (auto_refresh_rate)
+    {
+        g_object_get(G_OBJECT(self->priv->display), "use_randr", &have_randr, NULL);
+        if (have_randr)
+        {
+            XRRScreenConfiguration *config;
+
+            config  = XRRGetScreenInfo (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                        RootWindowOfScreen (self->priv->xscreen));
+            refresh_rate = (int) XRRConfigCurrentRate (config);
+
+            XRRFreeScreenConfigInfo (config);
+        }
+    }
+
+    if (refresh_rate == 0)
+    {
+        refresh_rate = ccm_config_get_integer (self->priv->options[CCM_SCREEN_REFRESH_RATE],
+                                               &error);
+
+        if (error)
+        {
+            g_warning ("Error on get refresh rate configuration");
+            g_error_free (error);
+            refresh_rate = 60;
+        }
+        refresh_rate = MAX (20, refresh_rate);
+        refresh_rate = MIN (100, refresh_rate);
+    }
 
     if (self->priv->refresh_rate != refresh_rate)
     {
@@ -660,8 +724,144 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
                                   G_CALLBACK (ccm_screen_paint), self);
         ccm_timeline_set_master (self->priv->paint, TRUE);
         ccm_timeline_set_loop (self->priv->paint, TRUE);
+
+        if (self->priv->sync_with_vblank && self->priv->get_video_sync && self->priv->wait_video_sync)
+        {
+            guint vblank_count;
+            self->priv->get_video_sync (&vblank_count);
+            self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
+        }
         ccm_timeline_start (self->priv->paint);
         g_signal_emit (self, signals[REFRESH_RATE_CHANGED], 0);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static gboolean
+ccm_screen_support_glx_extenstion (CCMScreen* self, const char* extension)
+{
+    gboolean ret = FALSE;
+    gboolean have_glx;
+
+    g_object_get(G_OBJECT(self->priv->display), "use_glx", &have_glx, NULL);
+    if (have_glx)
+    {
+        const gchar *extensions = glXQueryExtensionsString (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                                            self->priv->number);
+        const gchar* pos = g_strrstr(extensions, extension);
+
+        ret = pos != NULL &&
+              (pos == extensions || pos[-1] == ' ') &&
+              (pos[strlen(extension)] == ' ' || pos[strlen(extension)] == '\0');
+    }
+
+    return ret;
+}
+
+static gboolean
+ccm_screen_update_sync_with_vblank (CCMScreen * self)
+{
+    g_return_val_if_fail (self != NULL, FALSE);
+
+    GError *error = NULL;
+    gboolean sync_with_vblank = ccm_config_get_boolean (self->priv->options[CCM_SCREEN_SYNC_WITH_VBLANK],
+                                                        &error);
+
+    if (error)
+    {
+        g_warning ("Error on get sync with vblank configuration");
+        g_error_free (error);
+    }
+    else
+    {
+        if (sync_with_vblank && self->priv->sync_with_vblank != sync_with_vblank &&
+            ccm_screen_support_glx_extenstion (self, "GLX_SGI_video_sync"))
+        {
+            self->priv->sync_with_vblank = FALSE;
+
+            // Create fake vblank window
+            XVisualInfo* visual_info;
+            XSetWindowAttributes wattributes;
+            int attrib[]= { GLX_RGBA,
+                            GLX_RED_SIZE, 1,
+                            GLX_GREEN_SIZE, 1,
+                            GLX_BLUE_SIZE, 1,
+                            None };
+            // Choose a visual
+            visual_info = glXChooseVisual (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                           self->priv->number, attrib);
+            if (visual_info != NULL)
+            {
+                wattributes.colormap = XCreateColormap(CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                                       RootWindowOfScreen (self->priv->xscreen),
+                                                       visual_info->visual, AllocNone);
+                self->priv->vblank_window = XCreateWindow(CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                                          RootWindowOfScreen (self->priv->xscreen),
+                                                          0, 0, 1, 1, 0, visual_info->depth,
+                                                          InputOutput, visual_info->visual, CWColormap, &wattributes);
+
+                if (self->priv->vblank_window != None)
+                {
+                    // Create a GLX context
+                    self->priv->vblank_context = glXCreateContext(CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                                                  visual_info, None, GL_TRUE);
+                    if (self->priv->vblank_context == NULL)
+                    {
+                        XDestroyWindow(CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->vblank_window);
+                        self->priv->vblank_window = None;
+                    }
+                    else
+                    {
+                        // Make context current
+                        glXMakeCurrent(CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->vblank_window,
+                                       self->priv->vblank_context);
+
+                        self->priv->wait_video_sync = (WaitVideoSyncFunc)glXGetProcAddress ((const GLubyte*)"glXWaitVideoSyncSGI");
+                        self->priv->get_video_sync = (GetVideoSyncFunc)glXGetProcAddress ((const GLubyte*)"glXGetVideoSyncSGI");
+
+                        self->priv->sync_with_vblank = self->priv->wait_video_sync != NULL &&
+                                                       self->priv->get_video_sync != NULL;
+                    }
+                }
+            }
+        }
+        else
+        {
+            self->priv->sync_with_vblank = FALSE;
+        }
+
+        if (!self->priv->sync_with_vblank)
+        {
+            if (self->priv->vblank_window != None)
+            {
+                XDestroyWindow(CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->vblank_window);
+                self->priv->vblank_window = None;
+            }
+
+            if (self->priv->vblank_context != NULL)
+            {
+                glXDestroyContext(CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->vblank_context);
+                self->priv->vblank_context = NULL;
+            }
+        }
+        else if (self->priv->paint)
+        {
+            guint vblank_count;
+
+            ccm_timeline_stop (self->priv->paint);
+
+            self->priv->get_video_sync (&vblank_count);
+            self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
+
+            ccm_timeline_start (self->priv->paint);
+        }
+
+        if (self->priv->sync_with_vblank != sync_with_vblank)
+            ccm_config_set_boolean (self->priv->options[CCM_SCREEN_SYNC_WITH_VBLANK],
+                                    self->priv->sync_with_vblank, NULL);
 
         return TRUE;
     }
@@ -688,6 +888,7 @@ ccm_screen_load_config (CCMScreen * self)
 
     ccm_screen_update_backend (self);
     ccm_screen_update_refresh_rate (self);
+    ccm_screen_update_sync_with_vblank (self);
 }
 
 static gboolean
@@ -1754,6 +1955,14 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
 
         if (ccm_screen_plugin_paint (self->priv->plugin, self, self->priv->ctx))
         {
+            if (self->priv->sync_with_vblank)
+            {
+                guint vblank_count;
+
+                self->priv->get_video_sync (&vblank_count);
+                self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
+            }
+
             if (self->priv->damaged)
             {
                 if (self->priv->manage_cursor)
@@ -1782,9 +1991,14 @@ ccm_screen_on_option_changed (CCMScreen * self, CCMConfig * config)
     {
         ccm_screen_update_backend (self);
     }
-    else if (config == self->priv->options[CCM_SCREEN_REFRESH_RATE])
+    else if (config == self->priv->options[CCM_SCREEN_REFRESH_RATE] ||
+             config == self->priv->options[CCM_SCREEN_AUTO_REFRESH_RATE])
     {
         ccm_screen_update_refresh_rate (self);
+    }
+    else if (config == self->priv->options[CCM_SCREEN_SYNC_WITH_VBLANK])
+    {
+        ccm_screen_update_sync_with_vblank (self);
     }
     else if (config == self->priv->options[CCM_SCREEN_BACKGROUND] ||
              config == self->priv->options[CCM_SCREEN_COLOR_BACKGROUND] ||
@@ -2966,4 +3180,3 @@ ccm_screen_get_active_window (CCMScreen* self)
 
     return self->priv->active;
 }
-

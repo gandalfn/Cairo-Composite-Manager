@@ -19,10 +19,20 @@ ListType=string
 Default=opacity,fade,shadow,menu-animation,window-animation,decoration,freeze,mosaic,snapshot
 _Description=List of active plugins.
 
+[auto_refresh_rate]
+Type=bool
+Default=true
+_Description=Detect refresh rate.
+
 [refresh_rate]
 Type=int
 Default=60
 _Description=Refresh rate in Hz.
+
+[sync_with_vblank]
+Type=bool
+Default=false
+_Description=Use Sync to VBlank.
 
 [indirect]
 Type=bool

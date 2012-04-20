@@ -84,6 +84,8 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         x11,
         ice,
         sm,
+        xrandr,
+        gl,
         cairo >= $CAIRO_REQUIRED,
         pixman-1 >= $PIXMAN_REQUIRED,
         gtk+-2.0 >= $GTK_REQUIRED
@@ -382,4 +384,3 @@ if [ test x$xrenderbackend = xyes ]; then
 else
         echo "Building XRender backend: ...................NO"
 fi
-

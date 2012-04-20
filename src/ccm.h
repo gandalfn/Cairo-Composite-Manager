@@ -2,17 +2,17 @@
 /*
  * ccm.h
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -103,20 +103,20 @@ CCMRegion*    ccm_region_rectangle        (cairo_rectangle_t* rectangle);
 CCMRegion*    ccm_region_xrectangle       (XRectangle* rectangle);
 CCMRegion*    ccm_region_create           (int x, int y, int width, int height);
 void          ccm_region_destroy          (CCMRegion* self);
-void          ccm_region_get_clipbox      (CCMRegion* self, 
+void          ccm_region_get_clipbox      (CCMRegion* self,
                                            cairo_rectangle_t* clipbox);
 void          ccm_region_get_rectangles   (CCMRegion* self,
                                            cairo_rectangle_t** rectangles,
                                            gint* n_rectangles);
 CCMRegionBox* ccm_region_get_boxes        (CCMRegion* self, gint* n_box);
-void          ccm_region_get_xrectangles  (CCMRegion* self, 
+void          ccm_region_get_xrectangles  (CCMRegion* self,
                                            XRectangle** rectangles,
                                            gint* n_rectangles);
 gboolean      ccm_region_empty            (CCMRegion* self);
 void          ccm_region_offset           (CCMRegion* self, int dx, int dy);
-void          ccm_region_resize           (CCMRegion* self, 
+void          ccm_region_resize           (CCMRegion* self,
                                            int width, int height);
-void          ccm_region_scale            (CCMRegion* self, 
+void          ccm_region_scale            (CCMRegion* self,
                                            gdouble scale_width,
                                            gdouble scale_height);
 void          ccm_region_union_with_rect  (CCMRegion* self,
@@ -159,13 +159,14 @@ G_GNUC_PURE Display*    ccm_display_get_xdisplay    (CCMDisplay* self);
 G_GNUC_PURE CCMScreen*  ccm_display_get_screen      (CCMDisplay* self,
                                                      guint number);
 G_GNUC_PURE int         ccm_display_get_shape_notify_event_type (CCMDisplay* self);
+G_GNUC_PURE gboolean    ccm_display_use_dbe         (CCMDisplay* self);
 void                    ccm_display_flush           (CCMDisplay* self);
 void                    ccm_display_sync            (CCMDisplay* self);
 void                    ccm_display_grab            (CCMDisplay* self);
 void                    ccm_display_ungrab          (CCMDisplay* self);
 void                    ccm_display_trap_error      (CCMDisplay* self);
 gint                    ccm_display_pop_error       (CCMDisplay* self);
-gboolean                ccm_display_report_device_event (CCMDisplay* self, 
+gboolean                ccm_display_report_device_event (CCMDisplay* self,
                                                          CCMScreen* screen,
                                                          gboolean report);
 const CCMCursor*        ccm_display_get_current_cursor (CCMDisplay* self,
@@ -186,7 +187,7 @@ gboolean                ccm_screen_add_window           (CCMScreen* self,
 void                    ccm_screen_remove_window        (CCMScreen* self,
                                                          CCMWindow* window);
 void                    ccm_screen_damage               (CCMScreen* self);
-void                    ccm_screen_damage_region        (CCMScreen* self, 
+void                    ccm_screen_damage_region        (CCMScreen* self,
                                                          const CCMRegion* region);
 void                    ccm_screen_undamage_region      (CCMScreen* self,
                                                          const CCMRegion* area);
@@ -324,14 +325,14 @@ G_GNUC_PURE const CCMWindow* ccm_window_get_group_leader(CCMWindow* self);
 const cairo_rectangle_t*ccm_window_get_area             (CCMWindow* self);
 CCMRegion*              ccm_window_get_area_geometry    (CCMWindow* self);
 void                    ccm_window_query_frame_extends  (CCMWindow* self);
-void                    ccm_window_get_frame_extends    (CCMWindow* self, 
+void                    ccm_window_get_frame_extends    (CCMWindow* self,
                                                          int*left_frame,
-                                                         int*right_frame, 
+                                                         int*right_frame,
                                                          int*top_frame,
                                                          int*bottom_frame);
 gboolean                ccm_window_transform            (CCMWindow* self,
                                                          cairo_t* ctx);
-guint32*                ccm_window_get_property         (CCMWindow* self, 
+guint32*                ccm_window_get_property         (CCMWindow* self,
                                                          Atom property_atom,
                                                          Atom req_type,
                                                          guint* n_items);
@@ -339,7 +340,7 @@ guint32*                ccm_window_get_child_property   (CCMWindow* self,
                                                          Atom property_atom,
                                                          Atom req_type,
                                                          guint* n_items);
-Window                  ccm_window_redirect_event       (CCMWindow* self, 
+Window                  ccm_window_redirect_event       (CCMWindow* self,
                                                          XEvent* event,
                                                          Window over);
 void                    ccm_window_activate             (CCMWindow* self,

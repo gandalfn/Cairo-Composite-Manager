@@ -2,17 +2,17 @@
 /*
  * ccm-display.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,6 +26,8 @@
 #include <X11/extensions/Xdbe.h>
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/shape.h>
+#include <X11/extensions/Xrandr.h>
+#include <GL/glx.h>
 #include <gtk/gtk.h>
 
 #include "ccm-debug.h"
@@ -43,7 +45,9 @@ enum
     PROP_XDISPLAY,
     PROP_USE_XSHM,
     PROP_USE_XDBE,
-    PROP_SHM_SHARED_PIXMAP
+    PROP_SHM_SHARED_PIXMAP,
+    PROP_USE_RANDR,
+    PROP_USE_GLX
 };
 
 enum
@@ -99,6 +103,8 @@ struct _CCMDisplayPrivate
     CCMExtension     dbe;
     CCMExtension     fixes;
     CCMExtension     input;
+    CCMExtension     randr;
+    CCMExtension     glx;
 
     GSList*          pointers;
     int              type_button_press;
@@ -165,6 +171,16 @@ ccm_display_get_property (GObject * object, guint prop_id, GValue * value,
                 g_value_set_boolean (value, priv->use_dbe);
             }
             break;
+        case PROP_USE_RANDR:
+            {
+                g_value_set_boolean (value, priv->randr.available);
+            }
+            break;
+        case PROP_USE_GLX:
+            {
+                g_value_set_boolean (value, priv->glx.available);
+            }
+            break;
         case PROP_SHM_SHARED_PIXMAP:
             {
                 GError *error = NULL;
@@ -204,7 +220,7 @@ ccm_display_init (CCMDisplay * self)
     self->priv->last_events.press = 0;
     self->priv->last_events.release = 0;
     self->priv->last_events.motion = 0;
-    self->priv->cursors = g_hash_table_new_full (g_int_hash, g_int_equal, 
+    self->priv->cursors = g_hash_table_new_full (g_int_hash, g_int_equal,
                                                  g_free, g_object_unref);
     self->priv->cursor_current = NULL;
 }
@@ -293,6 +309,20 @@ ccm_display_class_init (CCMDisplayClass * klass)
                                                            TRUE,
                                                            G_PARAM_READABLE));
 
+    g_object_class_install_property (object_class, PROP_USE_RANDR,
+                                     g_param_spec_boolean ("use_randr",
+                                                           "UseRandr",
+                                                           "Use RANDR Extension",
+                                                           TRUE,
+                                                           G_PARAM_READABLE));
+
+    g_object_class_install_property (object_class, PROP_USE_GLX,
+                                     g_param_spec_boolean ("use_glx",
+                                                           "UseGLX",
+                                                           "Use GLX Extension",
+                                                           TRUE,
+                                                           G_PARAM_READABLE));
+
     signals[EVENT] =
         g_signal_new ("event", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
@@ -323,7 +353,7 @@ ccm_display_load_config (CCMDisplay * self)
     {
         self->priv->options[cpt] = ccm_config_new (-1, NULL, CCMDisplayOptions[cpt]);
     }
-    self->priv->use_shm = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM], NULL) && 
+    self->priv->use_shm = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM], NULL) &&
                                                   self->priv->shm.available;
     self->priv->use_dbe = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XDBE], NULL) &&
                                                   self->priv->dbe.available;
@@ -411,7 +441,7 @@ ccm_display_init_shape (CCMDisplay * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
 
-    if (XShapeQueryExtension (self->priv->xdisplay, 
+    if (XShapeQueryExtension (self->priv->xdisplay,
                               &self->priv->shape.event_base,
                               &self->priv->shape.error_base))
     {
@@ -428,7 +458,7 @@ ccm_display_init_composite (CCMDisplay * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
 
-    if (XCompositeQueryExtension (self->priv->xdisplay, 
+    if (XCompositeQueryExtension (self->priv->xdisplay,
                                   &self->priv->composite.event_base,
                                   &self->priv->composite.error_base))
     {
@@ -446,7 +476,7 @@ ccm_display_init_damage (CCMDisplay * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
 
-    if (XDamageQueryExtension (self->priv->xdisplay, 
+    if (XDamageQueryExtension (self->priv->xdisplay,
                                &self->priv->damage.event_base,
                                &self->priv->damage.error_base))
     {
@@ -496,7 +526,7 @@ ccm_display_init_xfixes (CCMDisplay * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
 
-    if (XFixesQueryExtension (self->priv->xdisplay, 
+    if (XFixesQueryExtension (self->priv->xdisplay,
                               &self->priv->fixes.event_base,
                               &self->priv->fixes.error_base))
     {
@@ -525,6 +555,40 @@ ccm_display_init_input (CCMDisplay * self)
     {
         self->priv->input.available = TRUE;
         XFree (version);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static gboolean
+ccm_display_init_randr(CCMDisplay *self)
+{
+    g_return_val_if_fail(self != NULL, FALSE);
+
+    if (XRRQueryExtension (self->priv->xdisplay,
+                           &self->priv->randr.event_base,
+                           &self->priv->randr.error_base))
+    {
+        self->priv->randr.available = TRUE;
+        ccm_debug ("GLX ERROR BASE: %i", self->priv->randr.error_base);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static gboolean
+ccm_display_init_glx(CCMDisplay *self)
+{
+    g_return_val_if_fail(self != NULL, FALSE);
+
+    if (glXQueryExtension (self->priv->xdisplay,
+                           &self->priv->glx.event_base,
+                           &self->priv->glx.error_base))
+    {
+        self->priv->glx.available = TRUE;
+        ccm_debug ("GLX ERROR BASE: %i", self->priv->glx.error_base);
         return TRUE;
     }
 
@@ -744,6 +808,9 @@ ccm_display_new (gchar * display)
         return NULL;
     }
 
+    ccm_display_init_randr (self);
+    ccm_display_init_glx (self);
+
     if (CCMDefaultDisplay == NULL) CCMDefaultDisplay = self;
 
     ccm_display_get_pointers (self);
@@ -810,6 +877,14 @@ ccm_display_get_shape_notify_event_type (CCMDisplay * self)
     return self->priv->shape.event_base + ShapeNotify;
 }
 
+G_GNUC_PURE gboolean
+ccm_display_use_dbe (CCMDisplay* self)
+{
+    g_return_val_if_fail (self != NULL, 0);
+
+    return self->priv->use_dbe;
+}
+
 gboolean
 ccm_display_report_device_event (CCMDisplay * self, CCMScreen * screen,
                                  gboolean report)
@@ -860,8 +935,8 @@ ccm_display_report_device_event (CCMDisplay * self, CCMScreen * screen,
                         break;
                 }
             }
-            if (XSelectExtensionEvent (self->priv->xdisplay, 
-                                       CCM_WINDOW_XWINDOW (root), 
+            if (XSelectExtensionEvent (self->priv->xdisplay,
+                                       CCM_WINDOW_XWINDOW (root),
                                        event, nb))
             {
                 g_free (event);
@@ -873,8 +948,8 @@ ccm_display_report_device_event (CCMDisplay * self, CCMScreen * screen,
         {
             XEventClass *event = g_new0 (XEventClass, 1);;
             NoExtensionEvent (pointer, 0, event[nb++]);
-            if (XSelectExtensionEvent (self->priv->xdisplay, 
-                                       CCM_WINDOW_XWINDOW (root), 
+            if (XSelectExtensionEvent (self->priv->xdisplay,
+                                       CCM_WINDOW_XWINDOW (root),
                                        event, nb))
             {
                 g_free (event);

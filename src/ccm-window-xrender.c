@@ -2,17 +2,17 @@
 /*
  * ccm-window-xrender.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -62,9 +62,9 @@ ccm_window_xrender_finalize (GObject * object)
     CCMWindowXRender *self = CCM_WINDOW_X_RENDER (object);
     CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
 
-    if (self->priv->back_buffer) 
+    if (self->priv->back_buffer)
     {
-        XdbeDeallocateBackBufferName(CCM_DISPLAY_XDISPLAY(display), 
+        XdbeDeallocateBackBufferName(CCM_DISPLAY_XDISPLAY(display),
                                      self->priv->back_buffer);
         self->priv->back_buffer = None;
     }
@@ -138,23 +138,21 @@ ccm_window_xrender_create_backbuffer (CCMWindowXRender * self)
                                                &geometry))
         {
             CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE (self));
-            gboolean have_dbe;
 
-            g_object_get(G_OBJECT(display), "use_xdbe", &have_dbe, NULL);
-            if (have_dbe)
+            if (ccm_display_use_dbe (display))
             {
                 CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE (self));
 
-                self->priv->back_buffer = XdbeAllocateBackBufferName(CCM_DISPLAY_XDISPLAY(display), 
-                                                                     CCM_WINDOW_XWINDOW(self), 
+                self->priv->back_buffer = XdbeAllocateBackBufferName(CCM_DISPLAY_XDISPLAY(display),
+                                                                     CCM_WINDOW_XWINDOW(self),
                                                                      XdbeUndefined);
-                Visual* visual = DefaultVisual(CCM_DISPLAY_XDISPLAY(display), 
+                Visual* visual = DefaultVisual(CCM_DISPLAY_XDISPLAY(display),
                                                ccm_screen_get_number(screen));
 
                 self->priv->back = cairo_xlib_surface_create(CCM_DISPLAY_XDISPLAY(display),
-                                                             self->priv->back_buffer, 
+                                                             self->priv->back_buffer,
                                                              visual,
-                                                             (int)geometry.width, 
+                                                             (int)geometry.width,
                                                              (int)geometry.height);
             }
             else
@@ -194,10 +192,8 @@ ccm_window_xrender_flush (CCMDrawable * drawable)
     if (ccm_window_xrender_create_backbuffer (self))
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
-        gboolean have_dbe;
 
-        g_object_get(G_OBJECT(display), "use_xdbe", &have_dbe, NULL);
-        if (have_dbe)
+        if (ccm_display_use_dbe (display))
         {
             XdbeSwapInfo swap_info;
 
@@ -232,10 +228,8 @@ ccm_window_xrender_flush_region (CCMDrawable * drawable, CCMRegion * region)
     if (ccm_window_xrender_create_backbuffer (self))
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
-        gboolean have_dbe;
 
-        g_object_get(G_OBJECT(display), "use_xdbe", &have_dbe, NULL);
-        if (have_dbe)
+        if (ccm_display_use_dbe (display))
         {
             XdbeSwapInfo swap_info;
 
