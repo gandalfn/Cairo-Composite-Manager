@@ -2,17 +2,17 @@
 /*
  * ccm-preferences-page.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -48,6 +48,7 @@ enum
     CCM_SCREEN_USE_BUFFERED,
     CCM_SCREEN_PLUGINS,
     CCM_SCREEN_REFRESH_RATE,
+    CCM_SCREEN_AUTO_REFRESH_RATE,
     CCM_SCREEN_SYNC_WITH_VBLANK,
     CCM_SCREEN_INDIRECT,
     CCM_SCREEN_USE_ROOT_BACKGROUND,
@@ -70,6 +71,7 @@ static gchar *CCMScreenOptions[CCM_SCREEN_OPTION_N] = {
     "use_buffered_pixmap",
     "plugins",
     "refresh_rate",
+    "auto_refresh_rate",
     "sync_with_vblank",
     "indirect",
     "use_root_background",
@@ -208,14 +210,52 @@ ccm_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
 }
 
 static void
+ccm_preferences_page_on_auto_refresh_rate_changed (CCMPreferencesPage * self,
+                                                   CCMConfig * config)
+{
+    if (self->priv->builder)
+    {
+        gboolean auto_refresh_rate;
+        GtkWidget* spin;
+
+        auto_refresh_rate = ccm_config_get_boolean (config, NULL);
+
+        spin = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "refresh_rate"));
+        if (!spin) return;
+        gtk_widget_set_sensitive (spin, !auto_refresh_rate);
+    }
+}
+
+static void
+ccm_preferences_page_on_refresh_rate_changed (CCMPreferencesPage * self,
+                                              CCMConfig * config)
+{
+    if (self->priv->builder)
+    {
+        gboolean auto_refresh_rate;
+        GtkSpinButton* spin;
+
+        auto_refresh_rate = ccm_config_get_boolean (self->priv->screen_options[CCM_SCREEN_AUTO_REFRESH_RATE], NULL);
+
+        if (auto_refresh_rate)
+        {
+            gint refresh_rate = ccm_config_get_integer (config, NULL);
+            spin = GTK_SPIN_BUTTON (gtk_builder_get_object (self->priv->builder, "refresh_rate"));
+            if (!spin) return;
+            gtk_spin_button_set_value (spin, (gdouble) refresh_rate);
+        }
+    }
+}
+
+static void
 ccm_preferences_page_on_background_changed (CCMPreferencesPage * self,
                                             CCMConfig * config)
 {
     gchar *filename;
 
     filename = ccm_config_get_string (self->priv->screen_options[CCM_SCREEN_BACKGROUND], NULL);
-    if (filename && 
-        g_file_test (filename, G_FILE_TEST_EXISTS) && 
+    if (filename &&
+        g_file_test (filename, G_FILE_TEST_EXISTS) &&
         !g_file_test (filename, G_FILE_TEST_IS_DIR))
     {
         GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file (filename, NULL);
@@ -265,15 +305,15 @@ ccm_preferences_page_on_use_root_background_changed (CCMPreferencesPage * self,
     gboolean use_root_background = ccm_config_get_boolean (config, NULL);
     GtkWidget *widget;
 
-    widget = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, 
+    widget = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
                                                  "color_background"));
     gtk_widget_set_sensitive (widget, !use_root_background);
 
-    widget =  GTK_WIDGET (gtk_builder_get_object (self->priv->builder, 
+    widget =  GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
                                                   "background_button"));
     gtk_widget_set_sensitive (widget, !use_root_background);
 
-    widget = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, 
+    widget = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
                                                  "background_x"));
     gtk_widget_set_sensitive (widget, !use_root_background);
 
@@ -295,7 +335,7 @@ ccm_preferences_page_on_use_root_background_changed (CCMPreferencesPage * self,
         GdkWindow *root = gdk_screen_get_root_window (screen);
         GdkAtom atom = gdk_atom_intern ("_XROOTPMAP_ID", FALSE);
 
-        gboolean ret = gdk_property_get (root, atom, 0, 0, 10, FALSE, 
+        gboolean ret = gdk_property_get (root, atom, 0, 0, 10, FALSE,
                                          &prop_type, NULL, NULL,
                                          &prop_data.data);
 
@@ -315,8 +355,8 @@ ccm_preferences_page_on_use_root_background_changed (CCMPreferencesPage * self,
             height = MIN (pheight, rheight);
 
             colormap = gdk_drawable_get_colormap (root);
-            pixbuf = gdk_pixbuf_get_from_drawable (NULL, pixmap, colormap, 
-                                                   0, 0, 0, 0, 
+            pixbuf = gdk_pixbuf_get_from_drawable (NULL, pixmap, colormap,
+                                                   0, 0, 0, 0,
                                                    width, height);
             g_object_unref (colormap);
             g_object_unref (pixmap);
@@ -365,7 +405,7 @@ ccm_preferences_page_load_config (CCMPreferencesPage * self)
 
     for (cpt = 0; cpt < CCM_GENERAL_OPTION_N; ++cpt)
     {
-        self->priv->general_options[cpt] = ccm_config_new (-1, NULL, 
+        self->priv->general_options[cpt] = ccm_config_new (-1, NULL,
                                                            CCMGeneralOptions[cpt]);
     }
     for (cpt = 0; cpt < CCM_SCREEN_OPTION_N; ++cpt)
@@ -389,7 +429,25 @@ ccm_preferences_page_load_config (CCMPreferencesPage * self)
                                                         self->priv->screen_options[cpt]);
             g_signal_connect_swapped (self->priv->screen_options[cpt],
                                       "changed",
-                                      G_CALLBACK (ccm_preferences_page_on_background_changed), 
+                                      G_CALLBACK (ccm_preferences_page_on_background_changed),
+                                      self);
+        }
+        if (cpt == CCM_SCREEN_AUTO_REFRESH_RATE)
+        {
+            ccm_preferences_page_on_auto_refresh_rate_changed (self,
+                                                               self->priv->screen_options[cpt]);
+            g_signal_connect_swapped (self->priv->screen_options[cpt],
+                                      "changed",
+                                      G_CALLBACK (ccm_preferences_page_on_auto_refresh_rate_changed),
+                                      self);
+        }
+        if (cpt == CCM_SCREEN_REFRESH_RATE)
+        {
+            ccm_preferences_page_on_refresh_rate_changed (self,
+                                                          self->priv->screen_options[cpt]);
+            g_signal_connect_swapped (self->priv->screen_options[cpt],
+                                      "changed",
+                                      G_CALLBACK (ccm_preferences_page_on_refresh_rate_changed),
                                       self);
         }
     }
@@ -409,7 +467,7 @@ ccm_preferences_page_on_section_changed (CCMPreferencesPage * self,
     gboolean active;
     gint page;
 
-    sections = GTK_NOTEBOOK (gtk_builder_get_object (self->priv->builder, 
+    sections = GTK_NOTEBOOK (gtk_builder_get_object (self->priv->builder,
                                                      "sections"));
     if (!sections)
         return;
@@ -450,7 +508,7 @@ ccm_preferences_page_init_sections_list (CCMPreferencesPage * self)
     if (!sections_list)
         return;
 
-    sections_view = GTK_TREE_VIEW (gtk_builder_get_object (self->priv->builder, 
+    sections_view = GTK_TREE_VIEW (gtk_builder_get_object (self->priv->builder,
                                                            "sections_view"));
     if (!sections_view)
         return;
@@ -460,7 +518,7 @@ ccm_preferences_page_init_sections_list (CCMPreferencesPage * self)
     gtk_tree_model_get_iter_first (GTK_TREE_MODEL (sections_list), &iter);
     gtk_tree_selection_select_iter (selection, &iter);
     g_signal_connect_swapped (selection, "changed",
-                              G_CALLBACK (ccm_preferences_page_on_section_changed), 
+                              G_CALLBACK (ccm_preferences_page_on_section_changed),
                               self);
 }
 
@@ -495,12 +553,12 @@ ccm_preferences_page_on_plugin_edited (CCMPreferencesPage * self, gchar * path,
         return;
     selection = gtk_tree_view_get_selection (plugins_view);
 
-    plugins_column = GTK_TREE_VIEW_COLUMN (gtk_builder_get_object (self->priv->builder, 
+    plugins_column = GTK_TREE_VIEW_COLUMN (gtk_builder_get_object (self->priv->builder,
                                                                    "plugins_column"));
     if (!plugins_column)
         return;
 
-    if (old_active != active && 
+    if (old_active != active &&
         gtk_tree_selection_get_selected (selection, &plugins_list, &siter))
     {
         GtkTreePath *spath = gtk_tree_model_get_path (plugins_list, &siter);
@@ -522,12 +580,12 @@ ccm_preferences_page_on_plugin_changed (CCMPreferencesPage * self,
     GtkTreeIter iter;
     GtkTreePath *path;
 
-    plugins_view = GTK_TREE_VIEW (gtk_builder_get_object (self->priv->builder, 
+    plugins_view = GTK_TREE_VIEW (gtk_builder_get_object (self->priv->builder,
                                                           "plugins_view"));
     if (!plugins_view)
         return;
 
-    plugins_column = GTK_TREE_VIEW_COLUMN (gtk_builder_get_object (self->priv->builder, 
+    plugins_column = GTK_TREE_VIEW_COLUMN (gtk_builder_get_object (self->priv->builder,
                                                                    "plugins_column"));
     if (!plugins_column)
         return;
@@ -606,10 +664,10 @@ ccm_preferences_page_init_plugins_list (CCMPreferencesPage * self)
 
     selection = gtk_tree_view_get_selection (plugins_view);
     g_signal_connect_swapped (selection, "changed",
-                              G_CALLBACK (ccm_preferences_page_on_plugin_changed), 
+                              G_CALLBACK (ccm_preferences_page_on_plugin_changed),
                               self);
 
-    plugins_column = GTK_TREE_VIEW_COLUMN (gtk_builder_get_object (self->priv->builder, 
+    plugins_column = GTK_TREE_VIEW_COLUMN (gtk_builder_get_object (self->priv->builder,
                                                                    "plugins_column"));
     if (!plugins_column)
         return;
@@ -618,22 +676,22 @@ ccm_preferences_page_init_plugins_list (CCMPreferencesPage * self)
     gtk_tree_view_column_pack_start (plugins_column, GTK_CELL_RENDERER (cell),
                                      TRUE);
     gtk_tree_view_column_add_attribute (plugins_column,
-                                        GTK_CELL_RENDERER (cell), "name", 
+                                        GTK_CELL_RENDERER (cell), "name",
                                         0);
     gtk_tree_view_column_add_attribute (plugins_column,
                                         GTK_CELL_RENDERER (cell), "description",
                                         1);
     gtk_tree_view_column_add_attribute (plugins_column,
-                                        GTK_CELL_RENDERER (cell), "version", 
+                                        GTK_CELL_RENDERER (cell), "version",
                                         2);
     gtk_tree_view_column_add_attribute (plugins_column,
-                                        GTK_CELL_RENDERER (cell), "enabled", 
+                                        GTK_CELL_RENDERER (cell), "enabled",
                                         3);
     g_signal_connect_swapped (cell, "edited",
                               G_CALLBACK
                               (ccm_preferences_page_on_plugin_edited), self);
 
-    plugins_list = GTK_LIST_STORE (gtk_builder_get_object (self->priv->builder, 
+    plugins_list = GTK_LIST_STORE (gtk_builder_get_object (self->priv->builder,
                                                            "plugins_list"));
     if (!plugins_list)
         return;
@@ -770,11 +828,11 @@ ccm_preferences_page_on_backend_need_restart (CCMPreferencesPage * self,
         GtkTreeIter iter;
 
         if (name) g_free (name);
-        combo = GTK_COMBO_BOX (gtk_builder_get_object (self->priv->builder, 
+        combo = GTK_COMBO_BOX (gtk_builder_get_object (self->priv->builder,
                                                        "backend"));
         if (!combo)
             return;
-        backends = GTK_TREE_MODEL (gtk_builder_get_object (self->priv->builder, 
+        backends = GTK_TREE_MODEL (gtk_builder_get_object (self->priv->builder,
                                                            "backends_list"));
         if (!backends)
             return;
@@ -832,14 +890,17 @@ ccm_preferences_page_on_backend_changed (CCMPreferencesPage * self,
 }
 
 static void
-ccm_preferences_page_on_refresh_rate_changed (CCMPreferencesPage * self,
-                                              GtkSpinButton * spin)
+ccm_preferences_page_on_spin_refresh_rate_changed (CCMPreferencesPage * self,
+                                                   GtkSpinButton * spin)
 {
     g_return_if_fail (self != NULL);
     g_return_if_fail (spin != NULL);
 
-    ccm_config_set_integer (self->priv->screen_options[CCM_SCREEN_REFRESH_RATE],
-                            (gint) gtk_spin_button_get_value (spin), NULL);
+    if (!ccm_config_get_boolean (self->priv->screen_options[CCM_SCREEN_AUTO_REFRESH_RATE], NULL))
+    {
+        ccm_config_set_integer (self->priv->screen_options[CCM_SCREEN_REFRESH_RATE],
+                                (gint) gtk_spin_button_get_value (spin), NULL);
+    }
 }
 
 static void
@@ -851,7 +912,7 @@ ccm_preferences_page_on_file_chooser_response (CCMPreferencesPage * self,
         gchar *filename;
 
         filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-        ccm_config_set_string (self->priv-> screen_options[CCM_SCREEN_BACKGROUND], 
+        ccm_config_set_string (self->priv-> screen_options[CCM_SCREEN_BACKGROUND],
                                filename,
                                NULL);
         g_free (filename);
@@ -895,6 +956,7 @@ impl_ccm_preferences_page_init_general_section (CCMPreferencesPagePlugin *
     GSList *unmanaged, *item;
     GtkToggleButton *button;
     GtkSpinButton *spin;
+    gboolean auto_refresh_rate;
     gint refresh_rate;
 
     button = GTK_TOGGLE_BUTTON (gtk_builder_get_object (self->priv->builder, "enable_composite_desktop"));
@@ -964,14 +1026,16 @@ impl_ccm_preferences_page_init_general_section (CCMPreferencesPagePlugin *
         }
     }
 
+    auto_refresh_rate = ccm_config_get_boolean (self->priv->screen_options[CCM_SCREEN_AUTO_REFRESH_RATE], NULL);
     refresh_rate = ccm_config_get_integer (self->priv->screen_options[CCM_SCREEN_REFRESH_RATE], NULL);
     spin = GTK_SPIN_BUTTON (gtk_builder_get_object (self->priv->builder, "refresh_rate"));
     if (!spin)
         return;
     gtk_spin_button_set_value (spin, (gdouble) refresh_rate);
+    gtk_widget_set_sensitive (GTK_WIDGET (spin), !auto_refresh_rate);
 
     g_signal_connect_swapped (spin, "value-changed",
-                              G_CALLBACK (ccm_preferences_page_on_refresh_rate_changed),
+                              G_CALLBACK (ccm_preferences_page_on_spin_refresh_rate_changed),
                               self);
 
     ccm_preferences_page_init_plugins_list (self);
@@ -1198,7 +1262,7 @@ ccm_preferences_page_set_current_section (CCMPreferencesPage * self,
 
     g_return_if_fail (self->priv->builder != NULL);
     g_return_if_fail (gtk_builder_get_object (self->priv->builder, "sections_list") != NULL);
-    
+
     sections_list = GTK_TREE_MODEL (gtk_builder_get_object (self->priv->builder, "sections_list"));
     if (!sections_list)
         return;

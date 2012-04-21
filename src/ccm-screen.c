@@ -703,7 +703,7 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
             refresh_rate = 60;
         }
         refresh_rate = MAX (20, refresh_rate);
-        refresh_rate = MIN (100, refresh_rate);
+        refresh_rate = MIN (150, refresh_rate);
     }
 
     if (self->priv->refresh_rate != refresh_rate)
@@ -724,7 +724,6 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
                                   G_CALLBACK (ccm_screen_paint), self);
         ccm_timeline_set_master (self->priv->paint, TRUE);
         ccm_timeline_set_loop (self->priv->paint, TRUE);
-
         if (self->priv->sync_with_vblank && self->priv->get_video_sync && self->priv->wait_video_sync)
         {
             guint vblank_count;
@@ -852,7 +851,6 @@ ccm_screen_update_sync_with_vblank (CCMScreen * self)
             guint vblank_count;
 
             ccm_timeline_stop (self->priv->paint);
-
             self->priv->get_video_sync (&vblank_count);
             self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
 

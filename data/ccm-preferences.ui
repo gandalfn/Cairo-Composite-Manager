@@ -304,8 +304,15 @@
                                           </packing>
                                         </child>
                                         <child>
-                                          <object class="GtkLabel" id="label8">
+                                          <object class="CCMConfigCheckButton" id="auto_refresh_rate">
+                                            <property name="label" translatable="yes">Auto detect</property>
                                             <property name="visible">True</property>
+                                            <property name="can_focus">True</property>
+                                            <property name="receives_default">False</property>
+                                            <property name="active">True</property>
+                                            <property name="draw_indicator">True</property>
+                                            <property name="key">auto_refresh_rate</property>
+                                            <property name="screen">0</property>
                                           </object>
                                           <packing>
                                             <property name="position">1</property>
@@ -322,6 +329,21 @@
                                   </object>
                                   <packing>
                                     <property name="position">1</property>
+                                  </packing>
+                                </child>
+                              <child>
+                                  <object class="CCMConfigCheckButton" id="sync_with_vblank">
+                                    <property name="label" translatable="yes">Sync with VBlank</property>
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">True</property>
+                                    <property name="receives_default">False</property>
+                                    <property name="active">True</property>
+                                    <property name="draw_indicator">True</property>
+                                    <property name="key">sync_with_vblank</property>
+                                    <property name="screen">0</property>
+                                  </object>
+                                  <packing>
+                                    <property name="position">2</property>
                                   </packing>
                                 </child>
                               </object>
@@ -547,7 +569,7 @@
   <object class="GtkAdjustment" id="refresh_rate_adjustment">
     <property name="value">60</property>
     <property name="lower">20</property>
-    <property name="upper">120</property>
+    <property name="upper">150</property>
     <property name="step_increment">10</property>
   </object>
   <object class="GtkFrame" id="screen_title_frame">
