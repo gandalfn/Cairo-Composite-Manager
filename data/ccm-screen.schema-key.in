@@ -16,7 +16,7 @@ _Description=Use buffered pixmap.
 [plugins]
 Type=list
 ListType=string
-Default=opacity,fade,shadow,menu-animation,window-animation,decoration,freeze,mosaic,snapshot
+Default=perf,stats,snapshot,mosaic,freeze,decoration,window-animation,menu-animation,shadow,fade,opacity,clone
 _Description=List of active plugins.
 
 [auto_refresh_rate]
