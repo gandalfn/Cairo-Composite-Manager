@@ -17,6 +17,9 @@ CCMDisplay
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO CCM_DISPLAY_XDISPLAY ##### -->
 <para>
 
@@ -60,6 +63,16 @@ CCMDisplay
 
 </para>
 
+<!-- ##### ARG CCMDisplay:use-glx ##### -->
+<para>
+
+</para>
+
+<!-- ##### ARG CCMDisplay:use-randr ##### -->
+<para>
+
+</para>
+
 <!-- ##### ARG CCMDisplay:use-xdbe ##### -->
 <para>
 
@@ -81,34 +94,6 @@ CCMDisplay
 </para>
 
 @display: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_display_get_xdisplay ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_display_get_screen ##### -->
-<para>
-
-</para>
-
-@self: 
-@number: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_display_get_shape_notify_event_type ##### -->
-<para>
-
-</para>
-
-@self: 
 @Returns: 
 
 

@@ -1,3 +1,22 @@
+cairo-compmgr (0.3.1-0) unstable; urgency=low
+
+  * New upstream release.
+  * Port to vala-0.16
+  * Send ICCM event notification on CCM start/stop (based from Gianpiero
+    patch)
+  * Fix on screen resize
+  * Fix screen refresh lookup
+  * Add auto-refresh and to sync to vblank options
+  * Update license to LGPL v3
+  * Add stats plugin
+  * Code cleanup
+  * Enhance video memory footprint.
+  * Add keyboard navigation in Mosaic Mode (close FS#39)
+  * Clone plugin improvements
+  * Some bug fixes and small performance enhancement
+
+ -- Nicolas Bruguier <nicolas.bruguier@supersonicimagine.fr>  Mon, 13 Aug 2012 15:17:19 +0200
+
 cairo-compmgr (0.3.0-1) unstable; urgency=low
 
   * New upstream release.

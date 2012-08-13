@@ -17,6 +17,9 @@ CCMPixmap
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO CCM_PIXMAP_XPIXMAP ##### -->
 <para>
 
@@ -37,11 +40,6 @@ CCMPixmap
 </para>
 
 <!-- ##### ARG CCMPixmap:freeze ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMPixmap:y-invert ##### -->
 <para>
 
 </para>

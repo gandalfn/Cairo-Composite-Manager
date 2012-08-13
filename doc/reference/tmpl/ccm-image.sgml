@@ -17,6 +17,9 @@ CCMImage
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT CCMImage ##### -->
 <para>
 
@@ -84,42 +87,6 @@ CCMImage
 @y: 
 @width: 
 @height: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_image_get_data ##### -->
-<para>
-
-</para>
-
-@image: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_image_get_width ##### -->
-<para>
-
-</para>
-
-@image: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_image_get_height ##### -->
-<para>
-
-</para>
-
-@image: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_image_get_stride ##### -->
-<para>
-
-</para>
-
-@image: 
 @Returns: 
 
 

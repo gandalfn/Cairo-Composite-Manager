@@ -30,6 +30,48 @@
 @ccmdisplay: the object which received the signal.
 @arg1: 
 
+<!-- ##### ARG CCMPixmap:y-invert ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:backend ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:buffered-pixmap ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:filtered-damage ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:indirect-rendering ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:native-pixmap-bind ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:mask-y-invert ##### -->
+<para>
+
+</para>
+
+
 <!-- ##### FUNCTION ccm_display_get_device_button_press_type ##### -->
 <para>
 
@@ -54,6 +96,119 @@
 @self: 
 @Returns: 
 
+<!-- ##### FUNCTION ccm_display_get_screen ##### -->
+<para>
+
+</para>
+
+@self: 
+@number: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_display_get_shape_notify_event_type ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_display_get_xdisplay ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_drawable_get_depth ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_drawable_get_device_geometry ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_drawable_get_display ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_drawable_get_geometry ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_drawable_get_screen ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_drawable_get_visual ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_drawable_get_xid ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_image_get_data ##### -->
+<para>
+
+</para>
+
+@image: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_image_get_height ##### -->
+<para>
+
+</para>
+
+@image: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_image_get_stride ##### -->
+<para>
+
+</para>
+
+@image: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_image_get_width ##### -->
+<para>
+
+</para>
+
+@image: 
+@Returns: 
+
 <!-- ##### FUNCTION ccm_pixmap_flush ##### -->
 <para>
 
@@ -61,4 +216,196 @@
 
 @self: 
 @area: 
+
+<!-- ##### FUNCTION ccm_screen_get_damaged ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_screen_get_display ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_screen_get_number ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_screen_get_overlay_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_screen_get_root_window ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_screen_get_windows ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_screen_get_xscreen ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_get_group_leader ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_get_hint_type ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_get_opacity ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_get_opaque_region ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_get_pixmap ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_get_transients ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_is_decorated ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_is_fullscreen ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_is_input_only ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_is_managed ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_is_shaded ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_is_viewable ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_keep_above ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_keep_below ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_skip_pager ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_skip_taskbar ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_window_transient_for ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
 

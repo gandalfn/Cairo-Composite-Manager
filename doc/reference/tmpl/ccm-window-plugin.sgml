@@ -17,6 +17,9 @@ CCMWindowPlugin
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO CCM_WINDOW_PLUGIN_GET_INTERFACE ##### -->
 <para>
 
@@ -95,7 +98,6 @@ CCMWindowPlugin
 @window: 
 @ctx: 
 @surface: 
-@y_invert: 
 @Returns: 
 
 

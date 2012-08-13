@@ -2,18 +2,18 @@ Source: cairo-compmgr
 Section: gnome
 Priority: optional
 Maintainer: Nicolas Bruguier <gandalfn@club-internet.fr>
-Build-Depends: debhelper (>= 5.0.37), cdbs, autotools-dev, patchutils, intltool, 
-  gnome-pkg-tools, libgtk2.0-dev, libxcomposite-dev, libxdamage-dev, 
-  libxext-dev, libcairo2-dev, libpixman-1-dev, libgtop2-dev, 
-  valac, libvala-dev, gtk-doc-tools, libsm-dev, libgladeui-1-dev, libwnck-dev
+Build-Depends: debhelper (>= 5.0.37), cdbs, autotools-dev, patchutils, intltool,
+  gnome-pkg-tools, libgtk2.0-dev, libxcomposite-dev, libxdamage-dev,
+  libxext-dev, libcairo2-dev, libpixman-1-dev, libgtop2-dev,
+  valac-0.16, libvala-0.16-dev, gtk-doc-tools, libsm-dev, libgladeui-1-dev, libwnck-dev
 Standards-Version: 3.8.4
 
 Package: cairo-compmgr
 Architecture: any
 Depends: ${misc:Depends}, cairo-compmgr-core, cairo-compmgr-plugins
 Description: Cairo Composite Manager
- Cairo Composite Manager is a versatile and extensible composite manager which 
- use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Cairo Composite Manager is a versatile and extensible composite manager which
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and
  Glitz backends. Plugins can be used to add some cool effects to your desktop.
 
 Package: cairo-compmgr-core
@@ -22,8 +22,8 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, libcairo-compmgr0
 Conflicts: cairo-compmgr (<= 0.2.93)
 Replaces: cairo-compmgr (<= 0.2.93)
 Description: Cairo Composite Manager Core
- Cairo Composite Manager is a versatile and extensible composite manager which 
- use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Cairo Composite Manager is a versatile and extensible composite manager which
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and
  Glitz backends. Plugins can be used to add some cool effects to your desktop.
 
 Package: cairo-compmgr-plugins
@@ -32,8 +32,8 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, cairo-compmgr-core
 Conflicts: cairo-compmgr (<= 0.2.3)
 Replaces: cairo-compmgr (<= 0.2.3)
 Description: Cairo Composite Manager Plugins
- Cairo Composite Manager is a versatile and extensible composite manager which 
- use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Cairo Composite Manager is a versatile and extensible composite manager which
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and
  Glitz backends. Plugins can be used to add some cool effects to your desktop.
 
 Package: libcairo-compmgr0
@@ -41,8 +41,8 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Conflicts: cairo-compmgr (<= 0.2.90)
 Description: Cairo Composite Manager Library
- Cairo Composite Manager is a versatile and extensible composite manager which 
- use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Cairo Composite Manager is a versatile and extensible composite manager which
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and
  Glitz backends. Plugins can be used to add some cool effects to your desktop.
 
 Package: cairo-compmgr-dev
@@ -52,8 +52,8 @@ Recommends: glade-3
 Depends: ${misc:Depends}, libcairo-compmgr-dev
 Conflicts: cairo-compmgr-dev (<= 0.2.90)
 Description: Cairo Composite Manager Developpement Files
- Cairo Composite Manager is a versatile and extensible composite manager which 
- use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Cairo Composite Manager is a versatile and extensible composite manager which
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and
  Glitz backends. Plugins can be used to add some cool effects to your desktop.
 
 Package: libcairo-compmgr-dev
@@ -61,8 +61,8 @@ Architecture: any
 Section: libdevel
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Cairo Composite Manager Developpement Library Files
- Cairo Composite Manager is a versatile and extensible composite manager which 
- use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Cairo Composite Manager is a versatile and extensible composite manager which
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and
  Glitz backends. Plugins can be used to add some cool effects to your desktop.
 
 Package: cairo-compmgr-doc
@@ -70,14 +70,14 @@ Architecture: any
 Section: doc
 Depends: ${misc:Depends}
 Description: Cairo Composite Manager Documentation
- Cairo Composite Manager is a versatile and extensible composite manager which 
- use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Cairo Composite Manager is a versatile and extensible composite manager which
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and
  Glitz backends. Plugins can be used to add some cool effects to your desktop.
 
 Package: cairo-compmgr-vala
 Architecture: any
-Depends: ${misc:Depends}, valac, libcairo-compmgr-dev
+Depends: ${misc:Depends}, valac-0.16, libvala-0.16-dev, libcairo-compmgr-dev
 Description: Cairo Composite Manager Vala Bindings
- Cairo Composite Manager is a versatile and extensible composite manager which 
- use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and 
+ Cairo Composite Manager is a versatile and extensible composite manager which
+ use cairo for rendering. Rendering can be done in 2D or 3D, using Xrender and
  Glitz backends. Plugins can be used to add some cool effects to your desktop.

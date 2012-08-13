@@ -17,6 +17,9 @@ CCMRegion
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### STRUCT CCMRegion ##### -->
 <para>
 
@@ -28,6 +31,7 @@ CCMRegion
 
 </para>
 
+@void: 
 @Returns: 
 
 

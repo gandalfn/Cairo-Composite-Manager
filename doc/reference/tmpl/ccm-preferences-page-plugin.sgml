@@ -17,6 +17,9 @@ CCMPreferencesPagePlugin
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE ##### -->
 <para>
 

@@ -17,13 +17,16 @@ CCMDebug
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### FUNCTION ccm_log ##### -->
 <para>
 
 </para>
 
 @format: 
-@Varargs: 
+@...: 
 
 
 <!-- ##### FUNCTION ccm_log_window ##### -->
@@ -33,7 +36,7 @@ CCMDebug
 
 @window: 
 @format: 
-@Varargs: 
+@...: 
 
 
 <!-- ##### FUNCTION ccm_log_atom ##### -->
@@ -44,7 +47,7 @@ CCMDebug
 @display: 
 @atom: 
 @format: 
-@Varargs: 
+@...: 
 
 
 <!-- ##### FUNCTION ccm_log_region ##### -->
@@ -54,7 +57,7 @@ CCMDebug
 
 @drawable: 
 @format: 
-@Varargs: 
+@...: 
 
 
 <!-- ##### FUNCTION ccm_log_print_backtrace ##### -->
@@ -78,7 +81,7 @@ CCMDebug
 </para>
 
 @window: 
-@format...: 
+@...: 
 
 
 <!-- ##### MACRO ccm_debug_atom ##### -->
@@ -88,7 +91,7 @@ CCMDebug
 
 @display: 
 @atom: 
-@format...: 
+@...: 
 
 
 <!-- ##### MACRO ccm_debug_region ##### -->
@@ -97,7 +100,7 @@ CCMDebug
 </para>
 
 @drawable: 
-@format...: 
+@...: 
 
 
 <!-- ##### MACRO ccm_debug_backtrace ##### -->

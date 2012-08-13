@@ -17,6 +17,9 @@ CCMScreen
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO CCM_SCREEN_XSCREEN ##### -->
 <para>
 
@@ -104,32 +107,12 @@ CCMScreen
 
 @ccmscreen: the object which received the signal.
 
-<!-- ##### ARG CCMScreen:backend ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMScreen:buffered-pixmap ##### -->
+<!-- ##### ARG CCMScreen:current-frame ##### -->
 <para>
 
 </para>
 
 <!-- ##### ARG CCMScreen:display ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMScreen:filtered-damage ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMScreen:indirect-rendering ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMScreen:native-pixmap-bind ##### -->
 <para>
 
 </para>
@@ -156,51 +139,6 @@ CCMScreen
 
 @display: 
 @number: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_screen_get_display ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_screen_get_xscreen ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_screen_get_number ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_screen_get_root_window ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_screen_get_overlay_window ##### -->
-<para>
-
-</para>
-
-@self: 
 @Returns: 
 
 
@@ -247,24 +185,6 @@ CCMScreen
 
 @self: 
 @area: 
-
-
-<!-- ##### FUNCTION ccm_screen_get_windows ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_screen_get_damaged ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
 
 
 <!-- ##### FUNCTION ccm_screen_add_damaged_region ##### -->

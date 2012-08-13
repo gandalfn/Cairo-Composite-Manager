@@ -17,6 +17,9 @@ CCMWindow
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO CCM_WINDOW_XWINDOW ##### -->
 <para>
 
@@ -91,11 +94,6 @@ CCMWindow
 
 </para>
 
-<!-- ##### ARG CCMWindow:mask-y-invert ##### -->
-<para>
-
-</para>
-
 <!-- ##### ARG CCMWindow:no-undamage-sibling ##### -->
 <para>
 
@@ -123,33 +121,6 @@ CCMWindow
 
 @screen: 
 @xwindow: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_is_viewable ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_is_input_only ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_is_managed ##### -->
-<para>
-
-</para>
-
-@self: 
 @Returns: 
 
 
@@ -217,15 +188,6 @@ CCMWindow
 @self: 
 
 
-<!-- ##### FUNCTION ccm_window_get_pixmap ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
 <!-- ##### FUNCTION ccm_window_create_pixmap ##### -->
 <para>
 
@@ -245,7 +207,6 @@ CCMWindow
 
 @self: 
 @ctx: 
-@buffered: 
 @Returns: 
 
 
@@ -298,15 +259,6 @@ CCMWindow
 @self: 
 
 
-<!-- ##### FUNCTION ccm_window_get_hint_type ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
 <!-- ##### FUNCTION ccm_window_get_name ##### -->
 <para>
 
@@ -332,15 +284,6 @@ CCMWindow
 @self: 
 
 
-<!-- ##### FUNCTION ccm_window_get_opaque_region ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
 <!-- ##### FUNCTION ccm_window_get_opaque_clipbox ##### -->
 <para>
 
@@ -358,15 +301,6 @@ CCMWindow
 
 @self: 
 @region: 
-
-
-<!-- ##### FUNCTION ccm_window_get_opacity ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
 
 
 <!-- ##### FUNCTION ccm_window_set_opacity ##### -->
@@ -414,93 +348,12 @@ CCMWindow
 @state_atom: 
 
 
-<!-- ##### FUNCTION ccm_window_is_shaded ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_is_fullscreen ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
 <!-- ##### FUNCTION ccm_window_query_mwm_hints ##### -->
 <para>
 
 </para>
 
 @self: 
-
-
-<!-- ##### FUNCTION ccm_window_is_decorated ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_skip_taskbar ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_skip_pager ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_keep_above ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_keep_below ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_transient_for ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
-
-
-<!-- ##### FUNCTION ccm_window_get_group_leader ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
 
 
 <!-- ##### FUNCTION ccm_window_get_area ##### -->
@@ -539,7 +392,6 @@ CCMWindow
 
 @self: 
 @ctx: 
-@y_invert: 
 @Returns: 
 
 
@@ -585,14 +437,5 @@ CCMWindow
 
 @self: 
 @timestamp: 
-
-
-<!-- ##### FUNCTION ccm_window_get_transients ##### -->
-<para>
-
-</para>
-
-@self: 
-@Returns: 
 
 

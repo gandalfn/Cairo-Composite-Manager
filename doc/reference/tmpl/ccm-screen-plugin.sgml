@@ -17,6 +17,9 @@ CCMScreenPlugin
 <!-- ##### SECTION Stability_Level ##### -->
 
 
+<!-- ##### SECTION Image ##### -->
+
+
 <!-- ##### MACRO CCM_SCREEN_PLUGIN_GET_INTERFACE ##### -->
 <para>
 
