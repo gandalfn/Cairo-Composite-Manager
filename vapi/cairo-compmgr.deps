@@ -10,7 +10,7 @@ gdk-x11-2.0
 atk
 gtk+-2.0
 gconf-2.0
-libvala-0.14
+libvala-0.16
 x11
 libgtop-2.0
 nvml

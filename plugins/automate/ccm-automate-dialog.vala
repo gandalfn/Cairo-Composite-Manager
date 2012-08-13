@@ -2,17 +2,17 @@
 /*
  * ccm-automate-dialog.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -74,9 +74,9 @@ namespace CCM
             string stock;
 
             if (timeline.direction == CCM.TimelineDirection.FORWARD)
-                stock = Gtk.STOCK_GO_DOWN;
+                stock = Gtk.Stock.GO_DOWN;
             else
-                stock = Gtk.STOCK_GO_UP;
+                stock = Gtk.Stock.GO_UP;
             close_image.set_from_stock (stock, Gtk.IconSize.BUTTON);
         }
 
@@ -88,7 +88,7 @@ namespace CCM
             uchar[] enable = { 1 };
 
             Gdk.property_change (main.window, atom_enable,
-                                 Gdk.x11_xatom_to_atom (Gdk.x11_get_xatom_by_name ("CARDINAL")), 
+                                 Gdk.x11_xatom_to_atom (Gdk.x11_get_xatom_by_name ("CARDINAL")),
                                  32, Gdk.PropMode.REPLACE, enable, 1);
 
             main.window.get_size (out width, out height);
