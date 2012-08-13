@@ -22,26 +22,25 @@ internal delegate bool CCM.TimeoutFunc(void* inData);
 
 internal struct CCM.TimeoutInterval
 {
-    public TimeVal m_StartTime;
+    public uint64  m_StartTime;
     public uint    m_FrameCount;
     public uint    m_Fps;
 
     public TimeoutInterval(uint inFps)
     {
-        m_StartTime.get_current_time();
+        m_StartTime = GLib.get_monotonic_time ();
         m_Fps = inFps;
         m_FrameCount = 0;
     }
 
     private inline ulong
-    get_ticks (TimeVal inCurrentTime)
+    get_ticks (uint64 inCurrentTime)
     {
-        return (ulong)((inCurrentTime.tv_sec - m_StartTime.tv_sec) * 1000 +
-                       (inCurrentTime.tv_usec - m_StartTime.tv_usec) / 1000);
+        return (ulong)(inCurrentTime - m_StartTime) / 1000;
     }
 
     public bool
-    prepare (TimeVal inCurrentTime, out int outDelay)
+    prepare (uint64 inCurrentTime, out int outDelay)
     {
         bool ret = false;
         ulong elapsed_time = get_ticks (inCurrentTime);
@@ -52,7 +51,7 @@ internal struct CCM.TimeoutInterval
             long frame_time = (1000 + m_Fps - 1) / m_Fps;
 
             m_StartTime = inCurrentTime;
-            m_StartTime.add(-frame_time * 1000);
+            m_StartTime -= frame_time * 1000;
 
             m_FrameCount = 0;
             outDelay = 0;
@@ -90,10 +89,9 @@ internal struct CCM.TimeoutInterval
     {
         long a_delay = 1000 / m_Fps;
         long b_delay = 1000 / inTimeoutInterval.m_Fps;
-        long b_difference;
+        uint64 b_difference;
 
-        b_difference = ((m_StartTime.tv_sec - inTimeoutInterval.m_StartTime.tv_sec) * 1000
-                        + (m_StartTime.tv_usec - inTimeoutInterval.m_StartTime.tv_usec) / 1000);
+        b_difference = (m_StartTime - inTimeoutInterval.m_StartTime) / 1000;
 
         return (int)(((m_FrameCount + 1) * a_delay) -
                            ((inTimeoutInterval.m_FrameCount + 1) * b_delay + b_difference));

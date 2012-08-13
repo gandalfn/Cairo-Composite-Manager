@@ -2,17 +2,17 @@
 /*
  * ccm-timeout.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -89,12 +89,10 @@ internal class CCM.Timeout
         return inA.interval.compare(inB.interval);
     }
 
-    internal bool 
+    internal bool
     prepare (Source inSource, out int outNextTimeout)
     {
-        TimeVal now;
-
-        inSource.get_current_time(out now);
+        uint64 now = inSource.get_time();
 
         return interval.prepare(now, out outNextTimeout);
     }

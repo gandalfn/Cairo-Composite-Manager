@@ -2,17 +2,17 @@
 /*
  * ccm-timeout-pool.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -21,9 +21,9 @@ internal class CCM.TimeoutPool
 {
     private CCM.Source            m_Source;
     private CCM.SourceFuncs       m_Funcs;
-    private TimeVal                m_StartTime;
-    private List<Timeout>          m_Timeouts;
-    private int                    m_Ready;
+    private uint64                m_StartTime;
+    private List<Timeout>         m_Timeouts;
+    private int                   m_Ready;
 
     public TimeoutPool (int inPriority = GLib.Priority.DEFAULT,
                         GLib.MainContext? inContext = null)
@@ -35,14 +35,14 @@ internal class CCM.TimeoutPool
 
         m_Source = new CCM.Source (m_Funcs, this);
         m_Source.attach (inContext);
-        m_Source.get_current_time(out m_StartTime);
+        m_StartTime = m_Source.get_time();
         m_Source.set_priority (inPriority);
         m_Source.unref ();
         m_Timeouts = new List<Timeout>();
         m_Ready = 0;
     }
 
-    private bool 
+    private bool
     prepare (out int outTimeOut)
     {
         bool ret = false;
@@ -60,7 +60,7 @@ internal class CCM.TimeoutPool
         return ret;
     }
 
-    private bool 
+    private bool
     check ()
     {
         foreach (unowned Timeout timeout in m_Timeouts)
@@ -84,7 +84,7 @@ internal class CCM.TimeoutPool
         return m_Ready > 0;
     }
 
-    private bool 
+    private bool
     dispatch (SourceFunc inCallback)
     {
         List<unowned Timeout?> dispatched = new List<unowned Timeout?> ();
@@ -133,7 +133,7 @@ internal class CCM.TimeoutPool
         {
             if (timeout != null)
             {
-                m_Timeouts.insert_sorted (timeout, 
+                m_Timeouts.insert_sorted (timeout,
                                           (CompareFunc)Timeout.compare);
             }
         }
@@ -145,7 +145,7 @@ internal class CCM.TimeoutPool
         return true;
     }
 
-    private void 
+    private void
     finalize_ ()
     {
         m_Timeouts = null;
