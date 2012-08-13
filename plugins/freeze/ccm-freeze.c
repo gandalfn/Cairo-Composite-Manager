@@ -2,17 +2,17 @@
 /*
  * ccm-freeze.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -74,19 +74,19 @@ CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN,
 struct _CCMFreezePrivate
 {
     gboolean     alive;
-    gfloat	     opacity;
+    gfloat       opacity;
 
-    CCMScreen*	 screen;
+    CCMScreen*   screen;
     CCMWindow*   window;
 
-    guint	     id_ping;
+    guint        id_ping;
     glong        last_ping;
     glong        pid;
 
     CCMTimeline* timeline;
     GtkBuilder*  builder;
 
-    gulong		 id_event;
+    gulong       id_event;
 };
 
 #define CCM_FREEZE_GET_PRIVATE(o)  \
@@ -110,21 +110,21 @@ ccm_freeze_options_finalize (CCMFreezeOptions* self)
 static void
 ccm_freeze_options_changed (CCMFreezeOptions* self, CCMConfig* config)
 {
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_FREEZE_DELAY))
     {
         self->delay = ccm_config_get_integer (config, NULL);
         if (!self->delay) self->delay = 3;
     }
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_FREEZE_DURATION))
     {
         self->duration = ccm_config_get_float (config, NULL);
         if (!self->duration) self->duration = 0.3f;
     }
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_FREEZE_COLOR))
     {
         if (self->color) g_free (self->color);
@@ -232,7 +232,7 @@ ccm_freeze_on_event (CCMFreeze * self, XEvent * event, CCMDisplay * display)
                     freeze->priv->alive = TRUE;
                     freeze->priv->last_ping = 0;
                     freeze->priv->opacity = 0.0f;
-                    if (freeze->priv->timeline && 
+                    if (freeze->priv->timeline &&
                         ccm_timeline_get_is_playing (freeze->priv->timeline))
                         ccm_timeline_stop (freeze->priv->timeline);
                 }
@@ -291,7 +291,7 @@ ccm_freeze_ping (CCMFreeze * self)
         if (!self->priv->pid)
             ccm_freeze_get_pid (self);
 
-        if ((name && !g_strcasecmp(name, "mplayer")) || 
+        if ((name && !g_ascii_strcasecmp(name, "mplayer")) ||
             !self->priv->pid || ccm_window_is_input_only (self->priv->window)
             || !ccm_window_is_viewable (self->priv->window)
             || !ccm_window_is_decorated (self->priv->window)
@@ -396,9 +396,9 @@ ccm_freeze_screen_load_options (CCMScreenPlugin * plugin, CCMScreen * screen)
 
     ccm_screen_plugin_load_options (CCM_SCREEN_PLUGIN_PARENT (plugin), screen);
 
-    self->priv->id_event = g_signal_connect_swapped (G_OBJECT (display), 
+    self->priv->id_event = g_signal_connect_swapped (G_OBJECT (display),
                                                      "event",
-                                                     G_CALLBACK (ccm_freeze_on_event), 
+                                                     G_CALLBACK (ccm_freeze_on_event),
                                                      self);
 }
 
