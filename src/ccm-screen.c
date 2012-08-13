@@ -938,6 +938,41 @@ ccm_screen_create_overlay_window (CCMScreen * self)
     return self->priv->cow != NULL;
 }
 
+static void
+ccm_screen_resize (CCMScreen* self, int width, int height)
+{
+    // Destroy old cow
+    if (self->priv->cow)
+        g_object_unref (self->priv->cow);
+    self->priv->cow = NULL;
+
+    // Destroy old root
+    if (self->priv->root)
+        g_object_unref (self->priv->root);
+    self->priv->root = NULL;
+
+    // Destroy old background
+    if (self->priv->background)
+        g_object_unref (self->priv->background);
+    self->priv->background = NULL;
+
+    // Destroy old context
+    if (self->priv->ctx)
+        cairo_destroy (self->priv->ctx);
+
+    self->priv->ctx = NULL;
+
+    // Update screen geometry
+    CCM_SCREEN_XSCREEN (self)->width = width;
+    CCM_SCREEN_XSCREEN (self)->height = height;
+
+    // Recreate overlay window
+    ccm_screen_create_overlay_window (self);
+
+    // Damage screen
+    ccm_screen_damage (self);
+}
+
 #if 0
 static void
 ccm_screen_print_stack (CCMScreen * self)
@@ -2467,55 +2502,63 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
         case ConfigureNotify:
             {
                 XConfigureEvent *configure_event = (XConfigureEvent *) event;
-                CCMWindow *window;
 
-                window = ccm_screen_find_window (self, configure_event->window);
-
-                if (window)
+                if (configure_event->window == CCM_WINDOW_XWINDOW (self->priv->root))
                 {
-                    XEvent ce;
+                    ccm_screen_resize (self, configure_event->width, configure_event->height);
+                }
+                else
+                {
+                    CCMWindow *window;
 
-                    while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(self->priv->display),
-                                                  configure_event->window,
-                                                  event->type, &ce))
+                    window = ccm_screen_find_window (self, configure_event->window);
+
+                    if (window)
                     {
-                        if (ce.xconfigure.above != configure_event->above)
-                        {
-                            XPutBackEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), &ce);
-                            break;
-                        }
-                        configure_event = &ce.xconfigure;
-                    }
-                    if (configure_event->above != None)
-                    {
-                        if (configure_event->above
-                            && configure_event->above !=
-                            CCM_WINDOW_XWINDOW (self->priv->root)
-                            && configure_event->above !=
-                            CCM_WINDOW_XWINDOW (self->priv->cow)
-                            && configure_event->above !=
-                            self->priv->selection_owner)
-                        {
-                            CCMWindow *above;
-                            above =
-                                ccm_screen_find_window (self,
-                                                        configure_event->above);
-                            if (above)
-                                ccm_screen_restack (self, window, above);
-                        }
-                    }
+                        XEvent ce;
 
-                    ccm_drawable_move (CCM_DRAWABLE (window),
-                                       configure_event->x -
-                                       configure_event->border_width,
-                                       configure_event->y -
-                                       configure_event->border_width);
+                        while (XCheckTypedWindowEvent(CCM_DISPLAY_XDISPLAY(self->priv->display),
+                                                      configure_event->window,
+                                                      event->type, &ce))
+                        {
+                            if (ce.xconfigure.above != configure_event->above)
+                            {
+                                XPutBackEvent(CCM_DISPLAY_XDISPLAY(self->priv->display), &ce);
+                                break;
+                            }
+                            configure_event = &ce.xconfigure;
+                        }
+                        if (configure_event->above != None)
+                        {
+                            if (configure_event->above
+                                && configure_event->above !=
+                                CCM_WINDOW_XWINDOW (self->priv->root)
+                                && configure_event->above !=
+                                CCM_WINDOW_XWINDOW (self->priv->cow)
+                                && configure_event->above !=
+                                self->priv->selection_owner)
+                            {
+                                CCMWindow *above;
+                                above =
+                                    ccm_screen_find_window (self,
+                                                            configure_event->above);
+                                if (above)
+                                    ccm_screen_restack (self, window, above);
+                            }
+                        }
 
-                    ccm_drawable_resize (CCM_DRAWABLE (window),
-                                         configure_event->width +
-                                         configure_event->border_width * 2,
-                                         configure_event->height +
-                                         configure_event->border_width * 2);
+                        ccm_drawable_move (CCM_DRAWABLE (window),
+                                           configure_event->x -
+                                           configure_event->border_width,
+                                           configure_event->y -
+                                           configure_event->border_width);
+
+                        ccm_drawable_resize (CCM_DRAWABLE (window),
+                                             configure_event->width +
+                                             configure_event->border_width * 2,
+                                             configure_event->height +
+                                             configure_event->border_width * 2);
+                    }
                 }
             }
             break;
