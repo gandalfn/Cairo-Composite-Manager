@@ -23,14 +23,14 @@ internal delegate bool CCM.TimeoutFunc(void* inData);
 internal struct CCM.TimeoutInterval
 {
     public uint64  m_StartTime;
-    public uint    m_FrameCount;
-    public uint    m_Fps;
+    public long    m_Interval;
+    public int     m_Delay;
 
     public TimeoutInterval(uint inFps)
     {
         m_StartTime = GLib.get_monotonic_time ();
-        m_Fps = inFps;
-        m_FrameCount = 0;
+        m_Interval = (long)(1000.0 / inFps);;
+        m_Delay = (int)m_Interval;
     }
 
     private inline ulong
@@ -44,28 +44,21 @@ internal struct CCM.TimeoutInterval
     {
         bool ret = false;
         ulong elapsed_time = get_ticks (inCurrentTime);
-        uint new_frame_num = (uint)(elapsed_time * m_Fps / 1000);
+        double diff = (double)elapsed_time / (double)m_Interval;
 
-        if (new_frame_num < m_FrameCount || new_frame_num - m_FrameCount > 2)
+        if (diff >= 1.0)
         {
-            long frame_time = (1000 + m_Fps - 1) / m_Fps;
+            m_StartTime += (uint64)(((int)diff * m_Interval) * 1000.0);
 
-            m_StartTime = inCurrentTime;
-            m_StartTime -= frame_time * 1000;
-
-            m_FrameCount = 0;
-            outDelay = 0;
-            ret = true;
-        }
-        else if (new_frame_num > m_FrameCount)
-        {
-            outDelay = 0;
+            m_Delay = 0;
             ret = true;
         }
         else
         {
-            outDelay = (int)((m_FrameCount + 1) * 1000 / m_Fps - elapsed_time);
+            m_Delay = int.max (((int)m_Interval - ((int)elapsed_time % (int)m_Interval)), 0);
         }
+
+        outDelay = m_Delay;
 
         return ret;
     }
@@ -77,7 +70,6 @@ internal struct CCM.TimeoutInterval
 
         if (inCallback(inData))
         {
-            m_FrameCount++;
             ret = true;
         }
 
@@ -87,13 +79,6 @@ internal struct CCM.TimeoutInterval
     public int
     compare (TimeoutInterval inTimeoutInterval)
     {
-        long a_delay = 1000 / m_Fps;
-        long b_delay = 1000 / inTimeoutInterval.m_Fps;
-        uint64 b_difference;
-
-        b_difference = (m_StartTime - inTimeoutInterval.m_StartTime) / 1000;
-
-        return (int)(((m_FrameCount + 1) * a_delay) -
-                           ((inTimeoutInterval.m_FrameCount + 1) * b_delay + b_difference));
+        return (int)(m_Delay - inTimeoutInterval.m_Delay);
     }
 }
