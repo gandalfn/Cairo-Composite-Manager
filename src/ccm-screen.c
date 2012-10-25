@@ -681,13 +681,51 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
         g_object_get(G_OBJECT(self->priv->display), "use_randr", &have_randr, NULL);
         if (have_randr)
         {
-            XRRScreenConfiguration *config;
+            XRRScreenResources *res;
 
-            config  = XRRGetScreenInfo (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                                        RootWindowOfScreen (self->priv->xscreen));
-            refresh_rate = (int) XRRConfigCurrentRate (config);
+            res  = XRRGetScreenResources (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                          RootWindowOfScreen (self->priv->xscreen));
 
-            XRRFreeScreenConfigInfo (config);
+            if (res)
+            {
+                int i, j;
+                for (i = 0; i < res->noutput; ++i)
+                {
+                    XRROutputInfo* output;
+                    XRRCrtcInfo* crtc;
+
+                    output = XRRGetOutputInfo (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                               res, res->outputs[i]);
+
+                    if (output == NULL) continue;
+
+                    if (output->connection != RR_Connected)
+                    {
+                        XRRFreeOutputInfo (output);
+                        continue;
+                    }
+
+                    crtc = XRRGetCrtcInfo (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                           res, output->crtc);
+                    XRRFreeOutputInfo (output);
+
+                    if (crtc == NULL) continue;
+
+                    for (j = 0; j < res->nmode; ++j)
+                    {
+                        if (res->modes[j].id == crtc->mode)
+                        {
+                            int rate = (int)ceil ((double)res->modes[j].dotClock / ((double)res->modes[j].hTotal * (double)res->modes[j].vTotal));
+                            refresh_rate = refresh_rate < rate ? rate : refresh_rate;
+                            break;
+                        }
+                    }
+
+                    XRRFreeCrtcInfo (crtc);
+                }
+            }
+
+            XRRFreeScreenResources (res);
         }
     }
 
@@ -728,7 +766,7 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
         {
             guint vblank_count;
             self->priv->get_video_sync (&vblank_count);
-            self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
+            self->priv->wait_video_sync (1, 0, &vblank_count);
         }
         ccm_timeline_start (self->priv->paint);
         g_signal_emit (self, signals[REFRESH_RATE_CHANGED], 0);
@@ -852,7 +890,7 @@ ccm_screen_update_sync_with_vblank (CCMScreen * self)
 
             ccm_timeline_stop (self->priv->paint);
             self->priv->get_video_sync (&vblank_count);
-            self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
+            self->priv->wait_video_sync (1, 0, &vblank_count);
 
             ccm_timeline_start (self->priv->paint);
         }
@@ -941,36 +979,40 @@ ccm_screen_create_overlay_window (CCMScreen * self)
 static void
 ccm_screen_resize (CCMScreen* self, int width, int height)
 {
-    // Destroy old cow
-    if (self->priv->cow)
-        g_object_unref (self->priv->cow);
-    self->priv->cow = NULL;
+    if (CCM_SCREEN_XSCREEN (self)->width != width ||
+        CCM_SCREEN_XSCREEN (self)->height != height)
+    {
+        // Destroy old cow
+        if (self->priv->cow)
+            g_object_unref (self->priv->cow);
+        self->priv->cow = NULL;
 
-    // Destroy old root
-    if (self->priv->root)
-        g_object_unref (self->priv->root);
-    self->priv->root = NULL;
+        // Destroy old root
+        if (self->priv->root)
+            g_object_unref (self->priv->root);
+        self->priv->root = NULL;
 
-    // Destroy old background
-    if (self->priv->background)
-        g_object_unref (self->priv->background);
-    self->priv->background = NULL;
+        // Destroy old background
+        if (self->priv->background)
+            g_object_unref (self->priv->background);
+        self->priv->background = NULL;
 
-    // Destroy old context
-    if (self->priv->ctx)
-        cairo_destroy (self->priv->ctx);
+        // Destroy old context
+        if (self->priv->ctx)
+            cairo_destroy (self->priv->ctx);
 
-    self->priv->ctx = NULL;
+        self->priv->ctx = NULL;
 
-    // Update screen geometry
-    CCM_SCREEN_XSCREEN (self)->width = width;
-    CCM_SCREEN_XSCREEN (self)->height = height;
+        // Update screen geometry
+        CCM_SCREEN_XSCREEN (self)->width = width;
+        CCM_SCREEN_XSCREEN (self)->height = height;
 
-    // Recreate overlay window
-    ccm_screen_create_overlay_window (self);
+        // Recreate overlay window
+        ccm_screen_create_overlay_window (self);
 
-    // Damage screen
-    ccm_screen_damage (self);
+        // Damage screen
+        ccm_screen_damage (self);
+    }
 }
 
 #if 0
@@ -1986,16 +2028,15 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             self->priv->root_damage = NULL;
         }
 
+        if (self->priv->sync_with_vblank)
+        {
+            guint vblank_count;
+
+            self->priv->wait_video_sync (1, 0, &vblank_count);
+        }
+
         if (ccm_screen_plugin_paint (self->priv->plugin, self, self->priv->ctx))
         {
-            if (self->priv->sync_with_vblank)
-            {
-                guint vblank_count;
-
-                self->priv->get_video_sync (&vblank_count);
-                self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
-            }
-
             if (self->priv->damaged)
             {
                 if (self->priv->manage_cursor)
