@@ -37,5 +37,5 @@ DISTCLEANFILES = \
     intltool-merge \
     intltool-update
 
-DISTCHECK_CONFIGURE_FLAGS = --enable-perf-plugin --enable-gtk-doc
+DISTCHECK_CONFIGURE_FLAGS = --enable-perf-plugin --enable-stats-plugin --enable-gtk-doc
 

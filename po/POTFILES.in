@@ -34,6 +34,8 @@ plugins/snapshot/ccm-snapshot.schema-key.in
 plugins/snapshot/ccm-snapshot.ui
 plugins/vala-test/ccm-vala-window-plugin.plugin.desktop.in
 plugins/vala-test/ccm-vala-window-plugin.schema-key.in
+plugins/stats/ccm-stats.plugin.desktop.in
+plugins/stats/ccm-stats.schema-key.in
 src/cairo-compmgr.c
 src/ccm-tray-menu.c
 lib/ccm-config-entry-shortcut.c
