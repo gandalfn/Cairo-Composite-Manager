@@ -29,7 +29,7 @@ internal struct CCM.TimeoutInterval
     public TimeoutInterval(uint inFps)
     {
         m_StartTime = GLib.get_monotonic_time ();
-        m_Interval = (long)(1000.0 / inFps);;
+        m_Interval = (long)(1000.0 / (double)inFps);
         m_Delay = (int)m_Interval;
     }
 
@@ -48,7 +48,7 @@ internal struct CCM.TimeoutInterval
 
         if (diff >= 1.0)
         {
-            m_StartTime += (uint64)(((int)diff * m_Interval) * 1000.0);
+            m_StartTime += (uint64)(((1.0 - ((double)(((int)(diff * 1000.0)) % 1000) / 1000.0)) * m_Interval) * 1000.0);
 
             m_Delay = 0;
             ret = true;
