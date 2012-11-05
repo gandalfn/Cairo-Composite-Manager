@@ -1,3 +1,9 @@
+Overview of Changes in Cairo Composite Manager 0.3.3
+====================================
+* Fix timeout interval calculation
+* Fix vblank sync
+* Depends from vala-0.18
+
 Overview of Changes in Cairo Composite Manager 0.3.2
 ====================================
 * Improve timeout interval delay calculation
