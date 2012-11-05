@@ -2028,15 +2028,15 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             self->priv->root_damage = NULL;
         }
 
-        if (self->priv->sync_with_vblank)
-        {
-            guint vblank_count;
-
-            self->priv->wait_video_sync (1, 0, &vblank_count);
-        }
-
         if (ccm_screen_plugin_paint (self->priv->plugin, self, self->priv->ctx))
         {
+            if (self->priv->sync_with_vblank)
+            {
+                guint vblank_count;
+
+                self->priv->wait_video_sync (1, 0, &vblank_count);
+            }
+
             if (self->priv->damaged)
             {
                 if (self->priv->manage_cursor)
