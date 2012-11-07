@@ -48,7 +48,7 @@ internal struct CCM.TimeoutInterval
 
         if (diff >= 1.0)
         {
-            m_StartTime += (uint64)(((1.0 - ((double)(((int)(diff * 1000.0)) % 1000) / 1000.0)) * m_Interval) * 1000.0);
+            m_StartTime = inCurrentTime + (uint64)(((double)(GLib.Math.floor (diff) - diff) * m_Interval) * 1000.0);
 
             m_Delay = 0;
             ret = true;
