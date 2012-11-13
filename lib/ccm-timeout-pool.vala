@@ -51,6 +51,7 @@ internal class CCM.TimeoutPool
         if (m_Timeouts != null && m_Timeouts.data != null)
         {
             ret = m_Timeouts.data.prepare (m_Source, out outTimeOut);
+            if (ret) m_Timeouts.data.ready = true;
         }
         else
         {
@@ -66,13 +67,12 @@ internal class CCM.TimeoutPool
         foreach (unowned Timeout timeout in m_Timeouts)
         {
             int val;
-
             /* since the timeouts are sorted by expiration, as soon
              * as we get a check returning FALSE we know that the
              * following timeouts are not expiring, so we break as
              * soon as possible
              */
-            if (timeout.prepare (m_Source, out val))
+            if (timeout.ready || timeout.prepare (m_Source, out val))
             {
                 timeout.ready = true;
                 m_Ready++;

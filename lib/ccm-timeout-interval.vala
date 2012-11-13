@@ -49,7 +49,6 @@ internal struct CCM.TimeoutInterval
         if (diff >= 1.0)
         {
             double delta = (double)((int)diff) - diff;
-
             m_StartTime = inCurrentTime + (uint64)((delta * (double)m_Interval) * 1000.0);
 
             m_Delay = 0;
@@ -74,6 +73,8 @@ internal struct CCM.TimeoutInterval
         {
             ret = true;
         }
+
+        m_Delay = (int)m_Interval;
 
         return ret;
     }
