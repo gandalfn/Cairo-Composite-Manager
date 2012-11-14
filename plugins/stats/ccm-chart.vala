@@ -28,6 +28,7 @@ namespace CCM
     public class Chart : GLib.Object
     {
         // properties
+        private unowned Screen  m_Screen;
         private uint            m_FontSize = 8;
         private uint            m_Border = 10;
         private uint            m_TitleSize = 10;
@@ -115,15 +116,22 @@ namespace CCM
         {
             GLib.Object (area: inArea, nb_points: inNbPoints, nb_charts: inNbCharts);
 
+            m_Screen = inScreen;
             m_Title = inTitle;
 
             m_Timeline = new Timeline (inNbPoints, inFps);
             m_Timeline.loop = true;
-            m_Timeline.new_frame.connect (() => {
-                inScreen.damage_region (m_Area);
-                m_Count++;
-            });
+            m_Timeline.new_frame.connect (on_new_frame);
             m_Timeline.start ();
+        }
+
+        ////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////
+        private void
+        on_new_frame (int inNumFrame)
+        {
+            m_Screen.damage_region (m_Area);
+            m_Count++;
         }
 
         ////////////////////////////////////////////////////////////////////
@@ -445,4 +453,3 @@ namespace CCM
         }
     }
 }
-

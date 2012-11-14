@@ -109,6 +109,7 @@ namespace CCM
                 m_Animation.stop ();
                 m_GraphicWatcher = null;
                 m_CPUWatcher = null;
+                m_DisksWatcher = null;
             }
             else if (m_Enabled && !m_Animation.is_playing)
             {
