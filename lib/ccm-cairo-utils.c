@@ -2,21 +2,21 @@
 /*
  * cairo-compmgr
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Cairo Immage Surface Blur based on similar code from 
+ * Cairo Immage Surface Blur based on similar code from
  * http://taschenorakel.de/mathias/2008/11/24/blur-effect-cairo/
  *
  * Authors:
@@ -24,7 +24,7 @@
  *
  * Cairo Blur Image Surface based on similar code from:
  * http://cairographics.org/cookbook/blur.c
- * 
+ *
  * Copyright © 2008 Kristian Høgsberg
  * Copyright © 2009 Chris Wilson
  *
@@ -195,19 +195,43 @@ pixman_format_from_cairo_format (cairo_format_t cairo_format)
 #define ARRAY_LENGTH(a) (sizeof (a) / sizeof (a)[0])
 
 /* Performs a simple 2D Gaussian blur of radius @radius on surface @surface. */
+static guint8 kernel[17];
+static guint32 kernel_sum = 0;
+static gboolean kernel_generated = FALSE;
+
+static inline void
+get_kernel ()
+{
+    if (!kernel_generated)
+    {
+        const int size = ARRAY_LENGTH (kernel);
+        const int half = size / 2;
+
+        int i;
+        kernel_sum = 0;
+        for (i = 0; i < size; i++)
+        {
+            double f = i - half;
+            kernel_sum += kernel[i] = exp (- f * f / 30.0) * 80;
+        }
+        kernel_generated = TRUE;
+    }
+}
+
 void
 cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_t clip)
 {
-    int width, height;
+    int width, height, width_radius, height_radius;
     cairo_surface_t *tmp;
     int src_stride, dst_stride;
     int x, y, z, w;
     guint8 *src, *dst;
-    guint32 *s, *d, a, p;
+    guint32 *s, *d, p;
     int i, j, k;
-    guint8 kernel[17];
     const int size = ARRAY_LENGTH (kernel);
     const int half = size / 2;
+    const int clip_x2 = clip.x + clip.width;
+    const int clip_y2 = clip.y + clip.height;
 
     if (cairo_surface_status (surface))
         return;
@@ -215,7 +239,7 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
     width = cairo_image_surface_get_width (surface);
     height = cairo_image_surface_get_height (surface);
 
-    switch (cairo_image_surface_get_format (surface)) 
+    switch (cairo_image_surface_get_format (surface))
     {
         case CAIRO_FORMAT_A1:
         default:
@@ -244,12 +268,10 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
     dst = cairo_image_surface_get_data (tmp);
     dst_stride = cairo_image_surface_get_stride (tmp);
 
-    a = 0;
-    for (i = 0; i < size; i++)
-    {
-        double f = i - half;
-        a += kernel[i] = exp (- f * f / 30.0) * 80;
-    }
+    get_kernel ();
+
+    width_radius = width - radius;
+    height_radius = height - radius;
 
     /* Horizontally blur from surface -> tmp */
     for (i = 0; i < height; i++)
@@ -258,12 +280,12 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
         d = (guint32 *) (dst + i * dst_stride);
         for (j = 0; j < width; j++)
         {
-            if (j > clip.x && j < clip.x + clip.width && i > clip.y && i < clip.y + clip.height)
+            if (j > clip.x && j < clip_x2 && i > clip.y && i < clip_y2)
             {
-                j = clip.x + clip.width;
+                j = clip_x2;
                 continue;
             }
-            if (radius < j && j < width - radius)
+            if (radius < j && j < width_radius)
             {
                 d[j] = s[j];
                 continue;
@@ -272,17 +294,18 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
             x = y = z = w = 0;
             for (k = 0; k < size; k++)
             {
-                if (j - half + k < 0 || j - half + k >= width)
+                const int idx = j - half + k;
+                if (idx < 0 || idx >= width)
                     continue;
 
-                p = s[j - half + k];
+                p = s[idx];
 
                 x += ((p >> 24) & 0xff) * kernel[k];
                 y += ((p >> 16) & 0xff) * kernel[k];
                 z += ((p >>  8) & 0xff) * kernel[k];
                 w += ((p >>  0) & 0xff) * kernel[k];
             }
-            d[j] = (x / a << 24) | (y / a << 16) | (z / a << 8) | w / a;
+            d[j] = (x / kernel_sum << 24) | (y / kernel_sum << 16) | (z / kernel_sum << 8) | w / kernel_sum;
         }
     }
 
@@ -293,12 +316,12 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
         d = (guint32 *) (src + i * src_stride);
         for (j = 0; j < width; j++)
         {
-            if (j > clip.x && j < clip.x + clip.width && i > clip.y && i < clip.y + clip.height)
+            if (j > clip.x && j < clip_x2 && i > clip.y && i < clip_y2)
             {
-                j = clip.x + clip.width - 1;
+                j = clip_x2 - 1;
                 continue;
             }
-            if (radius <= i && i < height - radius)
+            if (radius <= i && i < height_radius)
             {
                 d[j] = s[j];
                 continue;
@@ -307,10 +330,11 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
             x = y = z = w = 0;
             for (k = 0; k < size; k++)
             {
-                if (i - half + k < 0 || i - half + k >= height)
+                const int idx = i - half + k;
+                if (idx < 0 || idx >= height)
                     continue;
 
-                s = (guint32 *) (dst + (i - half + k) * dst_stride);
+                s = (guint32 *) (dst + idx * dst_stride);
                 p = s[j];
 
                 x += ((p >> 24) & 0xff) * kernel[k];
@@ -318,7 +342,7 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
                 z += ((p >>  8) & 0xff) * kernel[k];
                 w += ((p >>  0) & 0xff) * kernel[k];
             }
-            d[j] = (x / a << 24) | (y / a << 16) | (z / a << 8) | w / a;
+            d[j] = (x / kernel_sum << 24) | (y / kernel_sum << 16) | (z / kernel_sum << 8) | w / kernel_sum;
         }
     }
 

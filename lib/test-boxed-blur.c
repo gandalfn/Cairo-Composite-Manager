@@ -2,17 +2,17 @@
 /*
  * test-boxed-blur.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -43,6 +43,8 @@ diff_timeval_seconds (struct timeval inFirst, struct timeval inSecond)
 #define GET_TIME_START struct timeval start, end; gettimeofday(&start, 0);
 #define GET_TIME_END double diff; gettimeofday(&end, 0); diff = diff_timeval_seconds(start,end)*1000.;
 #define GET_TIME_DIFF diff
+#define NB_ITERATION 10
+#define GET_TIME_DIFF_AVG diff / NB_ITERATION
 
 int
 main (int argc, char **argv)
@@ -60,9 +62,12 @@ main (int argc, char **argv)
     cairo_fill (cr);
     cairo_destroy (cr);
     {
-        GET_TIME_START blur =
-            cairo_image_surface_blur (surface, 5, 2.5, 0, 0, -1, -1);
-        GET_TIME_END g_print ("pixman blur = %f\n", GET_TIME_DIFF);
+        int cpt;
+        GET_TIME_START
+        for (cpt = 0; cpt < NB_ITERATION; ++cpt)
+            blur = cairo_image_surface_blur (surface, 5, 2.5, 0, 0, -1, -1);
+        GET_TIME_END
+        g_print ("pixman blur = %f\n", GET_TIME_DIFF_AVG);
     }
     cairo_surface_write_to_png (blur, "test-blur.png");
     cairo_surface_destroy (surface);
@@ -75,9 +80,12 @@ main (int argc, char **argv)
     cairo_fill (cr);
     cairo_destroy (cr);
     {
-        GET_TIME_START blur =
-            cairo_image_surface_blur2 (surface, 5, 0, 0, -1, -1);
-        GET_TIME_END g_print ("cairo blur = %f\n", GET_TIME_DIFF);
+        int cpt;
+        GET_TIME_START
+        for (cpt = 0; cpt < NB_ITERATION; ++cpt)
+            blur = cairo_image_surface_blur2 (surface, 5, 0, 0, -1, -1);
+        GET_TIME_END
+        g_print ("cairo blur = %f\n", GET_TIME_DIFF_AVG);
     }
     cairo_surface_write_to_png (blur, "test-blur2.png");
     cairo_surface_destroy (surface);
@@ -89,11 +97,14 @@ main (int argc, char **argv)
     cairo_rectangle (cr, 50, 50, 200, 200);
     path = cairo_copy_path (cr);
     {
+        int cpt;
         GET_TIME_START cairo_set_source_rgba (cr, 0, 0, 0, 1);
-        cairo_surface_t *mask =
-            cairo_blur_path (surface, path, NULL, 15, 1, 300, 300);
-        cairo_mask_surface (cr, mask, 0, 0);
-        GET_TIME_END g_print ("cairo fake blur = %f\n", GET_TIME_DIFF);
+        for (cpt = 0; cpt < NB_ITERATION; ++cpt)
+        {
+            cairo_surface_t *mask = cairo_blur_path (surface, path, NULL, 15, 1, 300, 300);
+            cairo_mask_surface (cr, mask, 0, 0);
+        }
+        GET_TIME_END g_print ("cairo fake blur = %f\n", GET_TIME_DIFF_AVG);
     }
     cairo_surface_write_to_png (surface, "test-blur3.png");
     cairo_surface_destroy (surface);
@@ -105,13 +116,17 @@ main (int argc, char **argv)
     cairo_fill (cr);
     cairo_destroy (cr);
     {
+        int cpt;
         cairo_rectangle_t clip;
         clip.x = 0;
         clip.y = 0;
         clip.width = 0;
         clip.height = 0;
-        GET_TIME_START cairo_blur_image_surface (surface, 15, clip);
-        GET_TIME_END g_print ("krh blur = %f\n", GET_TIME_DIFF);
+        GET_TIME_START
+        for (cpt = 0; cpt < NB_ITERATION; ++cpt)
+            cairo_blur_image_surface (surface, 15, clip);
+        GET_TIME_END
+        g_print ("krh blur = %f\n", GET_TIME_DIFF_AVG);
     }
     cairo_surface_write_to_png (surface, "test-blur4.png");
     cairo_surface_destroy (surface);
@@ -123,16 +138,20 @@ main (int argc, char **argv)
     cairo_fill (cr);
     cairo_destroy (cr);
     {
+        int cpt;
         cairo_rectangle_t clip;
         clip.x = 50 + 8;
         clip.y = 50 + 8;
         clip.width = 200 - 16;
         clip.height = 200 - 16;
-        GET_TIME_START cairo_blur_image_surface (surface, 15, clip);
-        GET_TIME_END g_print ("krh blur clipped = %f\n", GET_TIME_DIFF);
+        GET_TIME_START
+        for (cpt = 0; cpt < NB_ITERATION; ++cpt)
+            cairo_blur_image_surface (surface, 15, clip);
+        GET_TIME_END
+        g_print ("krh blur clipped = %f\n", GET_TIME_DIFF_AVG);
     }
     cairo_surface_write_to_png (surface, "test-blur5.png");
-    cairo_surface_destroy (surface);    
+    cairo_surface_destroy (surface);
 
     int stride;
     unsigned char *data;
@@ -151,13 +170,17 @@ main (int argc, char **argv)
     cairo_fill (cr);
     cairo_destroy (cr);
     {
+        int cpt;
         cairo_rectangle_t clip;
         clip.x = 0;
         clip.y = 0;
         clip.width = 0;
         clip.height = 0;
-        GET_TIME_START cairo_blur_image_surface (surface, 64, clip);
-        GET_TIME_END g_print ("krh blur a8 = %f\n", GET_TIME_DIFF);
+        GET_TIME_START
+        for (cpt = 0; cpt < NB_ITERATION; ++cpt)
+            cairo_blur_image_surface (surface, 64, clip);
+        GET_TIME_END
+        g_print ("krh blur a8 = %f\n", GET_TIME_DIFF_AVG);
     }
     cairo_surface_write_to_png (surface, "test-blur6.png");
     cairo_surface_destroy (surface);
