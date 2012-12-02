@@ -2,17 +2,17 @@
 /*
  * ccm-shadow.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -105,7 +105,6 @@ struct _CCMShadowPrivate
     gboolean have_shadow;
     CCMPixmap *pixmap;
     CCMPixmap *shadow;
-    cairo_surface_t *shadow_image;
 
     CCMRegion *geometry;
 
@@ -139,7 +138,7 @@ ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
 {
     GError *error = NULL;
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_SHADOW_OFFSET))
     {
         self->offset = ccm_config_get_integer (config, &error);
@@ -152,7 +151,7 @@ ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
         }
     }
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_SHADOW_RADIUS))
     {
         self->radius = ccm_config_get_integer (config, &error);
@@ -165,7 +164,7 @@ ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
         }
     }
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_SHADOW_BORDER))
     {
         self->border = ccm_config_get_integer (config, &error);
@@ -178,7 +177,7 @@ ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
         }
     }
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_SHADOW_COLOR))
     {
         if (self->color) g_free (self->color);
@@ -205,7 +204,6 @@ ccm_shadow_init (CCMShadow * self)
     self->priv->have_shadow = FALSE;
     self->priv->window = NULL;
     self->priv->shadow = NULL;
-    self->priv->shadow_image = NULL;
     self->priv->geometry = NULL;
     self->priv->builder = NULL;
     self->priv->id_event = 0;
@@ -248,9 +246,6 @@ ccm_shadow_finalize (GObject * object)
         g_object_unref (self->priv->pixmap);
     self->priv->pixmap = NULL;
 
-    if (self->priv->shadow_image)
-        cairo_surface_destroy (self->priv->shadow_image);
-
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
 
@@ -277,31 +272,28 @@ static gboolean
 ccm_shadow_need_shadow (CCMShadow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
-    
+
     CCMWindow *window = self->priv->window;
     CCMWindowType type = ccm_window_get_hint_type (window);
     const CCMRegion *opaque = ccm_window_get_opaque_region (window);
 
-    return self->priv->force_enable || 
-        (!self->priv->force_disable && 
+    return self->priv->force_enable ||
+        (!self->priv->force_disable &&
          !ccm_window_is_fullscreen (window) &&
-         !ccm_window_is_input_only (window) && 
-         ccm_window_is_viewable (window) && 
+         !ccm_window_is_maximized (window) &&
+         !ccm_window_is_input_only (window) &&
+         ccm_window_is_viewable (window) &&
          type != CCM_WINDOW_TYPE_DESKTOP &&
-         ((ccm_window_is_decorated (window) && 
-           type != CCM_WINDOW_TYPE_DOCK) || 
-          (!ccm_window_is_decorated (window) && 
-           type == CCM_WINDOW_TYPE_DOCK) ||
-          (type != CCM_WINDOW_TYPE_NORMAL &&  
-           type != CCM_WINDOW_TYPE_DIALOG && opaque)) &&
-         ((type == CCM_WINDOW_TYPE_DOCK && opaque) || 
-          type != CCM_WINDOW_TYPE_DOCK) && 
-         (ccm_window_is_managed (window) || 
+         ((ccm_window_is_decorated (window) && type != CCM_WINDOW_TYPE_DOCK) ||
+          (!ccm_window_is_decorated (window) && type == CCM_WINDOW_TYPE_DOCK) ||
+          (type != CCM_WINDOW_TYPE_NORMAL && type != CCM_WINDOW_TYPE_DIALOG && opaque)) &&
+         ((type == CCM_WINDOW_TYPE_DOCK && opaque) || type != CCM_WINDOW_TYPE_DOCK) &&
+         (ccm_window_is_managed (window) ||
           type == CCM_WINDOW_TYPE_DOCK ||
-          type == CCM_WINDOW_TYPE_DROPDOWN_MENU || 
-          type == CCM_WINDOW_TYPE_POPUP_MENU || 
-          type == CCM_WINDOW_TYPE_TOOLTIP || 
-          type == CCM_WINDOW_TYPE_MENU || 
+          type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
+          type == CCM_WINDOW_TYPE_POPUP_MENU ||
+          type == CCM_WINDOW_TYPE_TOOLTIP ||
+          type == CCM_WINDOW_TYPE_MENU ||
           type == CCM_WINDOW_TYPE_SPLASH));
 }
 
@@ -323,10 +315,6 @@ ccm_shadow_check_needed (CCMShadow * self)
                 ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
                 ccm_debug_window(self->priv->window, "UNSET SHADOW %s", __FUNCTION__);
                 ccm_drawable_set_geometry(CCM_DRAWABLE(self->priv->window), self->priv->geometry);
-
-                if (self->priv->shadow_image)
-                    cairo_surface_destroy (self->priv->shadow_image);
-                self->priv->shadow_image = NULL;
 
                 if (self->priv->pixmap)
                     g_object_unref (self->priv->pixmap);
@@ -350,10 +338,6 @@ ccm_shadow_check_needed (CCMShadow * self)
                 self->priv->geometry = ccm_region_copy((CCMRegion*)geometry);
                 cairo_rectangle_t area;
 
-                if (self->priv->shadow_image)
-                    cairo_surface_destroy (self->priv->shadow_image);
-                self->priv->shadow_image = NULL;
-
                 if (self->priv->pixmap)
                     g_object_unref (self->priv->pixmap);
                 self->priv->pixmap = NULL;
@@ -362,7 +346,7 @@ ccm_shadow_check_needed (CCMShadow * self)
                     g_object_unref (self->priv->shadow);
                 self->priv->shadow = NULL;
 
-                g_object_set(G_OBJECT(self->priv->window), "pixmap", 
+                g_object_set(G_OBJECT(self->priv->window), "pixmap",
                              self->priv->pixmap, NULL);
 
                 ccm_region_get_clipbox (new_geometry, &area);
@@ -536,33 +520,31 @@ ccm_shadow_create_atoms (CCMShadow * self)
     }
 }
 
-static void
+static cairo_surface_t*
 ccm_shadow_create_shadow_image (CCMShadow * self)
 {
-    g_return_if_fail (self != NULL);
+    g_return_val_if_fail (self != NULL, NULL);
 
     cairo_t *cr;
     cairo_rectangle_t *rects = NULL;
     gint cpt, nb_rects;
     cairo_rectangle_t clipbox;
     gint border = ccm_shadow_get_option (self)->border;
+    cairo_surface_t* surface;
 
     ccm_region_get_clipbox (self->priv->geometry, &clipbox);
 
     // Create shadow surface
-    if (self->priv->shadow_image)
-        cairo_surface_destroy (self->priv->shadow_image);
-    self->priv->shadow_image = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 
-                                                           clipbox.width + border * 2,
-                                                           clipbox.height + border * 2);
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+                                          clipbox.width + border * 2,
+                                          clipbox.height + border * 2);
 
-    cr = cairo_create (self->priv->shadow_image);
+    cr = cairo_create (surface);
     cairo_translate (cr, -clipbox.x, -clipbox.y);
     cairo_translate (cr, border, border);
     ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
     for (cpt = 0; cpt < nb_rects; ++cpt)
-        cairo_rectangle (cr, rects[cpt].x, rects[cpt].y,
-                         rects[cpt].width, rects[cpt].height);
+        cairo_rectangle (cr, rects[cpt].x, rects[cpt].y, rects[cpt].width, rects[cpt].height);
     cairo_fill (cr);
     if (rects) cairo_rectangles_free (rects, nb_rects);
     rects = NULL;
@@ -573,7 +555,9 @@ ccm_shadow_create_shadow_image (CCMShadow * self)
     clipbox.y = border * 2;
     clipbox.width -= border * 2;
     clipbox.height -= border * 2;
-    cairo_blur_image_surface (self->priv->shadow_image, ccm_shadow_get_option (self)->radius, clipbox);
+    cairo_blur_image_surface (surface, ccm_shadow_get_option (self)->radius, clipbox);
+
+    return surface;
 }
 
 static void
@@ -678,11 +662,6 @@ ccm_shadow_on_pixmap_damage (CCMShadow* self, CCMRegion* area)
 
         ccm_region_get_clipbox (self->priv->geometry, &clipbox);
 
-        if (!self->priv->shadow_image)
-        {
-            ccm_shadow_create_shadow_image (self);
-        }
-
         if (area)
         {
             cairo_translate (ctx, border, border);
@@ -696,6 +675,7 @@ ccm_shadow_on_pixmap_damage (CCMShadow* self, CCMRegion* area)
         else
         {
             gint offset = ccm_shadow_get_option (self)->offset;
+            cairo_surface_t* shadow_image = ccm_shadow_create_shadow_image (self);
 
             cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
             cairo_paint (ctx);
@@ -706,19 +686,20 @@ ccm_shadow_on_pixmap_damage (CCMShadow* self, CCMRegion* area)
                                   (double) ccm_shadow_get_option (self)->color->green / 65535.0f,
                                   (double) ccm_shadow_get_option (self)->color->blue / 65535.0f);
 
-            cairo_mask_surface (ctx, self->priv->shadow_image, 0, 0);
+            cairo_mask_surface (ctx, shadow_image, 0, 0);
 
             cairo_translate (ctx, border, border);
             cairo_translate (ctx, -clipbox.x, -clipbox.y);
 
             ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
             for (cpt = 0; cpt < nb_rects; ++cpt)
-                cairo_rectangle (ctx, rects[cpt].x, rects[cpt].y,
-                                 rects[cpt].width, rects[cpt].height);
+                cairo_rectangle (ctx, rects[cpt].x, rects[cpt].y, rects[cpt].width, rects[cpt].height);
             cairo_clip (ctx);
             if (rects) cairo_rectangles_free (rects, nb_rects);
             rects = NULL;
             cairo_translate (ctx, clipbox.x, clipbox.y);
+
+            cairo_surface_destroy (shadow_image);
         }
 
         if (!ccm_pixmap_get_freeze(self->priv->shadow))
@@ -796,10 +777,6 @@ ccm_shadow_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * window)
         g_source_remove(self->priv->id_check);
     self->priv->id_check = 0;
 
-    if (self->priv->shadow_image)
-        cairo_surface_destroy (self->priv->shadow_image);
-    self->priv->shadow_image = NULL;
-
     if (self->priv->pixmap)
         g_object_unref (self->priv->pixmap);
     self->priv->pixmap = NULL;
@@ -825,10 +802,6 @@ ccm_shadow_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * window)
     }
     else
     {
-        if (self->priv->shadow_image)
-            cairo_surface_destroy (self->priv->shadow_image);
-        self->priv->shadow_image = NULL;
-
         if (self->priv->pixmap)
             g_object_unref (self->priv->pixmap);
         self->priv->pixmap = NULL;
@@ -882,10 +855,6 @@ ccm_shadow_window_resize (CCMWindowPlugin * plugin, CCMWindow * window,
         {
             ccm_region_resize (self->priv->geometry, width, height);
             border = ccm_shadow_get_option (self)->border;
-
-            if (self->priv->shadow_image)
-                cairo_surface_destroy (self->priv->shadow_image);
-            self->priv->shadow_image = NULL;
 
             if (self->priv->pixmap) g_object_unref (self->priv->pixmap);
             self->priv->pixmap = NULL;
@@ -965,7 +934,7 @@ ccm_shadow_window_get_pixmap (CCMWindowPlugin * plugin, CCMWindow * window)
         ccm_debug_window (window, "CREATE SHADOW PIXMAP");
         self->priv->shadow = ccm_window_create_pixmap (window, swidth, sheight, 32);
 
-        g_object_set_qdata_full (G_OBJECT (self->priv->shadow), 
+        g_object_set_qdata_full (G_OBJECT (self->priv->shadow),
                                  CCMShadowPixmapQuark, self,
                                  (GDestroyNotify)ccm_shadow_on_shadow_pixmap_destroyed);
 
@@ -1005,7 +974,7 @@ ccm_shadow_preferences_page_init_windows_section (CCMPreferencesPagePlugin *
             gtk_box_pack_start (GTK_BOX (windows_section), widget, FALSE, TRUE,
                                 0);
 
-            CCMConfigColorButton *color = 
+            CCMConfigColorButton *color =
                 CCM_CONFIG_COLOR_BUTTON (gtk_builder_get_object (self->priv->builder,
                                                                  "color"));
             g_object_set (color, "screen", screen_num, NULL);

@@ -2,17 +2,17 @@
 /*
  * ccm-window.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -143,6 +143,8 @@ struct _CCMWindowPrivate
     gboolean is_shaped;
     gboolean is_shaded;
     gboolean is_fullscreen;
+    gboolean is_maximized_horz;
+    gboolean is_maximized_vert;
     gboolean is_decorated;
     gboolean is_modal;
     gboolean skip_taskbar;
@@ -297,6 +299,8 @@ ccm_window_init (CCMWindow * self)
     self->priv->is_shaped = FALSE;
     self->priv->is_shaded = FALSE;
     self->priv->is_fullscreen = FALSE;
+    self->priv->is_maximized_horz = FALSE;
+    self->priv->is_maximized_vert = FALSE;
     self->priv->is_decorated = TRUE;
     self->priv->is_modal = FALSE;
     self->priv->skip_taskbar = FALSE;
@@ -333,8 +337,7 @@ ccm_window_finalize (GObject * object)
     GSList* item;
 
     ccm_debug_window (self, "FINALIZE");
-    if (CCM_IS_SCREEN (screen) && G_OBJECT (screen)->ref_count && 
-        self->priv->id_plugins_changed)
+    if (CCM_IS_SCREEN (screen) && G_OBJECT (screen)->ref_count && self->priv->id_plugins_changed)
         g_signal_handler_disconnect (screen, self->priv->id_plugins_changed);
     ccm_window_unredirect_input (self);
 
@@ -346,9 +349,7 @@ ccm_window_finalize (GObject * object)
 
     if (self->priv->group_leader)
     {
-        self->priv->group_leader->priv->group =
-            g_slist_remove (self->priv->group_leader->priv->group, 
-                            self);
+        self->priv->group_leader->priv->group = g_slist_remove (self->priv->group_leader->priv->group, self);
     }
 
     for (item = self->priv->transients; item; item = item->next)
@@ -433,7 +434,7 @@ ccm_window_class_init (CCMWindowClass * klass)
     /**
      * CCMWindow:child:
      *
-     * The main child of window, it is only set with decorated window and it 
+     * The main child of window, it is only set with decorated window and it
      * point on real window.
      */
     g_object_class_install_property (object_class, PROP_CHILD,
@@ -454,7 +455,7 @@ ccm_window_class_init (CCMWindowClass * klass)
     /**
      * CCMWindow:no_undamage_sibling:
      *
-     * This property indicate if the window don't clip damage area of 
+     * This property indicate if the window don't clip damage area of
      * sibling window.
      */
     g_object_class_install_property (object_class, PROP_NO_UNDAMAGE_SIBLING,
@@ -616,143 +617,54 @@ create_atoms (CCMWindow * self)
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
 
-        klass->ccm_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), 
-                                       "_CCM_CLIENT_MESSAGE",
-                                       False);
+        klass->ccm_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_CCM_CLIENT_MESSAGE", False);
+        klass->atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "ATOM", False);
+        klass->none_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "NONE", False);
+        klass->utf8_string_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "UTF8_STRING", False);
+        klass->active_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_ACTIVE_WINDOW", False);
+        klass->root_pixmap_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_XROOTPMAP_ID", False);
+        klass->user_time_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_USER_TIME", False);
+        klass->name_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_NAME", False);
+        klass->visible_name_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_VISIBLE_NAME", False);
+        klass->opacity_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_OPACITY", False);
+        klass->client_list_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_CLIENT_LIST", False);
+        klass->client_stacking_list_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_CLIENT_LIST_STACKING", False);
 
-        klass->atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), 
-                                   "ATOM", 
-                                   False);
+        klass->type_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE", False);
+        klass->type_normal_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_NORMAL", False);
+        klass->type_desktop_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_DESKTOP", False);
+        klass->type_dock_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_DOCK", False);
+        klass->type_toolbar_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_TOOLBAR", False);
+        klass->type_menu_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_MENU", False);
+        klass->type_util_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_UTILITY", False);
+        klass->type_splash_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_SPLASH", False);
+        klass->type_dialog_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_DIALOG", False);
+        klass->type_dropdown_menu_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU", False);
+        klass->type_popup_menu_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_POPUP_MENU", False);
+        klass->type_tooltip_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_TOOLTIP", False);
+        klass->type_notification_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
+        klass->type_combo_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_COMBO", False);
+        klass->type_dnd_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE_DND", False);
 
-        klass->none_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), 
-                                        "NONE", 
-                                        False);
+        klass->state_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE", False);
+        klass->state_shade_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_SHADED", False);
+        klass->state_fullscreen_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_FULLSCREEN", False);
+        klass->state_above_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_ABOVE", False);
+        klass->state_below_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_BELOW", False);
+        klass->state_skip_taskbar = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_SKIP_TASKBAR", False);
+        klass->state_skip_pager = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_SKIP_PAGER", False);
+        klass->state_is_modal = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_MODAL", False);
+        klass->state_maximized_horz_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+        klass->state_maximized_vert_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_MAXIMIZED_VERT", False);
 
-        klass->utf8_string_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), 
-                                               "UTF8_STRING", 
-                                               False);
-
-        klass->active_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                                          "_NET_ACTIVE_WINDOW",
-                                          False);
-
-        klass->root_pixmap_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), 
-                                               "_XROOTPMAP_ID",
-                                               False);
-
-        klass->user_time_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), 
-                                             "_NET_WM_USER_TIME",
-                                             False);
-
-        klass->name_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), 
-                                        "_NET_WM_NAME", 
-                                        False);
-
-        klass->visible_name_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), 
-                                                "_NET_WM_VISIBLE_NAME",
-                                                False);
-
-        klass->opacity_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                                           "_NET_WM_WINDOW_OPACITY", 
-                                           False);
-
-        klass->client_list_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                                               "_NET_CLIENT_LIST",
-                                               False);
-
-        klass->client_stacking_list_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                                                        "_NET_CLIENT_LIST_STACKING", 
-                                                        False);
-        klass->type_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_WINDOW_TYPE",
-                         False);
-        klass->type_normal_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_NORMAL", False);
-        klass->type_desktop_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_DESKTOP", False);
-        klass->type_dock_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_DOCK", False);
-        klass->type_toolbar_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_TOOLBAR", False);
-        klass->type_menu_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_MENU", False);
-        klass->type_util_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_UTILITY", False);
-        klass->type_splash_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_SPLASH", False);
-        klass->type_dialog_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_DIALOG", False);
-        klass->type_dropdown_menu_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU", False);
-        klass->type_popup_menu_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_POPUP_MENU", False);
-        klass->type_tooltip_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_TOOLTIP", False);
-        klass->type_notification_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
-        klass->type_combo_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_COMBO", False);
-        klass->type_dnd_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_WINDOW_TYPE_DND", False);
-        klass->state_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE",
-                         False);
-        klass->state_shade_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_SHADED",
-                         False);
-        klass->state_fullscreen_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_STATE_FULLSCREEN", False);
-        klass->state_above_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_ABOVE",
-                         False);
-        klass->state_below_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_BELOW",
-                         False);
-        klass->state_skip_taskbar =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_STATE_SKIP_TASKBAR", False);
-        klass->state_skip_pager =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_STATE_SKIP_PAGER", False);
-        klass->state_is_modal =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_STATE_MODAL",
-                         False);
-        klass->mwm_hints_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_MOTIF_WM_HINTS",
-                         False);
-        klass->frame_extends_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_FRAME_EXTENTS",
-                         False);
-        klass->transient_for_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "WM_TRANSIENT_FOR",
-                         False);
-        klass->current_desktop_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_CURRENT_DESKTOP",
-                         False);
-        klass->protocol_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "WM_PROTOCOLS", False);
-        klass->delete_window_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display),
-                         "_NET_WM_DELETE_WINDOW", False);
-        klass->ping_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_PING", False);
-        klass->pid_atom =
-            XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_PID", False);
+        klass->mwm_hints_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_MOTIF_WM_HINTS", False);
+        klass->frame_extends_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_FRAME_EXTENTS", False);
+        klass->transient_for_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "WM_TRANSIENT_FOR", False);
+        klass->current_desktop_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_CURRENT_DESKTOP", False);
+        klass->protocol_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "WM_PROTOCOLS", False);
+        klass->delete_window_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_DELETE_WINDOW", False);
+        klass->ping_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_PING", False);
+        klass->pid_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (display), "_NET_WM_PID", False);
     }
 }
 
@@ -765,6 +677,8 @@ ccm_window_get_state_atom_list (CCMWindow * self)
 
     list = g_slist_prepend (list, (gpointer) CCM_WINDOW_GET_CLASS (self)->state_shade_atom);
     list = g_slist_prepend (list, (gpointer) CCM_WINDOW_GET_CLASS (self)->state_fullscreen_atom);
+    list = g_slist_prepend (list, (gpointer) CCM_WINDOW_GET_CLASS (self)->state_maximized_horz_atom);
+    list = g_slist_prepend (list, (gpointer) CCM_WINDOW_GET_CLASS (self)->state_maximized_vert_atom);
     list = g_slist_prepend (list, (gpointer) CCM_WINDOW_GET_CLASS (self)->state_above_atom);
     list = g_slist_prepend (list, (gpointer) CCM_WINDOW_GET_CLASS (self)->state_below_atom);
     list = g_slist_prepend (list, (gpointer) CCM_WINDOW_GET_CLASS (self)->state_skip_taskbar);
@@ -854,7 +768,7 @@ ccm_window_get_child_utf8_property (CCMWindow * self, Atom atom)
     guint n_items;
 
     data = ccm_window_get_child_property (self, atom,
-                                          CCM_WINDOW_GET_CLASS (self)->utf8_string_atom, 
+                                          CCM_WINDOW_GET_CLASS (self)->utf8_string_atom,
                                           &n_items);
 
     if (!data)
@@ -933,7 +847,7 @@ ccm_window_get_child_text_property (CCMWindow * self, Atom atom)
     gchar *retval = NULL;
 
     text.nitems = 0;
-    if (XGetTextProperty (CCM_DISPLAY_XDISPLAY (display), 
+    if (XGetTextProperty (CCM_DISPLAY_XDISPLAY (display),
                           self->priv->child, &text, atom))
     {
         retval = text_property_to_utf8 (&text);
@@ -996,7 +910,7 @@ ccm_window_query_child (CCMWindow * self)
     if (!self->priv->override_redirect &&
         self->priv->hint_type != CCM_WINDOW_TYPE_DESKTOP &&
         XQueryTree (CCM_DISPLAY_XDISPLAY (display), CCM_WINDOW_XWINDOW (self),
-                    &w, &p, &windows, &n_windows) && 
+                    &w, &p, &windows, &n_windows) &&
         n_windows > 0)
     {
         CCMWindow *root = ccm_screen_get_root_window (screen);
@@ -1043,7 +957,7 @@ ccm_window_get_attribs (CCMWindow * self)
     CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
     XWindowAttributes attribs;
 
-    if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY (display), 
+    if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY (display),
                                CCM_WINDOW_XWINDOW (self), &attribs))
     {
         g_signal_emit (self, signals[ERROR], 0);
@@ -1123,9 +1037,9 @@ impl_ccm_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * self)
     if (!ccm_window_get_attribs (self))
         return NULL;
 
-    if (XShapeQueryExtents (CCM_DISPLAY_XDISPLAY (display), 
+    if (XShapeQueryExtents (CCM_DISPLAY_XDISPLAY (display),
                             CCM_WINDOW_XWINDOW (self),
-                            &self->priv->is_shaped, &bx, &by, &bw, &bh, 
+                            &self->priv->is_shaped, &bx, &by, &bw, &bh,
                             &cs, &cx, &cy, &cw, &ch)
         && self->priv->is_shaped)
     {
@@ -1133,7 +1047,7 @@ impl_ccm_window_query_geometry (CCMWindowPlugin * plugin, CCMWindow * self)
         XRectangle *shapes;
 
         if ((shapes = XShapeGetRectangles (CCM_DISPLAY_XDISPLAY (display),
-                                           CCM_WINDOW_XWINDOW (self), 
+                                           CCM_WINDOW_XWINDOW (self),
                                            ShapeBounding, &nb, &o)))
         {
             geometry = ccm_region_new ();
@@ -1658,7 +1572,7 @@ ccm_window_on_get_property_async (CCMWindow * self, guint n_items,
                 g_signal_handler_disconnect (self->priv->transient_for,
                                              self->priv->id_transient_transform_changed);
                 self->priv->transient_for->priv->transients =
-                    g_slist_remove (self->priv->transient_for->priv->transients, 
+                    g_slist_remove (self->priv->transient_for->priv->transients,
                                     self);
                 self->priv->id_transient_transform_changed = 0;
             }
@@ -1740,7 +1654,7 @@ ccm_window_on_get_property_async (CCMWindow * self, guint n_items,
             self->priv->opacity = (double) value / (double) 0xffffffff;
 
             if (self->priv->opacity == 1.0f &&
-                ccm_drawable_get_format (CCM_DRAWABLE (self)) != CAIRO_FORMAT_ARGB32 && 
+                ccm_drawable_get_format (CCM_DRAWABLE (self)) != CAIRO_FORMAT_ARGB32 &&
                 !self->priv->opaque)
                 ccm_window_set_opaque (self);
             else
@@ -1870,8 +1784,8 @@ ccm_window_translate_coordinates (CCMWindow * self, XEvent * event,
 
     ccm_window_plugin_get_origin (self->priv->plugin, self, &x, &y);
 
-    if (XQueryTree (event->xany.display, event->xbutton.window, 
-                    &w, &p, &windows, &n_windows) && 
+    if (XQueryTree (event->xany.display, event->xbutton.window,
+                    &w, &p, &windows, &n_windows) &&
         windows && n_windows)
     {
         while (n_windows-- && !found)
@@ -1925,8 +1839,8 @@ ccm_window_get_child_offset (CCMWindow * self, Window child,
     if (CCM_WINDOW_XWINDOW (self) == child)
         return self;
 
-    if (XQueryTree (CCM_DISPLAY_XDISPLAY (display), child, &root, 
-                    &parent, &windows, &n_windows) && 
+    if (XQueryTree (CCM_DISPLAY_XDISPLAY (display), child, &root,
+                    &parent, &windows, &n_windows) &&
         parent)
     {
         if (windows)
@@ -2058,7 +1972,7 @@ _ccm_window_reparent(CCMWindow* self, CCMWindow* parent)
                                       "notify::transform",
                                       G_CALLBACK(ccm_window_on_transient_transform_changed),
                                       window);
-        parent->priv->transients = g_slist_prepend (parent->priv->transients, 
+        parent->priv->transients = g_slist_prepend (parent->priv->transients,
                                                     window);
     }
     g_slist_free(self->priv->transients);
@@ -2260,7 +2174,7 @@ ccm_window_get_opaque_region (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
 
-    return self->priv->opaque ? 
+    return self->priv->opaque ?
         (self->priv->no_undamage_sibling ? NULL : self->priv->opaque): NULL;
 }
 
@@ -2324,6 +2238,20 @@ ccm_window_set_state (CCMWindow * self, Atom state_atom)
             self->priv->is_fullscreen = TRUE;
             ccm_debug_window (self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
         }
+    }
+    else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_maximized_horz_atom)
+    {
+        gboolean old = self->priv->is_maximized_horz;
+        self->priv->is_maximized_horz = TRUE;
+        updated = old != self->priv->is_maximized_horz;
+        ccm_debug_window (self, "IS_MAXIMIZED_HORZ %i", self->priv->is_maximized_horz);
+    }
+    else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_maximized_vert_atom)
+    {
+        gboolean old = self->priv->is_maximized_vert;
+        self->priv->is_maximized_vert = TRUE;
+        updated = old != self->priv->is_maximized_vert;
+        ccm_debug_window (self, "IS_MAXIMIZED_VERT %i", self->priv->is_maximized_vert);
     }
     else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_is_modal)
     {
@@ -2396,6 +2324,20 @@ ccm_window_unset_state (CCMWindow * self, Atom state_atom)
             ccm_debug_window (self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
         }
     }
+    else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_maximized_horz_atom)
+    {
+        gboolean old = self->priv->is_maximized_horz;
+        self->priv->is_maximized_horz = FALSE;
+        updated = old != self->priv->is_maximized_horz;
+        ccm_debug_window (self, "IS_MAXIMIZED_HORZ %i", self->priv->is_maximized_horz);
+    }
+    else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_maximized_vert_atom)
+    {
+        gboolean old = self->priv->is_maximized_vert;
+        self->priv->is_maximized_vert = FALSE;
+        updated = old != self->priv->is_maximized_vert;
+        ccm_debug_window (self, "IS_MAXIMIZED_VERT %i", self->priv->is_maximized_vert);
+    }
     else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_is_modal)
     {
         gboolean old = self->priv->is_modal;
@@ -2458,6 +2400,18 @@ ccm_window_switch_state (CCMWindow * self, Atom state_atom)
         self->priv->is_fullscreen = !self->priv->is_fullscreen;
         ccm_debug_window (self, "IS_FULLSCREEN %i", self->priv->is_fullscreen);
     }
+    else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_maximized_horz_atom)
+    {
+        updated = TRUE;
+        self->priv->is_maximized_horz = !self->priv->is_maximized_horz;
+        ccm_debug_window (self, "IS_MAXIMIZED_HORZ %i", self->priv->is_maximized_horz);
+    }
+    else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_maximized_vert_atom)
+    {
+        updated = TRUE;
+        self->priv->is_maximized_vert = !self->priv->is_maximized_vert;
+        ccm_debug_window (self, "IS_MAXIMIZED_VERT %i", self->priv->is_maximized_vert);
+    }
     else if (state_atom == CCM_WINDOW_GET_CLASS (self)->state_is_modal)
     {
         updated = TRUE;
@@ -2511,6 +2465,14 @@ ccm_window_is_fullscreen (CCMWindow * self)
 }
 
 G_GNUC_PURE gboolean
+ccm_window_is_maximized (CCMWindow * self)
+{
+    g_return_val_if_fail (self != NULL, FALSE);
+
+    return self->priv->is_maximized_horz && self->priv->is_maximized_vert;
+}
+
+G_GNUC_PURE gboolean
 ccm_window_skip_taskbar (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -2554,8 +2516,8 @@ ccm_window_traverse_child (CCMWindow * self, Window parent, Window window)
     gboolean ret = FALSE;
 
     if (XQueryTree (CCM_DISPLAY_XDISPLAY (display),
-                    parent ? parent : CCM_WINDOW_XWINDOW (self), 
-                    &w, &p, &windows, &n_windows) && 
+                    parent ? parent : CCM_WINDOW_XWINDOW (self),
+                    &w, &p, &windows, &n_windows) &&
         windows)
     {
         for (cpt = 0; cpt < n_windows && !ret; ++cpt)
@@ -2689,7 +2651,7 @@ ccm_window_get_pixmap (CCMWindow * self)
         self->priv->pixmap = ccm_window_plugin_get_pixmap (self->priv->plugin, self);
         if (self->priv->pixmap)
         {
-            g_object_set_qdata_full (G_OBJECT (self->priv->pixmap), 
+            g_object_set_qdata_full (G_OBJECT (self->priv->pixmap),
                                      CCMWindowPixmapQuark,
                                      self,
                                      (GDestroyNotify)
@@ -2750,8 +2712,8 @@ ccm_window_paint (CCMWindow * self, cairo_t * context)
 
     gboolean ret = FALSE;
 
-    if (!self->priv->is_viewable && 
-        !self->priv->unmap_pending && 
+    if (!self->priv->is_viewable &&
+        !self->priv->unmap_pending &&
         !self->priv->is_shaded)
     {
         ccm_drawable_repair (CCM_DRAWABLE (self));
@@ -2775,7 +2737,7 @@ ccm_window_paint (CCMWindow * self, cairo_t * context)
                 cairo_save (context);
                 ccm_drawable_get_damage_path (CCM_DRAWABLE (self), context);
                 cairo_clip (context);
-                ret = ccm_window_plugin_paint (self->priv->plugin, self, 
+                ret = ccm_window_plugin_paint (self->priv->plugin, self,
                                                context, surface);
                 cairo_surface_destroy (surface);
                 cairo_restore (context);
@@ -2880,7 +2842,7 @@ ccm_window_query_transient_for (CCMWindow * self)
 
     ccm_debug_window (self, "QUERY TRANSIENT");
     ccm_window_get_property_async (self,
-                                   CCM_WINDOW_GET_CLASS (self)->transient_for_atom, 
+                                   CCM_WINDOW_GET_CLASS (self)->transient_for_atom,
                                    XA_WINDOW, sizeof (Window));
 }
 
@@ -3074,8 +3036,8 @@ ccm_window_query_frame_extends (CCMWindow * self)
     g_return_if_fail (CCM_WINDOW_GET_CLASS (self) != NULL);
 
     ccm_debug_window (self, "QUERY FRAME EXTENDS");
-    ccm_window_get_property_async (self, 
-                                   CCM_WINDOW_GET_CLASS (self)->frame_extends_atom, 
+    ccm_window_get_property_async (self,
+                                   CCM_WINDOW_GET_CLASS (self)->frame_extends_atom,
                                    XA_CARDINAL, 32);
 }
 
@@ -3551,7 +3513,7 @@ ccm_window_set_mask(CCMWindow* self, cairo_surface_t* mask)
     g_object_notify(G_OBJECT(self), "mask");
 }
 
-G_GNUC_PURE gboolean 
+G_GNUC_PURE gboolean
 ccm_window_get_redirect(CCMWindow* self)
 {
     g_return_val_if_fail(self != NULL, FALSE);

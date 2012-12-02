@@ -2,17 +2,17 @@
 /*
  * ccm-snapshot.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -290,10 +290,8 @@ ccm_snapshot_on_area_key_release (CCMSnapshot * self)
     ccm_screen_query_pointer (self->priv->screen, NULL, &x, &y);
     x1 = x <= self->priv->area.x ? x : self->priv->area.x;
     y1 = y <= self->priv->area.y ? y : self->priv->area.y;
-    x2 = x <=
-        self->priv->area.x ? self->priv->area.x + self->priv->area.width : x;
-    y2 = y <=
-        self->priv->area.y ? self->priv->area.y + self->priv->area.height : y;
+    x2 = x <= self->priv->area.x ? self->priv->area.x + self->priv->area.width : x;
+    y2 = y <= self->priv->area.y ? self->priv->area.y + self->priv->area.height : y;
     self->priv->area.x = x1;
     self->priv->area.y = y1;
     self->priv->area.width = x2 - x1;
@@ -312,14 +310,10 @@ ccm_snapshot_on_area_key_release (CCMSnapshot * self)
                    self->priv->area.y, self->priv->area.width,
                    self->priv->area.height);
 
-        dst =
-            cairo_image_surface_create (ccm_drawable_get_format
-                                        (CCM_DRAWABLE (overlay)),
-                                        self->priv->area.width,
-                                        self->priv->area.height);
+        dst = cairo_image_surface_create (ccm_drawable_get_format (CCM_DRAWABLE (overlay)),
+                                          self->priv->area.width, self->priv->area.height);
         ctx = cairo_create (dst);
-        cairo_set_source_surface (ctx, src, -self->priv->area.x,
-                                  -self->priv->area.y);
+        cairo_set_source_surface (ctx, src, -self->priv->area.x, -self->priv->area.y);
         cairo_paint (ctx);
         cairo_destroy (ctx);
 
@@ -385,11 +379,8 @@ ccm_snapshot_on_window_key_release (CCMSnapshot * self)
                                                       (self->priv->selected),
                                                       &clipbox);
 
-            dst =
-                cairo_image_surface_create (ccm_drawable_get_format
-                                            (CCM_DRAWABLE
-                                             (self->priv->selected)),
-                                            area->width, area->height);
+            dst = cairo_image_surface_create (ccm_drawable_get_format (CCM_DRAWABLE (self->priv->selected)),
+                                              area->width, area->height);
             ctx = cairo_create (dst);
             cairo_set_source_surface (ctx, src, clipbox.x - area->x,
                                       clipbox.y - area->y);
@@ -416,8 +407,8 @@ ccm_snapshot_get_area_keybind (CCMSnapshot * self)
     if (self->priv->area_keybind)
         g_object_unref (self->priv->area_keybind);
 
-    self->priv->area_keybind = ccm_keybind_new (self->priv->screen, 
-                                                ccm_snapshot_get_option (self)->area_shortcut, 
+    self->priv->area_keybind = ccm_keybind_new (self->priv->screen,
+                                                ccm_snapshot_get_option (self)->area_shortcut,
                                                 TRUE);
 
     g_signal_connect_swapped (self->priv->area_keybind,
@@ -440,8 +431,8 @@ ccm_snapshot_get_window_keybind (CCMSnapshot * self)
     if (self->priv->window_keybind)
         g_object_unref (self->priv->window_keybind);
 
-    self->priv->window_keybind = ccm_keybind_new (self->priv->screen, 
-                                                  ccm_snapshot_get_option (self)->window_shortcut, 
+    self->priv->window_keybind = ccm_keybind_new (self->priv->screen,
+                                                  ccm_snapshot_get_option (self)->window_shortcut,
                                                   TRUE);
     g_signal_connect_swapped (self->priv->window_keybind,
                               "key_press",
