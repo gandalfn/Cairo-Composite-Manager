@@ -282,7 +282,7 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
         {
             if (j > clip.x && j < clip_x2 && i > clip.y && i < clip_y2)
             {
-                j = clip_x2;
+                j = clip_x2 - 1;
                 continue;
             }
             if (radius < j && j < width_radius)
