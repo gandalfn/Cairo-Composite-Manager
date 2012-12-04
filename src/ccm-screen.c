@@ -330,8 +330,7 @@ ccm_screen_finalize (GObject * object)
 
     if (self->priv->stack)
     {
-        g_slice_free1 (sizeof (Window) * self->priv->n_windows,
-                       self->priv->stack);
+        g_slice_free1 (sizeof (Window) * self->priv->n_windows, self->priv->stack);
         self->priv->stack = NULL;
         self->priv->n_windows = 0;
     }
@@ -1158,20 +1157,16 @@ ccm_screen_find_window_or_child (CCMScreen * self, Window xwindow)
     g_return_val_if_fail (xwindow != None, NULL);
 
     GList *item;
-    CCMWindow *child = NULL;
 
     for (item = self->priv->windows; item; item = item->next)
     {
         if (CCM_WINDOW_XWINDOW (item->data) == xwindow)
             return CCM_WINDOW (item->data);
-        else
-        {
-            if (_ccm_window_get_child (item->data) == xwindow)
-                child = CCM_WINDOW (item->data);
-        }
+        else if (_ccm_window_get_child (item->data) == xwindow)
+            return CCM_WINDOW (item->data);
     }
 
-    return child;
+    return NULL;
 }
 
 CCMWindow *
@@ -1183,7 +1178,7 @@ ccm_screen_find_window_from_input (CCMScreen * self, Window xwindow)
     GList *item;
     CCMWindow *child = NULL;
 
-    for (item = self->priv->windows; item; item = item->next)
+    for (item = self->priv->windows; !child && item; item = item->next)
     {
         if (ccm_window_has_redirect_input (item->data))
         {
@@ -1496,8 +1491,7 @@ ccm_screen_check_stack (CCMScreen * self)
             gboolean found = FALSE;
 
             ccm_debug_window (item->data, "CHECK STACK REMOVED");
-            if (ccm_window_is_viewable (item->data) &&
-                !ccm_window_is_input_only (item->data))
+            if (ccm_window_is_viewable (item->data) && !ccm_window_is_input_only (item->data))
             {
                 GList *last_viewable = NULL;
 
@@ -1692,32 +1686,28 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self, cairo_t * ctx
     ccm_debug ("PAINT SCREEN BEGIN");
     for (item = self->priv->windows; item; item = item->next)
     {
-        if (CCM_IS_WINDOW (item->data))
+        CCMWindow *window = CCM_WINDOW (item->data);
+
+        if (ccm_window_is_viewable (window) && !ccm_window_is_input_only (window))
         {
-            CCMWindow *window = CCM_WINDOW (item->data);
-
-            if (ccm_window_is_viewable (window) && !ccm_window_is_input_only (window))
+            if (ccm_drawable_is_damaged (CCM_DRAWABLE (window)))
             {
-                if (ccm_drawable_is_damaged (CCM_DRAWABLE (window)))
-                {
-                    CCMRegion *damaged = (CCMRegion*)ccm_drawable_get_damaged (CCM_DRAWABLE (window));
-                    ccm_debug_region (CCM_DRAWABLE (window), "SCREEN DAMAGE");
-                    if (!self->priv->damaged)
-                        self->priv->damaged = ccm_region_copy (damaged);
-                    else
-                        ccm_region_union (self->priv->damaged, damaged);
-                }
-
-                ccm_debug_window (window, "PAINT SCREEN");
-                ret |= ccm_window_paint (window, self->priv->ctx);
+                CCMRegion *damaged = (CCMRegion*)ccm_drawable_get_damaged (CCM_DRAWABLE (window));
+                ccm_debug_region (CCM_DRAWABLE (window), "SCREEN DAMAGE");
+                if (!self->priv->damaged)
+                    self->priv->damaged = ccm_region_copy (damaged);
+                else
+                    ccm_region_union (self->priv->damaged, damaged);
             }
+
+            ccm_debug_window (window, "PAINT SCREEN");
+            ret |= ccm_window_paint (window, self->priv->ctx);
         }
     }
 
     for (item = self->priv->removed; item; item = item->next)
     {
-        if (!CCM_IS_WINDOW(item->data) ||
-            !ccm_window_is_viewable (item->data) ||
+        if (!ccm_window_is_viewable (item->data) ||
             ccm_window_is_input_only (item->data))
         {
             ccm_screen_destroy_window (self, item->data);
@@ -1973,9 +1963,7 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             self->priv->ctx = ccm_drawable_create_context (CCM_DRAWABLE (self->priv->cow));
             if (self->priv->ctx)
             {
-                cairo_rectangle (self->priv->ctx, 0, 0,
-                                 self->priv->xscreen->width,
-                                 self->priv->xscreen->height);
+                cairo_rectangle (self->priv->ctx, 0, 0, self->priv->xscreen->width, self->priv->xscreen->height);
                 cairo_clip (self->priv->ctx);
                 cairo_set_operator (self->priv->ctx, CAIRO_OPERATOR_CLEAR);
                 cairo_paint (self->priv->ctx);
@@ -2000,8 +1988,7 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             gint cpt, nb_rects;
 
             cairo_save (self->priv->ctx);
-            ccm_region_get_rectangles (self->priv->root_damage, &rects,
-                                       &nb_rects);
+            ccm_region_get_rectangles (self->priv->root_damage, &rects, &nb_rects);
             for (cpt = 0; cpt < nb_rects; ++cpt)
                 cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
                                  rects[cpt].width, rects[cpt].height);
@@ -2010,8 +1997,7 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
 
             if (self->priv->background)
             {
-                cairo_surface_t *surface =
-                    ccm_drawable_get_surface (CCM_DRAWABLE (self->priv->background));
+                cairo_surface_t *surface = ccm_drawable_get_surface (CCM_DRAWABLE (self->priv->background));
 
                 cairo_set_source_surface (self->priv->ctx, surface, 0, 0);
                 cairo_paint (self->priv->ctx);
@@ -2119,10 +2105,8 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
             opaque = ccm_window_get_opaque_region (item->data);
             if (opaque)
             {
-                ccm_debug_window (window, "UNDAMAGE ABOVE 0x%lx",
-                                  CCM_WINDOW_XWINDOW (item->data));
-                ccm_drawable_undamage_region (CCM_DRAWABLE (window),
-                                              (CCMRegion *) opaque);
+                ccm_debug_window (window, "UNDAMAGE ABOVE 0x%lx", CCM_WINDOW_XWINDOW (item->data));
+                ccm_drawable_undamage_region (CCM_DRAWABLE (window), (CCMRegion *) opaque);
                 // window is totaly obscured don't damage all other windows
                 if (!ccm_drawable_is_damaged (CCM_DRAWABLE (window)))
                 {
@@ -2166,8 +2150,7 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
                     !ccm_region_empty ((CCMRegion *) opaque))
                 {
                     ccm_debug_window (item->data, "UNDAMAGE BELOW");
-                    ccm_drawable_undamage_region (CCM_DRAWABLE (item->data),
-                                                  (CCMRegion *) opaque);
+                    ccm_drawable_undamage_region (CCM_DRAWABLE (item->data), (CCMRegion *) opaque);
                 }
 
                 ccm_drawable_damage_region_silently (item->data, damage_below);
@@ -2183,8 +2166,7 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
         {
             top = FALSE;
             opaque = ccm_window_get_opaque_region (window);
-            if (ccm_region_empty (damage_below)
-                && ccm_region_empty ((CCMRegion *) opaque))
+            if (ccm_region_empty (damage_below) && ccm_region_empty ((CCMRegion *) opaque))
                 break;
         }
     }
@@ -2223,8 +2205,7 @@ ccm_screen_on_window_damaged (CCMScreen * self, CCMRegion * area,
     if (!self->priv->cow)
         ccm_screen_create_overlay_window (self);
 
-    if (self->priv->cow &&
-        CCM_WINDOW_XWINDOW (self->priv->cow) != CCM_WINDOW_XWINDOW (window))
+    if (self->priv->cow && CCM_WINDOW_XWINDOW (self->priv->cow) != CCM_WINDOW_XWINDOW (window))
     {
         ccm_screen_plugin_damage (self->priv->plugin, self, area, window);
     }
@@ -2278,9 +2259,7 @@ impl_ccm_screen_on_cursor_move (CCMScreenPlugin * plugin, CCMScreen * self,
     g_return_if_fail (self != NULL);
     g_return_if_fail (plugin != NULL);
 
-    self->priv->cursor =
-        (CCMCursor *) ccm_display_get_current_cursor (self->priv->display,
-                                                      FALSE);
+    self->priv->cursor = (CCMCursor *)ccm_display_get_current_cursor (self->priv->display, FALSE);
 
     if (self->priv->cursor && ccm_cursor_get_height (self->priv->cursor) &&
         ccm_cursor_get_width (self->priv->cursor))
@@ -2432,8 +2411,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             {
                 CCMWindow *window = ccm_screen_find_window_or_child (self,
                                                                      ((XDestroyWindowEvent *) event)->window);
-                ccm_debug ("REMOVE 0x%x",
-                           ((XDestroyWindowEvent *) event)->window);
+                ccm_debug ("REMOVE 0x%x", ((XDestroyWindowEvent *) event)->window);
                 if (window)
                 {
                     ccm_debug_window (window, "EVENT REMOVE 0x%x",
@@ -2446,21 +2424,16 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             {
                 CCMWindow *window, *parent;
 
-                parent =
-                    ccm_screen_find_window (self, ((XMapEvent *) event)->event);
-                window =
-                    ccm_screen_find_window (self,
-                                            ((XMapEvent *) event)->window);
+                parent = ccm_screen_find_window (self, ((XMapEvent *)event)->event);
+                window = ccm_screen_find_window (self, ((XMapEvent *)event)->window);
                 if (window)
                 {
                     ccm_debug_window (window, "MAP 0x%lx", ((XMapEvent *) event)->event);
                     ccm_window_map (window);
                 }
-                else if (((XMapEvent *) event)->event ==
-                         CCM_WINDOW_XWINDOW (self->priv->root))
+                else if (((XMapEvent *) event)->event == CCM_WINDOW_XWINDOW (self->priv->root))
                 {
-                    window =
-                        ccm_window_new (self, ((XMapEvent *) event)->window);
+                    window = ccm_window_new (self, ((XMapEvent *) event)->window);
                     if (window)
                     {
                         ccm_debug_window (window, "CREATE MAP");
@@ -2486,9 +2459,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             {
                 CCMWindow *window;
 
-                window =
-                    ccm_screen_find_window (self,
-                                            ((XUnmapEvent *) event)->window);
+                window = ccm_screen_find_window (self, ((XUnmapEvent *) event)->window);
                 if (window)
                 {
                     ccm_debug_window (window, "UNMAP");
@@ -2504,13 +2475,11 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                            ((XReparentEvent *) event)->parent,
                            ((XReparentEvent *) event)->window);
 
-                if (((XReparentEvent *) event)->parent ==
-                    CCM_WINDOW_XWINDOW (self->priv->root))
+                if (((XReparentEvent *) event)->parent == CCM_WINDOW_XWINDOW (self->priv->root))
                 {
                     if (!window)
                     {
-                        window = ccm_window_new (self,
-                                                 ((XReparentEvent *) event)->window);
+                        window = ccm_window_new (self, ((XReparentEvent *) event)->window);
                         if (window)
                         {
                             ccm_debug_window (window, "REPARENT ADD");
@@ -2611,8 +2580,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                 ccm_debug_atom (self->priv->display, property_event->atom,
                                 "PROPERTY_NOTIFY");
 
-                if (property_event->atom ==
-                    CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom)
+                if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom)
                 {
                     guint32 *data;
                     guint n_items;
@@ -2625,100 +2593,72 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                                                  XA_WINDOW, &n_items);
                     if (data)
                     {
-                        active = (Window) * data;
+                        active = (Window)*data;
                         if (active)
-                            self->priv->active =
-                            ccm_screen_find_window_or_child (self,
-                                                             (Window) * data);
+                            self->priv->active = ccm_screen_find_window_or_child (self, (Window)*data);
                         else
                             self->priv->active = NULL;
                         g_free (data);
                         if (self->priv->active)
-                            g_signal_emit (self,
-                                           signals[ACTIVATE_WINDOW_NOTIFY], 0,
-                                           self->priv->active);
+                            g_signal_emit (self, signals[ACTIVATE_WINDOW_NOTIFY], 0, self->priv->active);
                     }
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom)
                 {
                     if (self->priv->background)
                         g_object_unref (self->priv->background);
                     self->priv->background = NULL;
                     ccm_screen_damage (self);
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->client_stacking_list_atom
-                         || property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->client_list_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->client_stacking_list_atom ||
+                         property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->client_list_atom)
                 {
                     ccm_screen_add_check_pending (self);
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->transient_for_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->transient_for_atom)
                 {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->window);
+                    window = ccm_screen_find_window_or_child (self, property_event->window);
                     if (window)
                         ccm_window_query_transient_for (window);
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
                 {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->window);
+                    window = ccm_screen_find_window_or_child (self, property_event->window);
                     if (window)
-                        ccm_window_query_opacity (window,
-                                                  property_event->state == PropertyDelete);
+                        ccm_window_query_opacity (window, property_event->state == PropertyDelete);
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
                 {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->window);
+                    window = ccm_screen_find_window_or_child (self, property_event->window);
                     if (window)
                         ccm_window_query_hint_type (window);
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->mwm_hints_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->mwm_hints_atom)
                 {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->window);
+                    window = ccm_screen_find_window_or_child (self, property_event->window);
                     if (window)
                         ccm_window_query_mwm_hints (window);
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
                 {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->window);
+                    window = ccm_screen_find_window_or_child (self, property_event->window);
                     if (window)
                         ccm_window_query_state (window);
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->frame_extends_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->frame_extends_atom)
                 {
-                    window =
-                        ccm_screen_find_window_or_child (self,
-                                                         property_event->window);
+                    window = ccm_screen_find_window_or_child (self, property_event->window);
                     if (window)
                         ccm_window_query_frame_extends (window);
                 }
-                else if (property_event->atom ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom)
+                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom)
                 {
                     guint n_items;
                     guint32 *desktop = NULL;
 
-                    desktop =
-                        ccm_window_get_property (self->priv->root,
-                                                 CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom,
-                                                 XA_CARDINAL, &n_items);
+                    desktop = ccm_window_get_property (self->priv->root,
+                                                       CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom,
+                                                       XA_CARDINAL, &n_items);
                     if (desktop)
                     {
                         g_signal_emit (self, signals[DESKTOP_CHANGED], 0,
@@ -2746,21 +2686,16 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             break;
         case ClientMessage:
             {
-                XClientMessageEvent *client_event =
-                    (XClientMessageEvent *) event;
+                XClientMessageEvent *client_event = (XClientMessageEvent *)event;
 
                 ccm_debug_atom (self->priv->display, client_event->message_type,
                                 "CLIENT MESSAGE");
 
-                if (client_event->message_type ==
-                    CCM_WINDOW_GET_CLASS (self->priv->root)->ccm_atom)
+                if (client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->ccm_atom)
                 {
-                    if (CCM_WINDOW_XWINDOW (self->priv->root) ==
-                        client_event->data.l[1])
+                    if (CCM_WINDOW_XWINDOW (self->priv->root) == client_event->data.l[1])
                     {
-                        CCMWindow *window =
-                            ccm_screen_find_window_or_child (self,
-                                                             client_event->data.l[4]);
+                        CCMWindow *window = ccm_screen_find_window_or_child (self, client_event->data.l[4]);
                         g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
                                        window ? window : self->priv->root,
                                        window ? window : self->priv->root,
@@ -2770,12 +2705,8 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                     }
                     else
                     {
-                        CCMWindow *window =
-                            ccm_screen_find_window_or_child (self,
-                                                             client_event->data.l[1]);
-                        CCMWindow *client =
-                            ccm_screen_find_window_or_child (self,
-                                                             client_event->data.l[4]);
+                        CCMWindow *window = ccm_screen_find_window_or_child (self, client_event->data.l[1]);
+                        CCMWindow *client = ccm_screen_find_window_or_child (self, client_event->data.l[4]);
                         if (window)
                             g_signal_emit (self, signals[COMPOSITE_MESSAGE], 0,
                                            client, window,
@@ -2784,11 +2715,9 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                                            client_event->data.l[3]);
                     }
                 }
-                else if (client_event->message_type ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
+                else if (client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
                 {
-                    CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                         client_event->window);
+                    CCMWindow *window = ccm_screen_find_window_or_child (self, client_event->window);
                     if (window)
                     {
                         gint cpt;
@@ -2824,25 +2753,19 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                         }
                     }
                 }
-                else if (client_event->message_type ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
+                else if (client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
                 {
-                    CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                         client_event->window);
+                    CCMWindow *window = ccm_screen_find_window_or_child (self, client_event->window);
                     if (window)
                         ccm_window_query_hint_type (window);
                 }
-                else if (client_event->message_type ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
+                else if (client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
                 {
-                    CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                         client_event->window);
+                    CCMWindow *window = ccm_screen_find_window_or_child (self, client_event->window);
                     if (window)
                         ccm_window_query_opacity (window, FALSE);
                 }
-                else if (client_event->message_type ==
-                         CCM_WINDOW_GET_CLASS (self->priv->root)->
-                         root_pixmap_atom)
+                else if (client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom)
                 {
                     if(self->priv->background)
                         g_object_unref (self->priv->background);
@@ -2854,19 +2777,16 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
         default:
             {
                 // Check for shape notify
-                if (event->type ==
-                    ccm_display_get_shape_notify_event_type (self->priv->display))
+                if (event->type == ccm_display_get_shape_notify_event_type (self->priv->display))
                 {
                     XShapeEvent *shape_event = (XShapeEvent *) event;
 
                     if (shape_event->kind != ShapeInput)
                     {
-                        CCMWindow *window = ccm_screen_find_window_or_child (self,
-                                                                             shape_event->window);
+                        CCMWindow *window = ccm_screen_find_window_or_child (self, shape_event->window);
                         if (window)
                         {
-                            const CCMRegion *geometry =
-                                ccm_drawable_get_device_geometry (CCM_DRAWABLE(window));
+                            const CCMRegion *geometry = ccm_drawable_get_device_geometry (CCM_DRAWABLE(window));
 
                             if (!geometry || !ccm_region_is_shaped ((CCMRegion *) geometry))
                             {
@@ -3031,8 +2951,7 @@ ccm_screen_add_window (CCMScreen * self, CCMWindow * window)
     if (!ccm_screen_valid_window (self, window))
         return ret;
 
-    if (!ccm_window_is_input_only (window)
-        && !ccm_screen_find_window (self, CCM_WINDOW_XWINDOW (window)))
+    if (!ccm_window_is_input_only (window) && !ccm_screen_find_window (self, CCM_WINDOW_XWINDOW (window)))
     {
         ret = ccm_screen_plugin_add_window (self->priv->plugin, self, window);
     }
