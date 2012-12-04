@@ -285,16 +285,16 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
                 j = clip_x2 - 1;
                 continue;
             }
-            if (radius < j && j < width_radius)
+            if (radius <= j && j < width_radius)
             {
                 d[j] = s[j];
                 continue;
             }
 
             x = y = z = w = 0;
-            for (k = 0; k < size; k++)
+            int idx = j - half;
+            for (k = 0; k < size; k++, idx++)
             {
-                const int idx = j - half + k;
                 if (idx < 0 || idx >= width)
                     continue;
 
@@ -328,9 +328,9 @@ cairo_blur_image_surface (cairo_surface_t *surface, int radius, cairo_rectangle_
             }
 
             x = y = z = w = 0;
-            for (k = 0; k < size; k++)
+            int idx = i - half;
+            for (k = 0; k < size; k++, idx++)
             {
-                const int idx = i - half + k;
                 if (idx < 0 || idx >= height)
                     continue;
 
