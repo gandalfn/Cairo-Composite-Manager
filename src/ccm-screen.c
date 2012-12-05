@@ -481,6 +481,7 @@ ccm_screen_class_init (CCMScreenClass * klass)
 static void
 ccm_screen_iface_init (CCMScreenPluginClass * iface)
 {
+    iface->is_screen = TRUE;
     iface->load_options = NULL;
     iface->paint = impl_ccm_screen_paint;
     iface->add_window = impl_ccm_screen_add_window;
@@ -765,7 +766,7 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
         {
             guint vblank_count;
             self->priv->get_video_sync (&vblank_count);
-            self->priv->wait_video_sync (1, 0, &vblank_count);
+            self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
         }
         ccm_timeline_start (self->priv->paint);
         g_signal_emit (self, signals[REFRESH_RATE_CHANGED], 0);
@@ -889,7 +890,7 @@ ccm_screen_update_sync_with_vblank (CCMScreen * self)
 
             ccm_timeline_stop (self->priv->paint);
             self->priv->get_video_sync (&vblank_count);
-            self->priv->wait_video_sync (1, 0, &vblank_count);
+            self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
 
             ccm_timeline_start (self->priv->paint);
         }
@@ -2014,12 +2015,13 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             self->priv->root_damage = NULL;
         }
 
-        if (ccm_screen_plugin_paint (self->priv->plugin, self, self->priv->ctx))
+       if (ccm_screen_plugin_paint (self->priv->plugin, self, self->priv->ctx))
         {
             if (self->priv->sync_with_vblank)
             {
                 guint vblank_count;
 
+                ccm_display_sync (self->priv->display);
                 self->priv->wait_video_sync (1, 0, &vblank_count);
             }
 

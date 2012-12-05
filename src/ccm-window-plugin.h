@@ -2,17 +2,17 @@
 /*
  * ccm-window-plugin.h
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -62,6 +62,8 @@ struct _CCMWindowPluginClass
 {
     GTypeInterface base_iface;
 
+    gboolean   is_window;
+
     void       (*load_options)     (CCMWindowPlugin* self, CCMWindow* window);
     CCMRegion* (*query_geometry)   (CCMWindowPlugin* self, CCMWindow* window);
     gboolean   (*paint)            (CCMWindowPlugin* self, CCMWindow* window,
@@ -69,13 +71,13 @@ struct _CCMWindowPluginClass
     void       (*map)              (CCMWindowPlugin* self, CCMWindow* window);
     void       (*unmap)            (CCMWindowPlugin* self, CCMWindow* window);
     void       (*query_opacity)    (CCMWindowPlugin* self, CCMWindow* window);
-    void       (*move)             (CCMWindowPlugin* self, CCMWindow* window, 
+    void       (*move)             (CCMWindowPlugin* self, CCMWindow* window,
                                     int x, int y);
-    void       (*resize)           (CCMWindowPlugin* self, CCMWindow* window, 
+    void       (*resize)           (CCMWindowPlugin* self, CCMWindow* window,
                                     int width, int height);
     void       (*set_opaque_region) (CCMWindowPlugin* self, CCMWindow* window,
                                      const CCMRegion* area);
-    void       (*get_origin)        (CCMWindowPlugin* self, CCMWindow* window, 
+    void       (*get_origin)        (CCMWindowPlugin* self, CCMWindow* window,
                                      int* x, int* y);
     CCMPixmap* (*get_pixmap)        (CCMWindowPlugin* self, CCMWindow* window);
 };
@@ -84,7 +86,7 @@ GType ccm_window_plugin_get_type (void) G_GNUC_CONST;
 
 CCMWindowPlugin* _ccm_window_plugin_get_root (CCMWindowPlugin* self);
 
-void 
+void
 ccm_window_plugin_load_options (CCMWindowPlugin * self, CCMWindow * window);
 #define     ccm_window_plugin_lock_load_options(plugin, callback) \
 CCM_WINDOW_PLUGIN_LOCK_ROOT_METHOD(plugin, load_options, callback, plugin)

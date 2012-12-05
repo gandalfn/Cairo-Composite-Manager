@@ -2,17 +2,17 @@
 /*
  * ccm-screen-plugin.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -58,7 +58,7 @@ _ccm_screen_plugin_get_root (CCMScreenPlugin * self)
 
     CCMScreenPlugin *plugin;
 
-    for (plugin = self; CCM_IS_PLUGIN (plugin);
+    for (plugin = self; !CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin)->is_screen;
          plugin = CCM_SCREEN_PLUGIN_PARENT (plugin));
 
     return plugin;
@@ -73,7 +73,7 @@ ccm_screen_plugin_load_options (CCMScreenPlugin * self, CCMScreen * screen)
     CCMScreenPlugin *plugin;
     CCMScreenPluginClass *plugin_class;
 
-    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), !plugin_class->is_screen;
          plugin = CCM_SCREEN_PLUGIN_PARENT (plugin))
     {
         if (plugin_class->load_options)
@@ -98,7 +98,7 @@ ccm_screen_plugin_paint (CCMScreenPlugin * self, CCMScreen * screen,
     CCMScreenPlugin *plugin;
     CCMScreenPluginClass *plugin_class;
 
-    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), !plugin_class->is_screen;
          plugin = CCM_SCREEN_PLUGIN_PARENT (plugin))
     {
         if (plugin_class->paint)
@@ -124,7 +124,7 @@ ccm_screen_plugin_add_window (CCMScreenPlugin * self, CCMScreen * screen,
     CCMScreenPlugin *plugin;
     CCMScreenPluginClass *plugin_class;
 
-    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), !plugin_class->is_screen;
          plugin = CCM_SCREEN_PLUGIN_PARENT (plugin))
     {
         if (plugin_class->add_window)
@@ -151,7 +151,7 @@ ccm_screen_plugin_remove_window (CCMScreenPlugin * self, CCMScreen * screen,
     CCMScreenPlugin *plugin;
     CCMScreenPluginClass *plugin_class;
 
-    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), !plugin_class->is_screen;
          plugin = CCM_SCREEN_PLUGIN_PARENT (plugin))
     {
         if (plugin_class->remove_window)
@@ -177,7 +177,7 @@ ccm_screen_plugin_damage (CCMScreenPlugin * self, CCMScreen * screen,
     CCMScreenPlugin *plugin;
     CCMScreenPluginClass *plugin_class;
 
-    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), !plugin_class->is_screen;
          plugin = CCM_SCREEN_PLUGIN_PARENT (plugin))
     {
         if (plugin_class->damage)
@@ -201,7 +201,7 @@ ccm_screen_plugin_on_cursor_move (CCMScreenPlugin * self, CCMScreen * screen,
     CCMScreenPlugin *plugin;
     CCMScreenPluginClass *plugin_class;
 
-    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), !plugin_class->is_screen;
          plugin = CCM_SCREEN_PLUGIN_PARENT (plugin))
     {
         if (plugin_class->on_cursor_move)
@@ -225,7 +225,7 @@ ccm_screen_plugin_paint_cursor (CCMScreenPlugin * self, CCMScreen * screen,
     CCMScreenPlugin *plugin;
     CCMScreenPluginClass *plugin_class;
 
-    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), CCM_IS_PLUGIN (plugin);
+    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), !plugin_class->is_screen;
          plugin = CCM_SCREEN_PLUGIN_PARENT (plugin))
     {
         if (plugin_class->paint_cursor)

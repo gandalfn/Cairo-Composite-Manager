@@ -2,17 +2,17 @@
 /*
  * ccm-screen-plugin.h
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -61,6 +61,8 @@ struct _CCMScreenPluginClass
 {
     GTypeInterface base_iface;
 
+    gboolean is_screen;
+
     void     (*load_options)   (CCMScreenPlugin * self, CCMScreen * screen);
     gboolean (*paint)          (CCMScreenPlugin * self, CCMScreen * screen,
                                 cairo_t * ctx);
@@ -70,7 +72,7 @@ struct _CCMScreenPluginClass
                                 CCMWindow * window);
     void     (*damage)         (CCMScreenPlugin * self, CCMScreen * screen,
                                 CCMRegion * area, CCMWindow * window);
-    void     (*on_cursor_move) (CCMScreenPlugin * self, CCMScreen * screen, 
+    void     (*on_cursor_move) (CCMScreenPlugin * self, CCMScreen * screen,
                                 int x, int y);
     void     (*paint_cursor)   (CCMScreenPlugin * self, CCMScreen * screen,
                                 cairo_t * ctx, int x, int y);
@@ -80,25 +82,25 @@ GType ccm_screen_plugin_get_type (void) G_GNUC_CONST;
 
 CCMScreenPlugin* _ccm_screen_plugin_get_root     (CCMScreenPlugin* self);
 
-void             ccm_screen_plugin_load_options  (CCMScreenPlugin* self, 
+void             ccm_screen_plugin_load_options  (CCMScreenPlugin* self,
                                                   CCMScreen* screen);
-gboolean         ccm_screen_plugin_paint         (CCMScreenPlugin* self, 
+gboolean         ccm_screen_plugin_paint         (CCMScreenPlugin* self,
                                                   CCMScreen* screen,
                                                   cairo_t* ctx);
-gboolean         ccm_screen_plugin_add_window    (CCMScreenPlugin* self, 
+gboolean         ccm_screen_plugin_add_window    (CCMScreenPlugin* self,
                                                   CCMScreen* screen,
                                                   CCMWindow* window);
-void             ccm_screen_plugin_remove_window (CCMScreenPlugin* self, 
+void             ccm_screen_plugin_remove_window (CCMScreenPlugin* self,
                                                   CCMScreen* screen,
                                                   CCMWindow* window);
-void             ccm_screen_plugin_damage        (CCMScreenPlugin* self, 
+void             ccm_screen_plugin_damage        (CCMScreenPlugin* self,
                                                   CCMScreen* screen,
-                                                  CCMRegion* area, 
+                                                  CCMRegion* area,
                                                   CCMWindow* window);
-void             ccm_screen_plugin_on_cursor_move (CCMScreenPlugin* self, 
+void             ccm_screen_plugin_on_cursor_move (CCMScreenPlugin* self,
                                                    CCMScreen* screen,
                                                    int x, int y);
-void             ccm_screen_plugin_paint_cursor   (CCMScreenPlugin* self, 
+void             ccm_screen_plugin_paint_cursor   (CCMScreenPlugin* self,
                                                    CCMScreen* screen,
                                                    cairo_t* ctx, int x, int y);
 

@@ -593,6 +593,7 @@ ccm_window_class_init (CCMWindowClass * klass)
 static void
 ccm_window_iface_init (CCMWindowPluginClass * iface)
 {
+    iface->is_window = TRUE;
     iface->load_options = NULL;
     iface->query_geometry = impl_ccm_window_query_geometry;
     iface->paint = impl_ccm_window_paint;
