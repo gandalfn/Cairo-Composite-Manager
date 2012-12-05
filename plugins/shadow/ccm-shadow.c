@@ -304,8 +304,7 @@ ccm_shadow_check_needed (CCMShadow * self)
 
     ccm_debug_window (self->priv->window, "CHECK SHADOW %i", ccm_shadow_need_shadow (self));
 
-    if (CCM_IS_WINDOW(self->priv->window) &&
-        self->priv->have_shadow != ccm_shadow_need_shadow (self))
+    if (self->priv->have_shadow != ccm_shadow_need_shadow (self))
     {
         const CCMRegion* geometry = ccm_drawable_get_device_geometry(CCM_DRAWABLE (self->priv->window));
         if (geometry && !ccm_region_empty((CCMRegion*)geometry))
