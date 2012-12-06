@@ -103,16 +103,20 @@ ccm_window_xrender_class_init (CCMWindowXRenderClass * klass)
 static gboolean
 ccm_window_xrender_create_frontbuffer (CCMWindowXRender * self)
 {
-    g_return_val_if_fail (self != NULL, None);
+    g_return_val_if_fail (self != NULL, FALSE);
 
-    if (!self->priv->front)
+    CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
+
+    if (ccm_display_use_dbe (display))
     {
-        CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
+        return TRUE;
+    }
+    else if (!self->priv->front)
+    {
         Visual *visual = ccm_drawable_get_visual (CCM_DRAWABLE (self));
         cairo_rectangle_t geometry;
 
-        if (visual && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self),
-                                                         &geometry))
+        if (visual && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
             self->priv->front =  cairo_xlib_surface_create (CCM_DISPLAY_XDISPLAY (display),
                                                             CCM_WINDOW_XWINDOW(self),
                                                             visual,
