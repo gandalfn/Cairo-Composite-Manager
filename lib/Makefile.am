@@ -40,6 +40,7 @@ libccm_timeline_la_VALAFLAGS = \
     --pkg=source
 
 libccm_timeline_la_SOURCES =  \
+    ccm-set.vala \
     ccm-timeline.vala \
     ccm-timeout-pool.vala \
     ccm-timeout-interval.vala \
@@ -75,7 +76,7 @@ libcairo_compmgr_la_SOURCES =  \
     ccm-config-color-button.c \
     ccm-config-entry-shortcut.c
 
-libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@ 
+libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@
 
 libcairo_compmgr_la_LIBADD = \
     $(CAIRO_COMPMGR_LIBS) \

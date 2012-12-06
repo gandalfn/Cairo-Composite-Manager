@@ -36,6 +36,7 @@
 #include "ccm-screen.h"
 #include "ccm-config.h"
 #include "ccm-window.h"
+#include "ccm-timeline.h"
 
 G_DEFINE_TYPE (CCMDisplay, ccm_display, CCM_TYPE_WATCH);
 
@@ -615,6 +616,12 @@ ccm_display_error_handler (Display * dpy, XErrorEvent * evt)
     return 0;
 }
 
+static int
+_direct_compare (gconstpointer inA, gconstpointer inB)
+{
+    return (int)(inA - inB);
+}
+
 static void
 ccm_display_process_events (CCMWatch* watch)
 {
@@ -622,6 +629,7 @@ ccm_display_process_events (CCMWatch* watch)
 
     CCMDisplay* self = CCM_DISPLAY (watch);
     XEvent xevent;
+    CCMSet* damage_events = ccm_set_new (G_TYPE_POINTER, NULL, NULL, _direct_compare);
 
     while (XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
     {
@@ -629,13 +637,11 @@ ccm_display_process_events (CCMWatch* watch)
 
         if (xevent.type == self->priv->damage.event_base + XDamageNotify)
         {
-            XDamageNotifyEvent *event_damage = (XDamageNotifyEvent *) & xevent;
+            XDamageNotifyEvent* event_damage = (XDamageNotifyEvent *)&xevent;
 
-            g_signal_emit (self, signals[DAMAGE_EVENT], 0,
-                           event_damage->damage);
+            ccm_set_insert (damage_events, GINT_TO_POINTER(event_damage->damage));
         }
-        else if (xevent.type ==
-                 self->priv->fixes.event_base + XFixesCursorNotify)
+        else if (xevent.type == self->priv->fixes.event_base + XFixesCursorNotify)
         {
             XFixesCursorNotifyEvent *event_cursor = (XFixesCursorNotifyEvent *) &xevent;
 
@@ -745,6 +751,16 @@ ccm_display_process_events (CCMWatch* watch)
                 g_signal_emit (self, signals[EVENT], 0, &xevent);
         }
     }
+
+    {
+        CCMSetIterator* iter = ccm_set_iterator (damage_events);
+        while (ccm_set_iterator_next (iter))
+        {
+            g_signal_emit (self, signals[DAMAGE_EVENT], 0, GPOINTER_TO_INT (ccm_set_iterator_get(iter)));
+        }
+        g_object_unref (iter);
+    }
+    g_object_unref (damage_events);
 }
 
 CCMDisplay *
