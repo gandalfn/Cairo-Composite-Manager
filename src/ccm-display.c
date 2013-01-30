@@ -898,7 +898,7 @@ ccm_display_use_dbe (CCMDisplay* self)
 {
     g_return_val_if_fail (self != NULL, 0);
 
-    return self->priv->use_dbe;
+    return FALSE; //self->priv->use_dbe;
 }
 
 gboolean
