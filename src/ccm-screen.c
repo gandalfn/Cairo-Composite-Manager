@@ -131,6 +131,8 @@ struct _CCMScreenPrivate
     Screen*             xscreen;
     guint               number;
 
+    GTree*              damages;
+
     cairo_t*            ctx;
 
     CCMWindow*          root;
@@ -185,6 +187,12 @@ static void     impl_ccm_screen_paint_cursor    (CCMScreenPlugin* plugin, CCMScr
 
 static void     ccm_screen_on_window_damaged    (CCMScreen* self, CCMRegion* area, CCMWindow* window);
 static void     ccm_screen_on_option_changed    (CCMScreen* self, CCMConfig* config);
+
+static int
+_direct_compare (gconstpointer inA, gconstpointer inB)
+{
+    return (int)(inA - inB);
+}
 
 static void
 ccm_screen_set_property (GObject* object, guint prop_id, const GValue* value, GParamSpec* pspec)
@@ -261,6 +269,7 @@ ccm_screen_init (CCMScreen* self)
     self->priv->ctx = NULL;
     self->priv->root = NULL;
     self->priv->cow = NULL;
+    self->priv->damages = g_tree_new (_direct_compare);
     self->priv->selection_owner = None;
     self->priv->fullscreen = NULL;
     self->priv->active = NULL;
@@ -381,6 +390,9 @@ ccm_screen_finalize (GObject * object)
 
     if (self->priv->background)
         g_object_unref (self->priv->background);
+
+    if (self->priv->damages)
+        g_tree_destroy (self->priv->damages);
 
     G_OBJECT_CLASS (ccm_screen_parent_class)->finalize (object);
 }
@@ -1952,6 +1964,14 @@ ccm_screen_paint_cursor (CCMScreen * self, cairo_t * ctx)
                                         self->priv->cursor_y);
 }
 
+static gboolean
+ccm_screen_process_damage (gpointer key, gpointer value, CCMScreen* self)
+{
+    ccm_display_process_damage (self->priv->display, GPOINTER_TO_INT (key));
+
+    return FALSE;
+}
+
 static void
 ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
 {
@@ -1959,6 +1979,10 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
 
     if (self->priv->cow)
     {
+        g_tree_foreach (self->priv->damages, (GTraverseFunc)ccm_screen_process_damage, self);
+        g_tree_destroy (self->priv->damages);
+        self->priv->damages = g_tree_new (_direct_compare);
+
         if (!self->priv->ctx)
         {
             self->priv->ctx = ccm_drawable_create_context (CCM_DRAWABLE (self->priv->cow));
@@ -2301,6 +2325,24 @@ ccm_screen_on_cursor_move (CCMScreen * self, int x, int y)
     g_return_if_fail (self != NULL);
 
     ccm_screen_plugin_on_cursor_move (self->priv->plugin, self, x, y);
+}
+
+static void
+ccm_screen_on_damage_event (CCMScreen * self, guint32 damage, CCMDrawable* drawable)
+{
+    if (ccm_drawable_get_screen (drawable) == self)
+    {
+        g_tree_insert (self->priv->damages, GINT_TO_POINTER(damage), GINT_TO_POINTER(damage));
+    }
+}
+
+static void
+ccm_screen_on_damage_destroy (CCMScreen * self, guint32 damage, CCMDrawable* drawable)
+{
+    if (ccm_drawable_get_screen (drawable) == self)
+    {
+        g_tree_remove (self->priv->damages, GINT_TO_POINTER(damage));
+    }
 }
 
 static void
@@ -2854,6 +2896,12 @@ ccm_screen_new (CCMDisplay * display, guint number)
 
     g_signal_connect_swapped (self->priv->display, "event",
                               G_CALLBACK (ccm_screen_on_event), self);
+
+    g_signal_connect_swapped (self->priv->display, "damage-event",
+                              G_CALLBACK (ccm_screen_on_damage_event), self);
+
+    g_signal_connect_swapped (self->priv->display, "damage-destroy",
+                              G_CALLBACK (ccm_screen_on_damage_destroy), self);
 
     if (!ccm_screen_create_overlay_window (self))
     {

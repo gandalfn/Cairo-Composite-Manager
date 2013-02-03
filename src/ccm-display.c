@@ -21,9 +21,7 @@
 #include <X11/Xresource.h>
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xdamage.h>
-#include <X11/extensions/XShm.h>
 #include <X11/extensions/Xfixes.h>
-#include <X11/extensions/Xdbe.h>
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
@@ -45,8 +43,6 @@ enum
     PROP_0,
     PROP_XDISPLAY,
     PROP_USE_XSHM,
-    PROP_USE_XDBE,
-    PROP_SHM_SHARED_PIXMAP,
     PROP_USE_RANDR,
     PROP_USE_GLX
 };
@@ -54,14 +50,12 @@ enum
 enum
 {
     CCM_DISPLAY_OPTION_USE_XSHM,
-    CCM_DISPLAY_OPTION_USE_XDBE,
     CCM_DISPLAY_UNMANAGED_SCREEN,
     CCM_DISPLAY_OPTION_N
 };
 
 static gchar *CCMDisplayOptions[CCM_DISPLAY_OPTION_N] = {
     "use_xshm",
-    "use_xdbe",
     "unmanaged_screen"
 };
 
@@ -69,6 +63,7 @@ enum
 {
     EVENT,
     DAMAGE_EVENT,
+    DAMAGE_DESTROY,
     CURSOR_CHANGED,
     N_SIGNALS
 };
@@ -101,11 +96,12 @@ struct _CCMDisplayPrivate
     CCMExtension     damage;
     CCMExtension     shm;
     gboolean         shm_shared_pixmap;
-    CCMExtension     dbe;
     CCMExtension     fixes;
     CCMExtension     input;
     CCMExtension     randr;
     CCMExtension     glx;
+
+    GTree*           registered_damage;
 
     GSList*          pointers;
     int              type_button_press;
@@ -119,8 +115,6 @@ struct _CCMDisplayPrivate
     GHashTable*      cursors;
 
     gboolean         use_shm;
-    gboolean         use_dbe;
-
     CCMConfig*       options[CCM_DISPLAY_OPTION_N];
 };
 
@@ -130,6 +124,27 @@ static CCMDisplay* CCMDefaultDisplay = NULL;
 static void ccm_display_process_events (CCMWatch* watch);
 
 #define CCM_DISPLAY_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayPrivate))
+
+typedef struct
+{
+    Damage                damage;
+    CCMDamageCallbackFunc func;
+    CCMDrawable*          drawable;
+} CCMDamageCallback;
+
+static int
+ccm_damage_callback_compare (gpointer a, gpointer b)
+{
+    return (int)(GPOINTER_TO_INT (a) - GPOINTER_TO_INT (b));
+}
+
+static void
+ccm_damage_callback_free (CCMDamageCallback* callback)
+{
+    XDamageDestroy (CCM_DISPLAY_XDISPLAY (CCMDefaultDisplay), callback->damage);
+    g_signal_emit (CCMDefaultDisplay, signals[DAMAGE_DESTROY], 0, callback->damage, callback->drawable);
+    g_slice_free (CCMDamageCallback, callback);
+}
 
 static void
 ccm_display_set_property (GObject * object, guint prop_id, const GValue * value,
@@ -167,11 +182,6 @@ ccm_display_get_property (GObject * object, guint prop_id, GValue * value,
                 g_value_set_boolean (value, priv->use_shm);
             }
             break;
-        case PROP_USE_XDBE:
-            {
-                g_value_set_boolean (value, priv->use_dbe);
-            }
-            break;
         case PROP_USE_RANDR:
             {
                 g_value_set_boolean (value, priv->randr.available);
@@ -180,22 +190,6 @@ ccm_display_get_property (GObject * object, guint prop_id, GValue * value,
         case PROP_USE_GLX:
             {
                 g_value_set_boolean (value, priv->glx.available);
-            }
-            break;
-        case PROP_SHM_SHARED_PIXMAP:
-            {
-                GError *error = NULL;
-                gboolean xshm =
-                    ccm_config_get_boolean (priv->options[CCM_DISPLAY_OPTION_USE_XSHM],
-                                            &error);
-
-                if (error)
-                {
-                    g_warning ("Error on get xshm configuration value");
-                    g_error_free (error);
-                    xshm = FALSE;
-                }
-                g_value_set_boolean (value, xshm && priv->shm.available && priv->shm_shared_pixmap);
             }
             break;
         default:
@@ -211,9 +205,7 @@ ccm_display_init (CCMDisplay * self)
     self->priv->xdisplay = NULL;
     self->priv->nb_screens = 0;
     self->priv->screens = NULL;
-    self->priv->shm_shared_pixmap = FALSE;
     self->priv->use_shm = FALSE;
-    self->priv->use_dbe = FALSE;
     self->priv->pointers = NULL;
     self->priv->type_button_press = 0;
     self->priv->type_button_release = 0;
@@ -224,6 +216,10 @@ ccm_display_init (CCMDisplay * self)
     self->priv->cursors = g_hash_table_new_full (g_int_hash, g_int_equal,
                                                  g_free, g_object_unref);
     self->priv->cursor_current = NULL;
+    self->priv->registered_damage = g_tree_new_full ((GCompareDataFunc)ccm_damage_callback_compare,
+                                                     NULL,
+                                                     NULL,
+                                                     (GDestroyNotify)ccm_damage_callback_free);
 }
 
 static void
@@ -236,6 +232,9 @@ ccm_display_finalize (GObject * object)
 
     if (self == CCMDefaultDisplay)
         CCMDefaultDisplay = NULL;
+
+    if (self->priv->registered_damage)
+        g_tree_destroy (self->priv->registered_damage);
 
     if (self->priv->cursors)
         g_hash_table_destroy (self->priv->cursors);
@@ -296,27 +295,6 @@ ccm_display_class_init (CCMDisplayClass * klass)
                                                            "Use XSHM", TRUE,
                                                            G_PARAM_READWRITE));
 
-    g_object_class_install_property (object_class, PROP_SHM_SHARED_PIXMAP,
-                                     g_param_spec_boolean ("shm_shared_pixmap",
-                                                           "ShmSharedPixmap",
-                                                           "SHM Shared Pixmap",
-                                                           TRUE,
-                                                           G_PARAM_READWRITE));
-
-    g_object_class_install_property (object_class, PROP_USE_XDBE,
-                                     g_param_spec_boolean ("use_xdbe",
-                                                           "UseXdbe",
-                                                           "Use Double Buffer Extension",
-                                                           TRUE,
-                                                           G_PARAM_READABLE));
-
-    g_object_class_install_property (object_class, PROP_USE_RANDR,
-                                     g_param_spec_boolean ("use_randr",
-                                                           "UseRandr",
-                                                           "Use RANDR Extension",
-                                                           TRUE,
-                                                           G_PARAM_READABLE));
-
     g_object_class_install_property (object_class, PROP_USE_GLX,
                                      g_param_spec_boolean ("use_glx",
                                                            "UseGLX",
@@ -333,8 +311,14 @@ ccm_display_class_init (CCMDisplayClass * klass)
     signals[DAMAGE_EVENT] =
         g_signal_new ("damage-event", G_OBJECT_CLASS_TYPE (object_class),
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                      g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1,
-                      G_TYPE_POINTER);
+                      g_cclosure_marshal_VOID__UINT_POINTER, G_TYPE_NONE, 2,
+                      G_TYPE_INT, G_TYPE_POINTER);
+
+    signals[DAMAGE_DESTROY] =
+        g_signal_new ("damage-destroy", G_OBJECT_CLASS_TYPE (object_class),
+                      G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+                      g_cclosure_marshal_VOID__UINT_POINTER, G_TYPE_NONE, 2,
+                      G_TYPE_INT, G_TYPE_POINTER);
 
     signals[CURSOR_CHANGED] =
         g_signal_new ("cursor-changed", G_OBJECT_CLASS_TYPE (object_class),
@@ -356,8 +340,6 @@ ccm_display_load_config (CCMDisplay * self)
     }
     self->priv->use_shm = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM], NULL) &&
                                                   self->priv->shm.available;
-    self->priv->use_dbe = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XDBE], NULL) &&
-                                                  self->priv->dbe.available;
 }
 
 static void
@@ -507,22 +489,6 @@ ccm_display_init_shm (CCMDisplay * self)
 }
 
 static gboolean
-ccm_display_init_dbe(CCMDisplay *self)
-{
-    g_return_val_if_fail(self != NULL, FALSE);
-
-    int major, minor;
-
-    if (XdbeQueryExtension (self->priv->xdisplay, &major, &minor))
-    {
-        self->priv->dbe.available = TRUE;
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-static gboolean
 ccm_display_init_xfixes (CCMDisplay * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -616,12 +582,6 @@ ccm_display_error_handler (Display * dpy, XErrorEvent * evt)
     return 0;
 }
 
-static int
-_direct_compare (gconstpointer inA, gconstpointer inB)
-{
-    return (int)(inA - inB);
-}
-
 static void
 ccm_display_process_events (CCMWatch* watch)
 {
@@ -629,7 +589,6 @@ ccm_display_process_events (CCMWatch* watch)
 
     CCMDisplay* self = CCM_DISPLAY (watch);
     XEvent xevent;
-    CCMSet* damage_events = ccm_set_new (G_TYPE_POINTER, NULL, NULL, _direct_compare);
 
     while (XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
     {
@@ -639,7 +598,14 @@ ccm_display_process_events (CCMWatch* watch)
         {
             XDamageNotifyEvent* event_damage = (XDamageNotifyEvent *)&xevent;
 
-            ccm_set_insert (damage_events, GINT_TO_POINTER(event_damage->damage));
+            CCMDamageCallback* callback;
+
+            callback = (CCMDamageCallback*)g_tree_lookup (self->priv->registered_damage,
+                                                          GINT_TO_POINTER (event_damage->damage));
+            if (callback)
+            {
+                g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage, callback->drawable);
+            }
         }
         else if (xevent.type == self->priv->fixes.event_base + XFixesCursorNotify)
         {
@@ -650,117 +616,9 @@ ccm_display_process_events (CCMWatch* watch)
         }
         else
         {
-            gboolean proceed = FALSE;
-
-            // Check if event is not already proceed by device events
-            if (xevent.type == self->priv->type_button_press)
-            {
-                XDeviceButtonEvent *button_event =
-                    (XDeviceButtonEvent *) g_memdup (&xevent, sizeof (XEvent));
-
-                proceed = self->priv->last_events.press == xevent.xany.serial;
-                self->priv->last_events.press = xevent.xany.serial;
-
-                xevent.xany.type = ButtonPress;
-                xevent.xany.serial = button_event->serial;
-                xevent.xany.send_event = button_event->send_event;
-                xevent.xany.display = button_event->display;
-                xevent.xany.window = button_event->window;
-                xevent.xbutton.root = button_event->root;
-                xevent.xbutton.subwindow = button_event->subwindow;
-                xevent.xbutton.time = button_event->time;
-                xevent.xbutton.x = button_event->x;
-                xevent.xbutton.y = button_event->y;
-                xevent.xbutton.x_root = button_event->x_root;
-                xevent.xbutton.y_root = button_event->y_root;
-                xevent.xbutton.state = button_event->state;
-                xevent.xbutton.button = button_event->button;
-                xevent.xbutton.same_screen = button_event->same_screen;
-
-                g_free (button_event);
-            }
-            else if (xevent.type == self->priv->type_button_release)
-            {
-                XDeviceButtonEvent *button_event =
-                    (XDeviceButtonEvent *) g_memdup (&xevent, sizeof (XEvent));
-
-                proceed = self->priv->last_events.release == xevent.xany.serial;
-                self->priv->last_events.release = xevent.xany.serial;
-
-                xevent.xany.type = ButtonRelease;
-                xevent.xany.serial = button_event->serial;
-                xevent.xany.send_event = button_event->send_event;
-                xevent.xany.display = button_event->display;
-                xevent.xany.window = button_event->window;
-                xevent.xbutton.root = button_event->root;
-                xevent.xbutton.subwindow = button_event->subwindow;
-                xevent.xbutton.time = button_event->time;
-                xevent.xbutton.x = button_event->x;
-                xevent.xbutton.y = button_event->y;
-                xevent.xbutton.x_root = button_event->x_root;
-                xevent.xbutton.y_root = button_event->y_root;
-                xevent.xbutton.state = button_event->state;
-                xevent.xbutton.button = button_event->button;
-                xevent.xbutton.same_screen = button_event->same_screen;
-
-                g_free (button_event);
-            }
-            else if (xevent.type == self->priv->type_motion_notify)
-            {
-                XDeviceMotionEvent *motion_event =
-                    (XDeviceMotionEvent *) g_memdup (&xevent, sizeof (XEvent));
-
-                proceed = self->priv->last_events.motion == xevent.xany.serial;
-                self->priv->last_events.motion = xevent.xany.serial;
-
-                xevent.xany.type = MotionNotify;
-                xevent.xany.serial = motion_event->serial;
-                xevent.xany.send_event = motion_event->send_event;
-                xevent.xany.display = motion_event->display;
-                xevent.xany.window = motion_event->window;
-                xevent.xmotion.root = motion_event->root;
-                xevent.xmotion.subwindow = motion_event->subwindow;
-                xevent.xmotion.time = motion_event->time;
-                xevent.xmotion.x = motion_event->x;
-                xevent.xmotion.y = motion_event->y;
-                xevent.xmotion.x_root = motion_event->x_root;
-                xevent.xmotion.y_root = motion_event->y_root;
-                xevent.xmotion.state = motion_event->state;
-                xevent.xmotion.is_hint = motion_event->is_hint;
-                xevent.xmotion.same_screen = motion_event->same_screen;
-
-                g_free (motion_event);
-            }
-            else if (xevent.type == ButtonPress)
-            {
-                proceed = self->priv->last_events.press == xevent.xany.serial;
-                self->priv->last_events.press = xevent.xany.serial;
-            }
-            else if (xevent.type == ButtonRelease)
-            {
-                proceed = self->priv->last_events.release == xevent.xany.serial;
-                self->priv->last_events.release = xevent.xany.serial;
-            }
-            else if (xevent.type == MotionNotify)
-            {
-                proceed = self->priv->last_events.motion == xevent.xany.serial;
-                self->priv->last_events.motion = xevent.xany.serial;
-            }
-
-            if (!proceed)
-                g_signal_emit (self, signals[EVENT], 0, &xevent);
+            g_signal_emit (self, signals[EVENT], 0, &xevent);
         }
     }
-
-    {
-        CCMSetIterator* iter = ccm_set_iterator (damage_events);
-        while (ccm_set_iterator_next (iter))
-        {
-            g_signal_emit (self, signals[DAMAGE_EVENT], 0, GPOINTER_TO_INT (ccm_set_iterator_get(iter)));
-        }
-        g_object_unref (iter);
-    }
-    g_object_unref (damage_events);
 }
 
 CCMDisplay *
@@ -779,8 +637,6 @@ ccm_display_new (gchar * display)
     }
 
     self = g_object_new (CCM_TYPE_DISPLAY, "xdisplay", xdisplay, NULL);
-
-    ccm_display_init_dbe(self);
 
     if (!ccm_display_init_shape (self))
     {
@@ -809,7 +665,6 @@ ccm_display_new (gchar * display)
         g_warning ("SHM init failed for %s", display);
         return NULL;
     }
-
     if (!ccm_display_init_xfixes (self))
     {
         g_object_unref (self);
@@ -891,14 +746,6 @@ ccm_display_get_shape_notify_event_type (CCMDisplay * self)
     g_return_val_if_fail (self != NULL, 0);
 
     return self->priv->shape.event_base + ShapeNotify;
-}
-
-G_GNUC_PURE gboolean
-ccm_display_use_dbe (CCMDisplay* self)
-{
-    g_return_val_if_fail (self != NULL, 0);
-
-    return FALSE; //self->priv->use_dbe;
 }
 
 gboolean
@@ -1047,4 +894,71 @@ G_GNUC_PURE CCMDisplay*
 ccm_display_get_default()
 {
     return CCMDefaultDisplay;
+}
+
+guint32
+ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageCallbackFunc func)
+{
+    Damage damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (self),
+                                   ccm_drawable_get_xid (drawable),
+                                   XDamageReportNonEmpty);
+    if (damage)
+    {
+        GSList* item;
+        gboolean found = FALSE;
+        CCMDamageCallback* callback;
+
+        callback = (CCMDamageCallback*)g_tree_lookup (self->priv->registered_damage,
+                                                      GINT_TO_POINTER (damage));
+        if (callback == NULL)
+        {
+            callback = g_slice_new0 (CCMDamageCallback);
+            XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), damage, None, None);
+            callback->damage = damage;
+            callback->func = func;
+            callback->drawable = drawable;
+
+            g_tree_insert (self->priv->registered_damage, GINT_TO_POINTER (damage), callback);
+        }
+        else
+        {
+            callback->func = func;
+            callback->drawable = drawable;
+        }
+    }
+    else
+        damage = None;
+
+    return (guint32)damage;
+}
+
+void
+ccm_display_unregister_damage (CCMDisplay* self, guint32 damage, CCMDrawable* drawable)
+{
+    CCMDamageCallback* callback;
+
+    callback = (CCMDamageCallback*)g_tree_lookup (self->priv->registered_damage,
+                                                  GINT_TO_POINTER (damage));
+
+    if (callback)
+    {
+        if (callback->drawable == drawable)
+        {
+            g_tree_remove (self->priv->registered_damage, GINT_TO_POINTER (callback->damage));
+        }
+    }
+}
+
+void
+ccm_display_process_damage (CCMDisplay* self, guint32 damage)
+{
+    CCMDamageCallback* callback;
+
+    callback = (CCMDamageCallback*)g_tree_lookup (self->priv->registered_damage,
+                                                  GINT_TO_POINTER (damage));
+
+    if (callback)
+    {
+        callback->func (callback->drawable, callback->damage);
+    }
 }

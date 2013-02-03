@@ -153,13 +153,14 @@ G_GNUC_PURE double ccm_cursor_get_height (CCMCursor* self);
 /******************************************************************************/
 
 /********************************** Display***********************************/
+typedef void (*CCMDamageCallbackFunc) (CCMDrawable* drawable, guint32 damage);
+
 G_GNUC_PURE CCMDisplay* ccm_display_get_default     ();
 CCMDisplay*             ccm_display_new             (gchar* display);
 G_GNUC_PURE Display*    ccm_display_get_xdisplay    (CCMDisplay* self);
 G_GNUC_PURE CCMScreen*  ccm_display_get_screen      (CCMDisplay* self,
                                                      guint number);
 G_GNUC_PURE int         ccm_display_get_shape_notify_event_type (CCMDisplay* self);
-G_GNUC_PURE gboolean    ccm_display_use_dbe         (CCMDisplay* self);
 void                    ccm_display_flush           (CCMDisplay* self);
 void                    ccm_display_sync            (CCMDisplay* self);
 void                    ccm_display_grab            (CCMDisplay* self);
@@ -171,6 +172,12 @@ gboolean                ccm_display_report_device_event (CCMDisplay* self,
                                                          gboolean report);
 const CCMCursor*        ccm_display_get_current_cursor (CCMDisplay* self,
                                                         gboolean initiate);
+guint32                  ccm_display_register_damage   (CCMDisplay* self,
+                                                        CCMDrawable* drawable,
+                                                        CCMDamageCallbackFunc func);
+void                    ccm_display_unregister_damage (CCMDisplay* self,
+                                                       guint32 damage,
+                                                       CCMDrawable* drawable);
 /******************************************************************************/
 
 /********************************** Screen************************************/

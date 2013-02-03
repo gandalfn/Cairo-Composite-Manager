@@ -1301,8 +1301,10 @@ impl_ccm_window_paint (CCMWindowPlugin * plugin, CCMWindow * self,
             ccm_window_check_mask (self);
             cairo_mask_surface (context, self->priv->mask, 0, 0);
         }
-        else
+        else if (self->priv->opacity < 1.0)
             cairo_paint_with_alpha (context, self->priv->opacity);
+        else
+            cairo_paint (context);
 
         if (cairo_status (context) != CAIRO_STATUS_SUCCESS)
         {
@@ -2462,6 +2464,17 @@ ccm_window_is_fullscreen (CCMWindow * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
 
+    CCMScreen* screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
+    Screen* xscreen = ccm_screen_get_xscreen (screen);
+    cairo_rectangle_t geometry;
+
+    if (ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE (self), &geometry) &&
+        geometry.x <= 0 && geometry.y <= 0 &&
+        geometry.width >= xscreen->width && geometry.height >= xscreen->height)
+    {
+        return TRUE;
+    }
+
     return self->priv->is_fullscreen;
 }
 
@@ -2798,9 +2811,6 @@ ccm_window_unmap (CCMWindow * self)
         self->priv->is_viewable = FALSE;
         self->priv->unmap_pending = TRUE;
 
-        if (self->priv->is_fullscreen)
-            ccm_window_switch_state (self,
-                                     CCM_WINDOW_GET_CLASS (self)->state_fullscreen_atom);
         if (self->priv->pixmap)
             ccm_pixmap_set_freeze (self->priv->pixmap, TRUE);
         ccm_debug_window (self, "WINDOW UNMAP");
@@ -3106,7 +3116,10 @@ ccm_window_get_property (CCMWindow * self, Atom property_atom, Atom req_type,
     }
     ccm_debug ("PROPERTY = 0x%x, %i", property, n_items_internal);
 
-    result = g_memdup (property, n_items_internal * sizeof (gulong));
+    if (req_type == CCM_WINDOW_GET_CLASS (self)->utf8_string_atom)
+        result = g_memdup (property, n_items_internal * sizeof (guchar));
+    else
+        result = g_memdup (property, n_items_internal * sizeof (gulong));
     XFree (property);
 
     if (n_items)
@@ -3149,7 +3162,10 @@ ccm_window_get_child_property (CCMWindow * self, Atom property_atom,
     }
 
     ccm_debug ("PROPERTY = 0x%x, %i", property, n_items_internal);
-    result = g_memdup (property, n_items_internal * sizeof (gulong));
+    if (req_type == CCM_WINDOW_GET_CLASS (self)->utf8_string_atom)
+        result = g_memdup (property, n_items_internal * sizeof (guchar));
+    else
+        result = g_memdup (property, n_items_internal * sizeof (gulong));
     XFree (property);
 
     if (n_items)

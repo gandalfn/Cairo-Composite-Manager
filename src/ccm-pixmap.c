@@ -2,17 +2,17 @@
 /*
  * ccm-pixmap.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -46,8 +46,6 @@ struct _CCMPixmapPrivate
     Damage damage;
 
     gboolean freeze;
-
-    gulong id_damage;
 };
 
 #define CCM_PIXMAP_GET_PRIVATE(o)  \
@@ -55,8 +53,7 @@ struct _CCMPixmapPrivate
 
 static void ccm_pixmap_bind (CCMPixmap * self);
 static void ccm_pixmap_release (CCMPixmap * self);
-static void ccm_pixmap_on_damage (CCMPixmap * self, Damage damage,
-                                  CCMDisplay * display);
+static void ccm_pixmap_on_damage (CCMPixmap * self, Damage damage);
 
 static void
 ccm_pixmap_set_property (GObject * object, guint prop_id, const GValue * value,
@@ -111,7 +108,6 @@ ccm_pixmap_init (CCMPixmap * self)
     self->priv->foreign = FALSE;
     self->priv->damage = 0;
     self->priv->freeze = FALSE;
-    self->priv->id_damage = 0;
 }
 
 static void
@@ -124,8 +120,7 @@ ccm_pixmap_finalize (GObject * object)
 
     if (CCM_IS_DISPLAY (display) &&  G_OBJECT (display)->ref_count && self->priv->damage)
     {
-        XDamageDestroy (CCM_DISPLAY_XDISPLAY (display), self->priv->damage);
-        g_signal_handler_disconnect (display, self->priv->id_damage);
+        ccm_display_unregister_damage (display, self->priv->damage, CCM_DRAWABLE (self));
         self->priv->damage = None;
     }
     self->priv->freeze = FALSE;
@@ -192,7 +187,7 @@ ccm_pixmap_release (CCMPixmap * self)
 }
 
 static void
-ccm_pixmap_on_damage (CCMPixmap * self, Damage damage, CCMDisplay * display)
+ccm_pixmap_on_damage (CCMPixmap * self, Damage damage)
 {
     g_return_if_fail (self != NULL);
 
@@ -239,20 +234,9 @@ ccm_pixmap_register_damage (CCMPixmap * self)
 
     CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
 
-    self->priv->damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (display),
-                                        CCM_PIXMAP_XPIXMAP (self), 
-                                        XDamageReportNonEmpty);
-    if (self->priv->damage)
-    {
-        XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
-                         None, None);
-
-        self->priv->id_damage = g_signal_connect_swapped (display, "damage-event",
-                                                          G_CALLBACK (ccm_pixmap_on_damage),
-                                                          self);
-    }
-    else
-        self->priv->damage = None;
+    self->priv->damage = (Damage)ccm_display_register_damage (display,
+                                                              CCM_DRAWABLE (self),
+                                                              (CCMDamageCallbackFunc)ccm_pixmap_on_damage);
 }
 
 /**
@@ -276,9 +260,9 @@ ccm_pixmap_new (CCMDrawable * drawable, Pixmap xpixmap)
 
     g_return_val_if_fail (screen != NULL && visual != None, NULL);
 
-    self = g_object_new (CCM_TYPE_PIXMAP, 
+    self = g_object_new (CCM_TYPE_PIXMAP,
                          "screen", screen,
-                         "drawable", xpixmap, 
+                         "drawable", xpixmap,
                          "visual", visual, NULL);
 
     ccm_drawable_query_geometry (CCM_DRAWABLE (self));
@@ -318,7 +302,7 @@ ccm_pixmap_new_from_visual (CCMScreen * screen, Visual * visual, Pixmap xpixmap)
 
     CCMPixmap *self;
 
-    self = g_object_new (CCM_TYPE_PIXMAP, 
+    self = g_object_new (CCM_TYPE_PIXMAP,
                          "screen", screen,
                          "drawable", xpixmap,
                          "visual", visual, NULL);
@@ -362,9 +346,9 @@ ccm_pixmap_image_new (CCMDrawable * drawable, Pixmap xpixmap)
 
     g_return_val_if_fail (screen != NULL && visual != None, NULL);
 
-    self = g_object_new (ccm_pixmap_image_get_type (), 
+    self = g_object_new (ccm_pixmap_image_get_type (),
                          "screen", screen,
-                         "drawable", xpixmap, 
+                         "drawable", xpixmap,
                          "visual", visual, NULL);
 
     ccm_drawable_query_geometry (CCM_DRAWABLE (self));

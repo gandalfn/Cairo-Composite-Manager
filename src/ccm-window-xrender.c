@@ -19,7 +19,6 @@
 
 #include "ccm-window-xrender.h"
 
-#include <X11/extensions/Xdbe.h>
 #include <cairo-xlib.h>
 #include <cairo-xlib-xrender.h>
 
@@ -34,7 +33,6 @@ struct _CCMWindowXRenderPrivate
 {
     cairo_surface_t* front;
     cairo_surface_t* back;
-    Drawable         back_buffer;
 };
 
 #define CCM_WINDOW_XRENDER_GET_PRIVATE(o)  \
@@ -53,7 +51,6 @@ ccm_window_xrender_init (CCMWindowXRender * self)
     self->priv = CCM_WINDOW_XRENDER_GET_PRIVATE (self);
     self->priv->front = NULL;
     self->priv->back = NULL;
-    self->priv->back_buffer = None;
 }
 
 static void
@@ -61,13 +58,6 @@ ccm_window_xrender_finalize (GObject * object)
 {
     CCMWindowXRender *self = CCM_WINDOW_X_RENDER (object);
     CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE(self));
-
-    if (self->priv->back_buffer)
-    {
-        XdbeDeallocateBackBufferName(CCM_DISPLAY_XDISPLAY(display),
-                                     self->priv->back_buffer);
-        self->priv->back_buffer = None;
-    }
 
     if (self->priv->back)
     {
@@ -107,23 +97,15 @@ ccm_window_xrender_create_frontbuffer (CCMWindowXRender * self)
 
     CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
 
-    if (ccm_display_use_dbe (display))
-    {
-        return TRUE;
-    }
-    else if (!self->priv->front)
-    {
-        Visual *visual = ccm_drawable_get_visual (CCM_DRAWABLE (self));
-        cairo_rectangle_t geometry;
+    Visual *visual = ccm_drawable_get_visual (CCM_DRAWABLE (self));
+    cairo_rectangle_t geometry;
 
-        if (visual && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
-            self->priv->front =  cairo_xlib_surface_create (CCM_DISPLAY_XDISPLAY (display),
-                                                            CCM_WINDOW_XWINDOW(self),
-                                                            visual,
-                                                            geometry.width,
-                                                            geometry.height);
-
-    }
+    if (visual && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
+        self->priv->front =  cairo_xlib_surface_create (CCM_DISPLAY_XDISPLAY (display),
+                                                        CCM_WINDOW_XWINDOW(self),
+                                                        visual,
+                                                        geometry.width,
+                                                        geometry.height);
 
     return self->priv->front != NULL;
 }
@@ -141,29 +123,10 @@ ccm_window_xrender_create_backbuffer (CCMWindowXRender * self)
             ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self),
                                                &geometry))
         {
-            CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE (self));
-
-            if (ccm_display_use_dbe (display))
-            {
-                CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE (self));
-
-                self->priv->back_buffer = XdbeAllocateBackBufferName(CCM_DISPLAY_XDISPLAY(display),
-                                                                     CCM_WINDOW_XWINDOW(self),
-                                                                     XdbeUndefined);
-                Visual* visual = DefaultVisual(CCM_DISPLAY_XDISPLAY(display),
-                                               ccm_screen_get_number(screen));
-
-                self->priv->back = cairo_xlib_surface_create(CCM_DISPLAY_XDISPLAY(display),
-                                                             self->priv->back_buffer,
-                                                             visual,
-                                                             (int)geometry.width,
-                                                             (int)geometry.height);
-            }
-            else
-                self->priv->back = cairo_surface_create_similar(self->priv->front,
-                                                                CAIRO_CONTENT_COLOR,
-                                                                geometry.width,
-                                                                geometry.height);
+            self->priv->back = cairo_surface_create_similar(self->priv->front,
+                                                            CAIRO_CONTENT_COLOR,
+                                                            geometry.width,
+                                                            geometry.height);
         }
     }
 
@@ -197,23 +160,12 @@ ccm_window_xrender_flush (CCMDrawable * drawable)
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
 
-        if (ccm_display_use_dbe (display))
-        {
-            XdbeSwapInfo swap_info;
+        cairo_t* ctx = cairo_create(self->priv->front);
 
-            swap_info.swap_window = CCM_WINDOW_XWINDOW(self);
-            swap_info.swap_action = XdbeUndefined;
-            XdbeSwapBuffers(CCM_DISPLAY_XDISPLAY(display), &swap_info, 1);
-        }
-        else
-        {
-            cairo_t* ctx = cairo_create(self->priv->front);
-
-            cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-            cairo_set_source_surface(ctx, self->priv->back, 0, 0);
-            cairo_paint(ctx);
-            cairo_destroy(ctx);
-        }
+        cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+        cairo_set_source_surface(ctx, self->priv->back, 0, 0);
+        cairo_paint(ctx);
+        cairo_destroy(ctx);
 
         ccm_display_flush(display);
     }
@@ -233,33 +185,22 @@ ccm_window_xrender_flush_region (CCMDrawable * drawable, CCMRegion * region)
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
 
-        if (ccm_display_use_dbe (display))
-        {
-            XdbeSwapInfo swap_info;
+        cairo_t* ctx = cairo_create(self->priv->front);
+        cairo_rectangle_t *rects = NULL;
+        gint nb_rects, cpt;
 
-            swap_info.swap_window = CCM_WINDOW_XWINDOW(self);
-            swap_info.swap_action = XdbeUndefined;
+        cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+        ccm_region_get_rectangles (region, &rects, &nb_rects);
+        for (cpt = 0; cpt < nb_rects; ++cpt)
+            cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
+                            rects[cpt].width, rects[cpt].height);
+        cairo_clip(ctx);
+        if (rects) cairo_rectangles_free (rects, nb_rects);
 
-            XdbeSwapBuffers(CCM_DISPLAY_XDISPLAY(display), &swap_info, 1);
-        }
-        else
-        {
-            cairo_t* ctx = cairo_create(self->priv->front);
-            cairo_rectangle_t *rects = NULL;
-            gint nb_rects, cpt;
+        cairo_set_source_surface(ctx, self->priv->back, 0, 0);
+        cairo_paint(ctx);
+        cairo_destroy(ctx);
 
-            cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-            ccm_region_get_rectangles (region, &rects, &nb_rects);
-            for (cpt = 0; cpt < nb_rects; ++cpt)
-                cairo_rectangle(ctx, rects[cpt].x, rects[cpt].y,
-                                rects[cpt].width, rects[cpt].height);
-            cairo_clip(ctx);
-            if (rects) cairo_rectangles_free (rects, nb_rects);
-
-            cairo_set_source_surface(ctx, self->priv->back, 0, 0);
-            cairo_paint(ctx);
-            cairo_destroy(ctx);
-        }
         ccm_display_flush(display);
     }
 }
