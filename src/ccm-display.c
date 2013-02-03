@@ -295,6 +295,12 @@ ccm_display_class_init (CCMDisplayClass * klass)
                                                            "Use XSHM", TRUE,
                                                            G_PARAM_READWRITE));
 
+    g_object_class_install_property (object_class, PROP_USE_RANDR,
+                                     g_param_spec_boolean ("use_randr",
+                                                           "UseRandr",
+                                                           "Use Randr", TRUE,
+                                                           G_PARAM_READWRITE));
+
     g_object_class_install_property (object_class, PROP_USE_GLX,
                                      g_param_spec_boolean ("use_glx",
                                                            "UseGLX",
