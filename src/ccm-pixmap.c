@@ -45,6 +45,8 @@ struct _CCMPixmapPrivate
 
     Damage damage;
 
+    XserverRegion region;
+
     gboolean freeze;
 };
 
@@ -128,6 +130,9 @@ ccm_pixmap_finalize (GObject * object)
     if (!self->priv->foreign)
         XFreePixmap (CCM_DISPLAY_XDISPLAY (display), CCM_PIXMAP_XPIXMAP (self));
 
+    if (!self->priv->region)
+        XFixesDestroyRegion (CCM_DISPLAY_XDISPLAY (display), self->priv->region);
+
     G_OBJECT_CLASS (ccm_pixmap_parent_class)->finalize (object);
 }
 
@@ -194,16 +199,20 @@ ccm_pixmap_on_damage (CCMPixmap * self, Damage damage)
     if (!self->priv->freeze && self->priv->damage == damage)
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
-        XserverRegion region = XFixesCreateRegion (CCM_DISPLAY_XDISPLAY (display), NULL, 0);
+        XRectangle *rects;
+        gint nb_rects, cpt;
 
-        if (region)
+        if (!self->priv->region)
         {
-            XRectangle *rects;
-            gint nb_rects, cpt;
+            self->priv->region = XFixesCreateRegion (CCM_DISPLAY_XDISPLAY (display), NULL, 0);
+        }
 
+        if (self->priv->region)
+        {
             XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
-                             None, region);
-            rects = XFixesFetchRegion (CCM_DISPLAY_XDISPLAY (display), region,
+                             None, self->priv->region);
+            rects = XFixesFetchRegion (CCM_DISPLAY_XDISPLAY (display),
+                                       self->priv->region,
                                        &nb_rects);
             if (rects)
             {
@@ -222,7 +231,6 @@ ccm_pixmap_on_damage (CCMPixmap * self, Damage damage)
                 ccm_drawable_repair(CCM_DRAWABLE (self));
                 ccm_region_destroy (damaged);
             }
-            XFixesDestroyRegion (CCM_DISPLAY_XDISPLAY (display), region);
         }
     }
 }
