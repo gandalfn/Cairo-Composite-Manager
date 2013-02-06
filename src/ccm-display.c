@@ -435,6 +435,7 @@ ccm_display_init_shape (CCMDisplay * self)
                               &self->priv->shape.error_base))
     {
         self->priv->shape.available = TRUE;
+        ccm_debug ("SHAPE EVENT BASE: %i", self->priv->shape.event_base);
         ccm_debug ("SHAPE ERROR BASE: %i", self->priv->shape.error_base);
         return TRUE;
     }
@@ -452,6 +453,7 @@ ccm_display_init_composite (CCMDisplay * self)
                                   &self->priv->composite.error_base))
     {
         self->priv->composite.available = TRUE;
+        ccm_debug ("COMPOSITE EVENT BASE: %i", self->priv->composite.event_base);
         ccm_debug ("COMPOSITE ERROR BASE: %i",
                    self->priv->composite.error_base);
         return TRUE;
@@ -470,6 +472,7 @@ ccm_display_init_damage (CCMDisplay * self)
                                &self->priv->damage.error_base))
     {
         self->priv->damage.available = TRUE;
+        ccm_debug ("DAMAGE EVENT BASE: %i", self->priv->damage.event_base);
         ccm_debug ("DAMAGE ERROR BASE: %i", self->priv->damage.error_base);
         return TRUE;
     }
@@ -504,6 +507,7 @@ ccm_display_init_xfixes (CCMDisplay * self)
                               &self->priv->fixes.error_base))
     {
         self->priv->fixes.available = TRUE;
+        ccm_debug ("FIXES EVENT BASE: %i", self->priv->fixes.event_base);
         ccm_debug ("FIXES ERROR BASE: %i", self->priv->fixes.error_base);
         return TRUE;
     }
@@ -544,7 +548,8 @@ ccm_display_init_randr(CCMDisplay *self)
                            &self->priv->randr.error_base))
     {
         self->priv->randr.available = TRUE;
-        ccm_debug ("GLX ERROR BASE: %i", self->priv->randr.error_base);
+        ccm_debug ("RANDR EVENT BASE: %i", self->priv->randr.event_base);
+        ccm_debug ("RANDR ERROR BASE: %i", self->priv->randr.error_base);
         return TRUE;
     }
 
@@ -561,6 +566,7 @@ ccm_display_init_glx(CCMDisplay *self)
                            &self->priv->glx.error_base))
     {
         self->priv->glx.available = TRUE;
+        ccm_debug ("GLX EVENT BASE: %i", self->priv->glx.event_base);
         ccm_debug ("GLX ERROR BASE: %i", self->priv->glx.error_base);
         return TRUE;
     }
@@ -595,10 +601,12 @@ ccm_display_process_events (CCMWatch* watch)
 
     CCMDisplay* self = CCM_DISPLAY (watch);
     XEvent xevent;
+    gboolean have_create_notify = FALSE;
 
-    while (XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
+    while (!have_create_notify && XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
     {
         XNextEvent (CCM_DISPLAY_XDISPLAY (self), &xevent);
+        ccm_debug ("EVENT %i", xevent.type);
 
         if (xevent.type == self->priv->damage.event_base + XDamageNotify)
         {
@@ -623,6 +631,8 @@ ccm_display_process_events (CCMWatch* watch)
         else
         {
             g_signal_emit (self, signals[EVENT], 0, &xevent);
+            if (xevent.type == CreateNotify)
+                have_create_notify = TRUE;
         }
     }
 }
@@ -907,7 +917,7 @@ ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageC
 {
     Damage damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (self),
                                    ccm_drawable_get_xid (drawable),
-                                   XDamageReportNonEmpty);
+                                   XDamageReportDeltaRectangles);
     if (damage)
     {
         GSList* item;
