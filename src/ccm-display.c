@@ -101,7 +101,7 @@ struct _CCMDisplayPrivate
     CCMExtension     randr;
     CCMExtension     glx;
 
-    GTree*           registered_damage;
+    CCMSet*          registered_damage;
 
     GSList*          pointers;
     int              type_button_press;
@@ -127,23 +127,49 @@ static void ccm_display_process_events (CCMWatch* watch);
 
 typedef struct
 {
+    volatile int          ref_count;
     Damage                damage;
     CCMDamageCallbackFunc func;
     CCMDrawable*          drawable;
 } CCMDamageCallback;
 
 static int
-ccm_damage_callback_compare (gpointer a, gpointer b)
+ccm_damage_callback_compare (CCMDamageCallback* a, CCMDamageCallback* b)
 {
-    return (int)(GPOINTER_TO_INT (a) - GPOINTER_TO_INT (b));
+    return a->damage - b->damage;
+}
+
+static int
+ccm_damage_callback_compare_with_damage (CCMDamageCallback* self, guint damage)
+{
+    return self->damage - damage;
+}
+
+static CCMDamageCallback*
+ccm_damage_callback_new ()
+{
+    CCMDamageCallback* self = g_slice_new0 (CCMDamageCallback);
+    self->ref_count = 1;
+
+    return self;
+}
+
+static CCMDamageCallback*
+ccm_damage_callback_ref (CCMDamageCallback* self)
+{
+    g_atomic_int_inc (&self->ref_count);
+    return self;
 }
 
 static void
-ccm_damage_callback_free (CCMDamageCallback* callback)
+ccm_damage_callback_unref (CCMDamageCallback* self)
 {
-    XDamageDestroy (CCM_DISPLAY_XDISPLAY (CCMDefaultDisplay), callback->damage);
-    g_signal_emit (CCMDefaultDisplay, signals[DAMAGE_DESTROY], 0, callback->damage, callback->drawable);
-    g_slice_free (CCMDamageCallback, callback);
+    if (g_atomic_int_dec_and_test (&self->ref_count))
+    {
+        XDamageDestroy (CCM_DISPLAY_XDISPLAY (CCMDefaultDisplay), self->damage);
+        g_signal_emit (CCMDefaultDisplay, signals[DAMAGE_DESTROY], 0, self->damage, self->drawable);
+        g_slice_free (CCMDamageCallback, self);
+    }
 }
 
 static void
@@ -216,10 +242,10 @@ ccm_display_init (CCMDisplay * self)
     self->priv->cursors = g_hash_table_new_full (g_int_hash, g_int_equal,
                                                  g_free, g_object_unref);
     self->priv->cursor_current = NULL;
-    self->priv->registered_damage = g_tree_new_full ((GCompareDataFunc)ccm_damage_callback_compare,
-                                                     NULL,
-                                                     NULL,
-                                                     (GDestroyNotify)ccm_damage_callback_free);
+    self->priv->registered_damage = ccm_set_new (G_TYPE_POINTER,
+                                                 (GBoxedCopyFunc)ccm_damage_callback_ref,
+                                                 (GDestroyNotify)ccm_damage_callback_unref,
+                                                 (CCMSetCompareFunc)ccm_damage_callback_compare);
 }
 
 static void
@@ -234,7 +260,7 @@ ccm_display_finalize (GObject * object)
         CCMDefaultDisplay = NULL;
 
     if (self->priv->registered_damage)
-        g_tree_destroy (self->priv->registered_damage);
+        g_object_unref (self->priv->registered_damage);
 
     if (self->priv->cursors)
         g_hash_table_destroy (self->priv->cursors);
@@ -614,8 +640,10 @@ ccm_display_process_events (CCMWatch* watch)
 
             CCMDamageCallback* callback;
 
-            callback = (CCMDamageCallback*)g_tree_lookup (self->priv->registered_damage,
-                                                          GINT_TO_POINTER (event_damage->damage));
+            callback = (CCMDamageCallback*)ccm_set_search (self->priv->registered_damage,
+                                                           G_TYPE_UINT, NULL, NULL,
+                                                           (gpointer)event_damage->damage,
+                                                           (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
             if (callback)
             {
                 g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage, callback->drawable);
@@ -924,17 +952,19 @@ ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageC
         gboolean found = FALSE;
         CCMDamageCallback* callback;
 
-        callback = (CCMDamageCallback*)g_tree_lookup (self->priv->registered_damage,
-                                                      GINT_TO_POINTER (damage));
+        callback = (CCMDamageCallback*)ccm_set_search (self->priv->registered_damage,
+                                                       G_TYPE_UINT, NULL, NULL,
+                                                       (gpointer)damage,
+                                                       (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
         if (callback == NULL)
         {
-            callback = g_slice_new0 (CCMDamageCallback);
+            callback = ccm_damage_callback_new ();
             XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), damage, None, None);
             callback->damage = damage;
             callback->func = func;
             callback->drawable = drawable;
 
-            g_tree_insert (self->priv->registered_damage, GINT_TO_POINTER (damage), callback);
+            ccm_set_insert (self->priv->registered_damage, callback);
         }
         else
         {
@@ -953,15 +983,14 @@ ccm_display_unregister_damage (CCMDisplay* self, guint32 damage, CCMDrawable* dr
 {
     CCMDamageCallback* callback;
 
-    callback = (CCMDamageCallback*)g_tree_lookup (self->priv->registered_damage,
-                                                  GINT_TO_POINTER (damage));
+    callback = (CCMDamageCallback*)ccm_set_search (self->priv->registered_damage,
+                                                   G_TYPE_UINT, NULL, NULL,
+                                                   GINT_TO_POINTER (damage),
+                                                   (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
 
     if (callback)
     {
-        if (callback->drawable == drawable)
-        {
-            g_tree_remove (self->priv->registered_damage, GINT_TO_POINTER (callback->damage));
-        }
+        ccm_set_remove (self->priv->registered_damage, callback);
     }
 }
 
@@ -970,8 +999,10 @@ ccm_display_process_damage (CCMDisplay* self, guint32 damage)
 {
     CCMDamageCallback* callback;
 
-    callback = (CCMDamageCallback*)g_tree_lookup (self->priv->registered_damage,
-                                                  GINT_TO_POINTER (damage));
+    callback = (CCMDamageCallback*)ccm_set_search (self->priv->registered_damage,
+                                                   G_TYPE_UINT, NULL, NULL,
+                                                   GINT_TO_POINTER (damage),
+                                                   (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
 
     if (callback)
     {

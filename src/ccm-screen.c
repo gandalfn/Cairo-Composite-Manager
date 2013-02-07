@@ -131,7 +131,7 @@ struct _CCMScreenPrivate
     Screen*             xscreen;
     guint               number;
 
-    GTree*              damages;
+    CCMSet*             damages;
 
     cairo_t*            ctx;
 
@@ -189,9 +189,9 @@ static void     ccm_screen_on_window_damaged    (CCMScreen* self, CCMRegion* are
 static void     ccm_screen_on_option_changed    (CCMScreen* self, CCMConfig* config);
 
 static int
-_direct_compare (gconstpointer inA, gconstpointer inB)
+_direct_compare (int inA, int inB)
 {
-    return (int)(inA - inB);
+    return inA - inB;
 }
 
 static void
@@ -269,7 +269,8 @@ ccm_screen_init (CCMScreen* self)
     self->priv->ctx = NULL;
     self->priv->root = NULL;
     self->priv->cow = NULL;
-    self->priv->damages = g_tree_new (_direct_compare);
+    self->priv->damages = ccm_set_new (G_TYPE_INT, NULL, NULL,
+                                       (CCMSetCompareFunc)_direct_compare);
     self->priv->selection_owner = None;
     self->priv->fullscreen = NULL;
     self->priv->active = NULL;
@@ -392,7 +393,7 @@ ccm_screen_finalize (GObject * object)
         g_object_unref (self->priv->background);
 
     if (self->priv->damages)
-        g_tree_destroy (self->priv->damages);
+        g_object_unref (self->priv->damages);
 
     G_OBJECT_CLASS (ccm_screen_parent_class)->finalize (object);
 }
@@ -1964,14 +1965,6 @@ ccm_screen_paint_cursor (CCMScreen * self, cairo_t * ctx)
                                         self->priv->cursor_y);
 }
 
-static gboolean
-ccm_screen_process_damage (gpointer key, gpointer value, CCMScreen* self)
-{
-    ccm_display_process_damage (self->priv->display, GPOINTER_TO_INT (key));
-
-    return FALSE;
-}
-
 static void
 ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
 {
@@ -1979,9 +1972,15 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
 
     if (self->priv->cow)
     {
-        g_tree_foreach (self->priv->damages, (GTraverseFunc)ccm_screen_process_damage, self);
-        g_tree_destroy (self->priv->damages);
-        self->priv->damages = g_tree_new (_direct_compare);
+        CCMSetIterator* iter = ccm_set_iterator (self->priv->damages);
+        while (ccm_set_iterator_next (iter))
+        {
+            guint damage = (guint)GPOINTER_TO_INT (ccm_set_iterator_get (iter));
+            ccm_display_process_damage (self->priv->display, damage);
+        }
+        g_object_unref (iter);
+        ccm_set_clear (self->priv->damages);
+
 
         if (!self->priv->ctx)
         {
@@ -2332,7 +2331,7 @@ ccm_screen_on_damage_event (CCMScreen * self, guint32 damage, CCMDrawable* drawa
 {
     if (ccm_drawable_get_screen (drawable) == self)
     {
-        g_tree_insert (self->priv->damages, GINT_TO_POINTER(damage), GINT_TO_POINTER(damage));
+        ccm_set_insert (self->priv->damages, GINT_TO_POINTER((gint)damage));
     }
 }
 
@@ -2341,7 +2340,7 @@ ccm_screen_on_damage_destroy (CCMScreen * self, guint32 damage, CCMDrawable* dra
 {
     if (ccm_drawable_get_screen (drawable) == self)
     {
-        g_tree_remove (self->priv->damages, GINT_TO_POINTER(damage));
+        ccm_set_remove (self->priv->damages, GINT_TO_POINTER((gint)damage));
     }
 }
 
