@@ -143,6 +143,7 @@ struct _CCMScreenPrivate
     CCMWindow*          sibling_mouse;
     Window              over_mouse;
 
+    CCMRegion*          geometry;
     CCMRegion*          damaged;
     CCMRegion*          root_damage;
 
@@ -276,6 +277,7 @@ ccm_screen_init (CCMScreen* self)
     self->priv->active = NULL;
     self->priv->sibling_mouse = NULL;
     self->priv->over_mouse = None;
+    self->priv->geometry = NULL;
     self->priv->damaged = NULL;
     self->priv->root_damage = NULL;
     self->priv->cursor = NULL;
@@ -357,6 +359,8 @@ ccm_screen_finalize (GObject * object)
         g_list_free (self->priv->removed);
     }
 
+    if (self->priv->geometry)
+        ccm_region_destroy (self->priv->geometry);
     if (self->priv->damaged)
         ccm_region_destroy (self->priv->damaged);
     if (self->priv->root_damage)
@@ -1987,8 +1991,24 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             self->priv->ctx = ccm_drawable_create_context (CCM_DRAWABLE (self->priv->cow));
             if (self->priv->ctx)
             {
-                cairo_rectangle (self->priv->ctx, 0, 0, self->priv->xscreen->width, self->priv->xscreen->height);
-                cairo_clip (self->priv->ctx);
+                if (self->priv->geometry == NULL)
+                {
+                    cairo_rectangle (self->priv->ctx, 0, 0, self->priv->xscreen->width, self->priv->xscreen->height);
+                    cairo_clip (self->priv->ctx);
+                }
+                else
+                {
+                    cairo_rectangle_t *rects = NULL;
+                    gint cpt, nb_rects;
+
+                    cairo_save (self->priv->ctx);
+                    ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
+                    for (cpt = 0; cpt < nb_rects; ++cpt)
+                        cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
+                                         rects[cpt].width, rects[cpt].height);
+                    if (rects) cairo_rectangles_free (rects, nb_rects);
+                    cairo_clip (self->priv->ctx);
+                }
                 cairo_set_operator (self->priv->ctx, CAIRO_OPERATOR_CLEAR);
                 cairo_paint (self->priv->ctx);
                 cairo_set_operator (self->priv->ctx, CAIRO_OPERATOR_OVER);
@@ -1997,9 +2017,24 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
         else
         {
             cairo_identity_matrix (self->priv->ctx);
-            cairo_rectangle (self->priv->ctx, 0, 0, self->priv->xscreen->width,
-                             self->priv->xscreen->height);
-            cairo_clip (self->priv->ctx);
+            if (self->priv->geometry == NULL)
+            {
+                cairo_rectangle (self->priv->ctx, 0, 0, self->priv->xscreen->width, self->priv->xscreen->height);
+                cairo_clip (self->priv->ctx);
+            }
+            else
+            {
+                cairo_rectangle_t *rects = NULL;
+                gint cpt, nb_rects;
+
+                cairo_save (self->priv->ctx);
+                ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
+                for (cpt = 0; cpt < nb_rects; ++cpt)
+                    cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
+                                     rects[cpt].width, rects[cpt].height);
+                if (rects) cairo_rectangles_free (rects, nb_rects);
+                cairo_clip (self->priv->ctx);
+            }
         }
 
         if (self->priv->root_damage)
@@ -2199,15 +2234,16 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
     if (!ccm_region_empty (damage_below))
     {
         cairo_rectangle_t area;
-        CCMRegion *geometry;
 
-        area.x = 0;
-        area.y = 0;
-        area.width = self->priv->xscreen->width;
-        area.height = self->priv->xscreen->height;
-        geometry = ccm_region_rectangle (&area);
-        ccm_region_intersect (damage_below, geometry);
-        ccm_region_destroy (geometry);
+        if (self->priv->geometry == NULL)
+        {
+            area.x = 0;
+            area.y = 0;
+            area.width = self->priv->xscreen->width;
+            area.height = self->priv->xscreen->height;
+            self->priv->geometry = ccm_region_rectangle (&area);
+        }
+        ccm_region_intersect (damage_below, self->priv->geometry);
 
         if (!ccm_region_empty (damage_below))
         {
@@ -2734,7 +2770,8 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                 ccm_debug_atom (self->priv->display, client_event->message_type,
                                 "CLIENT MESSAGE");
 
-                if (client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->ccm_atom)
+                if (client_event->window == self->priv->selection_owner &&
+                    client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->ccm_atom)
                 {
                     if (CCM_WINDOW_XWINDOW (self->priv->root) == client_event->data.l[1])
                     {
@@ -2870,6 +2907,68 @@ _ccm_screen_get_selection_owner (CCMScreen * self)
     return self->priv->selection_owner;
 }
 
+void
+_ccm_screen_query_geometry (CCMScreen* self)
+{
+    gboolean have_randr;
+
+    g_object_get(G_OBJECT(self->priv->display), "use_randr", &have_randr, NULL);
+    if (have_randr)
+    {
+        XRRScreenResources *res;
+
+        res  = XRRGetScreenResources (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                      RootWindowOfScreen (self->priv->xscreen));
+
+        if (res)
+        {
+            int i, j;
+
+            if (self->priv->geometry != NULL)
+            {
+                g_object_unref (self->priv->geometry);
+            }
+            self->priv->geometry = ccm_region_new ();
+
+            for (i = 0; i < res->noutput; ++i)
+            {
+                XRROutputInfo* output;
+                XRRCrtcInfo* crtc;
+
+                output = XRRGetOutputInfo (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                           res, res->outputs[i]);
+
+                if (output == NULL) continue;
+
+                if (output->connection != RR_Connected)
+                {
+                    XRRFreeOutputInfo (output);
+                    continue;
+                }
+
+                crtc = XRRGetCrtcInfo (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                       res, output->crtc);
+                XRRFreeOutputInfo (output);
+
+                if (crtc == NULL) continue;
+
+                cairo_rectangle_t area = { crtc->x, crtc->y, crtc->width, crtc->height };
+                ccm_region_union_with_rect (self->priv->geometry, &area);
+
+                XRRFreeCrtcInfo (crtc);
+            }
+
+            if (ccm_region_empty (self->priv->geometry))
+            {
+                cairo_rectangle_t area = { 0, 0, self->priv->xscreen->width, self->priv->xscreen->height };
+                self->priv->geometry = ccm_region_rectangle (&area);
+            }
+        }
+
+        XRRFreeScreenResources (res);
+    }
+}
+
 CCMScreen *
 ccm_screen_new (CCMDisplay * display, guint number)
 {
@@ -2919,11 +3018,8 @@ ccm_screen_new (CCMDisplay * display, guint number)
     ccm_window_redirect_subwindows (root);
     ccm_screen_query_stack (self);
 
-    area.x = 0;
-    area.y = 0;
-    area.width = self->priv->xscreen->width;
-    area.height = self->priv->xscreen->height;
-    self->priv->root_damage = ccm_region_rectangle (&area);
+    _ccm_screen_query_geometry (self);
+    self->priv->root_damage = ccm_region_copy (self->priv->geometry);
 
     ccm_display_report_device_event (display, self, TRUE);
 
@@ -3031,19 +3127,20 @@ void
 ccm_screen_damage (CCMScreen * self)
 {
     g_return_if_fail (self != NULL);
-    CCMRegion *screen_geometry;
 
     cairo_rectangle_t area;
 
-    area.x = 0.0f;
-    area.y = 0.0f;
-    area.width = CCM_SCREEN_XSCREEN (self)->width;
-    area.height = CCM_SCREEN_XSCREEN (self)->height;
+    if (self->priv->geometry == NULL)
+    {
+        area.x = 0.0f;
+        area.y = 0.0f;
+        area.width = CCM_SCREEN_XSCREEN (self)->width;
+        area.height = CCM_SCREEN_XSCREEN (self)->height;
+        self->priv->geometry = ccm_region_rectangle (&area);
+    }
 
     ccm_debug ("DAMAGE SCREEN");
-    screen_geometry = ccm_region_rectangle (&area);
-    ccm_screen_damage_region (self, screen_geometry);
-    ccm_region_destroy (screen_geometry);
+    ccm_screen_damage_region (self, self->priv->geometry);
 }
 
 void
@@ -3100,6 +3197,14 @@ ccm_screen_get_windows (CCMScreen * self)
     g_return_val_if_fail (self != NULL, NULL);
 
     return self->priv->windows;
+}
+
+G_GNUC_PURE CCMRegion *
+ccm_screen_get_geometry (CCMScreen * self)
+{
+    g_return_val_if_fail (self != NULL, NULL);
+
+    return self->priv->geometry;
 }
 
 G_GNUC_PURE CCMRegion *
