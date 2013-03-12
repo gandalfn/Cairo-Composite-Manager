@@ -8,6 +8,11 @@ Type=string
 Default=<Super><Alt>Button1
 _Description=The snapshot window shortcut key.
 
+[screen]
+Type=string
+Default=Print
+_Description=The snapshot screen shortcut key.
+
 [color]
 Type=string
 Default=#729FCF

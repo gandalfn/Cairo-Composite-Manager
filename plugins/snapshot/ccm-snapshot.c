@@ -36,16 +36,9 @@
 
 enum
 {
-    SAVE,
-    N_SIGNALS
-};
-
-static guint signals[N_SIGNALS] = { 0 };
-
-enum
-{
     CCM_SNAPSHOT_AREA,
     CCM_SNAPSHOT_WINDOW,
+    CCM_SNAPSHOT_SCREEN,
     CCM_SNAPSHOT_COLOR,
     CCM_SNAPSHOT_OPTION_N
 };
@@ -53,6 +46,7 @@ enum
 static const gchar *CCMSnapshotOptionKeys[CCM_SNAPSHOT_OPTION_N] = {
     "area",
     "window",
+    "screen",
     "color"
 };
 
@@ -62,6 +56,7 @@ typedef struct
 
     gchar* area_shortcut;
     gchar* window_shortcut;
+    gchar* screen_shortcut;
 
     GdkColor *color;
 } CCMSnapshotOptions;
@@ -85,6 +80,7 @@ struct _CCMSnapshotPrivate
 
     CCMKeybind *area_keybind;
     CCMKeybind *window_keybind;
+    CCMKeybind *screen_keybind;
 
     cairo_rectangle_t area;
     CCMWindow* selected;
@@ -100,6 +96,7 @@ ccm_snapshot_options_init (CCMSnapshotOptions* self)
 {
     self->area_shortcut = NULL;
     self->window_shortcut = NULL;
+    self->screen_shortcut = NULL;
     self->color = NULL;
 }
 
@@ -112,6 +109,8 @@ ccm_snapshot_options_finalize (CCMSnapshotOptions* self)
     self->area_shortcut = NULL;
     if (self->window_shortcut) g_free (self->window_shortcut);
     self->window_shortcut = NULL;
+    if (self->screen_shortcut) g_free (self->screen_shortcut);
+    self->screen_shortcut = NULL;
 }
 
 static void
@@ -144,6 +143,20 @@ ccm_snapshot_options_changed (CCMSnapshotOptions* self, CCMConfig* config)
             g_warning ("Error on get snapshot area shortcut configuration value");
             g_error_free (error);
             self->window_shortcut = g_strdup ("<Super><Alt>Button1");
+        }
+    }
+
+    if (config == ccm_plugin_options_get_config(CCM_PLUGIN_OPTIONS(self),
+                                                CCM_SNAPSHOT_SCREEN))
+    {
+        if (self->screen_shortcut) g_free (self->screen_shortcut);
+
+        self->screen_shortcut = ccm_config_get_string (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get snapshot screen shortcut configuration value");
+            g_error_free (error);
+            self->screen_shortcut = g_strdup ("Print");
         }
     }
 
@@ -206,12 +219,6 @@ ccm_snapshot_class_init (CCMSnapshotClass * klass)
     g_type_class_add_private (klass, sizeof (CCMSnapshotPrivate));
 
     object_class->finalize = ccm_snapshot_finalize;
-
-    signals[SAVE] =
-        g_signal_new ("save", G_OBJECT_CLASS_TYPE (object_class),
-                      G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                      ccm_cclosure_marshal_STRING__POINTER, G_TYPE_STRING, 1,
-                      G_TYPE_POINTER);
 }
 
 static void
@@ -277,7 +284,6 @@ ccm_snapshot_on_area_key_release (CCMSnapshot * self)
     cairo_surface_t *src = ccm_drawable_get_surface (CCM_DRAWABLE (overlay));
     cairo_surface_t *dst;
     cairo_t *ctx;
-    gboolean saved;
     CCMRegion *damage;
 
     damage = ccm_region_rectangle (&self->priv->area);
@@ -317,12 +323,7 @@ ccm_snapshot_on_area_key_release (CCMSnapshot * self)
         cairo_paint (ctx);
         cairo_destroy (ctx);
 
-        g_signal_emit (self, signals[SAVE], 0, dst, &saved);
-        if (!saved)
-        {
-            CCMSnapshotDialog *dialog;
-            dialog = ccm_snapshot_dialog_new (dst, self->priv->screen);
-        }
+        ccm_snapshot_dialog_new (dst, self->priv->screen);
 
         cairo_surface_destroy (src);
     }
@@ -364,16 +365,13 @@ ccm_snapshot_on_window_key_release (CCMSnapshot * self)
         ccm_drawable_damage (CCM_DRAWABLE (self->priv->selected));
         if (pixmap)
         {
-            cairo_surface_t *src =
-                ccm_drawable_get_surface (CCM_DRAWABLE (pixmap));
+            cairo_surface_t *src = ccm_drawable_get_surface (CCM_DRAWABLE (pixmap));
             cairo_surface_t *dst;
             cairo_t *ctx;
             const cairo_rectangle_t *area;
             cairo_rectangle_t clipbox;
-            gboolean saved = FALSE;
 
-            ccm_debug ("WINDOW RELEASE %s",
-                       ccm_window_get_name (self->priv->selected));
+            ccm_debug ("WINDOW RELEASE %s", ccm_window_get_name (self->priv->selected));
             area = ccm_window_get_area (self->priv->selected);
             ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE
                                                       (self->priv->selected),
@@ -387,17 +385,56 @@ ccm_snapshot_on_window_key_release (CCMSnapshot * self)
             cairo_paint (ctx);
             cairo_destroy (ctx);
 
-            g_signal_emit (self, signals[SAVE], 0, dst, &saved);
-            if (!saved)
-            {
-                CCMSnapshotDialog *dialog;
-                dialog = ccm_snapshot_dialog_new (dst, self->priv->screen);
-            }
+            ccm_snapshot_dialog_new (dst, self->priv->screen);
+
             cairo_surface_destroy (src);
             g_object_unref (pixmap);
         }
 
         self->priv->selected = NULL;
+    }
+}
+
+static void
+ccm_snapshot_on_screen_key_release (CCMSnapshot * self)
+{
+    CCMWindow *overlay = ccm_screen_get_overlay_window (self->priv->screen);
+    cairo_surface_t *src = ccm_drawable_get_surface (CCM_DRAWABLE (overlay));
+    cairo_surface_t *dst;
+    cairo_t *ctx;
+    cairo_rectangle_t clipbox;
+
+    ccm_screen_damage (self->priv->screen);
+
+    ccm_log ("SCREEN RELEASE");
+
+    if (src && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (overlay), &clipbox))
+    {
+        cairo_rectangle_t *rects = NULL;
+        gint cpt, nb_rects;
+        CCMRegion* screen_geometry = ccm_screen_get_geometry (self->priv->screen);
+
+        dst = cairo_image_surface_create (ccm_drawable_get_format (CCM_DRAWABLE (overlay)),
+                                          clipbox.width, clipbox.height);
+        ctx = cairo_create (dst);
+        cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
+        cairo_paint (ctx);
+        cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
+
+        ccm_region_get_rectangles (screen_geometry, &rects, &nb_rects);
+        for (cpt = 0; cpt < nb_rects; ++cpt)
+            cairo_rectangle (ctx, rects[cpt].x, rects[cpt].y,
+                             rects[cpt].width, rects[cpt].height);
+        if (rects) cairo_rectangles_free (rects, nb_rects);
+        cairo_clip (ctx);
+
+        cairo_set_source_surface (ctx, src, 0, 0);
+        cairo_paint (ctx);
+        cairo_destroy (ctx);
+
+        ccm_snapshot_dialog_new (dst, self->priv->screen);
+
+        cairo_surface_destroy (src);
     }
 }
 
@@ -445,6 +482,21 @@ ccm_snapshot_get_window_keybind (CCMSnapshot * self)
 }
 
 static void
+ccm_snapshot_get_screen_keybind (CCMSnapshot * self)
+{
+    if (self->priv->screen_keybind)
+        g_object_unref (self->priv->screen_keybind);
+
+    self->priv->screen_keybind = ccm_keybind_new (self->priv->screen,
+                                                  ccm_snapshot_get_option (self)->screen_shortcut,
+                                                  TRUE);
+    g_signal_connect_swapped (self->priv->screen_keybind,
+                              "key_release",
+                              G_CALLBACK (ccm_snapshot_on_screen_key_release),
+                              self);
+}
+
+static void
 ccm_snapshot_on_option_changed (CCMPlugin * plugin, int index)
 {
     CCMSnapshot *self = CCM_SNAPSHOT (plugin);
@@ -456,6 +508,9 @@ ccm_snapshot_on_option_changed (CCMPlugin * plugin, int index)
             break;
         case CCM_SNAPSHOT_WINDOW:
             ccm_snapshot_get_window_keybind (self);
+            break;
+        case CCM_SNAPSHOT_SCREEN:
+            ccm_snapshot_get_screen_keybind (self);
             break;
         default:
             break;
@@ -484,9 +539,8 @@ ccm_snapshot_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
     CCMSnapshot *self = CCM_SNAPSHOT (plugin);
     gboolean ret;
 
-    ret =
-        ccm_screen_plugin_paint (CCM_SCREEN_PLUGIN_PARENT (plugin), screen,
-                                 context);
+    ret = ccm_screen_plugin_paint (CCM_SCREEN_PLUGIN_PARENT (plugin), screen,
+                                   context);
 
     if (self->priv->area.height > 0 || self->priv->area.width > 0)
     {
@@ -579,6 +633,12 @@ ccm_snapshot_preferences_page_init_utilities_section (CCMPreferencesPagePlugin *
                 CCM_CONFIG_ENTRY_SHORTCUT (gtk_builder_get_object
                                            (self->priv->builder,
                                             "window"));
+            g_object_set (window, "screen", screen_num, NULL);
+
+            CCMConfigEntryShortcut *screen =
+                CCM_CONFIG_ENTRY_SHORTCUT (gtk_builder_get_object
+                                           (self->priv->builder,
+                                            "screen"));
             g_object_set (window, "screen", screen_num, NULL);
 
             CCMConfigColorButton *color =
