@@ -25,6 +25,11 @@ using Vala;
 
 namespace CCM
 {
+    errordomain OutputError
+    {
+        INVALID_PIXMAP
+    }
+
     class Output
     {
         public weak CCM.Window client;
@@ -42,24 +47,31 @@ namespace CCM
         public Cairo.Filter scale_quality;
 
         public Output (CCM.Screen screen, CCM.Window client, CCM.Window window,
-                       X.Pixmap xpixmap, int depth)
+                       X.Pixmap xpixmap, int depth) throws OutputError
         {
             unowned X.Visual? visual = window.get_visual ();
 
             this.client = client;
             this.window = window;
             this.pixmap = new CCM.Pixmap.from_visual (screen, visual, xpixmap);
-            this.pixmap.foreign = true;
-            this.freeze = true;
-            this.need_clear = true;
-            this.paint_parent = true;
-            this.x = 0;
-            this.y = 0;
-            this.max_width = 0;
-            this.max_height = 0;
-            this.scale_x = 0;
-            this.scale_y = 0;
-            this.scale_quality = Cairo.Filter.FAST;
+            if (pixmap != null)
+            {
+                this.pixmap.foreign = true;
+                this.freeze = true;
+                this.need_clear = true;
+                this.paint_parent = true;
+                this.x = 0;
+                this.y = 0;
+                this.max_width = 0;
+                this.max_height = 0;
+                this.scale_x = 0;
+                this.scale_y = 0;
+                this.scale_quality = Cairo.Filter.FAST;
+            }
+            else
+            {
+                throw new OutputError.INVALID_PIXMAP ("Invalid pixmap");
+            }
         }
     }
 
@@ -148,10 +160,17 @@ namespace CCM
 
                 if (!found)
                 {
-                    Output output = new Output (window.get_screen (), client, window, xpixmap, depth);
-                    clone.window_outputs.add (output);
-                    client.no_undamage_sibling = true;
-                    window.damage ();
+                    try
+                    {
+                        Output output = new Output (window.get_screen (), client, window, xpixmap, depth);
+                        clone.window_outputs.add (output);
+                        client.no_undamage_sibling = true;
+                        window.damage ();
+                    }
+                    catch (OutputError err)
+                    {
+                        CCM.log ("Error on create clone: %s", err.message);
+                    }
                 }
             }
             else if (atom == disable_atom)
@@ -160,12 +179,15 @@ namespace CCM
                 var clone = (Clone) window.get_plugin (typeof (Clone));
                 client.no_undamage_sibling = false;
 
-                foreach (Output output in clone.window_outputs)
+                if (clone.window_outputs != null)
                 {
-                    if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                    foreach (Output output in clone.window_outputs)
                     {
-                        clone.window_outputs.remove (output);
-                        break;
+                        if (output.pixmap.get_xid () == (X.ID) xpixmap)
+                        {
+                            clone.window_outputs.remove (output);
+                            break;
+                        }
                     }
                 }
             }
@@ -338,10 +360,16 @@ namespace CCM
                 int depth = (int) l3;
 
                 CCM.debug ("ENABLE SCREEN CLONE");
-                var output =
-                    new Output (window.get_screen (), client, window, xpixmap, depth);
-                window.no_undamage_sibling = true;
-                add_screen_output (output);
+                try
+                {
+                    var output = new Output (window.get_screen (), client, window, xpixmap, depth);
+                    window.no_undamage_sibling = true;
+                    add_screen_output (output);
+                }
+                catch (OutputError err)
+                {
+                    CCM.log ("Error on create clone: %s", err.message);
+                }
             }
             else if (atom == screen_disable_atom)
             {
