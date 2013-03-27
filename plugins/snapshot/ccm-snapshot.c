@@ -324,9 +324,8 @@ ccm_snapshot_on_area_key_release (CCMSnapshot * self)
         cairo_destroy (ctx);
 
         ccm_snapshot_dialog_new (dst, self->priv->screen);
-
-        cairo_surface_destroy (src);
     }
+    if (src) cairo_surface_destroy (src);
 
     self->priv->area.width = 0;
     self->priv->area.height = 0;
@@ -433,9 +432,9 @@ ccm_snapshot_on_screen_key_release (CCMSnapshot * self)
         cairo_destroy (ctx);
 
         ccm_snapshot_dialog_new (dst, self->priv->screen);
-
-        cairo_surface_destroy (src);
     }
+
+    if (src) cairo_surface_destroy (src);
 }
 
 static void

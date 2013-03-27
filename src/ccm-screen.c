@@ -87,7 +87,6 @@ static void     ccm_screen_unset_selection_owner      (CCMScreen* self);
 static void     ccm_screen_on_window_error            (CCMScreen* self, CCMWindow* window);
 static void     ccm_screen_on_window_property_changed (CCMScreen* self, CCMPropertyType changed, CCMWindow* window);
 static void     ccm_screen_on_window_redirect_input   (CCMScreen* self, gboolean redirected, CCMWindow* window);
-static void     ccm_screen_on_cursor_changed          (CCMScreen* self, CCMCursor* cursor, CCMDisplay* display);
 
 CCMWindow*      ccm_screen_find_window_from_input     (CCMScreen* self, Window xwindow);
 
@@ -147,11 +146,6 @@ struct _CCMScreenPrivate
     CCMRegion*          damaged;
     CCMRegion*          root_damage;
 
-    CCMCursor*          cursor;
-    gboolean            manage_cursor;
-    double              cursor_x;
-    double              cursor_y;
-
     Window*             stack;
     guint               n_windows;
     GList*              windows;
@@ -183,8 +177,6 @@ static gboolean impl_ccm_screen_paint           (CCMScreenPlugin* plugin, CCMScr
 static gboolean impl_ccm_screen_add_window      (CCMScreenPlugin* plugin, CCMScreen* self, CCMWindow* window);
 static void     impl_ccm_screen_remove_window   (CCMScreenPlugin* plugin, CCMScreen* self, CCMWindow* window);
 static void     impl_ccm_screen_damage          (CCMScreenPlugin* plugin, CCMScreen* self, CCMRegion* area, CCMWindow* window);
-static void     impl_ccm_screen_on_cursor_move  (CCMScreenPlugin* plugin, CCMScreen* self, int x, int y);
-static void     impl_ccm_screen_paint_cursor    (CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx, int x, int y);
 
 static void     ccm_screen_on_window_damaged    (CCMScreen* self, CCMRegion* area, CCMWindow* window);
 static void     ccm_screen_on_option_changed    (CCMScreen* self, CCMConfig* config);
@@ -205,10 +197,6 @@ ccm_screen_set_property (GObject* object, guint prop_id, const GValue* value, GP
         case PROP_DISPLAY:
             {
                 priv->display = g_value_get_pointer (value);
-                g_signal_connect_swapped (priv->display, "cursor-changed",
-                                          G_CALLBACK (ccm_screen_on_cursor_changed),
-                                          CCM_SCREEN (object));
-
             }
             break;
         case PROP_NUMBER:
@@ -280,10 +268,6 @@ ccm_screen_init (CCMScreen* self)
     self->priv->geometry = NULL;
     self->priv->damaged = NULL;
     self->priv->root_damage = NULL;
-    self->priv->cursor = NULL;
-    self->priv->manage_cursor = FALSE;
-    self->priv->cursor_x = -1;
-    self->priv->cursor_y = -1;
     self->priv->stack = NULL;
     self->priv->n_windows = 0;
     self->priv->windows = NULL;
@@ -312,12 +296,6 @@ ccm_screen_finalize (GObject * object)
     ccm_debug ("FINALIZE SCREEN");
 
     ccm_screen_unset_selection_owner (self);
-
-    if (CCM_IS_DISPLAY (self->priv->display))
-        g_signal_handlers_disconnect_by_func (self->priv->display,
-                                              ccm_screen_on_cursor_changed,
-                                              self);
-    ccm_screen_unmanage_cursors (self);
 
     if (self->priv->plugin && CCM_IS_PLUGIN (self->priv->plugin))
         g_object_unref (self->priv->plugin);
@@ -504,8 +482,6 @@ ccm_screen_iface_init (CCMScreenPluginClass * iface)
     iface->add_window = impl_ccm_screen_add_window;
     iface->remove_window = impl_ccm_screen_remove_window;
     iface->damage = impl_ccm_screen_damage;
-    iface->on_cursor_move = impl_ccm_screen_on_cursor_move;
-    iface->paint_cursor = impl_ccm_screen_paint_cursor;
 }
 
 static void
@@ -1345,8 +1321,7 @@ ccm_screen_update_stack (CCMScreen * self)
                     &w, &p, &stack, &n_windows) && stack && n_windows)
     {
         if (self->priv->stack)
-            g_slice_free1 (sizeof (Window) * self->priv->n_windows,
-                           self->priv->stack);
+            g_slice_free1 (sizeof (Window) * self->priv->n_windows, self->priv->stack);
 
         self->priv->n_windows = n_windows;
         self->priv->stack = g_slice_copy (sizeof (Window) * n_windows, stack);
@@ -1576,9 +1551,12 @@ ccm_screen_check_stack (CCMScreen * self)
         }
     }
 
-    g_list_free (self->priv->windows);
+    if (self->priv->windows) g_list_free (self->priv->windows);
     self->priv->windows = stack;
-    self->priv->last_windows = g_list_last(self->priv->windows);
+    if (self->priv->windows)
+        self->priv->last_windows = g_list_last(self->priv->windows);
+    else
+        self->priv->last_windows = NULL;
 
     viewable = g_list_sort (viewable, (GCompareFunc)ccm_screen_compare_window);
     viewable = g_list_reverse (viewable);
@@ -1670,25 +1648,6 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
     self->priv->last_windows = g_list_last(self->priv->windows);
 
     ccm_drawable_damage (CCM_DRAWABLE (window));
-}
-
-static void
-impl_ccm_screen_paint_cursor (CCMScreenPlugin * plugin, CCMScreen * self,
-                              cairo_t * ctx, int x, int y)
-{
-    g_return_if_fail (plugin != NULL);
-    g_return_if_fail (self != NULL);
-    g_return_if_fail (ctx != NULL);
-
-    if (self->priv->manage_cursor)
-    {
-        CCMCursor *cursor =
-            (CCMCursor *) ccm_display_get_current_cursor (self->priv->display,
-                                                          FALSE);
-
-        if (cursor)
-            ccm_cursor_paint (cursor, ctx, x, y);
-    }
 }
 
 static gboolean
@@ -1958,18 +1917,6 @@ ccm_screen_get_plugins (CCMScreen * self)
 }
 
 static void
-ccm_screen_paint_cursor (CCMScreen * self, cairo_t * ctx)
-{
-    g_return_if_fail (self != NULL);
-    g_return_if_fail (ctx != NULL);
-
-    if (self->priv->cursor_x >= 0 && self->priv->cursor_y >= 0)
-        ccm_screen_plugin_paint_cursor (self->priv->plugin, self, ctx,
-                                        self->priv->cursor_x,
-                                        self->priv->cursor_y);
-}
-
-static void
 ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
 {
     g_return_if_fail (self != NULL);
@@ -2001,7 +1948,6 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
                     cairo_rectangle_t *rects = NULL;
                     gint cpt, nb_rects;
 
-                    cairo_save (self->priv->ctx);
                     ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
                     for (cpt = 0; cpt < nb_rects; ++cpt)
                         cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
@@ -2027,7 +1973,6 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
                 cairo_rectangle_t *rects = NULL;
                 gint cpt, nb_rects;
 
-                cairo_save (self->priv->ctx);
                 ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
                 for (cpt = 0; cpt < nb_rects; ++cpt)
                     cairo_rectangle (self->priv->ctx, rects[cpt].x, rects[cpt].y,
@@ -2085,9 +2030,6 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
 
             if (self->priv->damaged)
             {
-                if (self->priv->manage_cursor)
-                    ccm_screen_paint_cursor (self, self->priv->ctx);
-
                 ccm_drawable_flush_region (CCM_DRAWABLE (self->priv->cow),
                                            self->priv->damaged);
                 ccm_region_destroy (self->priv->damaged);
@@ -2273,96 +2215,6 @@ ccm_screen_on_window_damaged (CCMScreen * self, CCMRegion * area,
 }
 
 static void
-ccm_screen_on_cursor_changed (CCMScreen * self, CCMCursor * cursor,
-                              CCMDisplay * display)
-{
-    g_return_if_fail (self != NULL);
-    g_return_if_fail (cursor != NULL);
-
-    if (self->priv->manage_cursor && ccm_cursor_get_height (cursor) &&
-        ccm_cursor_get_width (cursor) && self->priv->cursor_x >= 0 &&
-        self->priv->cursor_y >= 0)
-    {
-        CCMRegion *region;
-        cairo_rectangle_t rect;
-        int x_hot, y_hot;
-
-        g_object_get (cursor, "x-hot", &x_hot, "y-hot", &y_hot, NULL);
-
-        rect.width = ccm_cursor_get_width (cursor);
-        rect.height = ccm_cursor_get_height (cursor);
-
-        rect.x = (double) self->priv->cursor_x - x_hot;
-        rect.y = (double) self->priv->cursor_y - y_hot;
-        region = ccm_region_rectangle (&rect);
-
-        if (self->priv->cursor && ccm_cursor_get_height (self->priv->cursor) &&
-            ccm_cursor_get_width (self->priv->cursor))
-        {
-            g_object_get (self->priv->cursor, "x-hot", &x_hot, "y-hot", &y_hot,
-                          NULL);
-            rect.x = (double) self->priv->cursor_x - x_hot;
-            rect.y = (double) self->priv->cursor_y - y_hot;
-            ccm_region_union_with_rect (region, &rect);
-        }
-
-        ccm_screen_damage_region (self, (const CCMRegion *) region);
-        ccm_region_destroy (region);
-    }
-
-    self->priv->cursor = cursor;
-}
-
-static void
-impl_ccm_screen_on_cursor_move (CCMScreenPlugin * plugin, CCMScreen * self,
-                                int x, int y)
-{
-    g_return_if_fail (self != NULL);
-    g_return_if_fail (plugin != NULL);
-
-    self->priv->cursor = (CCMCursor *)ccm_display_get_current_cursor (self->priv->display, FALSE);
-
-    if (self->priv->cursor && ccm_cursor_get_height (self->priv->cursor) &&
-        ccm_cursor_get_width (self->priv->cursor))
-    {
-        CCMRegion *region;
-        cairo_rectangle_t rect;
-        int x_hot = 0, y_hot = 0;
-
-        g_object_get (self->priv->cursor, "x-hot", &x_hot, "y-hot", &y_hot,
-                      NULL);
-
-        rect.width = ccm_cursor_get_width (self->priv->cursor);
-        rect.height = ccm_cursor_get_height (self->priv->cursor);
-
-        rect.x = (double) x - x_hot;
-        rect.y = (double) y - y_hot;
-        region = ccm_region_rectangle (&rect);
-
-        if (self->priv->cursor_x >= 0 && self->priv->cursor_y >= 0)
-        {
-            rect.x = (double) self->priv->cursor_x - x_hot;
-            rect.y = (double) self->priv->cursor_y - y_hot;
-            ccm_region_union_with_rect (region, &rect);
-        }
-
-        ccm_screen_damage_region (self, (const CCMRegion *) region);
-        ccm_region_destroy (region);
-
-        self->priv->cursor_x = x;
-        self->priv->cursor_y = y;
-    }
-}
-
-static void
-ccm_screen_on_cursor_move (CCMScreen * self, int x, int y)
-{
-    g_return_if_fail (self != NULL);
-
-    ccm_screen_plugin_on_cursor_move (self->priv->plugin, self, x, y);
-}
-
-static void
 ccm_screen_on_damage_event (CCMScreen * self, guint32 damage, CCMDrawable* drawable)
 {
     if (ccm_drawable_get_screen (drawable) == self)
@@ -2426,10 +2278,6 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
 
                 if (motion_event->root != CCM_WINDOW_XWINDOW (self->priv->root))
                     return;
-
-                if (self->priv->manage_cursor)
-                    ccm_screen_on_cursor_move (self, motion_event->x_root,
-                                               motion_event->y_root);
 
                 if (self->priv->nb_redirect_input)
                 {
@@ -3021,8 +2869,6 @@ ccm_screen_new (CCMDisplay * display, guint number)
     _ccm_screen_query_geometry (self);
     self->priv->root_damage = ccm_region_copy (self->priv->geometry);
 
-    ccm_display_report_device_event (display, self, TRUE);
-
     return self;
 }
 
@@ -3267,49 +3113,6 @@ ccm_screen_query_pointer (CCMScreen * self, CCMWindow ** below, gint * x,
     }
 
     return ret;
-}
-
-void
-ccm_screen_manage_cursors (CCMScreen * self)
-{
-    g_return_if_fail (self != NULL);
-
-    if (!self->priv->manage_cursor)
-    {
-        int x, y;
-
-        self->priv->cursor =
-            (CCMCursor *) ccm_display_get_current_cursor (self->priv->display,
-                                                          TRUE);
-        self->priv->manage_cursor = TRUE;
-        ccm_screen_query_pointer (self, NULL, &x, &y);
-        ccm_screen_on_cursor_move (self, x, y);
-
-        XFixesSelectCursorInput (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                                 CCM_WINDOW_XWINDOW (self->priv->root),
-                                 XFixesDisplayCursorNotifyMask);
-        XFixesHideCursor (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                          CCM_WINDOW_XWINDOW (self->priv->root));
-    }
-}
-
-void
-ccm_screen_unmanage_cursors (CCMScreen * self)
-{
-    g_return_if_fail (self != NULL);
-
-    if (self->priv->manage_cursor)
-    {
-        self->priv->cursor = NULL;
-        self->priv->manage_cursor = FALSE;
-        self->priv->cursor_x = -1;
-        self->priv->cursor_y = -1;
-
-        XFixesSelectCursorInput (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                                 CCM_WINDOW_XWINDOW (self->priv->root), 0);
-        XFixesShowCursor (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                          CCM_WINDOW_XWINDOW (self->priv->root));
-    }
 }
 
 Visual *

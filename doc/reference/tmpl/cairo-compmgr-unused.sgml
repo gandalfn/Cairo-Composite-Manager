@@ -14,6 +14,14 @@
 @ccmdisplay: the object which received the signal.
 @arg1: 
 
+<!-- ##### SIGNAL CCMDisplay::cursor-changed ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
 <!-- ##### SIGNAL CCMDisplay::motion-notify-event ##### -->
 <para>
 
@@ -29,6 +37,18 @@
 
 @ccmdisplay: the object which received the signal.
 @arg1: 
+
+<!-- ##### ARG CCMDisplay:shm-shared-pixmap ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDisplay:use-xdbe ##### -->
+<para>
+
+</para>
+
 
 <!-- ##### ARG CCMPixmap:y-invert ##### -->
 <para>

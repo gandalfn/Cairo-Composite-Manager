@@ -2,17 +2,17 @@
 /*
  * ccm-plugin.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -35,6 +35,7 @@ struct _CCMPluginOptionsPrivate
     CCMConfig **configs;
     int         configs_size;
     GSList*     callbacks;
+    long        id;
 };
 
 static GQuark CCMPLuginOptionsCallbackQuark;
@@ -73,7 +74,7 @@ ccm_plugin_options_finalize (GObject * object)
 
     if (self->priv->configs)
     {
-        gint cpt; 
+        gint cpt;
         for (cpt = 0; cpt < self->priv->configs_size; cpt++)
         {
             ccm_debug ("%s FINALIZE CONFIG[%i]",
@@ -82,7 +83,7 @@ ccm_plugin_options_finalize (GObject * object)
         }
         ccm_debug ("%s FINALIZE CONFIG TAB",
                    G_OBJECT_TYPE_NAME (self));
-        g_slice_free1 (sizeof(CCMConfig*) * self->priv->configs_size, 
+        g_slice_free1 (sizeof(CCMConfig*) * self->priv->configs_size,
                        self->priv->configs);
         self->priv->configs = NULL;
     }
@@ -90,8 +91,8 @@ ccm_plugin_options_finalize (GObject * object)
     if (self->priv->callbacks)
     {
         GSList* copy = g_slist_copy(self->priv->callbacks);
-        g_slist_foreach(copy, 
-                        (GFunc)_ccm_plugin_options_disconnect_callback, 
+        g_slist_foreach(copy,
+                        (GFunc)_ccm_plugin_options_disconnect_callback,
                         NULL);
         g_slist_free(self->priv->callbacks);
         g_slist_free(copy);
@@ -108,13 +109,13 @@ ccm_plugin_options_class_init (CCMPluginOptionsClass * klass)
 
     g_type_class_add_private (klass, sizeof (CCMPluginOptionsPrivate));
 
-    CCMPLuginOptionsCallbackQuark = 
+    CCMPLuginOptionsCallbackQuark =
         g_quark_from_static_string ("CCMPLuginOptionsCallback");
 
     object_class->finalize = ccm_plugin_options_finalize;
 }
 
-static void 
+static void
 ccm_plugins_options_on_changed(CCMPluginOptions* self, CCMConfig* config)
 {
     GSList* item;
@@ -141,8 +142,8 @@ ccm_plugins_options_on_changed(CCMPluginOptions* self, CCMConfig* config)
 }
 
 static void
-_ccm_plugin_options_load (CCMPluginOptions* self, gint screen, 
-                          gchar * plugin_name, const gchar ** options_key, 
+_ccm_plugin_options_load (CCMPluginOptions* self, gint screen,
+                          gchar * plugin_name, const gchar ** options_key,
                           int nb_options, CCMPluginOptionsChangedFunc func,
                           CCMPlugin* plugin)
 {
@@ -159,8 +160,7 @@ _ccm_plugin_options_load (CCMPluginOptions* self, gint screen,
 
     if (func)
     {
-        CCMPluginOptionsChangedCallback* callback = 
-            g_new0(CCMPluginOptionsChangedCallback, 1);
+        CCMPluginOptionsChangedCallback* callback =  g_new0(CCMPluginOptionsChangedCallback, 1);
 
         callback->options = self;
         callback->callback = func;
@@ -175,7 +175,7 @@ _ccm_plugin_options_load (CCMPluginOptions* self, gint screen,
     {
         if (self->priv->configs[cpt] == NULL)
         {
-            ccm_debug ("%s CREATE CONFIG[%i] %s", 
+            ccm_debug ("%s CREATE CONFIG[%i] %s",
                        G_OBJECT_TYPE_NAME (self), cpt,
                        (gchar *) options_key[cpt]);
 
@@ -350,7 +350,7 @@ ccm_plugin_init_options (CCMPlugin * self)
     {
         ccm_debug ("%s INIT OPTIONS[%i]", G_OBJECT_TYPE_NAME (self),
                    self->priv->screen);
-        klass->options[self->priv->screen] = g_object_new (klass->type_options, 
+        klass->options[self->priv->screen] = g_object_new (klass->type_options,
                                                            NULL);
     }
 }
@@ -516,8 +516,8 @@ ccm_plugin_options_load (CCMPlugin * self, gchar * plugin_name,
     klass->count++;
 
     ccm_plugin_init_options (self);
-    _ccm_plugin_options_load(klass->options[self->priv->screen], 
-                             self->priv->screen, plugin_name, 
+    _ccm_plugin_options_load(klass->options[self->priv->screen],
+                             self->priv->screen, plugin_name,
                              options_key, nb_options, callback, self);
 }
 

@@ -2,17 +2,17 @@
 /*
  * ccm-window-animation.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -34,7 +34,7 @@ namespace CCM
     {
         public double duration = 0.4;
 
-        public override void 
+        public override void
         changed(CCM.Config config)
         {
             var real_duration = 0.4;
@@ -72,6 +72,7 @@ namespace CCM
         };
 
         weak CCM.Window window;
+        weak CCM.Screen screen;
         CCM.WindowType type;
         bool desktop_changed;
         CCM.Timeline timeline;
@@ -85,10 +86,20 @@ namespace CCM
 
         ~WindowAnimation ()
         {
+            if (window is Window)
+            {
+                window.property_changed.disconnect (on_property_changed);
+            }
+
+            if (screen is Screen)
+            {
+                screen.desktop_changed.disconnect(on_desktop_changed);
+            }
+
             options_unload ();
         }
 
-        void 
+        void
         option_changed (int index)
         {
             if (index == Options.DURATION)
@@ -97,7 +108,7 @@ namespace CCM
             }
         }
 
-        void 
+        void
         on_property_changed (CCM.Window window,
                              CCM.PropertyType property_type)
         {
@@ -121,7 +132,7 @@ namespace CCM
         on_new_frame (int frame)
         {
             double progress = timeline.progress;
-            double x0 = (geometry.width / 2.0) * (1.0 - progress), 
+            double x0 = (geometry.width / 2.0) * (1.0 - progress),
                    y0 = (geometry.height / 2.0) * (1.0 - progress);
             Cairo.Matrix matrix;
             CCM.Region damaged = new CCM.Region.empty();
@@ -154,7 +165,7 @@ namespace CCM
             }
             geometry = window.get_geometry();
             if (geometry != null && !geometry.is_empty())
-                damaged.union(geometry); 
+                damaged.union(geometry);
 
             if (!damaged.is_empty())
                 window.get_screen().damage_region(damaged);
@@ -180,13 +191,14 @@ namespace CCM
         window_load_options (CCM.Window window)
         {
             this.window = window;
+            this.screen = window.get_screen ();
             this.type = CCM.WindowType.UNKNOWN;
             this.window.property_changed.connect (on_property_changed);
 
-            options_load ("window-animation", options_key, 
+            options_load ("window-animation", options_key,
                           (PluginOptionsChangedFunc)option_changed);
 
-            window.get_screen ().desktop_changed.connect(on_desktop_changed);
+            this.screen.desktop_changed.connect(on_desktop_changed);
             desktop_changed = false;
 
             (parent as CCM.WindowPlugin).window_load_options (window);
@@ -263,7 +275,7 @@ namespace CCM
             (parent as CCM.WindowPlugin).map (window);
         }
 
-        void 
+        void
         unmap (CCM.Window window)
         {
             if (!desktop_changed && window.is_decorated() &&

@@ -15,8 +15,6 @@ plugins/fade/ccm-fade.schema-key.in
 plugins/fade/ccm-fade.ui
 plugins/freeze/ccm-freeze.plugin.desktop.in
 plugins/freeze/ccm-freeze.schema-key.in
-plugins/magnifier/ccm-magnifier.plugin.desktop.in
-plugins/magnifier/ccm-magnifier.schema-key.in
 plugins/menu-animation/ccm-menu-animation.plugin.desktop.in
 plugins/menu-animation/ccm-menu-animation.schema-key.in
 plugins/menu-animation/ccm-menu-animation.ui

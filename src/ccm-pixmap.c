@@ -130,7 +130,7 @@ ccm_pixmap_finalize (GObject * object)
     if (!self->priv->foreign)
         XFreePixmap (CCM_DISPLAY_XDISPLAY (display), CCM_PIXMAP_XPIXMAP (self));
 
-    if (!self->priv->region)
+    if (self->priv->region)
         XFixesDestroyRegion (CCM_DISPLAY_XDISPLAY (display), self->priv->region);
 
     G_OBJECT_CLASS (ccm_pixmap_parent_class)->finalize (object);

@@ -2,17 +2,17 @@
 /*
  * ccm-perf.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -124,9 +124,9 @@ ccm_perf_options_changed (CCMPerfOptions* self, CCMConfig* config)
 {
     GError *error = NULL;
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_PERF_X) ||
-        config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+        config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_PERF_Y))
     {
         self->area.x = ccm_config_get_integer (ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
@@ -156,7 +156,7 @@ ccm_perf_options_changed (CCMPerfOptions* self, CCMConfig* config)
 #endif
     }
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_PERF_SHORTCUT))
     {
         if (self->shortcut) g_free (self->shortcut);
@@ -270,9 +270,7 @@ ccm_perf_get_pcpu (CCMPerf * self)
     glibtop_cpu cpu;
 
     glibtop_get_cpu (&cpu);
-    self->priv->cpu_total =
-        (int) ((float) (cpu.total - self->priv->last_cpu_total) /
-               (float) cpu.frequency);
+    self->priv->cpu_total = (int) ((float) (cpu.total - self->priv->last_cpu_total) / (float) cpu.frequency);
     if (self->priv->cpu_total >= 1)
     {
         self->priv->last_cpu_total = cpu.total;
@@ -280,8 +278,7 @@ ccm_perf_get_pcpu (CCMPerf * self)
         glibtop_proc_time proctime;
 
         glibtop_get_proc_time (&proctime, pid);
-        self->priv->pcpu =
-            (proctime.rtime - self->priv->cpu_time) / self->priv->cpu_total;
+        self->priv->pcpu = (proctime.rtime - self->priv->cpu_time) / self->priv->cpu_total;
         self->priv->pcpu = MIN (self->priv->pcpu, 100);
         self->priv->cpu_time = proctime.rtime;
     }
@@ -309,8 +306,7 @@ ccm_perf_get_mem_info (CCMPerf * self)
     }
 
     wnck_xid_read_resource_usage (gdk_display_get_default (),
-                                  _ccm_screen_get_selection_owner (self->priv->
-                                                                   screen),
+                                  _ccm_screen_get_selection_owner (self->priv->screen),
                                   &xresources);
     self->priv->mem_xorg = xresources.total_bytes_estimate;
     wnck_pid_read_resource_usage (gdk_display_get_default (), pid, &xresources);
@@ -338,8 +334,7 @@ ccm_perf_on_key_press (CCMPerf * self)
     self->priv->enabled = ~self->priv->enabled;
     if (!self->priv->enabled)
     {
-        CCMRegion *area =
-            ccm_region_rectangle (&ccm_perf_get_option (self)->area);
+        CCMRegion *area = ccm_region_rectangle (&ccm_perf_get_option (self)->area);
 
         ccm_screen_damage_region (self->priv->screen, area);
         ccm_region_destroy (area);
@@ -368,8 +363,8 @@ ccm_perf_on_option_changed (CCMPlugin * plugin, int index)
         if (self->priv->keybind)
             g_object_unref (self->priv->keybind);
 
-        self->priv->keybind = ccm_keybind_new (self->priv->screen, 
-                                               ccm_perf_get_option (self)->shortcut, 
+        self->priv->keybind = ccm_keybind_new (self->priv->screen,
+                                               ccm_perf_get_option (self)->shortcut,
                                                TRUE);
         g_signal_connect_swapped (self->priv->keybind,
                                   "key_press",
@@ -408,9 +403,8 @@ ccm_perf_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
             self->priv->elapsed = 0.0f;
             self->priv->frames = 0;
             self->priv->need_refresh = TRUE;
-            CCMRegion *area =
-                ccm_region_rectangle (&ccm_perf_get_option (self)->area);
 
+            CCMRegion *area = ccm_region_rectangle (&ccm_perf_get_option (self)->area);
             ccm_screen_damage_region (screen, area);
             ccm_region_destroy (area);
         }
@@ -422,8 +416,7 @@ ccm_perf_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
     {
         if (ret)
         {
-            CCMRegion *area =
-                ccm_region_rectangle (&ccm_perf_get_option (self)->area);
+            CCMRegion *area = ccm_region_rectangle (&ccm_perf_get_option (self)->area);
             CCMRegion *damaged = ccm_screen_get_damaged (screen);
 
             ccm_region_intersect (area, damaged);
@@ -435,8 +428,7 @@ ccm_perf_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
         {
             cairo_surface_t *icon;
             gchar *text;
-            CCMRegion *area =
-                ccm_region_rectangle (&ccm_perf_get_option (self)->area);
+            CCMRegion *area = ccm_region_rectangle (&ccm_perf_get_option (self)->area);
 
             ccm_screen_add_damaged_region (screen, area);
             ccm_region_destroy (area);
@@ -467,12 +459,10 @@ ccm_perf_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
             g_free (text);
 
             ccm_perf_get_mem_info (self);
-            text = g_strdup_printf ("Mem : %li Kb",
-                                    (glong) (self->priv->mem_size / 1024));
+            text = g_strdup_printf ("Mem : %li Kb", (glong) (self->priv->mem_size / 1024));
             ccm_perf_show_text (self, context, text, 2);
             g_free (text);
-            text = g_strdup_printf ("XMem : %li Kb",
-                                    (glong) (self->priv->mem_xorg / 1024));
+            text = g_strdup_printf ("XMem : %li Kb", (glong) (self->priv->mem_xorg / 1024));
             ccm_perf_show_text (self, context, text, 3);
             g_free (text);
 

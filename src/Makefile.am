@@ -23,7 +23,7 @@ endif
 
 if ENABLE_GOBJECT_INTROSPECTION
 INCLUDES += $(CCM_GOBJECT_INTROSPECTION_CFLAGS) -DENABLE_GOBJECT_INTROSPECTION
-endif 
+endif
 
 if ENABLE_GCONF
 INCLUDES += $(CCM_GCONF_CFLAGS) -DENABLE_GCONF
@@ -109,8 +109,6 @@ cairo_compmgr_SOURCES = \
     ccm-cell-renderer-extension.c \
     ccm-preferences-page.h \
     ccm-preferences-page.c \
-    ccm-cursor.h \
-    ccm-cursor.c \
     eggdesktopfile.c \
     eggdesktopfile.h \
     eggsmclient-private.h \
@@ -142,7 +140,7 @@ endif
 
 if ENABLE_GOBJECT_INTROSPECTION
 cairo_compmgr_LDADD += $(CCM_GOBJECT_INTROSPECTION_LIBS)
-endif 
+endif
 
 if ENABLE_GCONF
 cairo_compmgr_LDADD += $(CCM_GCONF_LIBS)

@@ -11,4 +11,4 @@ _Description=Perf window y pos.
 [shortcut]
 Type=string
 Default=<Super>f
-_Description=The magnifier shortcut key.
+_Description=The perf shortcut key.

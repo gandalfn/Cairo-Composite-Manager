@@ -34,13 +34,14 @@ CCMDisplay
 </para>
 
 
-<!-- ##### SIGNAL CCMDisplay::cursor-changed ##### -->
+<!-- ##### SIGNAL CCMDisplay::damage-destroy ##### -->
 <para>
 
 </para>
 
 @ccmdisplay: the object which received the signal.
 @arg1: 
+@arg2: 
 
 <!-- ##### SIGNAL CCMDisplay::damage-event ##### -->
 <para>
@@ -49,6 +50,7 @@ CCMDisplay
 
 @ccmdisplay: the object which received the signal.
 @arg1: 
+@Param3: 
 
 <!-- ##### SIGNAL CCMDisplay::event ##### -->
 <para>
@@ -58,22 +60,12 @@ CCMDisplay
 @ccmdisplay: the object which received the signal.
 @arg1: 
 
-<!-- ##### ARG CCMDisplay:shm-shared-pixmap ##### -->
-<para>
-
-</para>
-
 <!-- ##### ARG CCMDisplay:use-glx ##### -->
 <para>
 
 </para>
 
 <!-- ##### ARG CCMDisplay:use-randr ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDisplay:use-xdbe ##### -->
 <para>
 
 </para>

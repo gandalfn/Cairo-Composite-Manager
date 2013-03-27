@@ -226,8 +226,6 @@ namespace CCM
         public signal void damage_event (X.Event event);
         [HasEmitter]
         public signal void event (X.Event event);
-        [HasEmitter]
-        public signal void xfixes_cursor_event (X.Event event);
     }
 
     [CCode (cheader_filename = "ccm-screen-plugin.h")]

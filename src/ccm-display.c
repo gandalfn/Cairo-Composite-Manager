@@ -30,7 +30,6 @@
 
 #include "ccm-debug.h"
 #include "ccm-display.h"
-#include "ccm-cursor.h"
 #include "ccm-screen.h"
 #include "ccm-config.h"
 #include "ccm-window.h"
@@ -64,7 +63,6 @@ enum
     EVENT,
     DAMAGE_EVENT,
     DAMAGE_DESTROY,
-    CURSOR_CHANGED,
     N_SIGNALS
 };
 
@@ -108,11 +106,6 @@ struct _CCMDisplayPrivate
     int              type_button_release;
     int              type_motion_notify;
     CCMPointerEvents last_events;
-
-    gchar*           cursors_theme;
-    gint             cursors_size;
-    CCMCursor*       cursor_current;
-    GHashTable*      cursors;
 
     gboolean         use_shm;
     CCMConfig*       options[CCM_DISPLAY_OPTION_N];
@@ -239,9 +232,6 @@ ccm_display_init (CCMDisplay * self)
     self->priv->last_events.press = 0;
     self->priv->last_events.release = 0;
     self->priv->last_events.motion = 0;
-    self->priv->cursors = g_hash_table_new_full (g_int_hash, g_int_equal,
-                                                 g_free, g_object_unref);
-    self->priv->cursor_current = NULL;
     self->priv->registered_damage = ccm_set_new (G_TYPE_POINTER,
                                                  (GBoxedCopyFunc)ccm_damage_callback_ref,
                                                  (GDestroyNotify)ccm_damage_callback_unref,
@@ -261,18 +251,6 @@ ccm_display_finalize (GObject * object)
 
     if (self->priv->registered_damage)
         g_object_unref (self->priv->registered_damage);
-
-    if (self->priv->cursors)
-        g_hash_table_destroy (self->priv->cursors);
-
-    if (self->priv->pointers)
-    {
-        GSList *item;
-
-        for (item = self->priv->pointers; item; item = item->next)
-            XCloseDevice (self->priv->xdisplay, item->data);
-        g_slist_free (self->priv->pointers);
-    }
 
     if (self->priv->nb_screens)
     {
@@ -351,12 +329,6 @@ ccm_display_class_init (CCMDisplayClass * klass)
                       G_SIGNAL_RUN_LAST, 0, NULL, NULL,
                       g_cclosure_marshal_VOID__UINT_POINTER, G_TYPE_NONE, 2,
                       G_TYPE_INT, G_TYPE_POINTER);
-
-    signals[CURSOR_CHANGED] =
-        g_signal_new ("cursor-changed", G_OBJECT_CLASS_TYPE (object_class),
-                      G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                      g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1,
-                      G_TYPE_POINTER);
 }
 
 static void
@@ -372,83 +344,6 @@ ccm_display_load_config (CCMDisplay * self)
     }
     self->priv->use_shm = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM], NULL) &&
                                                   self->priv->shm.available;
-}
-
-static void
-ccm_display_check_cursor (CCMDisplay * self, Atom cursor_name,
-                          gboolean emit_event)
-{
-    g_return_if_fail (self != NULL);
-
-    CCMCursor *current = NULL;
-
-    if (cursor_name)
-    {
-        current = g_hash_table_lookup (self->priv->cursors, &cursor_name);
-
-        if (!current)
-        {
-            XFixesCursorImage *cursor;
-
-            cursor = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY (self));
-            ccm_debug ("CHECK CURSOR %li", cursor_name);
-
-            current = ccm_cursor_new (self, cursor);
-            XFree (cursor);
-            if (current)
-                g_hash_table_insert (self->priv->cursors,
-                                     g_memdup (&cursor_name, sizeof (gulong)),
-                                     current);
-        }
-    }
-    else
-    {
-        XFixesCursorImage *cursor;
-
-        cursor = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY (self));
-
-        current = ccm_cursor_new (self, cursor);
-
-        XFree (cursor);
-    }
-
-    if (self->priv->cursor_current != current)
-    {
-        gboolean animated = FALSE;
-
-        if (self->priv->cursor_current)
-        {
-            g_object_get (self->priv->cursor_current, "animated", &animated, NULL);
-            if (animated)
-                g_object_unref (self->priv->cursor_current);
-        }
-        self->priv->cursor_current = current;
-        if (emit_event)
-            g_signal_emit (self, signals[CURSOR_CHANGED], 0, self->priv->cursor_current);
-    }
-
-}
-
-static void
-ccm_display_get_pointers (CCMDisplay * self)
-{
-    g_return_if_fail (self != NULL);
-
-    XDeviceInfo *info;
-    gint ndevices, cpt;
-
-    info = XListInputDevices (self->priv->xdisplay, &ndevices);
-    for (cpt = 0; cpt < ndevices; ++cpt)
-    {
-        XDeviceInfo *current = &info[cpt];
-        if (current->use == IsXExtensionPointer)
-        {
-            XDevice *device = XOpenDevice (self->priv->xdisplay, current->id);
-            ccm_debug ("Found device: %s (%d)", current->name, current->id);
-            self->priv->pointers = g_slist_prepend (self->priv->pointers, device);
-        }
-    }
-    XFree (info);
 }
 
 static gboolean
@@ -649,13 +544,6 @@ ccm_display_process_events (CCMWatch* watch)
                 g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage, callback->drawable);
             }
         }
-        else if (xevent.type == self->priv->fixes.event_base + XFixesCursorNotify)
-        {
-            XFixesCursorNotifyEvent *event_cursor = (XFixesCursorNotifyEvent *) &xevent;
-
-            ccm_debug ("CURSOR NOTIFY %li", event_cursor->cursor_name);
-            ccm_display_check_cursor (self, event_cursor->cursor_name, TRUE);
-        }
         else
         {
             g_signal_emit (self, signals[EVENT], 0, &xevent);
@@ -728,8 +616,6 @@ ccm_display_new (gchar * display)
 
     if (CCMDefaultDisplay == NULL) CCMDefaultDisplay = self;
 
-    ccm_display_get_pointers (self);
-
     ccm_display_load_config (self);
 
     XSetErrorHandler (ccm_display_error_handler);
@@ -792,83 +678,6 @@ ccm_display_get_shape_notify_event_type (CCMDisplay * self)
     return self->priv->shape.event_base + ShapeNotify;
 }
 
-gboolean
-ccm_display_report_device_event (CCMDisplay * self, CCMScreen * screen,
-                                 gboolean report)
-{
-    g_return_val_if_fail (self != NULL, FALSE);
-    g_return_val_if_fail (screen != NULL, FALSE);
-
-    CCMWindow *root = ccm_screen_get_root_window (screen);
-    GSList *item;
-
-    for (item = self->priv->pointers; item; item = item->next)
-    {
-        XDevice *pointer = (XDevice *) item->data;
-        gint cpt, nb = 0;
-
-        if (report)
-        {
-            XInputClassInfo *class;
-            XEventClass *event = g_new0 (XEventClass, 9 * pointer->num_classes);
-
-            for (class = pointer->classes, cpt = 0; cpt < pointer->num_classes;
-                 class++, ++cpt)
-            {
-                switch (class->input_class)
-                {
-                    case ButtonClass:
-                        DeviceButtonPress (pointer,
-                                           self->priv->type_button_press,
-                                           event[nb++]);
-                        DeviceButtonRelease (pointer,
-                                             self->priv->type_button_release,
-                                             event[nb++]);
-                        break;
-
-                    case ValuatorClass:
-                        DeviceButton1Motion (pointer, 0, event[nb++]);
-                        DeviceButton2Motion (pointer, 0, event[nb++]);
-                        DeviceButton3Motion (pointer, 0, event[nb++]);
-                        DeviceButton4Motion (pointer, 0, event[nb++]);
-                        DeviceButton5Motion (pointer, 0, event[nb++]);
-                        DeviceButtonMotion (pointer, 0, event[nb++]);
-                        DeviceMotionNotify (pointer,
-                                            self->priv->type_motion_notify,
-                                            event[nb++]);
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-            if (XSelectExtensionEvent (self->priv->xdisplay,
-                                       CCM_WINDOW_XWINDOW (root),
-                                       event, nb))
-            {
-                g_free (event);
-                return FALSE;
-            }
-            g_free (event);
-        }
-        else
-        {
-            XEventClass *event = g_new0 (XEventClass, 1);;
-            NoExtensionEvent (pointer, 0, event[nb++]);
-            if (XSelectExtensionEvent (self->priv->xdisplay,
-                                       CCM_WINDOW_XWINDOW (root),
-                                       event, nb))
-            {
-                g_free (event);
-                return FALSE;
-            }
-            g_free (event);
-        }
-    }
-
-    return TRUE;
-}
-
 void
 ccm_display_flush (CCMDisplay * self)
 {
@@ -915,23 +724,6 @@ ccm_display_pop_error (CCMDisplay * self)
     ccm_display_sync (self);
 
     return CCMLastXError;
-}
-
-const CCMCursor *
-ccm_display_get_current_cursor (CCMDisplay * self, gboolean initiate)
-{
-    g_return_val_if_fail (self != NULL, NULL);
-
-    if (initiate || !self->priv->cursor_current)
-    {
-        XFixesCursorImage *cursor;
-
-        cursor = XFixesGetCursorImage (CCM_DISPLAY_XDISPLAY (self));
-        ccm_display_check_cursor (self, cursor->atom, FALSE);
-        XFree (cursor);
-    }
-
-    return (const CCMCursor *) self->priv->cursor_current;
 }
 
 G_GNUC_PURE CCMDisplay*
@@ -988,7 +780,7 @@ ccm_display_unregister_damage (CCMDisplay* self, guint32 damage, CCMDrawable* dr
                                                    GINT_TO_POINTER (damage),
                                                    (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
 
-    if (callback)
+    if (callback && callback->drawable == drawable)
     {
         ccm_set_remove (self->priv->registered_damage, callback);
     }

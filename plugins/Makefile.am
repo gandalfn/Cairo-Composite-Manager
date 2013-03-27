@@ -5,7 +5,6 @@ SUBDIRS = \
     freeze \
     menu-animation \
     window-animation \
-    magnifier \
     mosaic \
     perf \
     decoration \
