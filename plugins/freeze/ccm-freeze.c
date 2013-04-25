@@ -73,20 +73,21 @@ CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN,
                                                          ccm_freeze_preferences_page_iface_init))
 struct _CCMFreezePrivate
 {
-    gboolean     alive;
-    gfloat       opacity;
+    gboolean         alive;
+    gfloat           opacity;
 
-    CCMScreen*   screen;
-    CCMWindow*   window;
+    CCMScreen*       screen;
+    CCMWindow*       window;
 
-    guint        id_ping;
-    glong        last_ping;
-    glong        pid;
+    guint            id_ping;
+    glong            last_ping;
+    glong            pid;
 
-    CCMTimeline* timeline;
-    GtkBuilder*  builder;
+    CCMTimeline*     timeline;
+    GtkBuilder*      builder;
+    cairo_surface_t* frozen;
 
-    gulong       id_event;
+    gulong           id_event;
 };
 
 #define CCM_FREEZE_GET_PRIVATE(o)  \
@@ -146,6 +147,7 @@ ccm_freeze_init (CCMFreeze * self)
     self->priv->pid = 0;
     self->priv->timeline = NULL;
     self->priv->builder = NULL;
+    self->priv->frozen = NULL;
     self->priv->id_event = 0;
 }
 
@@ -174,6 +176,8 @@ ccm_freeze_finalize (GObject * object)
         g_object_unref (self->priv->timeline);
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
+    if (self->priv->frozen)
+        cairo_surface_destroy (self->priv->frozen);
 
     G_OBJECT_CLASS (ccm_freeze_parent_class)->finalize (object);
 }
@@ -192,11 +196,11 @@ static void
 ccm_freeze_on_new_frame (CCMFreeze * self, guint num_frame,
                          CCMTimeline * timeline)
 {
-    if (!self->priv->alive && self->priv->opacity < 0.5)
+    if (!self->priv->alive && self->priv->opacity < 0.25)
     {
         gfloat progress = ccm_timeline_get_progress (timeline);
 
-        self->priv->opacity = progress / 2.0f;
+        self->priv->opacity = progress / 4.0f;
         ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
     }
 }
@@ -255,16 +259,14 @@ ccm_freeze_get_pid (CCMFreeze * self)
     {
         data =
             ccm_window_get_property (self->priv->window,
-                                     CCM_WINDOW_GET_CLASS (self->priv->window)->
-                                     pid_atom, XA_CARDINAL, &n_items);
+                                     CCM_WINDOW_GET_CLASS (self->priv->window)->pid_atom,
+                                     XA_CARDINAL, &n_items);
     }
     else
     {
-        data =
-            ccm_window_get_child_property (self->priv->window,
-                                           CCM_WINDOW_GET_CLASS (self->priv->
-                                                                 window)->
-                                           pid_atom, XA_CARDINAL, &n_items);
+        data = ccm_window_get_child_property (self->priv->window,
+                                              CCM_WINDOW_GET_CLASS (self->priv->window)->pid_atom,
+                                              XA_CARDINAL, &n_items);
     }
 
     if (data)
@@ -295,8 +297,7 @@ ccm_freeze_ping (CCMFreeze * self)
             !self->priv->pid || ccm_window_is_input_only (self->priv->window)
             || !ccm_window_is_viewable (self->priv->window)
             || !ccm_window_is_decorated (self->priv->window)
-            || (type != CCM_WINDOW_TYPE_NORMAL
-                && type != CCM_WINDOW_TYPE_DIALOG))
+            || (type != CCM_WINDOW_TYPE_NORMAL && type != CCM_WINDOW_TYPE_DIALOG))
         {
             if (!self->priv->alive)
                 ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
@@ -355,17 +356,14 @@ ccm_freeze_ping (CCMFreeze * self)
 
         event.type = ClientMessage;
         event.xclient.window = window;
-        event.xclient.message_type =
-            CCM_WINDOW_GET_CLASS (self->priv->window)->protocol_atom;
+        event.xclient.message_type = CCM_WINDOW_GET_CLASS (self->priv->window)->protocol_atom;
         event.xclient.format = 32;
-        event.xclient.data.l[0] =
-            CCM_WINDOW_GET_CLASS (self->priv->window)->ping_atom;
+        event.xclient.data.l[0] = CCM_WINDOW_GET_CLASS (self->priv->window)->ping_atom;
         event.xclient.data.l[1] = self->priv->last_ping;
         event.xclient.data.l[2] = window;
         event.xclient.data.l[3] = 0;
         event.xclient.data.l[4] = 0;
-        XSendEvent (CCM_DISPLAY_XDISPLAY (display), window, FALSE, NoEventMask,
-                    &event);
+        XSendEvent (CCM_DISPLAY_XDISPLAY (display), window, FALSE, NoEventMask, &event);
     }
 
 
@@ -421,21 +419,46 @@ ccm_freeze_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
 {
     CCMFreeze *self = CCM_FREEZE (plugin);
     gboolean ret;
+    cairo_rectangle_t geometry;
 
-    ret = ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
-                                   context, surface);
-
-    if (ccm_window_is_viewable (window) && !self->priv->alive)
+    if (ccm_window_is_viewable (window) && !self->priv->alive &&
+        ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (window), &geometry))
     {
         CCMRegion *tmp = ccm_window_get_area_geometry (window);
         int cpt, nb_rects;
         cairo_rectangle_t *rects;
+
+        if (self->priv->frozen == NULL)
+        {
+            cairo_surface_t* grayscale_surface = cairo_image_surface_create (CAIRO_FORMAT_RGB24, geometry.width, geometry.height);
+            cairo_t* grayscale_ctx = cairo_create (grayscale_surface);
+
+            self->priv->frozen = cairo_surface_create_similar (surface, CAIRO_CONTENT_COLOR_ALPHA, geometry.width, geometry.height);
+            cairo_t* ctx = cairo_create (self->priv->frozen);
+
+            cairo_set_operator (grayscale_ctx, CAIRO_OPERATOR_CLEAR);
+            cairo_paint (grayscale_ctx);
+            cairo_set_operator (grayscale_ctx, CAIRO_OPERATOR_HSL_LUMINOSITY);
+            cairo_set_source_surface (grayscale_ctx, surface, 0, 0);
+            cairo_paint (grayscale_ctx);
+            cairo_destroy (grayscale_ctx);
+
+            cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
+            cairo_set_source_surface (ctx, grayscale_surface, 0, 0);
+            cairo_mask_surface (ctx, surface, 0, 0);
+
+            cairo_destroy (ctx);
+            cairo_surface_destroy (grayscale_surface);
+        }
+
+        ret = ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
+                                       context, self->priv->frozen);
+
         cairo_save (context);
 
         ccm_region_get_rectangles (tmp, &rects, &nb_rects);
         for (cpt = 0; cpt < nb_rects; ++cpt)
-            cairo_rectangle (context, rects[cpt].x, rects[cpt].y,
-                             rects[cpt].width, rects[cpt].height);
+            cairo_rectangle (context, rects[cpt].x, rects[cpt].y, rects[cpt].width, rects[cpt].height);
         cairo_clip (context);
         cairo_rectangles_free (rects, nb_rects);
         ccm_region_destroy (tmp);
@@ -447,6 +470,17 @@ ccm_freeze_window_paint (CCMWindowPlugin * plugin, CCMWindow * window,
         cairo_paint_with_alpha (context, self->priv->opacity);
         cairo_restore (context);
     }
+    else
+    {
+        if (self->priv->frozen != NULL)
+        {
+            cairo_surface_destroy (self->priv->frozen);
+            self->priv->frozen = NULL;
+        }
+
+        ret = ccm_window_plugin_paint (CCM_WINDOW_PLUGIN_PARENT (plugin), window,
+                                       context, surface);
+    }
 
     return ret;
 }
@@ -457,11 +491,10 @@ ccm_freeze_window_map (CCMWindowPlugin * plugin, CCMWindow * window)
     CCMFreeze *self = CCM_FREEZE (plugin);
 
     if (!self->priv->id_ping)
-        self->priv->id_ping =
-        g_timeout_add_seconds_full (G_PRIORITY_LOW,
-                                    ccm_freeze_get_option (self)->delay,
-                                    (GSourceFunc) ccm_freeze_ping, self,
-                                    NULL);
+        self->priv->id_ping = g_timeout_add_seconds_full (G_PRIORITY_LOW,
+                                                          ccm_freeze_get_option (self)->delay,
+                                                          (GSourceFunc) ccm_freeze_ping, self,
+                                                          NULL);
     ccm_window_plugin_map (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
 
@@ -482,10 +515,8 @@ ccm_freeze_window_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
 }
 
 static void
-ccm_freeze_preferences_page_init_windows_section (CCMPreferencesPagePlugin *
-                                                  plugin,
-                                                  CCMPreferencesPage *
-                                                  preferences,
+ccm_freeze_preferences_page_init_windows_section (CCMPreferencesPagePlugin * plugin,
+                                                  CCMPreferencesPage * preferences,
                                                   GtkWidget * windows_section)
 {
     CCMFreeze *self = CCM_FREEZE (plugin);
@@ -495,31 +526,20 @@ ccm_freeze_preferences_page_init_windows_section (CCMPreferencesPagePlugin *
     if (gtk_builder_add_from_file
         (self->priv->builder, UI_DIR "/ccm-freeze.ui", NULL))
     {
-        GtkWidget *widget =
-            GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "freeze"));
+        GtkWidget *widget = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "freeze"));
         if (widget)
         {
             gint screen_num = ccm_preferences_page_get_screen_num (preferences);
 
-            gtk_box_pack_start (GTK_BOX (windows_section), widget, FALSE, TRUE,
-                                0);
+            gtk_box_pack_start (GTK_BOX (windows_section), widget, FALSE, TRUE, 0);
 
-            CCMConfigColorButton *color =
-                CCM_CONFIG_COLOR_BUTTON (gtk_builder_get_object
-                                         (self->priv->builder,
-                                          "color"));
+            CCMConfigColorButton *color = CCM_CONFIG_COLOR_BUTTON (gtk_builder_get_object (self->priv->builder, "color"));
             g_object_set (color, "screen", screen_num, NULL);
 
-            CCMConfigAdjustment *delay =
-                CCM_CONFIG_ADJUSTMENT (gtk_builder_get_object
-                                       (self->priv->builder,
-                                        "delay-adjustment"));
+            CCMConfigAdjustment *delay = CCM_CONFIG_ADJUSTMENT (gtk_builder_get_object (self->priv->builder, "delay-adjustment"));
             g_object_set (delay, "screen", screen_num, NULL);
 
-            CCMConfigAdjustment *duration =
-                CCM_CONFIG_ADJUSTMENT (gtk_builder_get_object
-                                       (self->priv->builder,
-                                        "duration-adjustment"));
+            CCMConfigAdjustment *duration = CCM_CONFIG_ADJUSTMENT (gtk_builder_get_object (self->priv->builder, "duration-adjustment"));
             g_object_set (duration, "screen", screen_num, NULL);
 
             ccm_preferences_page_section_register_widget (preferences,
@@ -527,9 +547,7 @@ ccm_freeze_preferences_page_init_windows_section (CCMPreferencesPagePlugin *
                                                           widget, "freeze");
         }
     }
-    ccm_preferences_page_plugin_init_windows_section
-        (CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin), preferences,
-         windows_section);
+    ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin), preferences, windows_section);
 }
 
 static void
