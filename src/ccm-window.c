@@ -1329,12 +1329,14 @@ impl_ccm_window_map (CCMWindowPlugin * plugin, CCMWindow * self)
     g_return_if_fail (plugin != NULL);
     g_return_if_fail (self != NULL);
 
+    CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
     cairo_matrix_t matrix = ccm_drawable_get_transform (CCM_DRAWABLE (self));
 
     ccm_debug_window (self, "IMPL WINDOW MAP");
     ccm_drawable_damage (CCM_DRAWABLE (self));
 
-    if (!(matrix.x0 == 0 && matrix.xy == 0 &&
+    if (ccm_screen_get_redirect_input (screen) &&
+        !(matrix.x0 == 0 && matrix.xy == 0 &&
           matrix.xx == 1 && matrix.y0 == 0 &&
           matrix.yx == 0 && matrix.yy == 1))
         ccm_window_redirect_input (self);
@@ -1756,6 +1758,7 @@ ccm_window_on_transform_changed (CCMWindow * self, GParamSpec * pspec)
     g_return_if_fail (self != NULL);
 
     cairo_matrix_t matrix = ccm_drawable_get_transform (CCM_DRAWABLE (self));
+    CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
 
     if (self->priv->orig_opaque)
     {
@@ -1767,7 +1770,8 @@ ccm_window_on_transform_changed (CCMWindow * self, GParamSpec * pspec)
     if (ccm_window_is_viewable (self) && !ccm_window_is_input_only (self))
     {
         ccm_window_unredirect_input (self);
-        if (!(matrix.x0 == 0 && matrix.xy == 0 && matrix.xx == 1
+        if (ccm_screen_get_redirect_input (screen) && 
+            !(matrix.x0 == 0 && matrix.xy == 0 && matrix.xx == 1
               && matrix.y0 == 0 && matrix.yx == 0 && matrix.yy == 1))
             ccm_window_redirect_input (self);
 
@@ -3187,7 +3191,9 @@ ccm_window_redirect_input (CCMWindow * self)
 {
     g_return_if_fail (self != NULL);
 
-    if (!self->priv->input && self->priv->redirect)
+    CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));
+
+    if (ccm_screen_get_redirect_input(screen) && !self->priv->input && self->priv->redirect)
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
         CCMScreen *screen = ccm_drawable_get_screen (CCM_DRAWABLE (self));

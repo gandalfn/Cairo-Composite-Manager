@@ -36,12 +36,11 @@ struct _CCMWindowXRenderPrivate
 };
 
 #define CCM_WINDOW_XRENDER_GET_PRIVATE(o)  \
-(G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_X_RENDER, CCMWindowXRenderPrivate))
+    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_WINDOW_X_RENDER, CCMWindowXRenderPrivate))
 
 static cairo_surface_t *ccm_window_xrender_get_surface (CCMDrawable * drawable);
 static void ccm_window_xrender_flush (CCMDrawable * drawable);
-static void ccm_window_xrender_flush_region (CCMDrawable * drawable,
-                                             CCMRegion * region);
+static void ccm_window_xrender_flush_region (CCMDrawable * drawable, CCMRegion * region);
 static CCMPixmap *ccm_window_xrender_create_pixmap (CCMWindow * self, int width,
                                                     int height, int depth);
 
@@ -162,6 +161,10 @@ ccm_window_xrender_flush (CCMDrawable * drawable)
     if (ccm_window_xrender_create_backbuffer (self))
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
+        CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE (self));
+
+        ccm_display_sync (display);
+        ccm_screen_wait_vblank (screen);
 
         cairo_t* ctx = cairo_create(self->priv->front);
 
@@ -187,6 +190,10 @@ ccm_window_xrender_flush_region (CCMDrawable * drawable, CCMRegion * region)
     if (ccm_window_xrender_create_backbuffer (self))
     {
         CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
+        CCMScreen* screen = ccm_drawable_get_screen(CCM_DRAWABLE (self));
+
+        ccm_display_sync (display);
+        ccm_screen_wait_vblank (screen);
 
         cairo_t* ctx = cairo_create(self->priv->front);
         cairo_rectangle_t *rects = NULL;

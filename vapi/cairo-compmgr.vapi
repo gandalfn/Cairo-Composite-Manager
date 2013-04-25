@@ -253,6 +253,7 @@ namespace CCM
         public uint refresh_rate { get; }
         public uint current_frame { get; }
         public void* window_plugins { get; }
+        public bool redirect_input { get; set; }
 
         [CCode (has_construct_function = false)]
         public Screen (CCM.Display display, uint number);
@@ -265,6 +266,9 @@ namespace CCM
         public unowned GLib.List<CCM.Window> get_windows ();
         public unowned X.Visual? get_visual_for_depth (int depth);
         public unowned CCM.Window get_active_window ();
+        public void wait_vblank ();
+        public unowned CCM.Region get_geometry ();
+        public unowned CCM.Region get_primary_geometry ();
 
         public bool add_window (CCM.Window window);
         public void remove_window (CCM.Window window);

@@ -203,6 +203,10 @@ Visual*                 ccm_screen_get_visual_for_depth (CCMScreen* self,
                                                          int depth);
 G_GNUC_PURE CCMWindow*  ccm_screen_get_active_window    (CCMScreen* self);
 G_GNUC_PURE CCMRegion*  ccm_screen_get_geometry         (CCMScreen* self);
+void                    ccm_screen_wait_vblank          (CCMScreen* self);
+G_GNUC_PURE gboolean    ccm_screen_get_redirect_input   (CCMScreen* self);
+void                    ccm_screen_set_redirect_input   (CCMScreen* self, gboolean redirect_input);
+G_GNUC_PURE CCMRegion* ccm_screen_get_primary_geometry  (CCMScreen * self);
 /******************************************************************************/
 
 /****************************** Drawable**************************************/

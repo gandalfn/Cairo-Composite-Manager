@@ -2,17 +2,17 @@
 /*
  * ccm-mosaic.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -48,7 +48,7 @@ namespace CCM
 
         ////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////
-        public override void 
+        public override void
         changed(CCM.Config config)
         {
             if (config == get_config (Options.SPACING))
@@ -333,15 +333,37 @@ namespace CCM
             int lines = (int)sqrt(nb_windows + 1);
 
             // Calculate areas size
+            Cairo.Rectangle primary_geometry;
+            screen.get_primary_geometry ().get_clipbox (out primary_geometry);
+            Region screen_geometry = new Region.rectangle (primary_geometry);
+            unowned Cairo.Rectangle[] rectangles;
+            screen.get_geometry ().get_rectangles (out rectangles);
+
+            foreach (unowned Cairo.Rectangle? rectangle in rectangles)
+            {
+                if (rectangle.x >= primary_geometry.x && rectangle.y >= primary_geometry.y &&
+                    rectangle.x + rectangle.width <= primary_geometry.y + primary_geometry.width &&
+                    rectangle.y + rectangle.height <= primary_geometry.y + primary_geometry.height)
+                    continue;
+
+                if (rectangle.x == primary_geometry.x && rectangle.height == primary_geometry.height)
+                    screen_geometry.union_with_rect (rectangle);
+
+                if (rectangle.y == primary_geometry.y && rectangle.width == primary_geometry.width)
+                    screen_geometry.union_with_rect (rectangle);
+            }
+            Cairo.Rectangle geometry;
+            screen_geometry.get_clipbox (out geometry);
+
             int x, y, width, height;
             int spacing = ((MosaicOptions) get_option ()).spacing;
             y = spacing;
-            height = (screen.get_xscreen().height - (lines + 1) * spacing) / lines;
+            height = ((int)geometry.height - (lines + 1) * spacing) / lines;
             for (int i = 0; i < lines; ++i)
             {
                 int n = int.min(nb_windows - areas.size, (int)ceilf((float)nb_windows / lines));
                 x = spacing;
-                width = (screen.get_xscreen().width - (n + 1) * spacing) / n;
+                width = ((int)geometry.width - (n + 1) * spacing) / n;
                 for (int j = 0; j < n; ++j)
                 {
                     MosaicArea area = new MosaicArea();
@@ -359,8 +381,7 @@ namespace CCM
             foreach (CCM.Window window in screen.get_windows())
             {
                 if (window.is_decorated() && window.is_managed() &&
-                    window.is_viewable() &&
-                    window.get_hint_type() == CCM.WindowType.NORMAL)
+                    window.is_viewable() && window.get_hint_type() == CCM.WindowType.NORMAL)
                     find_area(window);
             }
         }
@@ -385,10 +406,8 @@ namespace CCM
                     scale += (1.0 - scale) * progress;
 
                     // Calculate window position
-                    double x = (area.geometry.x - win_area.x) -
-                        (((win_area.width * scale) - area.geometry.width) / 2.0);
-                    double y = (area.geometry.y - win_area.y) -
-                        (((win_area.height * scale) - area.geometry.height) / 2.0);
+                    double x = (area.geometry.x - win_area.x) - (((win_area.width * scale) - area.geometry.width) / 2.0);
+                    double y = (area.geometry.y - win_area.y) - (((win_area.height * scale) - area.geometry.height) / 2.0);
 
                     // Add progress offset to position
                     x += ((win_area.x - x) * progress) - ((progress) * win_area.x);
@@ -529,10 +548,12 @@ namespace CCM
                     y -= (height - area.geometry.height) / 2.0;
 
                     // Apply transformation to window
-                    area.window.damage();
                     Cairo.Matrix matrix = Cairo.Matrix(scale, 0, 0, scale, x, y);
                     area.window.push_matrix("CCMMosaic", matrix);
-                    area.window.damage();
+                    area.window.get_screen ().damage_region (new Region ((int)(area.geometry.x - (2.5 * spacing) / 2.0),
+                                                                         (int)(area.geometry.y - (2.5 * spacing) / 2.0),
+                                                                         (int)(area.geometry.width + (2.5 * spacing)),
+                                                                         (int)(area.geometry.height + (2.5 * spacing))));
 
                     this.progress = 1.0 - progress;
                 }
@@ -547,6 +568,7 @@ namespace CCM
             if (enabled)
             {
                 enabled = false;
+                screen.redirect_input = false;
                 keybind_left = null;
                 keybind_right = null;
                 keybind_return = null;
@@ -683,6 +705,8 @@ namespace CCM
         on_shortcut_pressed ()
         {
             enabled = !enabled;
+
+            screen.redirect_input = enabled;
 
             if (timeline.is_playing)
             {

@@ -86,6 +86,8 @@ struct _CCMDisplayPrivate
 {
     Display*         xdisplay;
 
+    uint             grab_count;
+
     gint             nb_screens;
     CCMScreen**      screens;
 
@@ -222,6 +224,7 @@ ccm_display_init (CCMDisplay * self)
     self->priv = CCM_DISPLAY_GET_PRIVATE (self);
 
     self->priv->xdisplay = NULL;
+    self->priv->grab_count = 0;
     self->priv->nb_screens = 0;
     self->priv->screens = NULL;
     self->priv->use_shm = FALSE;
@@ -699,7 +702,11 @@ ccm_display_grab (CCMDisplay * self)
 {
     g_return_if_fail (self != NULL);
 
-    XGrabServer (self->priv->xdisplay);
+    if (self->priv->grab_count == 0)
+    {
+        XGrabServer (self->priv->xdisplay);
+    }
+    self->priv->grab_count++;
 }
 
 void
@@ -707,7 +714,14 @@ ccm_display_ungrab (CCMDisplay * self)
 {
     g_return_if_fail (self != NULL);
 
-    XUngrabServer (self->priv->xdisplay);
+    if (self->priv->grab_count > 0)
+    {
+        self->priv->grab_count--;
+        if (self->priv->grab_count == 0)
+        {
+            XUngrabServer (self->priv->xdisplay);
+        }
+    }
 }
 
 void

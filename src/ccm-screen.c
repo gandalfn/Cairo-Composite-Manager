@@ -143,6 +143,7 @@ struct _CCMScreenPrivate
     Window              over_mouse;
 
     CCMRegion*          geometry;
+    CCMRegion*          primary_geometry;
     CCMRegion*          damaged;
     CCMRegion*          root_damage;
 
@@ -151,6 +152,7 @@ struct _CCMScreenPrivate
     GList*              windows;
     GList*              last_windows;
     GList*              removed;
+    gboolean            redirect_input;
     gint                nb_redirect_input;
 
     gboolean            sync_with_vblank;
@@ -258,8 +260,7 @@ ccm_screen_init (CCMScreen* self)
     self->priv->ctx = NULL;
     self->priv->root = NULL;
     self->priv->cow = NULL;
-    self->priv->damages = ccm_set_new (G_TYPE_INT, NULL, NULL,
-                                       (CCMSetCompareFunc)_direct_compare);
+    self->priv->damages = ccm_set_new (G_TYPE_INT, NULL, NULL, (CCMSetCompareFunc)_direct_compare);
     self->priv->selection_owner = None;
     self->priv->fullscreen = NULL;
     self->priv->active = NULL;
@@ -273,6 +274,7 @@ ccm_screen_init (CCMScreen* self)
     self->priv->windows = NULL;
     self->priv->last_windows = NULL;
     self->priv->removed = NULL;
+    self->priv->redirect_input = FALSE;
     self->priv->nb_redirect_input = 0;
     self->priv->refresh_rate = 0;
     self->priv->sync_with_vblank = FALSE;
@@ -755,12 +757,7 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
                                   G_CALLBACK (ccm_screen_paint), self);
         ccm_timeline_set_master (self->priv->paint, TRUE);
         ccm_timeline_set_loop (self->priv->paint, TRUE);
-        if (self->priv->sync_with_vblank && self->priv->get_video_sync && self->priv->wait_video_sync)
-        {
-            guint vblank_count;
-            self->priv->get_video_sync (&vblank_count);
-            self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
-        }
+        ccm_screen_wait_vblank (self);
         ccm_timeline_start (self->priv->paint);
         g_signal_emit (self, signals[REFRESH_RATE_CHANGED], 0);
 
@@ -879,12 +876,7 @@ ccm_screen_update_sync_with_vblank (CCMScreen * self)
         }
         else if (self->priv->paint)
         {
-            guint vblank_count;
-
-            ccm_timeline_stop (self->priv->paint);
-            self->priv->get_video_sync (&vblank_count);
-            self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
-
+            ccm_screen_wait_vblank (self);
             ccm_timeline_start (self->priv->paint);
         }
 
@@ -2018,16 +2010,8 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
             self->priv->root_damage = NULL;
         }
 
-       if (ccm_screen_plugin_paint (self->priv->plugin, self, self->priv->ctx))
+        if (ccm_screen_plugin_paint (self->priv->plugin, self, self->priv->ctx))
         {
-            if (self->priv->sync_with_vblank)
-            {
-                guint vblank_count;
-
-                ccm_display_sync (self->priv->display);
-                self->priv->wait_video_sync (1, 0, &vblank_count);
-            }
-
             if (self->priv->damaged)
             {
                 ccm_drawable_flush_region (CCM_DRAWABLE (self->priv->cow),
@@ -2248,7 +2232,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                 if (button_event->root != CCM_WINDOW_XWINDOW (self->priv->root))
                     return;
 
-                if (self->priv->nb_redirect_input)
+                if (self->priv->redirect_input && self->priv->nb_redirect_input)
                 {
                     CCMWindow *window = ccm_screen_find_window_at_pos (self,
                                                                        button_event->x_root,
@@ -2279,7 +2263,7 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
                 if (motion_event->root != CCM_WINDOW_XWINDOW (self->priv->root))
                     return;
 
-                if (self->priv->nb_redirect_input)
+                if (self->priv->redirect_input && self->priv->nb_redirect_input)
                 {
                     CCMWindow *window = ccm_screen_find_window_at_pos (self,
                                                                        motion_event->x_root,
@@ -2768,6 +2752,9 @@ _ccm_screen_query_geometry (CCMScreen* self)
         res  = XRRGetScreenResources (CCM_DISPLAY_XDISPLAY (self->priv->display),
                                       RootWindowOfScreen (self->priv->xscreen));
 
+        RROutput primary = XRRGetOutputPrimary (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                                RootWindowOfScreen (self->priv->xscreen));
+
         if (res)
         {
             int i, j;
@@ -2775,6 +2762,11 @@ _ccm_screen_query_geometry (CCMScreen* self)
             if (self->priv->geometry != NULL)
             {
                 g_object_unref (self->priv->geometry);
+            }
+            if (self->priv->primary_geometry != NULL)
+            {
+                g_object_unref (self->priv->primary_geometry);
+                self->priv->primary_geometry = NULL;
             }
             self->priv->geometry = ccm_region_new ();
 
@@ -2803,6 +2795,11 @@ _ccm_screen_query_geometry (CCMScreen* self)
                 cairo_rectangle_t area = { crtc->x, crtc->y, crtc->width, crtc->height };
                 ccm_region_union_with_rect (self->priv->geometry, &area);
 
+                if (res->outputs[i] == primary)
+                {
+                    self->priv->primary_geometry = ccm_region_rectangle (&area);
+                }
+
                 XRRFreeCrtcInfo (crtc);
             }
 
@@ -2810,6 +2807,10 @@ _ccm_screen_query_geometry (CCMScreen* self)
             {
                 cairo_rectangle_t area = { 0, 0, self->priv->xscreen->width, self->priv->xscreen->height };
                 self->priv->geometry = ccm_region_rectangle (&area);
+            }
+            if (self->priv->primary_geometry == NULL)
+            {
+                self->priv->primary_geometry = ccm_region_copy (self->priv->geometry);
             }
         }
 
@@ -3054,6 +3055,14 @@ ccm_screen_get_geometry (CCMScreen * self)
 }
 
 G_GNUC_PURE CCMRegion *
+ccm_screen_get_primary_geometry (CCMScreen * self)
+{
+    g_return_val_if_fail (self != NULL, NULL);
+
+    return self->priv->primary_geometry;
+}
+
+G_GNUC_PURE CCMRegion *
 ccm_screen_get_damaged (CCMScreen * self)
 {
     g_return_val_if_fail (self != NULL, NULL);
@@ -3137,4 +3146,33 @@ ccm_screen_get_active_window (CCMScreen* self)
     g_return_val_if_fail(self != NULL, NULL);
 
     return self->priv->active;
+}
+
+void
+ccm_screen_wait_vblank (CCMScreen* self)
+{
+    g_return_if_fail(self != NULL);
+
+    if (self->priv->sync_with_vblank)
+    {
+        guint vblank_count;
+        self->priv->get_video_sync (&vblank_count);
+        self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
+    }
+}
+
+G_GNUC_PURE gboolean
+ccm_screen_get_redirect_input (CCMScreen* self)
+{
+    g_return_val_if_fail(self != NULL, FALSE);
+
+    return self->priv->redirect_input;
+}
+
+void
+ccm_screen_set_redirect_input (CCMScreen* self, gboolean redirect_input)
+{
+    g_return_if_fail(self != NULL);
+
+    self->priv->redirect_input = redirect_input;
 }
