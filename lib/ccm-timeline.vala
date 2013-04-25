@@ -2,7 +2,7 @@
 /*
  * ccm-timeline.vala
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
@@ -34,7 +34,7 @@ public class CCM.Timeline : Object
     private int m_CurrentFrameNum = 0;
     private uint m_Fps = 60;
     private uint m_Duration = 0;
-    private TimeVal m_PrevFrameTimeVal;
+    private uint64 m_PrevFrameTimeVal;
 
     /**
      * Timeline direction
@@ -185,8 +185,8 @@ public class CCM.Timeline : Object
     private void
     add_timeout ()
     {
-        if (m_PrevFrameTimeVal.tv_sec == 0)
-            m_PrevFrameTimeVal.get_current_time ();
+        if (m_PrevFrameTimeVal == 0)
+            m_PrevFrameTimeVal = GLib.get_monotonic_time ();
 
         if (master)
             m_Timeout = s_TimeoutPool.add_master (m_Fps, on_timeout, this, null);
@@ -206,20 +206,14 @@ public class CCM.Timeline : Object
     private bool
     on_timeout ()
     {
-        TimeVal now = TimeVal ();
+        uint64 now = GLib.get_monotonic_time ();
         uint nb_frames;
         ulong msecs, speed;
 
-        now.get_current_time ();
-
-        if (m_PrevFrameTimeVal.tv_sec == 0)
+        if (m_PrevFrameTimeVal == 0 || now < m_PrevFrameTimeVal)
             m_PrevFrameTimeVal = now;
 
-        if ((now.tv_sec - m_PrevFrameTimeVal.tv_sec) < 0)
-            m_PrevFrameTimeVal = now;
-
-        msecs = (now.tv_sec - m_PrevFrameTimeVal.tv_sec) * 1000;
-        msecs += (now.tv_usec - m_PrevFrameTimeVal.tv_usec) / 1000;
+        msecs = (ulong)(now - m_PrevFrameTimeVal) / 1000;
 
         speed = uint.max (1000 / m_Fps, 1);
         nb_frames = (uint)(msecs / speed);
@@ -296,8 +290,7 @@ public class CCM.Timeline : Object
             {
                 rewind ();
 
-                m_PrevFrameTimeVal.tv_sec = 0;
-                m_PrevFrameTimeVal.tv_usec = 0;
+                m_PrevFrameTimeVal = 0;
 
                 return false;
             }
@@ -330,8 +323,7 @@ public class CCM.Timeline : Object
             m_Timeout = null;
         }
 
-        m_PrevFrameTimeVal.tv_sec = 0;
-        m_PrevFrameTimeVal.tv_usec = 0;
+        m_PrevFrameTimeVal = 0;
 
         paused ();
     }
