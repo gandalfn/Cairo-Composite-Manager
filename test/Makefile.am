@@ -6,6 +6,7 @@ INCLUDES = \
     -DPACKAGE_DATA_DIR=\""$(datadir)"\" \
     -I../lib $(CAIRO_COMPMGR_CFLAGS)
 
+if HAVE_GTK
 noinst_PROGRAMS = test-clone test-clone-screen test-recorder
 
 test_clone_SOURCES = test-clone.c
@@ -27,3 +28,4 @@ test_recorder_LDADD = $(CAIRO_COMPMGR_LIBS) ../lib/libcairo_compmgr.la
 CLEANFILES = \
     test_recorder_vala.stamp \
      $(test_recorder_SOURCES:.vala=.c)
+endif

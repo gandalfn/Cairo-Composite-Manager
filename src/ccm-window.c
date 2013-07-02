@@ -1770,7 +1770,7 @@ ccm_window_on_transform_changed (CCMWindow * self, GParamSpec * pspec)
     if (ccm_window_is_viewable (self) && !ccm_window_is_input_only (self))
     {
         ccm_window_unredirect_input (self);
-        if (ccm_screen_get_redirect_input (screen) && 
+        if (ccm_screen_get_redirect_input (screen) &&
             !(matrix.x0 == 0 && matrix.xy == 0 && matrix.xx == 1
               && matrix.y0 == 0 && matrix.yx == 0 && matrix.yy == 1))
             ccm_window_redirect_input (self);

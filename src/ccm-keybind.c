@@ -2,23 +2,22 @@
 /*
  * ccm-keybind.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <math.h>
-#include <gtk/gtk.h>
 
 #include "ccm-debug.h"
 #include "ccm-marshallers.h"
@@ -224,8 +223,8 @@ ccm_keybind_on_event (CCMKeybind * self, XEvent * xevent)
 
             ccm_debug ("Key Press: window = 0x%lx, keycode = %i, modifiers = %i",
                        xevent->xkey.window, xevent->xkey.keycode, xevent->xkey.state);
-            if (self->priv->keycode && 
-                self->priv->keycode == xevent->xkey.keycode && 
+            if (self->priv->keycode &&
+                self->priv->keycode == xevent->xkey.keycode &&
                 self->priv->modifiers == event_mods)
             {
                 if (!self->priv->key_pressed)
@@ -312,8 +311,8 @@ ccm_keybind_on_event (CCMKeybind * self, XEvent * xevent)
             ccm_debug ("Button Release: button = %i, modifiers = %i",
                        self->priv->button, self->priv->modifiers);
 
-            if (self->priv->button && 
-                self->priv->button == button && 
+            if (self->priv->button &&
+                self->priv->button == button &&
                 self->priv->modifiers == event_mods)
             {
                 g_signal_emit (self, signals[KEY_RELEASE], 0);
@@ -339,7 +338,7 @@ ccm_keybind_on_event (CCMKeybind * self, XEvent * xevent)
 
             event_mods = state & ~(self->priv->caps_lock_mask | self->priv->num_lock_mask);
 
-            if (self->priv->button && self->priv->button == button && 
+            if (self->priv->button && self->priv->button == button &&
                 self->priv->modifiers == event_mods)
             {
                 g_signal_emit (self, signals[KEY_MOTION], 0,
@@ -384,7 +383,7 @@ ccm_keybind_new (CCMScreen * screen, gchar * keystring, gboolean exclusive)
     self->priv->exclusive = exclusive;
     self->priv->keystring = g_strdup (keystring);
 
-    if (!egg_accelerator_parse_virtual (keystring, &keysym, NULL, 
+    if (!egg_accelerator_parse_virtual (keystring, &keysym, NULL,
                                         &self->priv->button, &virtual_mods))
     {
         g_warning ("Error on parse keybind %s", self->priv->keystring);

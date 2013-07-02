@@ -22,11 +22,11 @@
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/Xfixes.h>
+#include <X11/extensions/Xdbe.h>
 #include <X11/extensions/XInput.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
 #include <GL/glx.h>
-#include <gtk/gtk.h>
 
 #include "ccm-debug.h"
 #include "ccm-display.h"
@@ -42,6 +42,7 @@ enum
     PROP_0,
     PROP_XDISPLAY,
     PROP_USE_XSHM,
+    PROP_USE_XDBE,
     PROP_USE_RANDR,
     PROP_USE_GLX
 };
@@ -49,12 +50,14 @@ enum
 enum
 {
     CCM_DISPLAY_OPTION_USE_XSHM,
+    CCM_DISPLAY_OPTION_USE_XDBE,
     CCM_DISPLAY_UNMANAGED_SCREEN,
     CCM_DISPLAY_OPTION_N
 };
 
 static gchar *CCMDisplayOptions[CCM_DISPLAY_OPTION_N] = {
     "use_xshm",
+    "use_xdbe",
     "unmanaged_screen"
 };
 
@@ -96,6 +99,7 @@ struct _CCMDisplayPrivate
     CCMExtension     damage;
     CCMExtension     shm;
     gboolean         shm_shared_pixmap;
+    CCMExtension     dbe;
     CCMExtension     fixes;
     CCMExtension     input;
     CCMExtension     randr;
@@ -110,6 +114,7 @@ struct _CCMDisplayPrivate
     CCMPointerEvents last_events;
 
     gboolean         use_shm;
+    gboolean         use_dbe;
     CCMConfig*       options[CCM_DISPLAY_OPTION_N];
 };
 
@@ -203,6 +208,11 @@ ccm_display_get_property (GObject * object, guint prop_id, GValue * value,
                 g_value_set_boolean (value, priv->use_shm);
             }
             break;
+        case PROP_USE_XDBE:
+            {
+                g_value_set_boolean (value, priv->use_dbe);
+            }
+            break;
         case PROP_USE_RANDR:
             {
                 g_value_set_boolean (value, priv->randr.available);
@@ -228,6 +238,7 @@ ccm_display_init (CCMDisplay * self)
     self->priv->nb_screens = 0;
     self->priv->screens = NULL;
     self->priv->use_shm = FALSE;
+    self->priv->use_dbe = FALSE;
     self->priv->pointers = NULL;
     self->priv->type_button_press = 0;
     self->priv->type_button_release = 0;
@@ -302,6 +313,13 @@ ccm_display_class_init (CCMDisplayClass * klass)
                                                            "Use XSHM", TRUE,
                                                            G_PARAM_READWRITE));
 
+    g_object_class_install_property (object_class, PROP_USE_XDBE,
+                                     g_param_spec_boolean ("use_xdbe",
+                                                           "UseXdbe",
+                                                           "Use Double Buffer Extension",
+                                                           TRUE,
+                                                           G_PARAM_READABLE));
+
     g_object_class_install_property (object_class, PROP_USE_RANDR,
                                      g_param_spec_boolean ("use_randr",
                                                            "UseRandr",
@@ -347,6 +365,8 @@ ccm_display_load_config (CCMDisplay * self)
     }
     self->priv->use_shm = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM], NULL) &&
                                                   self->priv->shm.available;
+    self->priv->use_dbe = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XDBE], NULL) &&
+                                                  self->priv->dbe.available;
 }
 
 static gboolean
@@ -422,6 +442,22 @@ ccm_display_init_shm (CCMDisplay * self)
 }
 
 static gboolean
+ccm_display_init_dbe(CCMDisplay *self)
+{
+    g_return_val_if_fail(self != NULL, FALSE);
+
+    int major, minor;
+
+    if (XdbeQueryExtension (self->priv->xdisplay, &major, &minor))
+    {
+        self->priv->dbe.available = TRUE;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static gboolean
 ccm_display_init_xfixes (CCMDisplay * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
@@ -480,6 +516,7 @@ ccm_display_init_randr(CCMDisplay *self)
     return FALSE;
 }
 
+#if HAVE_VSYNC
 static gboolean
 ccm_display_init_glx(CCMDisplay *self)
 {
@@ -497,6 +534,7 @@ ccm_display_init_glx(CCMDisplay *self)
 
     return FALSE;
 }
+#endif
 
 static int
 ccm_display_error_handler (Display * dpy, XErrorEvent * evt)
@@ -527,7 +565,7 @@ ccm_display_process_events (CCMWatch* watch)
     XEvent xevent;
     gboolean have_create_notify = FALSE;
 
-    while (!have_create_notify && XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
+    while (XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
     {
         XNextEvent (CCM_DISPLAY_XDISPLAY (self), &xevent);
         ccm_debug ("EVENT %i", xevent.type);
@@ -563,8 +601,16 @@ ccm_display_new (gchar * display)
     gint cpt;
     GSList *unmanaged = NULL;
     Display *xdisplay;
+    GdkDisplayManager* manager = gdk_display_manager_get();
+    GdkDisplay* gdk_display = gdk_display_manager_get_default_display (manager);
 
-    xdisplay = XOpenDisplay (display);
+    if (gdk_display == NULL)
+    {
+        gdk_display = gdk_display_open (display);
+        gdk_display_manager_set_default_display (manager, gdk_display);
+    }
+
+    xdisplay = gdk_x11_display_get_xdisplay (gdk_display);
     if (!xdisplay)
     {
         g_warning ("Unable to open display %s", display);
@@ -573,6 +619,7 @@ ccm_display_new (gchar * display)
 
     self = g_object_new (CCM_TYPE_DISPLAY, "xdisplay", xdisplay, NULL);
 
+    ccm_display_init_dbe(self);
     if (!ccm_display_init_shape (self))
     {
         g_object_unref (self);
@@ -615,7 +662,9 @@ ccm_display_new (gchar * display)
     }
 
     ccm_display_init_randr (self);
+#if HAVE_VSYNC
     ccm_display_init_glx (self);
+#endif
 
     if (CCMDefaultDisplay == NULL) CCMDefaultDisplay = self;
 
@@ -679,6 +728,14 @@ ccm_display_get_shape_notify_event_type (CCMDisplay * self)
     g_return_val_if_fail (self != NULL, 0);
 
     return self->priv->shape.event_base + ShapeNotify;
+}
+
+G_GNUC_PURE gboolean
+ccm_display_use_dbe (CCMDisplay* self)
+{
+    g_return_val_if_fail (self != NULL, 0);
+
+    return self->priv->use_dbe;
 }
 
 void

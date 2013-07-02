@@ -2,17 +2,17 @@
 /*
  * ccm-fade.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,8 +29,10 @@
 #include "ccm-screen.h"
 #include "ccm-timeline.h"
 #include "ccm-fade.h"
+#if HAVE_GTK
 #include "ccm-preferences-page-plugin.h"
 #include "ccm-config-adjustment.h"
+#endif
 #include "ccm.h"
 
 enum
@@ -52,8 +54,9 @@ typedef struct
 
 static void ccm_fade_screen_iface_init (CCMScreenPluginClass * iface);
 static void ccm_fade_window_iface_init (CCMWindowPluginClass * iface);
-static void ccm_fade_preferences_page_iface_init (CCMPreferencesPagePluginClass
-                                                  * iface);
+#if HAVE_GTK
+static void ccm_fade_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
+#endif
 static void ccm_fade_on_event (CCMFade * self, XEvent * event);
 static void ccm_fade_on_property_changed (CCMFade * self,
                                           CCMPropertyType changed,
@@ -65,9 +68,12 @@ CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMFade, ccm_fade, CCM_TYPE_PLUGIN,
                                                          ccm_fade_screen_iface_init);
                                 CCM_IMPLEMENT_INTERFACE (ccm_fade, CCM_TYPE_WINDOW_PLUGIN,
                                                          ccm_fade_window_iface_init);
+#if HAVE_GTK
                                 CCM_IMPLEMENT_INTERFACE (ccm_fade,
                                                          CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                                         ccm_fade_preferences_page_iface_init))
+                                                         ccm_fade_preferences_page_iface_init)
+#endif
+                               )
 struct _CCMFadePrivate
 {
     CCMScreen* screen;
@@ -80,7 +86,9 @@ struct _CCMFadePrivate
 
     gboolean force_disable;
 
+#if HAVE_GTK
     GtkBuilder* builder;
+#endif
 
     gulong id_event;
     gulong id_property_changed;
@@ -135,7 +143,9 @@ ccm_fade_init (CCMFade * self)
     self->priv->window = NULL;
     self->priv->timeline = NULL;
     self->priv->force_disable = FALSE;
+#if HAVE_GTK
     self->priv->builder = NULL;
+#endif
     self->priv->id_event = 0;
     self->priv->id_property_changed = 0;
 }
@@ -169,8 +179,10 @@ ccm_fade_finalize (GObject * object)
     if (self->priv->timeline)
         g_object_unref (self->priv->timeline);
 
+#if HAVE_GTK
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
+#endif
 
     G_OBJECT_CLASS (ccm_fade_parent_class)->finalize (object);
 }
@@ -558,6 +570,7 @@ ccm_fade_window_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
     ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
 
+#if HAVE_GTK
 static void
 ccm_fade_preferences_page_init_effects_section (CCMPreferencesPagePlugin *
                                                 plugin,
@@ -596,6 +609,7 @@ ccm_fade_preferences_page_init_effects_section (CCMPreferencesPagePlugin *
         (CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin), preferences,
          effects_section);
 }
+#endif
 
 static void
 ccm_fade_window_iface_init (CCMWindowPluginClass * iface)
@@ -622,6 +636,7 @@ ccm_fade_screen_iface_init (CCMScreenPluginClass * iface)
     iface->damage = NULL;
 }
 
+#if HAVE_GTK
 static void
 ccm_fade_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
 {
@@ -632,3 +647,4 @@ ccm_fade_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
     iface->init_accessibility_section = NULL;
     iface->init_utilities_section = NULL;
 }
+#endif

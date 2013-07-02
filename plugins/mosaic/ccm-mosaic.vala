@@ -175,7 +175,11 @@ namespace CCM
         public weak CCM.Mosaic plugin;
     }
 
+#if HAVE_GTK
     class Mosaic : CCM.Plugin, CCM.ScreenPlugin, CCM.WindowPlugin, CCM.PreferencesPagePlugin
+#else
+    class Mosaic : CCM.Plugin, CCM.ScreenPlugin, CCM.WindowPlugin
+#endif
     {
         const string[] options_key = {
             "spacing",
@@ -197,7 +201,9 @@ namespace CCM
         bool                    mouse_over = false;
         Timeline                timeline;
         double                  progress;
+#if HAVE_GTK
         Gtk.Builder             builder = null;
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////
@@ -844,6 +850,7 @@ namespace CCM
             return ret;
         }
 
+#if HAVE_GTK
         ////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////
         void
@@ -890,6 +897,7 @@ namespace CCM
             ((CCM.PreferencesPagePlugin) parent).init_desktop_section (preferences,
                                                                        desktop_section);
         }
+#endif
     }
 }
 
@@ -902,4 +910,3 @@ ccm_mosaic_get_plugin_type (TypeModule module)
 {
     return typeof (Mosaic);
 }
-

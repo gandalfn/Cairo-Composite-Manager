@@ -2,17 +2,17 @@
 /*
  * cairo-compmgr.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,7 +24,9 @@
 #include "ccm.h"
 #include "ccm-debug.h"
 #include "ccm-config.h"
+#ifdef HAVE_GTK
 #include "ccm-tray-icon.h"
+#endif
 #include "ccm-extension-loader.h"
 #include "ccm-preferences.h"
 #include "eggsmclient.h"
@@ -108,15 +110,19 @@ on_enable_ccm_changed (CCMConfig * config, gpointer data)
 int
 main (gint argc, gchar ** argv)
 {
+#ifdef HAVE_GTK
     CCMTrayIcon *trayicon;
+#endif
     GError *error = NULL;
     gchar *user_plugin_path = NULL;
     EggDesktopFile *desktop;
     EggSMClient *client;
 
-    static gboolean configure = FALSE;
     static gboolean restart = FALSE;
+#ifdef HAVE_GTK
+    static gboolean configure = FALSE;
     static gboolean no_tray_icon = FALSE;
+#endif
 #ifdef ENABLE_GCONF
     static gboolean use_gconf = FALSE;
 #endif
@@ -129,12 +135,14 @@ main (gint argc, gchar ** argv)
         {"restart", 'r', 0, G_OPTION_ARG_NONE, &restart,
             N_("Always restart cairo composite manager"),
             NULL},
+#ifdef HAVE_GTK
         {"configure", 'c', 0, G_OPTION_ARG_NONE, &configure,
             N_("Start cairo composite manager configuration tools"),
             NULL},
         {"no-tray-icon", 'n', 0, G_OPTION_ARG_NONE, &no_tray_icon,
             N_("Disable cairo composite manager tray icon"),
             NULL},
+#endif
 #ifdef ENABLE_GCONF
         {"use-gconf", 'g', 0, G_OPTION_ARG_NONE, &use_gconf,
             N_("Force use gconf for configuration files"),
@@ -156,12 +164,14 @@ main (gint argc, gchar ** argv)
 
     signal (SIGSEGV, crash);
 
-    g_type_init ();
+    //g_type_init ();
 
     egg_set_desktop_file (PACKAGE_DATA_DIR "/applications/cairo-compmgr.desktop");
 
     option_context = g_option_context_new (_("- Cairo composite manager"));
+#ifdef HAVE_GTK
     g_option_context_add_group (option_context, gtk_get_option_group (TRUE));
+#endif
     g_option_context_add_group (option_context, egg_sm_client_get_option_group ());
     g_option_context_add_main_entries (option_context, options, GETTEXT_PACKAGE);
 
@@ -186,6 +196,7 @@ main (gint argc, gchar ** argv)
     ccm_extension_loader_add_plugin_path (user_plugin_path);
     g_free (user_plugin_path);
 
+#ifdef HAVE_GTK
     if (configure)
     {
         CCMPreferences *pref = ccm_preferences_new ();
@@ -198,6 +209,7 @@ main (gint argc, gchar ** argv)
             return 0;
         }
     }
+#endif
 
     desktop = egg_get_desktop_file ();
     egg_desktop_file_set_boolean (desktop, "X-GNOME-AutoRestart", restart);
@@ -217,6 +229,7 @@ main (gint argc, gchar ** argv)
     }
 #endif
 
+#ifdef HAVE_GTK
     if (!no_tray_icon)
     {
         trayicon = ccm_tray_icon_new ();
@@ -225,8 +238,10 @@ main (gint argc, gchar ** argv)
     }
     else
     {
+#endif
         gboolean val;
         CCMConfig* config = ccm_config_new (-1, NULL, "enable");
+        GMainLoop* loop = g_main_loop_new (NULL, FALSE);
 
         g_signal_connect (config, "changed",
                           (GCallback) on_enable_ccm_changed,
@@ -236,11 +251,13 @@ main (gint argc, gchar ** argv)
         if (val)
             display = ccm_display_new (NULL);
 
-        gtk_main ();
+        g_main_loop_run (loop);
 
         if (display) g_object_unref (display);
         g_object_unref (config);
+#ifdef HAVE_GTK
     }
+#endif
     g_option_context_free(option_context);
 
     return 0;

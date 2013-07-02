@@ -352,11 +352,13 @@ ccm_screen_finalize (GObject * object)
         self->priv->vblank_window = None;
     }
 
+#if HAVE_VSYNC
     if (self->priv->vblank_context != NULL)
     {
         glXDestroyContext(CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->vblank_context);
         self->priv->vblank_context = NULL;
     }
+#endif
 
     if (self->priv->cow)
     {
@@ -767,6 +769,7 @@ ccm_screen_update_refresh_rate (CCMScreen * self)
     return FALSE;
 }
 
+#if HAVE_VSYNC
 static gboolean
 ccm_screen_support_glx_extenstion (CCMScreen* self, const char* extension)
 {
@@ -889,6 +892,7 @@ ccm_screen_update_sync_with_vblank (CCMScreen * self)
 
     return FALSE;
 }
+#endif
 
 static void
 ccm_screen_load_config (CCMScreen * self)
@@ -909,7 +913,9 @@ ccm_screen_load_config (CCMScreen * self)
 
     ccm_screen_update_backend (self);
     ccm_screen_update_refresh_rate (self);
+#if HAVE_VSYNC
     ccm_screen_update_sync_with_vblank (self);
+#endif
 }
 
 static gboolean
@@ -2042,10 +2048,12 @@ ccm_screen_on_option_changed (CCMScreen * self, CCMConfig * config)
     {
         ccm_screen_update_refresh_rate (self);
     }
+#if HAVE_VSYNC
     else if (config == self->priv->options[CCM_SCREEN_SYNC_WITH_VBLANK])
     {
         ccm_screen_update_sync_with_vblank (self);
     }
+#endif
     else if (config == self->priv->options[CCM_SCREEN_BACKGROUND] ||
              config == self->priv->options[CCM_SCREEN_COLOR_BACKGROUND] ||
              config == self->priv->options[CCM_SCREEN_BACKGROUND_X] ||
@@ -3156,6 +3164,8 @@ ccm_screen_wait_vblank (CCMScreen* self)
     if (self->priv->sync_with_vblank)
     {
         guint vblank_count;
+
+        ccm_display_sync (self->priv->display);
         self->priv->get_video_sync (&vblank_count);
         self->priv->wait_video_sync (2, (vblank_count + 1) % 2, &vblank_count);
     }

@@ -2,17 +2,17 @@
 /*
  * ccm-opacity.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,9 +26,11 @@
 #include "ccm-window.h"
 #include "ccm-opacity.h"
 #include "ccm-keybind.h"
+#if HAVE_GTK
 #include "ccm-preferences-page-plugin.h"
 #include "ccm-config-adjustment.h"
 #include "ccm-config-entry-shortcut.h"
+#endif
 #include "ccm.h"
 
 enum
@@ -61,8 +63,9 @@ typedef struct
 
 static void ccm_opacity_screen_iface_init (CCMScreenPluginClass * iface);
 static void ccm_opacity_window_iface_init (CCMWindowPluginClass * iface);
-static void
-ccm_opacity_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
+#if HAVE_GTK
+static void ccm_opacity_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
+#endif
 static void ccm_opacity_on_property_changed (CCMOpacity * self,
                                              CCMPropertyType changed,
                                              CCMWindow * window);
@@ -73,9 +76,12 @@ CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMOpacity, ccm_opacity, CCM_TYPE_PLUGIN,
                                                          ccm_opacity_screen_iface_init);
                                 CCM_IMPLEMENT_INTERFACE (ccm_opacity, CCM_TYPE_WINDOW_PLUGIN,
                                                          ccm_opacity_window_iface_init);
+#if HAVE_GTK
                                 CCM_IMPLEMENT_INTERFACE (ccm_opacity,
                                                          CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                                         ccm_opacity_preferences_page_iface_init))
+                                                         ccm_opacity_preferences_page_iface_init)
+#endif
+                               )
 struct _CCMOpacityPrivate
 {
     CCMScreen* screen;
@@ -85,7 +91,9 @@ struct _CCMOpacityPrivate
 
     CCMWindow* window;
 
+#if HAVE_GTK
     GtkBuilder* builder;
+#endif
 
     gulong id_property_changed;
 };
@@ -116,7 +124,7 @@ ccm_opacity_options_changed (CCMOpacityOptions* self, CCMConfig* config)
 {
     GError *error = NULL;
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_OPACITY_INCREASE))
     {
         if (self->increase) g_free(self->increase);
@@ -129,7 +137,7 @@ ccm_opacity_options_changed (CCMOpacityOptions* self, CCMConfig* config)
             self->increase = g_strdup ("<Super>Button4");
         }
     }
-    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_OPACITY_DECREASE))
     {
         if (self->decrease) g_free(self->decrease);
@@ -142,7 +150,7 @@ ccm_opacity_options_changed (CCMOpacityOptions* self, CCMConfig* config)
             self->decrease = g_strdup ("<Super>Button5");
         }
     }
-    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_OPACITY_STEP))
     {
         gfloat real_step;
@@ -163,7 +171,7 @@ ccm_opacity_options_changed (CCMOpacityOptions* self, CCMConfig* config)
             if (real_step != step) ccm_config_set_float (config, step, NULL);
         }
     }
-    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), 
+    else if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                       CCM_OPACITY_OPACITY))
     {
         gfloat real_opacity;
@@ -181,7 +189,7 @@ ccm_opacity_options_changed (CCMOpacityOptions* self, CCMConfig* config)
         if (self->opacity != opacity)
         {
             self->opacity = opacity;
-            if (opacity != real_opacity) 
+            if (opacity != real_opacity)
                 ccm_config_set_float (config, opacity, NULL);
         }
     }
@@ -195,7 +203,9 @@ ccm_opacity_init (CCMOpacity * self)
     self->priv->window = NULL;
     self->priv->increase = NULL;
     self->priv->decrease = NULL;
+#if HAVE_GTK
     self->priv->builder = NULL;
+#endif
     self->priv->id_property_changed = 0;
 }
 
@@ -214,17 +224,19 @@ ccm_opacity_finalize (GObject * object)
 
     ccm_plugin_options_unload (CCM_PLUGIN (self));
 
-    if (self->priv->increase) 
+    if (self->priv->increase)
         g_object_unref(self->priv->increase);
     self->priv->increase = NULL;
 
-    if (self->priv->decrease) 
+    if (self->priv->decrease)
         g_object_unref(self->priv->decrease);
     self->priv->decrease = NULL;
 
+#if HAVE_GTK
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
     self->priv->builder = NULL;
+#endif
 
     G_OBJECT_CLASS (ccm_opacity_parent_class)->finalize (object);
 }
@@ -324,8 +336,8 @@ ccm_opacity_get_increase_keybind (CCMOpacity * self)
     if (self->priv->screen)
     {
         if (self->priv->increase) g_object_unref(self->priv->increase);
-        self->priv->increase = ccm_keybind_new (self->priv->screen, 
-                                                ccm_opacity_get_option (self)->increase, 
+        self->priv->increase = ccm_keybind_new (self->priv->screen,
+                                                ccm_opacity_get_option (self)->increase,
                                                 TRUE);
         g_signal_connect_swapped (self->priv->increase,
                                   "key_press",
@@ -341,8 +353,8 @@ ccm_opacity_get_decrease_keybind (CCMOpacity * self)
     {
         if (self->priv->decrease) g_object_unref (self->priv->decrease);
 
-        self->priv->decrease = ccm_keybind_new (self->priv->screen, 
-                                                ccm_opacity_get_option (self)->decrease, 
+        self->priv->decrease = ccm_keybind_new (self->priv->screen,
+                                                ccm_opacity_get_option (self)->decrease,
                                                 TRUE);
         g_signal_connect_swapped (self->priv->decrease,
                                   "key_press",
@@ -428,6 +440,7 @@ ccm_opacity_window_load_options (CCMWindowPlugin * plugin, CCMWindow * window)
     ccm_opacity_on_property_changed (self, CCM_PROPERTY_HINT_TYPE, window);
 }
 
+#if HAVE_GTK
 static void
 ccm_opacity_preferences_page_init_effects_section (CCMPreferencesPagePlugin *
                                                    plugin,
@@ -536,6 +549,7 @@ ccm_opacity_preferences_page_init_utilities_section (CCMPreferencesPagePlugin *
         (CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin), preferences,
          utilities_section);
 }
+#endif
 
 static void
 ccm_opacity_screen_iface_init (CCMScreenPluginClass * iface)
@@ -562,6 +576,7 @@ ccm_opacity_window_iface_init (CCMWindowPluginClass * iface)
     iface->get_origin = NULL;
 }
 
+#if HAVE_GTK
 static void
 ccm_opacity_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
 {
@@ -572,3 +587,4 @@ ccm_opacity_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
     iface->init_accessibility_section = NULL;
     iface->init_utilities_section = ccm_opacity_preferences_page_init_utilities_section;
 }
+#endif

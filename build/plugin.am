@@ -16,6 +16,12 @@ VALAFLAGS = \
     --pkg=config \
     --pkg=cairo-compmgr
 
+if HAVE_GTK
+VALAFLAGS += \
+    -DHAVE_GTK \
+    --pkg=gtk+-2.0
+endif
+
 PLUGIN_LDFLAGS = -module -avoid-version -no-undefined
 PLUGIN_LIBADD = $(CAIRO_COMPMGR_LIBS) ${top_builddir}/lib/libcairo_compmgr.la
 
@@ -72,4 +78,3 @@ if ENABLE_GCONF
 CLEANFILES += $(schemas_DATA) \
               $(schemas_in_files)
 endif
-

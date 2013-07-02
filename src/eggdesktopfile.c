@@ -32,7 +32,6 @@
 
 #include <glib/gi18n.h>
 #include <gdk/gdkx.h>
-#include <gtk/gtk.h>
 
 struct EggDesktopFile
 {
@@ -887,6 +886,7 @@ parse_link (EggDesktopFile * desktop_file, EggDesktopFile ** app_desktop_file,
     return TRUE;
 }
 
+#ifdef HAVE_GTK
 #if GTK_CHECK_VERSION (2, 12, 0)
 static char *
 start_startup_notification (GdkDisplay * display, EggDesktopFile * desktop_file,
@@ -987,6 +987,7 @@ set_startup_notification_timeout (GdkDisplay * display, const char *startup_id)
                            startup_notification_timeout, sn_data);
 }
 #endif                          /* GTK 2.12 */
+#endif
 
 static GPtrArray *
 array_putenv (GPtrArray * env, char *variable)
@@ -1174,6 +1175,7 @@ egg_desktop_file_launchv (EggDesktopFile * desktop_file, GSList * documents,
         }
         g_free (command);
 
+#if HAVE_GTK
 #if GTK_CHECK_VERSION (2, 12, 0)
         startup_id =
             start_startup_notification (display, desktop_file, argv[0],
@@ -1188,6 +1190,9 @@ egg_desktop_file_launchv (EggDesktopFile * desktop_file, GSList * documents,
 #else
         startup_id = NULL;
 #endif                          /* GTK 2.12 */
+#else
+        startup_id = NULL;
+#endif
 
         if (env != NULL)
             g_ptr_array_add (env, NULL);
@@ -1201,6 +1206,7 @@ egg_desktop_file_launchv (EggDesktopFile * desktop_file, GSList * documents,
 
         if (startup_id)
         {
+#if HAVE_GTK
 #if GTK_CHECK_VERSION (2, 12, 0)
             if (current_success)
             {
@@ -1213,6 +1219,7 @@ egg_desktop_file_launchv (EggDesktopFile * desktop_file, GSList * documents,
             }
             else
 #endif                          /* GTK 2.12 */
+#endif
                 g_free (startup_id);
         }
         else if (ret_startup_id)
@@ -1425,10 +1432,10 @@ egg_set_desktop_file (const char *desktop_file_path)
 
 /**
  * egg_get_desktop_file:
- * 
+ *
  * Gets the application's #EggDesktopFile, as set by
  * egg_set_desktop_file().
- * 
+ *
  * Return value: the #EggDesktopFile, or %NULL if it hasn't been set.
  **/
 EggDesktopFile *

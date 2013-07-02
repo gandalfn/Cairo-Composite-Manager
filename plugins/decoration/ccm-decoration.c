@@ -2,17 +2,17 @@
 /*
  * ccm-decoration.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -28,9 +28,11 @@
 #include "ccm-window.h"
 #include "ccm-decoration.h"
 #include "ccm-keybind.h"
+#if HAVE_GTK
 #include "ccm-preferences-page-plugin.h"
 #include "ccm-config-check-button.h"
 #include "ccm-config-adjustment.h"
+#endif
 #include "ccm.h"
 
 enum
@@ -54,8 +56,9 @@ typedef struct
 } CCMDecorationOptions;
 
 static void ccm_decoration_window_iface_init (CCMWindowPluginClass * iface);
-static void ccm_decoration_preferences_page_iface_init (CCMPreferencesPagePluginClass *
-                                                        iface);
+#if HAVE_GTK
+static void ccm_decoration_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
+#endif
 
 static void ccm_decoration_create_mask (CCMDecoration * self);
 static void ccm_decoration_on_property_changed (CCMDecoration * self,
@@ -69,9 +72,12 @@ CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMDecoration, ccm_decoration, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_decoration,
                                                          CCM_TYPE_WINDOW_PLUGIN,
                                                          ccm_decoration_window_iface_init);
+#if HAVE_GTK
                                 CCM_IMPLEMENT_INTERFACE (ccm_decoration,
                                                          CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                                         ccm_decoration_preferences_page_iface_init))
+                                                         ccm_decoration_preferences_page_iface_init)
+#endif
+                               )
 struct _CCMDecorationPrivate
 {
     CCMWindow* window;
@@ -88,7 +94,9 @@ struct _CCMDecorationPrivate
 
     gboolean locked;
 
+#if HAVE_GTK
     GtkBuilder* builder;
+#endif
 
     gulong id_property_changed;
     gulong id_opacity_changed;
@@ -159,7 +167,9 @@ ccm_decoration_init (CCMDecoration * self)
     self->priv->geometry = NULL;
     self->priv->opaque = NULL;
     self->priv->locked = FALSE;
+#if HAVE_GTK
     self->priv->builder = NULL;
+#endif
 }
 
 static void
@@ -186,8 +196,10 @@ ccm_decoration_finalize (GObject * object)
         ccm_region_destroy (self->priv->geometry);
     self->priv->geometry = NULL;
 
+#if HAVE_GTK
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
+#endif
 
     ccm_plugin_options_unload (CCM_PLUGIN (self));
 
@@ -334,7 +346,7 @@ ccm_decoration_create_mask (CCMDecoration * self)
                                   &self->priv->right, &self->priv->top,
                                   &self->priv->bottom);
 
-    if (surface && (self->priv->left || self->priv->right || 
+    if (surface && (self->priv->left || self->priv->right ||
                     self->priv->top || self->priv->bottom))
     {
         cairo_t *ctx;
@@ -643,6 +655,7 @@ ccm_decoration_window_resize (CCMWindowPlugin * plugin, CCMWindow * window,
                               height);
 }
 
+#if HAVE_GTK
 static void
 ccm_decoration_preferences_page_init_windows_section (CCMPreferencesPagePlugin *
                                                       plugin,
@@ -689,6 +702,7 @@ ccm_decoration_preferences_page_init_windows_section (CCMPreferencesPagePlugin *
         (CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin), preferences,
          windows_section);
 }
+#endif
 
 static void
 ccm_decoration_window_iface_init (CCMWindowPluginClass * iface)
@@ -705,6 +719,7 @@ ccm_decoration_window_iface_init (CCMWindowPluginClass * iface)
     iface->get_origin = NULL;
 }
 
+#if HAVE_GTK
 static void
 ccm_decoration_preferences_page_iface_init (CCMPreferencesPagePluginClass *
                                             iface)
@@ -716,3 +731,4 @@ ccm_decoration_preferences_page_iface_init (CCMPreferencesPagePluginClass *
     iface->init_accessibility_section = NULL;
     iface->init_utilities_section = NULL;
 }
+#endif

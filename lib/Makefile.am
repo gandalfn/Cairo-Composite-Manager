@@ -15,7 +15,6 @@ endif
 lib_LTLIBRARIES = libcairo_compmgr.la
 
 cairo_compmgr_include_HEADERS =  \
-    eggaccelerators.h \
     ccm-object.h \
     ccm-config.h \
     ccm-source.h \
@@ -23,11 +22,16 @@ cairo_compmgr_include_HEADERS =  \
     ccm-timeline.h \
     ccm-config-key.h \
     ccm-config-schema.h \
+    ccm-cairo-utils.h
+
+if HAVE_GTK
+cairo_compmgr_include_HEADERS +=  \
+    eggaccelerators.h \
     ccm-config-check-button.h \
     ccm-config-adjustment.h \
     ccm-config-color-button.h \
-    ccm-config-entry-shortcut.h \
-    ccm-cairo-utils.h
+    ccm-config-entry-shortcut.h
+endif
 
 noinst_LTLIBRARIES = \
     libccm-timeline.la \
@@ -70,11 +74,15 @@ libcairo_compmgr_la_SOURCES =  \
     ccm-source.c \
     ccm-cairo-utils.c \
     ccm-config-key.c \
-    ccm-config-schema.c \
+    ccm-config-schema.c
+
+if HAVE_GTK
+libcairo_compmgr_la_SOURCES +=  \
     ccm-config-check-button.c \
     ccm-config-adjustment.c \
     ccm-config-color-button.c \
     ccm-config-entry-shortcut.c
+endif
 
 libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@
 
@@ -104,7 +112,11 @@ libgladeccm_la_LDFLAGS = -module -avoid-version -no-undefined
 libgladeccm_la_LIBADD = $(CCM_GLADE_LIBS) libcairo_compmgr.la
 endif
 
-noinst_PROGRAMS = test-boxed-blur test-config test-config-widget test-timeline
+noinst_PROGRAMS = test-boxed-blur test-config test-timeline
+
+if HAVE_GTK
+noinst_PROGRAMS = test-config-widget
+endif
 
 test_boxed_blur_SOURCES = test-boxed-blur.c
 
@@ -114,9 +126,11 @@ test_config_SOURCES = test-config.c
 
 test_config_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
 
+if HAVE_GTK
 test_config_widget_SOURCES = test-config-widget.c
 
 test_config_widget_LDADD = $(CAIRO_COMPMGR_LIBS) libcairo_compmgr.la
+endif
 
 test_timeline_SOURCES = test-timeline.c
 

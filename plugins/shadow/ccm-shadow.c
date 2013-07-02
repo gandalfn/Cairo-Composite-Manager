@@ -30,9 +30,11 @@
 #include "ccm-config.h"
 #include "ccm-cairo-utils.h"
 #include "ccm-debug.h"
+#if HAVE_GTK
 #include "ccm-preferences-page-plugin.h"
 #include "ccm-config-adjustment.h"
 #include "ccm-config-color-button.h"
+#endif
 #include "ccm.h"
 
 enum
@@ -81,16 +83,21 @@ static void ccm_shadow_on_option_changed (CCMPlugin * plugin, int index);
 
 static void ccm_shadow_window_iface_init (CCMWindowPluginClass * iface);
 static void ccm_shadow_screen_iface_init (CCMScreenPluginClass * iface);
+#if HAVE_GTK
 static void ccm_shadow_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
+#endif
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMShadow, ccm_shadow, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_shadow, CCM_TYPE_SCREEN_PLUGIN,
                                                          ccm_shadow_screen_iface_init);
                                 CCM_IMPLEMENT_INTERFACE (ccm_shadow, CCM_TYPE_WINDOW_PLUGIN,
                                                          ccm_shadow_window_iface_init);
+#if HAVE_GTK
                                 CCM_IMPLEMENT_INTERFACE (ccm_shadow,
                                                          CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                                         ccm_shadow_preferences_page_iface_init))
+                                                         ccm_shadow_preferences_page_iface_init)
+#endif
+                               )
 struct _CCMShadowPrivate
 {
     CCMScreen *screen;
@@ -108,7 +115,9 @@ struct _CCMShadowPrivate
 
     CCMRegion *geometry;
 
+#if HAVE_GTK
     GtkBuilder *builder;
+#endif
 
     gulong id_event;
     gulong id_property_changed;
@@ -205,7 +214,9 @@ ccm_shadow_init (CCMShadow * self)
     self->priv->window = NULL;
     self->priv->shadow = NULL;
     self->priv->geometry = NULL;
+#if HAVE_GTK
     self->priv->builder = NULL;
+#endif
     self->priv->id_event = 0;
     self->priv->id_property_changed = 0;
 }
@@ -246,8 +257,10 @@ ccm_shadow_finalize (GObject * object)
         g_object_unref (self->priv->pixmap);
     self->priv->pixmap = NULL;
 
+#if HAVE_GTK
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
+#endif
 
     G_OBJECT_CLASS (ccm_shadow_parent_class)->finalize (object);
 }
@@ -290,7 +303,6 @@ ccm_shadow_need_shadow (CCMShadow * self)
          ((type == CCM_WINDOW_TYPE_DOCK && opaque) || type != CCM_WINDOW_TYPE_DOCK) &&
          (ccm_window_is_managed (window) ||
           type == CCM_WINDOW_TYPE_DOCK ||
-          type == CCM_WINDOW_TYPE_DROPDOWN_MENU ||
           type == CCM_WINDOW_TYPE_POPUP_MENU ||
           type == CCM_WINDOW_TYPE_TOOLTIP ||
           type == CCM_WINDOW_TYPE_MENU ||
@@ -709,7 +721,7 @@ ccm_shadow_on_pixmap_damage (CCMShadow* self, CCMRegion* area)
         }
         cairo_destroy (ctx);
         cairo_surface_destroy (surface);
-        ccm_display_sync (display);
+        ccm_display_flush (display);
     }
 }
 
@@ -952,11 +964,10 @@ ccm_shadow_window_get_pixmap (CCMWindowPlugin * plugin, CCMWindow * window)
     return pixmap;
 }
 
+#if HAVE_GTK
 static void
-ccm_shadow_preferences_page_init_windows_section (CCMPreferencesPagePlugin *
-                                                  plugin,
-                                                  CCMPreferencesPage *
-                                                  preferences,
+ccm_shadow_preferences_page_init_windows_section (CCMPreferencesPagePlugin * plugin,
+                                                  CCMPreferencesPage * preferences,
                                                   GtkWidget * windows_section)
 {
     CCMShadow *self = CCM_SHADOW (plugin);
@@ -997,6 +1008,7 @@ ccm_shadow_preferences_page_init_windows_section (CCMPreferencesPagePlugin *
                                                       preferences,
                                                       windows_section);
 }
+#endif
 
 static void
 ccm_shadow_window_iface_init (CCMWindowPluginClass * iface)
@@ -1024,6 +1036,7 @@ ccm_shadow_screen_iface_init (CCMScreenPluginClass * iface)
     iface->damage = NULL;
 }
 
+#if HAVE_GTK
 static void
 ccm_shadow_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
 {
@@ -1034,3 +1047,4 @@ ccm_shadow_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
     iface->init_accessibility_section = NULL;
     iface->init_utilities_section = NULL;
 }
+#endif

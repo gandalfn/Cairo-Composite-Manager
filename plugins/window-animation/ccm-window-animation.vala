@@ -65,7 +65,11 @@ namespace CCM
         }
     }
 
+#if HAVE_GTK
     class WindowAnimation : CCM.Plugin, CCM.WindowPlugin, CCM.PreferencesPagePlugin
+#else
+    class WindowAnimation : CCM.Plugin, CCM.WindowPlugin
+#endif
     {
         const string options_key[] = {
             "duration"
@@ -77,8 +81,9 @@ namespace CCM
         bool desktop_changed;
         CCM.Timeline timeline;
         Cairo.Rectangle geometry;
+#if HAVE_GTK
         Gtk.Builder builder;
-
+#endif
         class construct
         {
             type_options = typeof (WindowAnimationOptions);
@@ -314,6 +319,7 @@ namespace CCM
             (parent as CCM.WindowPlugin).unmap (window);
         }
 
+#if HAVE_GTK
         ////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////
         void
@@ -345,6 +351,7 @@ namespace CCM
             (parent as CCM.PreferencesPagePlugin).init_effects_section (preferences,
                                                                         effects_section);
         }
+#endif
     }
 }
 

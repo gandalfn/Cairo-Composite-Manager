@@ -48,7 +48,7 @@ CAIRO_XLIB_REQUIRED=1.8.0
 CAIRO_XLIB_XRENDER_REQUIRED=1.8.0
 GOBJECT_INTROSPECTION_REQUIRED=0.6.2
 GLADEUI_REQUIRED=3.6.7
-VALA_REQUIRED=0.18.0
+VALA_REQUIRED=0.20.0
 
 dnl ****************************************************************************
 dnl Check for build
@@ -85,13 +85,42 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         ice,
         sm,
         xrandr,
-        gl,
+        gdk-2.0,
         cairo >= $CAIRO_REQUIRED,
         pixman-1 >= $PIXMAN_REQUIRED,
-        gtk+-2.0 >= $GTK_REQUIRED
-        libvala-0.18 >= $VALA_REQUIRED])
+        libvala-0.20 >= $VALA_REQUIRED])
 CAIRO_COMPMGR_CFLAGS="-O3 -flto -DG_DISABLE_ASSERT -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS $CAIRO_COMPMGR_CFLAGS"
 CAIRO_COMPMGR_LIBS="-O3 -flto $CAIRO_COMPMGR_LIBS"
+
+dnl ***************************************************************************
+dnl check for vsync
+dnl ***************************************************************************
+AC_ARG_ENABLE(vsync,
+  [  --enable-vsync        Enable sync on vblank],
+  [vsync=$enableval], [vsync=no])
+
+if test x"$vsync" = xyes; then
+    PKG_CHECK_MODULES(CAIRO_COMPMGR_VSYNC, [gl])
+    CAIRO_COMPMGR_CFLAGS="$CAIRO_COMPMGR_CFLAGS $CAIRO_COMPMGR_VSYNC_CFLAGS"
+    CAIRO_COMPMGR_LIBS="$CAIRO_COMPMGR_LIBS $CAIRO_COMPMGR_VSYNC_LIBS"
+    AC_DEFINE(HAVE_VSYNC, 1, [VSYNC enabled])
+fi
+AM_CONDITIONAL(HAVE_VSYNC, [test x$vsync = xyes])
+
+dnl ***************************************************************************
+dnl check for gtk
+dnl ***************************************************************************
+AC_ARG_ENABLE(gtk,
+  [  --enable-gtk        Enable gtk interface],
+  [gtk=$enableval], [gtk=no])
+
+if test x"$gtk" = xyes; then
+    PKG_CHECK_MODULES(CAIRO_COMPMGR_GTK, [gtk+-2.0 >= $GTK_REQUIRED])
+    CAIRO_COMPMGR_CFLAGS="$CAIRO_COMPMGR_CFLAGS $CAIRO_COMPMGR_GTK_CFLAGS"
+    CAIRO_COMPMGR_LIBS="$CAIRO_COMPMGR_LIBS $CAIRO_COMPMGR_GTK_LIBS"
+    AC_DEFINE(HAVE_GTK, 1, [GTK enabled])
+fi
+AM_CONDITIONAL(HAVE_GTK, [test x$gtk = xyes])
 AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
 

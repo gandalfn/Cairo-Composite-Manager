@@ -89,16 +89,25 @@ cairo_compmgr_SOURCES = \
     ccm-extension.c \
     ccm-extension-loader.h \
     ccm-extension-loader.c \
-    ccm-tray-menu.h \
-    ccm-tray-menu.c \
-    ccm-tray-icon.h \
-    ccm-tray-icon.c \
     ccm-keybind.h \
     ccm-keybind.c \
     ccm-property-async.h \
     ccm-property-async.c \
     ccm.h \
     cairo-compmgr.c \
+    eggdesktopfile.c \
+    eggdesktopfile.h \
+    eggsmclient-private.h \
+    eggsmclient-xsmp.c \
+    eggsmclient.c \
+    eggsmclient.h
+
+if HAVE_GTK
+cairo_compmgr_SOURCES += \
+    ccm-tray-menu.h \
+    ccm-tray-menu.c \
+    ccm-tray-icon.h \
+    ccm-tray-icon.c \
     ccm-preferences-page-plugin.h \
     ccm-preferences-page-plugin.c \
     ccm-preferences.h \
@@ -109,14 +118,9 @@ cairo_compmgr_SOURCES = \
     ccm-cell-renderer-extension.c \
     ccm-preferences-page.h \
     ccm-preferences-page.c \
-    eggdesktopfile.c \
-    eggdesktopfile.h \
-    eggsmclient-private.h \
-    eggsmclient-xsmp.c \
-    eggsmclient.c \
-    eggsmclient.h \
     ccm-timed-dialog.h \
     ccm-timed-dialog.c
+endif
 
 if HAVE_XRENDER_BACKEND
 cairo_compmgr_SOURCES += \
@@ -147,4 +151,3 @@ cairo_compmgr_LDADD += $(CCM_GCONF_LIBS)
 endif
 
 EXTRA_DIST = ccm-marshallers.list
-

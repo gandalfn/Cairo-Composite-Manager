@@ -28,9 +28,11 @@
 #include "ccm-freeze.h"
 #include "ccm-config.h"
 #include "ccm-debug.h"
+#if HAVE_GTK
 #include "ccm-preferences-page-plugin.h"
 #include "ccm-config-adjustment.h"
 #include "ccm-config-color-button.h"
+#endif
 #include "ccm.h"
 
 enum
@@ -57,8 +59,9 @@ typedef struct
 
 static void ccm_freeze_screen_iface_init (CCMScreenPluginClass * iface);
 static void ccm_freeze_window_iface_init (CCMWindowPluginClass * iface);
-static void
-ccm_freeze_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
+#if HAVE_GTK
+static void ccm_freeze_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface);
+#endif
 static void ccm_freeze_on_event (CCMFreeze * self, XEvent * event,
                                  CCMDisplay * display);
 static void ccm_freeze_on_option_changed (CCMPlugin * plugin, int index);
@@ -68,9 +71,12 @@ CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMFreeze, ccm_freeze, CCM_TYPE_PLUGIN,
                                                          ccm_freeze_screen_iface_init);
                                 CCM_IMPLEMENT_INTERFACE (ccm_freeze, CCM_TYPE_WINDOW_PLUGIN,
                                                          ccm_freeze_window_iface_init);
+#if HAVE_GTK
                                 CCM_IMPLEMENT_INTERFACE (ccm_freeze,
                                                          CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                                         ccm_freeze_preferences_page_iface_init))
+                                                         ccm_freeze_preferences_page_iface_init)
+#endif
+                               )
 struct _CCMFreezePrivate
 {
     gboolean         alive;
@@ -84,7 +90,9 @@ struct _CCMFreezePrivate
     glong            pid;
 
     CCMTimeline*     timeline;
+#if HAVE_GTK
     GtkBuilder*      builder;
+#endif
     cairo_surface_t* frozen;
 
     gulong           id_event;
@@ -146,7 +154,9 @@ ccm_freeze_init (CCMFreeze * self)
     self->priv->last_ping = 0;
     self->priv->pid = 0;
     self->priv->timeline = NULL;
+#if HAVE_GTK
     self->priv->builder = NULL;
+#endif
     self->priv->frozen = NULL;
     self->priv->id_event = 0;
 }
@@ -174,8 +184,10 @@ ccm_freeze_finalize (GObject * object)
     self->priv->last_ping = 0;
     if (self->priv->timeline)
         g_object_unref (self->priv->timeline);
+#if HAVE_GTK
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
+#endif
     if (self->priv->frozen)
         cairo_surface_destroy (self->priv->frozen);
 
@@ -514,6 +526,7 @@ ccm_freeze_window_unmap (CCMWindowPlugin * plugin, CCMWindow * window)
     ccm_window_plugin_unmap (CCM_WINDOW_PLUGIN_PARENT (plugin), window);
 }
 
+#if HAVE_GTK
 static void
 ccm_freeze_preferences_page_init_windows_section (CCMPreferencesPagePlugin * plugin,
                                                   CCMPreferencesPage * preferences,
@@ -549,6 +562,7 @@ ccm_freeze_preferences_page_init_windows_section (CCMPreferencesPagePlugin * plu
     }
     ccm_preferences_page_plugin_init_windows_section (CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin), preferences, windows_section);
 }
+#endif
 
 static void
 ccm_freeze_screen_iface_init (CCMScreenPluginClass * iface)
@@ -575,6 +589,7 @@ ccm_freeze_window_iface_init (CCMWindowPluginClass * iface)
     iface->get_origin = NULL;
 }
 
+#if HAVE_GTK
 static void
 ccm_freeze_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
 {
@@ -585,3 +600,4 @@ ccm_freeze_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
     iface->init_accessibility_section = NULL;
     iface->init_utilities_section = NULL;
 }
+#endif

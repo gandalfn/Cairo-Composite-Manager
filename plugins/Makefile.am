@@ -8,9 +8,11 @@ SUBDIRS = \
     mosaic \
     perf \
     decoration \
-    snapshot \
     vala-test \
-    automate \
     clone \
     stats
 
+if HAVE_GTK
+SUBDIRS += \
+	snapshot
+endif
