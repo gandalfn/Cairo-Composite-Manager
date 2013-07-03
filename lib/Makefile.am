@@ -40,10 +40,15 @@ noinst_LTLIBRARIES = \
 libccm_timeline_la_VALAFLAGS = \
     --header=ccm-timeline.h \
     --vapidir=${top_srcdir}/vapi \
+    --target-glib=2.32 \
     --pkg=config \
-    --pkg=source
+    --pkg=source \
+    --pkg=posix \
+    --pkg=cairo \
+    --pkg=gdk-2.0
 
 libccm_timeline_la_SOURCES =  \
+    ccm-buffer-surface.vala \
     ccm-set.vala \
     ccm-timeline.vala \
     ccm-timeout-pool.vala \

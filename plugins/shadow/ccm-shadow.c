@@ -30,6 +30,7 @@
 #include "ccm-config.h"
 #include "ccm-cairo-utils.h"
 #include "ccm-debug.h"
+#include "ccm-timeline.h"
 #if HAVE_GTK
 #include "ccm-preferences-page-plugin.h"
 #include "ccm-config-adjustment.h"
@@ -48,28 +49,28 @@ enum
 
 enum
 {
-    CCM_SHADOW_OFFSET,
     CCM_SHADOW_RADIUS,
     CCM_SHADOW_BORDER,
     CCM_SHADOW_COLOR,
+    CCM_SHADOW_ALPHA,
     CCM_SHADOW_OPTION_N
 };
 
 static const gchar *CCMShadowOptionKeys[CCM_SHADOW_OPTION_N] = {
-    "offset",
     "radius",
     "border",
-    "color"
+    "color",
+    "alpha"
 };
 
 typedef struct
 {
     CCMPluginOptions parent;
 
-    int offset;
     int radius;
     int border;
     GdkColor *color;
+    double alpha;
 } CCMShadowOptions;
 
 static GQuark CCMShadowPixmapQuark;
@@ -112,6 +113,7 @@ struct _CCMShadowPrivate
     gboolean have_shadow;
     CCMPixmap *pixmap;
     CCMPixmap *shadow;
+    CCMBufferSurface *shadow_buffer;
 
     CCMRegion *geometry;
 
@@ -129,10 +131,10 @@ struct _CCMShadowPrivate
 static void
 ccm_shadow_options_init (CCMShadowOptions * self)
 {
-    self->offset = 0;
-    self->radius = 16;
-    self->border = 8;
+    self->radius = 7;
+    self->border = 12;
     self->color = NULL;
+    self->alpha = 0.6;
 }
 
 static void
@@ -148,19 +150,6 @@ ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
     GError *error = NULL;
 
     if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
-                                                 CCM_SHADOW_OFFSET))
-    {
-        self->offset = ccm_config_get_integer (config, &error);
-        if (error)
-        {
-            g_warning ("Error on get shadow offset configuration value");
-            g_error_free (error);
-            error = NULL;
-            self->offset = 0;
-        }
-    }
-
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
                                                  CCM_SHADOW_RADIUS))
     {
         self->radius = ccm_config_get_integer (config, &error);
@@ -169,7 +158,7 @@ ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
             g_warning ("Error on get shadow radius configuration value");
             g_error_free (error);
             error = NULL;
-            self->radius = 16;
+            self->radius = 7;
         }
     }
 
@@ -182,7 +171,7 @@ ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
             g_warning ("Error on get shadow radius configuration value");
             g_error_free (error);
             error = NULL;
-            self->border = 8;
+            self->border = 12;
         }
     }
 
@@ -199,6 +188,19 @@ ccm_shadow_options_changed (CCMShadowOptions* self, CCMConfig* config)
             self->color = g_new0 (GdkColor, 1);
         }
     }
+
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
+                                                 CCM_SHADOW_ALPHA))
+    {
+        self->alpha = ccm_config_get_float (config, &error);
+        if (error)
+        {
+            g_warning ("Error on get shadow alpha configuration value");
+            g_error_free (error);
+            error = NULL;
+            self->alpha = 0.6;
+        }
+    }
 }
 
 static void
@@ -213,6 +215,7 @@ ccm_shadow_init (CCMShadow * self)
     self->priv->have_shadow = FALSE;
     self->priv->window = NULL;
     self->priv->shadow = NULL;
+    self->priv->shadow_buffer = NULL;
     self->priv->geometry = NULL;
 #if HAVE_GTK
     self->priv->builder = NULL;
@@ -252,6 +255,10 @@ ccm_shadow_finalize (GObject * object)
     if (self->priv->shadow)
         g_object_unref (self->priv->shadow);
     self->priv->shadow = NULL;
+
+    if (self->priv->shadow_buffer)
+        g_object_unref (self->priv->shadow_buffer);
+    self->priv->shadow_buffer = NULL;
 
     if (self->priv->pixmap)
         g_object_unref (self->priv->pixmap);
@@ -335,6 +342,10 @@ ccm_shadow_check_needed (CCMShadow * self)
                     g_object_unref (self->priv->shadow);
                 self->priv->shadow = NULL;
 
+                if (self->priv->shadow_buffer)
+                    g_object_unref (self->priv->shadow_buffer);
+                self->priv->shadow_buffer = NULL;
+
                 if (self->priv->geometry)
                     ccm_region_destroy (self->priv->geometry);
                 self->priv->geometry = NULL;
@@ -356,6 +367,10 @@ ccm_shadow_check_needed (CCMShadow * self)
                 if (self->priv->shadow)
                     g_object_unref (self->priv->shadow);
                 self->priv->shadow = NULL;
+
+                if (self->priv->shadow_buffer)
+                    g_object_unref (self->priv->shadow_buffer);
+                self->priv->shadow_buffer = NULL;
 
                 g_object_set(G_OBJECT(self->priv->window), "pixmap",
                              self->priv->pixmap, NULL);
@@ -531,44 +546,47 @@ ccm_shadow_create_atoms (CCMShadow * self)
     }
 }
 
-static cairo_surface_t*
+static void
 ccm_shadow_create_shadow_image (CCMShadow * self)
 {
-    g_return_val_if_fail (self != NULL, NULL);
+    g_return_if_fail (self != NULL);
 
-    cairo_t *cr;
-    cairo_rectangle_t *rects = NULL;
-    gint cpt, nb_rects;
-    cairo_rectangle_t clipbox;
-    gint border = ccm_shadow_get_option (self)->border;
-    cairo_surface_t* surface;
+    if (self->priv->shadow_buffer == NULL)
+    {
+        cairo_t *cr;
+        cairo_rectangle_t *rects = NULL;
+        gint cpt, nb_rects;
+        cairo_rectangle_t clipbox;
+        gint border = ccm_shadow_get_option (self)->border;
 
-    ccm_region_get_clipbox (self->priv->geometry, &clipbox);
+        ccm_region_get_clipbox (self->priv->geometry, &clipbox);
 
-    // Create shadow surface
-    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-                                          clipbox.width + border * 2,
-                                          clipbox.height + border * 2);
+        // Create shadow surface
+        self->priv->shadow_buffer = ccm_buffer_surface_new (clipbox.width + border * 2, clipbox.height + border * 2);
 
-    cr = cairo_create (surface);
-    cairo_translate (cr, -clipbox.x, -clipbox.y);
-    cairo_translate (cr, border, border);
-    ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
-    for (cpt = 0; cpt < nb_rects; ++cpt)
-        cairo_rectangle (cr, rects[cpt].x, rects[cpt].y, rects[cpt].width, rects[cpt].height);
-    cairo_fill (cr);
-    if (rects) cairo_rectangles_free (rects, nb_rects);
-    rects = NULL;
-    cairo_destroy (cr);
+        cr = ccm_buffer_surface_get_context (self->priv->shadow_buffer);
+        ccm_buffer_surface_clear (self->priv->shadow_buffer);
+        cairo_set_source_rgba (cr,
+                               (double) ccm_shadow_get_option (self)->color->red / 65535.0f,
+                               (double) ccm_shadow_get_option (self)->color->green / 65535.0f,
+                               (double) ccm_shadow_get_option (self)->color->blue / 65535.0f,
+                               ccm_shadow_get_option (self)->alpha);
+        ccm_region_get_rectangles (self->priv->geometry, &rects, &nb_rects);
+        for (cpt = 0; cpt < nb_rects; ++cpt)
+            cairo_rectangle (cr, rects[cpt].x - clipbox.x + border,
+                                 rects[cpt].y - clipbox.y + border,
+                                 rects[cpt].width, rects[cpt].height);
+        cairo_fill_preserve (cr);
+        if (rects) cairo_rectangles_free (rects, nb_rects);
+        rects = NULL;
 
-    // Blur surface
-    clipbox.x = border * 2;
-    clipbox.y = border * 2;
-    clipbox.width -= border * 2;
-    clipbox.height -= border * 2;
-    cairo_blur_image_surface (surface, ccm_shadow_get_option (self)->radius, clipbox);
+        // Blur surface
+        ccm_buffer_surface_exponential_blur (self->priv->shadow_buffer, ccm_shadow_get_option (self)->radius);
 
-    return surface;
+        // Clear content
+        cairo_set_source_rgba (cr, 0, 0, 0, 0);
+        cairo_fill (cr);
+    }
 }
 
 static void
@@ -632,6 +650,9 @@ ccm_shadow_on_shadow_pixmap_destroyed (CCMShadow * self)
     self->priv->shadow = NULL;
     if (self->priv->pixmap) g_object_unref (self->priv->pixmap);
     self->priv->pixmap = NULL;
+    if (self->priv->shadow_buffer)
+        g_object_unref (self->priv->shadow_buffer);
+    self->priv->shadow_buffer = NULL;
 }
 
 static void
@@ -643,6 +664,9 @@ ccm_shadow_on_pixmap_destroyed (CCMShadow * self)
     self->priv->pixmap = NULL;
     if (self->priv->shadow) g_object_unref (self->priv->shadow);
     self->priv->shadow = NULL;
+    if (self->priv->shadow_buffer)
+        g_object_unref (self->priv->shadow_buffer);
+    self->priv->shadow_buffer = NULL;
 }
 
 static void
@@ -685,19 +709,11 @@ ccm_shadow_on_pixmap_damage (CCMShadow* self, CCMRegion* area)
         }
         else
         {
-            gint offset = ccm_shadow_get_option (self)->offset;
-            cairo_surface_t* shadow_image = ccm_shadow_create_shadow_image (self);
+            ccm_shadow_create_shadow_image (self);
 
-            cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
-            cairo_paint (ctx);
             cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-
-            cairo_set_source_rgb (ctx,
-                                  (double) ccm_shadow_get_option (self)->color->red / 65535.0f,
-                                  (double) ccm_shadow_get_option (self)->color->green / 65535.0f,
-                                  (double) ccm_shadow_get_option (self)->color->blue / 65535.0f);
-
-            cairo_mask_surface (ctx, shadow_image, 0, 0);
+            cairo_set_source_surface (ctx, ccm_buffer_surface_get_surface (self->priv->shadow_buffer), 0, 0);
+            cairo_paint (ctx);
 
             cairo_translate (ctx, border, border);
             cairo_translate (ctx, -clipbox.x, -clipbox.y);
@@ -709,8 +725,6 @@ ccm_shadow_on_pixmap_damage (CCMShadow* self, CCMRegion* area)
             if (rects) cairo_rectangles_free (rects, nb_rects);
             rects = NULL;
             cairo_translate (ctx, clipbox.x, clipbox.y);
-
-            cairo_surface_destroy (shadow_image);
         }
 
         if (!ccm_pixmap_get_freeze(self->priv->shadow))
@@ -721,7 +735,7 @@ ccm_shadow_on_pixmap_damage (CCMShadow* self, CCMRegion* area)
         }
         cairo_destroy (ctx);
         cairo_surface_destroy (surface);
-        ccm_display_flush (display);
+        ccm_display_sync (display);
     }
 }
 

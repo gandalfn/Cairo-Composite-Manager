@@ -1,19 +1,19 @@
-[offset]
-Type=int
-Default=0
-_Description=Shadow offset in pixel.
-
 [radius]
 Type=int
-Default=16
+Default=7
 _Description=Shadow blur radius.
 
 [border]
 Type=int
-Default=8
+Default=15
 _Description=Shadow border.
 
 [color]
 Type=string
 Default=#000000
 _Description=Shadow color.
+
+[alpha]
+Type=float
+Default=1.0
+_Description=Shadow alpha.
