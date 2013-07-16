@@ -346,8 +346,6 @@ plugins/snapshot/Makefile
 plugins/snapshot/ccm-snapshot.plugin.desktop
 plugins/vala-test/Makefile
 plugins/vala-test/ccm-vala-window-plugin.plugin.desktop
-plugins/automate/Makefile
-plugins/automate/ccm-automate.plugin.desktop
 plugins/clone/Makefile
 plugins/clone/ccm-clone.plugin.desktop
 plugins/stats/Makefile

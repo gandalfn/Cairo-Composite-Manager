@@ -18,6 +18,10 @@
  */
 
 #include <string.h>
+#include <X11/Xlib.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <X11/extensions/XShm.h>
 #include <X11/Xresource.h>
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xdamage.h>
@@ -27,6 +31,7 @@
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
 #include <GL/glx.h>
+#include <gdk/gdkx.h>
 
 #include "ccm-debug.h"
 #include "ccm-display.h"

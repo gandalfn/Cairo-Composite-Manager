@@ -709,11 +709,14 @@ ccm_shadow_on_pixmap_damage (CCMShadow* self, CCMRegion* area)
         }
         else
         {
-            ccm_shadow_create_shadow_image (self);
+            if (self->priv->shadow_buffer == NULL)
+            {
+                ccm_shadow_create_shadow_image (self);
 
-            cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-            cairo_set_source_surface (ctx, ccm_buffer_surface_get_surface (self->priv->shadow_buffer), 0, 0);
-            cairo_paint (ctx);
+                cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
+                cairo_set_source_surface (ctx, ccm_buffer_surface_get_surface (self->priv->shadow_buffer), 0, 0);
+                cairo_paint (ctx);
+            }
 
             cairo_translate (ctx, border, border);
             cairo_translate (ctx, -clipbox.x, -clipbox.y);

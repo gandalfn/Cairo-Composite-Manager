@@ -26,6 +26,7 @@
 
 #include "ccm-debug.h"
 #include "ccm-pixmap.h"
+#include "ccm-pixmap-image.h"
 #include "ccm-window.h"
 #include "ccm-screen.h"
 #include "ccm-display.h"

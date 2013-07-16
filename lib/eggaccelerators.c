@@ -203,7 +203,7 @@ is_button (const gchar * string)
  * can represent various keyboard keys (numlock, meta, hyper, etc.),
  * the virtual modifier represents the keyboard key, the concrete
  * modifier the actual Mod2-Mod5 bits in the key press event.
- * 
+ *
  * Returns: %TRUE on success.
  */
 gboolean
@@ -368,7 +368,7 @@ egg_accelerator_parse_virtual (const gchar * accelerator,
     if (accelerator_key)
         *accelerator_key = gdk_keyval_to_lower (keyval);
     if (accelerator_mods)
-        *accelerator_mods = mods;
+        *accelerator_mods = (EggVirtualModifierType)mods;
     if (keycode)
         *keycode = tmp_keycode;
 
@@ -381,7 +381,7 @@ egg_accelerator_parse_virtual (const gchar * accelerator,
  * @accelerator_key:  accelerator keyval
  * @accelerator_mods: accelerator modifier mask
  * @returns:          a newly-allocated accelerator name
- * 
+ *
  * Converts an accelerator keyval and modifier mask
  * into a string parseable by egg_accelerator_parse_virtual().
  * For example, if you pass in #GDK_q and #EGG_VIRTUAL_CONTROL_MASK,
@@ -588,7 +588,7 @@ egg_keymap_virtualize_modifiers (GdkKeymap * keymap,
         ++i;
     }
 
-    *virtual_mods = virtual;
+    *virtual_mods = (EggVirtualModifierType)virtual;
 }
 
 static void

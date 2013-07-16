@@ -2,17 +2,17 @@
 /*
  * ccm-drawable.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -117,7 +117,7 @@ ccm_drawable_set_property (GObject * object, guint prop_id,
             priv->device = NULL;
             priv->geometry = NULL;
 
-            if (g_value_get_pointer (value) && 
+            if (g_value_get_pointer (value) &&
                 !ccm_region_empty (g_value_get_pointer (value)))
             {
                 cairo_matrix_t transform;
@@ -370,7 +370,7 @@ __ccm_drawable_query_geometry (CCMDrawable * self)
         ccm_region_destroy (self->priv->geometry);
     self->priv->geometry = NULL;
 
-    if (!XGetGeometry (CCM_DISPLAY_XDISPLAY (display), self->priv->drawable, 
+    if (!XGetGeometry (CCM_DISPLAY_XDISPLAY (display), self->priv->drawable,
                        &root, &x, &y, &width, &height, &bw, &self->priv->depth))
         return;
 
@@ -526,7 +526,7 @@ ccm_drawable_get_format (CCMDrawable * self)
     g_return_val_if_fail (self != NULL, CAIRO_FORMAT_ARGB32);
     g_return_val_if_fail (self->priv->visual != NULL, CAIRO_FORMAT_ARGB32);
 
-    if (self->priv->depth == 16 && 
+    if (self->priv->depth == 16 &&
         self->priv->visual->red_mask == 0xf800 &&
         self->priv->visual->green_mask == 0x7e0 &&
         self->priv->visual->blue_mask == 0x1f)
@@ -540,7 +540,7 @@ ccm_drawable_get_format (CCMDrawable * self)
     {
         return CAIRO_FORMAT_RGB24;
     }
-    else if (self->priv->depth == 32 && 
+    else if (self->priv->depth == 32 &&
              self->priv->visual->red_mask == 0xff0000 &&
              self->priv->visual->green_mask == 0xff00 &&
              self->priv->visual->blue_mask == 0xff)
@@ -578,7 +578,7 @@ ccm_drawable_get_xid (CCMDrawable * self)
  * ccm_drawable_query_geometry:
  * @self: #CCMDrawable
  *
- * Request the region covered by the Drawable. 
+ * Request the region covered by the Drawable.
  **/
 void
 ccm_drawable_query_geometry (CCMDrawable * self)
@@ -595,7 +595,7 @@ ccm_drawable_query_geometry (CCMDrawable * self)
  * ccm_drawable_get_geometry:
  * @self: #CCMDrawable
  *
- * Gets the region covered by the Drawable. The coordinates are 
+ * Gets the region covered by the Drawable. The coordinates are
  * relative to the parent Drawable. If the drawable have some transformations
  * this function return the transformed region
  *
@@ -638,7 +638,7 @@ ccm_drawable_set_geometry (CCMDrawable* self, CCMRegion* geometry)
  * ccm_drawable_get_device_geometry:
  * @self: #CCMDrawable
  *
- * Gets the region covered by the Drawable. The coordinates are 
+ * Gets the region covered by the Drawable. The coordinates are
  * relative to the parent Drawable. This function always return the non
  * transformed geometry.
  *
@@ -657,7 +657,7 @@ ccm_drawable_get_device_geometry (CCMDrawable * self)
  * @self: #CCMDrawable
  * @area: #cairo_rectangle_t
  *
- * Gets the rectangle region covered by the Drawable. The coordinates are 
+ * Gets the rectangle region covered by the Drawable. The coordinates are
  * relative to the parent Drawable. If the drawable have some transformations
  * this function return the transformed clipbox.
  *
@@ -683,7 +683,7 @@ ccm_drawable_get_geometry_clipbox (CCMDrawable * self, cairo_rectangle_t * area)
  * @self: #CCMDrawable
  * @area: #cairo_rectangle_t
  *
- * Gets the rectangle region covered by the Drawable. The coordinates are 
+ * Gets the rectangle region covered by the Drawable. The coordinates are
  * relative to the parent Drawable. This function always return the non
  * transformed clipbox.
  *
@@ -711,7 +711,7 @@ ccm_drawable_get_device_geometry_clipbox (CCMDrawable * self,
  * @x: X coordinate relative to drawable's parent
  * @y: Y coordinate relative to drawable's parent
  *
- * Repositions a drawable relative to its parent drawable. 
+ * Repositions a drawable relative to its parent drawable.
  **/
 void
 ccm_drawable_move (CCMDrawable * self, int x, int y)
@@ -977,7 +977,7 @@ ccm_drawable_create_context (CCMDrawable * self)
 /**
  * ccm_drawable_get_damage_path:
  * @self: #CCMDrawable
- * @context: #cairo_t 
+ * @context: #cairo_t
  *
  * Get damaged path.
  **/
@@ -1014,7 +1014,7 @@ ccm_drawable_get_damaged (CCMDrawable * self)
 /**
  * ccm_drawable_get_geometry_path:
  * @self: #CCMDrawable
- * @context: #cairo_t 
+ * @context: #cairo_t
  *
  * Get geometry path.
  *

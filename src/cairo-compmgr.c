@@ -81,11 +81,13 @@ log_func (const gchar * log_domain, GLogLevelFlags log_level,
     ccm_log_print_backtrace ();
 }
 
+#if HAVE_GTK
 static void
 on_preferences_closed (CCMPreferences * pref, gpointer data)
 {
     gtk_main_quit ();
 }
+#endif
 
 static void
 on_enable_ccm_changed (CCMConfig * config, gpointer data)
