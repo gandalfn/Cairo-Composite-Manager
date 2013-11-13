@@ -1,3 +1,59 @@
+<!-- ##### SECTION ./tmpl/ccm-preferences-page-plugin.sgml:Image ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page-plugin.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page-plugin.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page-plugin.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page-plugin.sgml:Stability_Level ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page-plugin.sgml:Title ##### -->
+CCMPreferencesPagePlugin
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page.sgml:Image ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page.sgml:Long_Description ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page.sgml:See_Also ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page.sgml:Short_Description ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page.sgml:Stability_Level ##### -->
+
+
+
+<!-- ##### SECTION ./tmpl/ccm-preferences-page.sgml:Title ##### -->
+CCMPreferencesPage
+
+
 <!-- ##### SIGNAL CCMDisplay::button-press-event ##### -->
 <para>
 
@@ -15,6 +71,32 @@
 @arg1: 
 
 <!-- ##### SIGNAL CCMDisplay::cursor-changed ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMDisplay::damage-destroy ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+@arg2: 
+
+<!-- ##### SIGNAL CCMDisplay::damage-event ##### -->
+<para>
+
+</para>
+
+@ccmdisplay: the object which received the signal.
+@arg1: 
+@Param3: 
+
+<!-- ##### SIGNAL CCMDisplay::event ##### -->
 <para>
 
 </para>
@@ -44,7 +126,116 @@
 </para>
 
 
+<!-- ##### ARG CCMDisplay:use-glx ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDisplay:use-randr ##### -->
+<para>
+
+</para>
+
+
 <!-- ##### ARG CCMDisplay:use-xdbe ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDisplay:use-xshm ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDisplay:xdisplay ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMDrawable::damaged ##### -->
+<para>
+
+</para>
+
+@ccmdrawable: the object which received the signal.
+@arg1: 
+
+<!-- ##### ARG CCMDrawable:damaged ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDrawable:depth ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDrawable:drawable ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDrawable:geometry ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDrawable:screen ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDrawable:transform ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMDrawable:visual ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMKeybind::key-motion ##### -->
+<para>
+
+</para>
+
+@ccmkeybind: the object which received the signal.
+@arg1: 
+@arg2: 
+
+<!-- ##### SIGNAL CCMKeybind::key-press ##### -->
+<para>
+
+</para>
+
+@ccmkeybind: the object which received the signal.
+
+<!-- ##### SIGNAL CCMKeybind::key-release ##### -->
+<para>
+
+</para>
+
+@ccmkeybind: the object which received the signal.
+
+<!-- ##### ARG CCMPixmap:foreign ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMPixmap:freeze ##### -->
 <para>
 
 </para>
@@ -56,6 +247,101 @@
 </para>
 
 
+<!-- ##### STRUCT CCMPreferencesPage ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMPreferencesPage::need-restart ##### -->
+<para>
+
+</para>
+
+@ccmpreferencespage: the object which received the signal.
+@arg1: 
+@arg2: 
+
+<!-- ##### SIGNAL CCMPreferencesPage::plugin-state-changed ##### -->
+<para>
+
+</para>
+
+@ccmpreferencespage: the object which received the signal.
+@arg1: 
+@arg2: 
+
+<!-- ##### STRUCT CCMPreferencesPagePlugin ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMScreen::activate-window-notify ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMScreen::composite-message ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
+@arg2: 
+@arg3: 
+@arg4: 
+@Param6: 
+
+<!-- ##### SIGNAL CCMScreen::desktop-changed ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMScreen::enter-window-notify ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMScreen::leave-window-notify ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMScreen::plugins-changed ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+
+<!-- ##### SIGNAL CCMScreen::refresh-rate-changed ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+
+<!-- ##### SIGNAL CCMScreen::window-destroyed ##### -->
+<para>
+
+</para>
+
+@ccmscreen: the object which received the signal.
+
 <!-- ##### ARG CCMScreen:backend ##### -->
 <para>
 
@@ -63,6 +349,18 @@
 
 
 <!-- ##### ARG CCMScreen:buffered-pixmap ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:current-frame ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:display ##### -->
 <para>
 
 </para>
@@ -86,11 +384,158 @@
 </para>
 
 
+<!-- ##### ARG CCMScreen:number ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:refresh-rate ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMScreen:window-plugins ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### SIGNAL CCMWindow::error ##### -->
+<para>
+
+</para>
+
+@ccmwindow: the object which received the signal.
+
+<!-- ##### SIGNAL CCMWindow::opacity-changed ##### -->
+<para>
+
+</para>
+
+@ccmwindow: the object which received the signal.
+
+<!-- ##### SIGNAL CCMWindow::property-changed ##### -->
+<para>
+
+</para>
+
+@ccmwindow: the object which received the signal.
+@arg1: 
+
+<!-- ##### SIGNAL CCMWindow::redirect-input ##### -->
+<para>
+
+</para>
+
+@ccmwindow: the object which received the signal.
+@arg1: 
+
+<!-- ##### ARG CCMWindow:block-mouse-redirect-event ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:child ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:input ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:mask ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:mask-height ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:mask-width ##### -->
+<para>
+
+</para>
+
+
 <!-- ##### ARG CCMWindow:mask-y-invert ##### -->
 <para>
 
 </para>
 
+
+<!-- ##### ARG CCMWindow:no-undamage-sibling ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:pixmap ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:redirect ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### ARG CCMWindow:use-image ##### -->
+<para>
+
+</para>
+
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_LOCK_ROOT_METHOD ##### -->
+<para>
+
+</para>
+
+@plugin: 
+@func: 
+@callback: 
+@data: 
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_PARENT ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_ROOT ##### -->
+<para>
+
+</para>
+
+@obj: 
+
+<!-- ##### MACRO CCM_PREFERENCES_PAGE_PLUGIN_UNLOCK_ROOT_METHOD ##### -->
+<para>
+
+</para>
+
+@plugin: 
+@func: 
 
 <!-- ##### FUNCTION ccm_display_get_device_button_press_type ##### -->
 <para>
@@ -236,6 +681,31 @@
 
 @self: 
 @area: 
+
+<!-- ##### FUNCTION ccm_preferences_page_get_widget ##### -->
+<para>
+
+</para>
+
+@self: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_preferences_page_new ##### -->
+<para>
+
+</para>
+
+@screen_num: 
+@Returns: 
+
+<!-- ##### FUNCTION ccm_preferences_page_plugin_init_general_section ##### -->
+<para>
+
+</para>
+
+@self: 
+@preferences: 
+@general_section: 
 
 <!-- ##### FUNCTION ccm_screen_get_damaged ##### -->
 <para>

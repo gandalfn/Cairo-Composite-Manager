@@ -26,49 +26,6 @@ CCMDrawable
 </para>
 
 
-<!-- ##### SIGNAL CCMDrawable::damaged ##### -->
-<para>
-
-</para>
-
-@ccmdrawable: the object which received the signal.
-@arg1: 
-
-<!-- ##### ARG CCMDrawable:damaged ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDrawable:depth ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDrawable:drawable ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDrawable:geometry ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDrawable:screen ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDrawable:transform ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDrawable:visual ##### -->
-<para>
-
-</para>
-
 <!-- ##### FUNCTION ccm_drawable_get_format ##### -->
 <para>
 

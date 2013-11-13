@@ -166,7 +166,7 @@ main (gint argc, gchar ** argv)
 
     signal (SIGSEGV, crash);
 
-    //g_type_init ();
+    g_type_init ();
 
     egg_set_desktop_file (PACKAGE_DATA_DIR "/applications/cairo-compmgr.desktop");
 

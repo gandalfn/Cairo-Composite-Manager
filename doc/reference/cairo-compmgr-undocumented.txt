@@ -1,44 +1,21 @@
 33% symbol docs coverage.
-107 symbols documented.
+92 symbols documented.
 3 symbols incomplete.
-214 not documented.
+184 not documented.
 
 
 CCMDisplay
-CCMDisplay::damage-destroy
-CCMDisplay::damage-event
-CCMDisplay::event
 CCMDrawable
 CCMImage
 CCMKeybind
-CCMKeybind::key-motion
-CCMKeybind::key-press
-CCMKeybind::key-release
 CCMPixmap
-CCMPreferencesPage
-CCMPreferencesPage::need-restart
-CCMPreferencesPage::plugin-state-changed
-CCMPreferencesPagePlugin
 CCMRegion
 CCMScreen
-CCMScreen::activate-window-notify
-CCMScreen::composite-message
-CCMScreen::desktop-changed
-CCMScreen::enter-window-notify
-CCMScreen::leave-window-notify
-CCMScreen::plugins-changed
-CCMScreen::refresh-rate-changed
-CCMScreen::window-destroyed
 CCMScreenPlugin
 CCMWindow
 CCMWindowPlugin
 CCM_DISPLAY_XDISPLAY
 CCM_PIXMAP_XPIXMAP
-CCM_PREFERENCES_PAGE_PLUGIN_GET_INTERFACE
-CCM_PREFERENCES_PAGE_PLUGIN_LOCK_ROOT_METHOD
-CCM_PREFERENCES_PAGE_PLUGIN_PARENT
-CCM_PREFERENCES_PAGE_PLUGIN_ROOT
-CCM_PREFERENCES_PAGE_PLUGIN_UNLOCK_ROOT_METHOD
 CCM_SCREEN_NUMBER
 CCM_SCREEN_PLUGIN_GET_INTERFACE
 CCM_SCREEN_PLUGIN_LOCK_ROOT_METHOD
@@ -88,9 +65,6 @@ ccm_log_atom
 ccm_log_print_backtrace
 ccm_log_region
 ccm_log_window
-ccm_preferences_page_get_widget
-ccm_preferences_page_new
-ccm_preferences_page_plugin_init_general_section
 ccm_region_copy
 ccm_region_create
 ccm_region_destroy
@@ -209,10 +183,6 @@ ccm-image:Short_Description
 ccm-keybind:Short_Description
 ccm-pixmap:Long_Description
 ccm-pixmap:Short_Description
-ccm-preferences-page-plugin:Long_Description
-ccm-preferences-page-plugin:Short_Description
-ccm-preferences-page:Long_Description
-ccm-preferences-page:Short_Description
 ccm-region:Long_Description
 ccm-region:Short_Description
 ccm-screen-plugin:Long_Description

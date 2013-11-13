@@ -34,52 +34,6 @@ CCMDisplay
 </para>
 
 
-<!-- ##### SIGNAL CCMDisplay::damage-destroy ##### -->
-<para>
-
-</para>
-
-@ccmdisplay: the object which received the signal.
-@arg1: 
-@arg2: 
-
-<!-- ##### SIGNAL CCMDisplay::damage-event ##### -->
-<para>
-
-</para>
-
-@ccmdisplay: the object which received the signal.
-@arg1: 
-@Param3: 
-
-<!-- ##### SIGNAL CCMDisplay::event ##### -->
-<para>
-
-</para>
-
-@ccmdisplay: the object which received the signal.
-@arg1: 
-
-<!-- ##### ARG CCMDisplay:use-glx ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDisplay:use-randr ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDisplay:use-xshm ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMDisplay:xdisplay ##### -->
-<para>
-
-</para>
-
 <!-- ##### FUNCTION ccm_display_new ##### -->
 <para>
 

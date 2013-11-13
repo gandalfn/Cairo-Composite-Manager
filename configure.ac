@@ -1,6 +1,6 @@
 m4_define(ccm_version_major, 0)
-m4_define(ccm_version_minor, 3)
-m4_define(ccm_version_micro, 4)
+m4_define(ccm_version_minor, 4)
+m4_define(ccm_version_micro, 0)
 AC_INIT([cairo-compmgr], [ccm_version_major.ccm_version_minor.ccm_version_micro], [gandalfn@club-internet.fr], [cairo-compmgr])
 AC_PREREQ(2.63)
 
@@ -363,6 +363,12 @@ echo " "
 echo "-------------------------------------------------------------------"
 echo "Conditionally built backends:"
 echo "-------------------------------------------------------------------"
+if [ test x$gtk = xyes ]; then
+        echo "Enable GTK: .................................YES"
+else
+        echo "Enable GTK: .................................NO"
+fi
+
 if [ test x$edebug = xyes ]; then
         echo "Enable enhanced debug messages: .............YES"
 else

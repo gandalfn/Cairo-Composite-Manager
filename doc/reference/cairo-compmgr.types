@@ -6,9 +6,11 @@
 #include "ccm-screen.h"
 #include "ccm-screen-plugin.h"
 #include "ccm-display.h"
+#ifdef HAVE_GTK
 #include "ccm-preferences.h"
 #include "ccm-preferences-page.h"
 #include "ccm-preferences-page-plugin.h"
+#endif
 #include "ccm-region.h"
 #include "ccm-keybind.h"
 #include "ccm-config.h"
@@ -21,8 +23,10 @@ ccm_window_plugin_get_type
 ccm_screen_get_type
 ccm_screen_plugin_get_type
 ccm_display_get_type
+#ifdef HAVE_GTK
 ccm_preferences_page_get_type
 ccm_preferences_page_plugin_get_type
+#endif
 ccm_keybind_get_type
 ccm_config_get_type
 ccm_timeline_get_type

@@ -1,3 +1,11 @@
+Overview of Changes in Cairo Composite Manager 0.4.0
+====================================
+* Avoid damage overflow
+* New lightweight build without gtk
+* Remove all deprecated features
+* Add vblank support
+* Optimize shadow plugin
+
 Overview of Changes in Cairo Composite Manager 0.3.4
 ====================================
 * Stopping magic mushroom and really fix timeout interval

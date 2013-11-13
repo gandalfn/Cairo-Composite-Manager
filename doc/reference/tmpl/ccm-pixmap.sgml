@@ -34,16 +34,6 @@ CCMPixmap
 </para>
 
 
-<!-- ##### ARG CCMPixmap:foreign ##### -->
-<para>
-
-</para>
-
-<!-- ##### ARG CCMPixmap:freeze ##### -->
-<para>
-
-</para>
-
 <!-- ##### FUNCTION ccm_pixmap_new ##### -->
 <para>
 

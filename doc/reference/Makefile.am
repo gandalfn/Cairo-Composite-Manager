@@ -22,15 +22,19 @@ HFILE_GLOB= \
     $(top_srcdir)/src/ccm-screen.h \
     $(top_srcdir)/src/ccm-screen-plugin.h \
     $(top_srcdir)/src/ccm-display.h \
-    $(top_srcdir)/src/ccm-preferences-page.h \
-    $(top_srcdir)/src/ccm-preferences-page-plugin.h \
     $(top_srcdir)/src/ccm-region.h \
     $(top_srcdir)/src/ccm-keybind.h \
     $(top_srcdir)/src/ccm-image.h \
     $(top_srcdir)/src/ccm-debug.h \
     $(top_srcdir)/lib/ccm-cairo-utils.h \
     $(top_srcdir)/lib/ccm-config.h \
-    $(top_srcdir)/lib/ccm-timeline.h  
+    $(top_srcdir)/lib/ccm-timeline.h
+
+if HAVE_GTK
+HFILE_GLOB+= \
+    $(top_srcdir)/src/ccm-preferences-page.h \
+    $(top_srcdir)/src/ccm-preferences-page-plugin.h
+endif
 
 CFILE_GLOB=\
     $(top_srcdir)/src/ccm-drawable.h \
@@ -47,10 +51,6 @@ CFILE_GLOB=\
     $(top_srcdir)/src/ccm-screen-plugin.c \
     $(top_srcdir)/src/ccm-display.h \
     $(top_srcdir)/src/ccm-display.c \
-    $(top_srcdir)/src/ccm-preferences-page.h \
-    $(top_srcdir)/src/ccm-preferences-page.c \
-    $(top_srcdir)/src/ccm-preferences-page-plugin.h \
-    $(top_srcdir)/src/ccm-preferences-page-plugin.c \
     $(top_srcdir)/src/ccm-region.h \
     $(top_srcdir)/src/ccm-region.c \
     $(top_srcdir)/src/ccm-keybind.h \
@@ -66,6 +66,14 @@ CFILE_GLOB=\
     $(top_srcdir)/lib/ccm-timeline.h \
     $(top_srcdir)/lib/ccm-timeline.c
 
+if HAVE_GTK
+CFILE_GLOB+=\
+    $(top_srcdir)/src/ccm-preferences-page.h \
+    $(top_srcdir)/src/ccm-preferences-page.c \
+    $(top_srcdir)/src/ccm-preferences-page-plugin.h \
+    $(top_srcdir)/src/ccm-preferences-page-plugin.c
+endif
+
 UNSUPPORTED_HFILES=\
     $(top_srcdir)/src/ccm-debug.h \
     $(top_srcdir)/src/ccm-plugin.h \
@@ -76,16 +84,19 @@ UNSUPPORTED_HFILES=\
     $(top_srcdir)/src/ccm-watch.h \
     $(top_srcdir)/src/ccm-extension.h \
     $(top_srcdir)/src/ccm-extension-loader.h \
+    $(top_srcdir)/src/ccm-property-async.h \
     $(top_srcdir)/src/ccm-tray-menu.h \
     $(top_srcdir)/src/ccm-tray-icon.h \
-    $(top_srcdir)/src/ccm-property-async.h \
     $(top_srcdir)/src/ccm-preferences.h \
     $(top_srcdir)/src/ccm-cell-extension.h \
-    $(top_srcdir)/src/ccm-cell-renderer-extension.h
-
-if HAVE_XRENDER_BACKEND
-UNSUPPORTED_HFILES += \
+    $(top_srcdir)/src/ccm-cell-renderer-extension.h \
     $(top_srcdir)/src/ccm-pixmap-xrender.h
+
+if HAVE_GTK
+else
+UNSUPPORTED_HFILES+= \
+    $(top_srcdir)/src/ccm-preferences-page.h \
+    $(top_srcdir)/src/ccm-preferences-page-plugin.h
 endif
 
 # Headers to ignore
@@ -96,6 +107,8 @@ IGNORE_HFILES= \
 # if $(DOC_MODULE).types is non-empty.
 INCLUDES = -I$(top_srcdir)/src \
            -I$(top_srcdir)/lib \
+           -I$(top_builddir)/build \
+           -I$(top_srcdir)/build \
            $(CAIRO_COMPMGR_CFLAGS)
 
 GTKDOC_LIBS = \
@@ -109,13 +122,13 @@ if ENABLE_PERF_PLUGIN
 GTKDOC_LIBS += $(CCM_PERF_PLUGIN_LIBS)
 endif
 
-if HAVE_XRENDER_BACKEND    
+if HAVE_XRENDER_BACKEND
 GTKDOC_LIBS += $(CCM_XRENDER_BACKEND_LIBS)
 endif
 
 if ENABLE_GOBJECT_INTROSPECTION
 GTKDOC_LIBS += $(CCM_GOBJECT_INTROSPECTION_LIBS)
-endif 
+endif
 
 # Extra options to supply to gtkdoc-mkdb
 MKDB_OPTIONS=--sgml-mode --output-format=xml

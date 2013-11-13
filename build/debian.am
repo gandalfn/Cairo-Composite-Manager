@@ -15,7 +15,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with mm-common.  If not, see <http://www.gnu.org/licenses/>.
 
-deb-source: changelog dist 
+deb-source: changelog dist
 	@echo GEN deb-source; \
 	mkdir -p packages
 	cd packages; \
@@ -50,6 +50,6 @@ changelog:
 	@if [ ! "$(shell dpkg-parsechangelog | grep ^Version | sed 's/.*: //; s/-.*//;')" = "$(VERSION)" ]; \
 	then \
 	    echo GEN debian/changelog; \
-	    debchange --distribution $(shell lsb_release -s -r) -m -v "$(VERSION)-1" "New upstream release."; \
-	    grep -v "^=" NEWS | awk 'BEGIN {show=0}{if ($$0 != ""){ if ($$1 == "Overview"){show++;} else if (show == 1) {gsub("* ", ""); cmd = sprintf("debchange \"%s\"", $$0); system(cmd);}}}'; \
+	    debchange --distribution $(shell lsb_release -s -r) -m -v "$(VERSION)-0" "New upstream release."; \
+	    grep -v "^=" NEWS | awk 'BEGIN {show=0}{if ($$0 != ""){ if ($$1 == "Overview"){show++;} else if (show == 1) {gsub("* ", ""); cmd = sprintf("debchange -a \"%s\"", $$0); system(cmd);}}}'; \
 	fi

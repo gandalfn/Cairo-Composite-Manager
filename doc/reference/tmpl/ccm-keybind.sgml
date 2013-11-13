@@ -26,29 +26,6 @@ CCMKeybind
 </para>
 
 
-<!-- ##### SIGNAL CCMKeybind::key-motion ##### -->
-<para>
-
-</para>
-
-@ccmkeybind: the object which received the signal.
-@arg1: 
-@arg2: 
-
-<!-- ##### SIGNAL CCMKeybind::key-press ##### -->
-<para>
-
-</para>
-
-@ccmkeybind: the object which received the signal.
-
-<!-- ##### SIGNAL CCMKeybind::key-release ##### -->
-<para>
-
-</para>
-
-@ccmkeybind: the object which received the signal.
-
 <!-- ##### FUNCTION ccm_keybind_new ##### -->
 <para>
 
