@@ -8,6 +8,11 @@ Type=bool
 Default=true
 _Description=Use xshm
 
+[use_dbe]
+Type=bool
+Default=false
+_Description=Use dbe
+
 [unmanaged_screen]
 Type=list
 ListType=int

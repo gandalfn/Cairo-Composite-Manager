@@ -103,10 +103,10 @@ ccm_window_xrender_create_frontbuffer (CCMWindowXRender * self)
 {
     g_return_val_if_fail (self != NULL, FALSE);
 
-    if (!self->priv->front)
-    {
-        CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
+    CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
 
+    if (!ccm_display_use_dbe (display) && !self->priv->front)
+    {
         Visual *visual = ccm_drawable_get_visual (CCM_DRAWABLE (self));
         cairo_rectangle_t geometry;
 
@@ -131,8 +131,7 @@ ccm_window_xrender_create_backbuffer (CCMWindowXRender * self)
         cairo_rectangle_t geometry;
 
         if (ccm_window_xrender_create_frontbuffer (self) &&
-            ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self),
-                                               &geometry))
+            ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (self), &geometry))
         {
             CCMDisplay* display = ccm_drawable_get_display(CCM_DRAWABLE (self));
 
@@ -383,8 +382,7 @@ ccm_window_xrender_get_visual_from_depth (CCMWindow * self, int depth)
 }
 
 static CCMPixmap *
-ccm_window_xrender_create_pixmap (CCMWindow * self, int width, int height,
-                                  int depth)
+ccm_window_xrender_create_pixmap (CCMWindow * self, int width, int height, int depth)
 {
     g_return_val_if_fail (self != NULL, NULL);
 

@@ -1187,8 +1187,7 @@ ccm_window_check_mask (CCMWindow * self)
 {
     g_return_if_fail (self != NULL);
 
-    if (self->priv->mask && self->priv->mask_width > 0 &&
-        self->priv->mask_height > 0)
+    if (self->priv->mask && self->priv->mask_width > 0 && self->priv->mask_height > 0)
     {
         cairo_rectangle_t clipbox;
         int width, height;
@@ -2730,9 +2729,7 @@ ccm_window_paint (CCMWindow * self, cairo_t * context)
 
     gboolean ret = FALSE;
 
-    if (!self->priv->is_viewable &&
-        !self->priv->unmap_pending &&
-        !self->priv->is_shaded)
+    if (!self->priv->is_viewable && !self->priv->unmap_pending && !self->priv->is_shaded)
     {
         ccm_drawable_repair (CCM_DRAWABLE (self));
         return ret;
@@ -2755,8 +2752,7 @@ ccm_window_paint (CCMWindow * self, cairo_t * context)
                 cairo_save (context);
                 ccm_drawable_get_damage_path (CCM_DRAWABLE (self), context);
                 cairo_clip (context);
-                ret = ccm_window_plugin_paint (self->priv->plugin, self,
-                                               context, surface);
+                ret = ccm_window_plugin_paint (self->priv->plugin, self, context, surface);
                 cairo_surface_destroy (surface);
                 cairo_restore (context);
                 g_object_unref (pixmap);

@@ -568,7 +568,6 @@ ccm_display_process_events (CCMWatch* watch)
 
     CCMDisplay* self = CCM_DISPLAY (watch);
     XEvent xevent;
-    gboolean have_create_notify = FALSE;
 
     while (XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
     {
@@ -593,8 +592,6 @@ ccm_display_process_events (CCMWatch* watch)
         else
         {
             g_signal_emit (self, signals[EVENT], 0, &xevent);
-            if (xevent.type == CreateNotify)
-                have_create_notify = TRUE;
         }
     }
 }
@@ -824,21 +821,19 @@ ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageC
                                                        G_TYPE_UINT, NULL, NULL,
                                                        (gpointer)damage,
                                                        (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
-        if (callback == NULL)
+        if (callback != NULL)
         {
-            callback = ccm_damage_callback_new ();
-            XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), damage, None, None);
-            callback->damage = damage;
-            callback->func = func;
-            callback->drawable = drawable;
+            ccm_set_remove (self->priv->registered_damage, callback);
+        }
 
-            ccm_set_insert (self->priv->registered_damage, callback);
-        }
-        else
-        {
-            callback->func = func;
-            callback->drawable = drawable;
-        }
+        callback = ccm_damage_callback_new ();
+        XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), damage, None, None);
+        callback->damage = damage;
+        callback->func = func;
+        callback->drawable = drawable;
+
+        ccm_set_insert (self->priv->registered_damage, callback);
+        ccm_damage_callback_unref (callback);
     }
     else
         damage = None;
@@ -871,7 +866,6 @@ ccm_display_process_damage (CCMDisplay* self, guint32 damage)
                                                    G_TYPE_UINT, NULL, NULL,
                                                    GINT_TO_POINTER (damage),
                                                    (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
-
     if (callback)
     {
         callback->func (callback->drawable, callback->damage);

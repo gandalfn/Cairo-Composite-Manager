@@ -1090,17 +1090,10 @@ ccm_screen_destroy_window (CCMScreen * self, CCMWindow * window)
 
     if (CCM_IS_WINDOW (window))
     {
-        g_signal_handlers_disconnect_by_func (window,
-                                              ccm_screen_on_window_damaged,
-                                              self);
-        g_signal_handlers_disconnect_by_func (window,
-                                              ccm_screen_on_window_error, self);
-        g_signal_handlers_disconnect_by_func (window,
-                                              ccm_screen_on_window_property_changed,
-                                              self);
-        g_signal_handlers_disconnect_by_func (window,
-                                              ccm_screen_on_window_redirect_input,
-                                              self);
+        g_signal_handlers_disconnect_by_func (window, ccm_screen_on_window_damaged, self);
+        g_signal_handlers_disconnect_by_func (window, ccm_screen_on_window_error, self);
+        g_signal_handlers_disconnect_by_func (window, ccm_screen_on_window_property_changed, self);
+        g_signal_handlers_disconnect_by_func (window, ccm_screen_on_window_redirect_input, self);
     }
     if (self->priv->fullscreen == window)
     {
@@ -1224,16 +1217,13 @@ ccm_screen_unset_selection_owner (CCMScreen * self)
                                     cm_atom_name, 0);
         g_free (cm_atom_name);
 
-        XDestroyWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                        self->priv->selection_owner);
+        XDestroyWindow (CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->selection_owner);
 
-        XSetSelectionOwner (CCM_DISPLAY_XDISPLAY (self->priv->display), cm_atom,
-                            None, 0);
+        XSetSelectionOwner (CCM_DISPLAY_XDISPLAY (self->priv->display), cm_atom, None, 0);
 
         XClientMessageEvent event;
         event.type = ClientMessage;
-        event.window = RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                                   self->priv->number);
+        event.window = RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->number);
         event.message_type = cm_atom;
         event.format = 32;
         event.data.l[0] = CurrentTime;
@@ -1242,8 +1232,7 @@ ccm_screen_unset_selection_owner (CCMScreen * self)
         event.data.l[3] = 0;
         event.data.l[4] = 0;
         XSendEvent(CCM_DISPLAY_XDISPLAY (self->priv->display),
-                   RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                               self->priv->number),
+                   RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->number),
                    False, StructureNotifyMask, (XEvent*)&event);
     }
 }
@@ -1631,10 +1620,8 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
             sibling_link = item;
             if (found)
             {
-                ccm_debug_window (window, "RESTACK AFTER 0x%x",
-                                  CCM_WINDOW_XWINDOW (sibling));
-                self->priv->windows = g_list_remove_link(self->priv->windows,
-                                                         found);
+                ccm_debug_window (window, "RESTACK AFTER 0x%x", CCM_WINDOW_XWINDOW (sibling));
+                self->priv->windows = g_list_remove_link(self->priv->windows, found);
                 found->next = sibling_link->next;
                 found->prev = sibling_link;
                 if (sibling_link->next) sibling_link->next->prev = found;
@@ -1669,21 +1656,17 @@ impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self, cairo_t * ctx
             {
                 CCMRegion *damaged = (CCMRegion*)ccm_drawable_get_damaged (CCM_DRAWABLE (window));
                 ccm_debug_region (CCM_DRAWABLE (window), "SCREEN DAMAGE");
-                if (!self->priv->damaged)
-                    self->priv->damaged = ccm_region_copy (damaged);
-                else
-                    ccm_region_union (self->priv->damaged, damaged);
+                ccm_screen_add_damaged_region (self, damaged);
             }
 
             ccm_debug_window (window, "PAINT SCREEN");
-            ret |= ccm_window_paint (window, self->priv->ctx);
+            ret |= ccm_window_paint (window, ctx);
         }
     }
 
     for (item = self->priv->removed; item; item = item->next)
     {
-        if (!ccm_window_is_viewable (item->data) ||
-            ccm_window_is_input_only (item->data))
+        if (!ccm_window_is_viewable (item->data) || ccm_window_is_input_only (item->data))
         {
             ccm_screen_destroy_window (self, item->data);
             destroy = g_list_prepend (destroy, item->data);
@@ -1755,14 +1738,12 @@ ccm_screen_on_window_property_changed (CCMScreen * self,
 
     if (changed == CCM_PROPERTY_STATE)
     {
-        if (ccm_window_is_fullscreen (window) &&
-            self->priv->fullscreen != window)
+        if (ccm_window_is_fullscreen (window) && self->priv->fullscreen != window)
         {
             ccm_debug_window (window, "FULLSCREEN");
             self->priv->fullscreen = window;
         }
-        else if (!ccm_window_is_fullscreen (window) &&
-                 self->priv->fullscreen == window)
+        else if (!ccm_window_is_fullscreen (window) && self->priv->fullscreen == window)
         {
             ccm_debug_window (window, "UNFULLSCREEN");
             self->priv->fullscreen = NULL;
@@ -1794,16 +1775,11 @@ impl_ccm_screen_add_window (CCMScreenPlugin * plugin, CCMScreen * self,
     self->priv->windows = g_list_append (self->priv->windows, window);
     self->priv->last_windows = g_list_last(self->priv->windows);
 
-    g_signal_connect_swapped (window, "damaged",
-                              G_CALLBACK (ccm_screen_on_window_damaged), self);
-    g_signal_connect_swapped (window, "error",
-                              G_CALLBACK (ccm_screen_on_window_error), self);
-    g_signal_connect_swapped (window, "property-changed",
-                              G_CALLBACK
-                              (ccm_screen_on_window_property_changed), self);
-    g_signal_connect_swapped (window, "redirect-input",
-                              G_CALLBACK (ccm_screen_on_window_redirect_input),
-                              self);
+    g_signal_connect_swapped (window, "damaged", G_CALLBACK (ccm_screen_on_window_damaged), self);
+    g_signal_connect_swapped (window, "error", G_CALLBACK (ccm_screen_on_window_error), self);
+    g_signal_connect_swapped (window, "property-changed", G_CALLBACK (ccm_screen_on_window_property_changed), self);
+    g_signal_connect_swapped (window, "redirect-input", G_CALLBACK (ccm_screen_on_window_redirect_input), self);
+
     return TRUE;
 }
 
@@ -1818,8 +1794,7 @@ impl_ccm_screen_remove_window (CCMScreenPlugin * plugin, CCMScreen * self,
     {
         ccm_debug_window (window, "REMOVE");
 
-        if (!ccm_window_is_viewable (window) ||
-            ccm_window_is_input_only (window))
+        if (!ccm_window_is_viewable (window) || ccm_window_is_input_only (window))
             ccm_screen_destroy_window (self, window);
         else if (!g_list_find (self->priv->removed, window))
             self->priv->removed = g_list_prepend (self->priv->removed, window);
@@ -1834,9 +1809,7 @@ ccm_screen_get_window_plugins (CCMScreen * self)
     GSList *filter, *plugins = NULL;
     GError *error = NULL;
 
-    filter =
-        ccm_config_get_string_list (self->priv->options[CCM_SCREEN_PLUGINS],
-                                    &error);
+    filter = ccm_config_get_string_list (self->priv->options[CCM_SCREEN_PLUGINS], &error);
     if (error)
     {
         gchar **default_plugins = g_strsplit (DEFAULT_PLUGINS, ",", -1);
@@ -1853,8 +1826,7 @@ ccm_screen_get_window_plugins (CCMScreen * self)
     }
     if (filter)
     {
-        plugins = ccm_extension_loader_get_window_plugins (self->priv->plugin_loader,
-                                                           filter);
+        plugins = ccm_extension_loader_get_window_plugins (self->priv->plugin_loader, filter);
         g_slist_foreach (filter, (GFunc) g_free, NULL);
         g_slist_free (filter);
     }
@@ -1874,8 +1846,7 @@ ccm_screen_get_plugins (CCMScreen * self)
 
     self->priv->plugin = (CCMScreenPlugin *) self;
 
-    filter = ccm_config_get_string_list (self->priv->options[CCM_SCREEN_PLUGINS],
-                                         &error);
+    filter = ccm_config_get_string_list (self->priv->options[CCM_SCREEN_PLUGINS], &error);
     if (error)
     {
         gchar **default_plugins = g_strsplit (DEFAULT_PLUGINS, ",", -1);
@@ -1892,8 +1863,7 @@ ccm_screen_get_plugins (CCMScreen * self)
     }
     if (filter)
     {
-        plugins = ccm_extension_loader_get_screen_plugins (self->priv->plugin_loader,
-                                                           filter);
+        plugins = ccm_extension_loader_get_screen_plugins (self->priv->plugin_loader, filter);
         g_slist_foreach (filter, (GFunc) g_free, NULL);
         g_slist_free (filter);
         for (item = plugins; item; item = item->next)
@@ -1901,9 +1871,8 @@ ccm_screen_get_plugins (CCMScreen * self)
             GType type = GPOINTER_TO_INT (item->data);
             GObject *prev = G_OBJECT (self->priv->plugin);
             CCMScreenPlugin *plugin = g_object_new (type, "parent", prev,
-                                                    "screen",
-                                                    self->priv->number,
-                                                    NULL);
+                                                          "screen", self->priv->number,
+                                                          NULL);
 
             if (plugin)
                 self->priv->plugin = plugin;
@@ -2020,8 +1989,7 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
         {
             if (self->priv->damaged)
             {
-                ccm_drawable_flush_region (CCM_DRAWABLE (self->priv->cow),
-                                           self->priv->damaged);
+                ccm_drawable_flush_region (CCM_DRAWABLE (self->priv->cow), self->priv->damaged);
                 ccm_region_destroy (self->priv->damaged);
                 self->priv->damaged = NULL;
             }
@@ -2167,10 +2135,10 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
 
     if (!ccm_region_empty (damage_below))
     {
-        cairo_rectangle_t area;
-
         if (self->priv->geometry == NULL)
         {
+            cairo_rectangle_t area;
+
             area.x = 0;
             area.y = 0;
             area.width = self->priv->xscreen->width;
@@ -2181,7 +2149,6 @@ impl_ccm_screen_damage (CCMScreenPlugin * plugin, CCMScreen * self,
 
         if (!ccm_region_empty (damage_below))
         {
-            ccm_region_get_clipbox (damage_below, &area);
             if (self->priv->root_damage)
                 ccm_region_union (self->priv->root_damage, damage_below);
             else
