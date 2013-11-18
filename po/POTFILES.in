@@ -4,9 +4,6 @@ data/cairo-compmgr.desktop.in.in
 data/ccm-display.schema-key.in
 data/ccm-screen.schema-key.in
 data/ccm-preferences.ui
-plugins/automate/ccm-automate.plugin.desktop.in
-plugins/automate/ccm-automate.schema-key.in
-plugins/automate/ccm-automate.ui
 plugins/decoration/ccm-decoration.plugin.desktop.in
 plugins/decoration/ccm-decoration.schema-key.in
 plugins/decoration/ccm-decoration.ui

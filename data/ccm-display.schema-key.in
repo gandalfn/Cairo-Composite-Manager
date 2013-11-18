@@ -8,7 +8,7 @@ Type=bool
 Default=true
 _Description=Use xshm
 
-[use_dbe]
+[use_xdbe]
 Type=bool
 Default=false
 _Description=Use dbe

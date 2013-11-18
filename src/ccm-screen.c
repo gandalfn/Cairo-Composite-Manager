@@ -48,7 +48,7 @@
 #include "ccm-pixmap-buffered-image.h"
 #include "ccm-pixmap-image.h"
 
-#define DEFAULT_PLUGINS "perf,stats,snapshot,mosaic,freeze,decoration,window-animation,menu-animation,shadow,fade,opacity,clone"
+#define DEFAULT_PLUGINS "perf,stats,snapshot,mosaic,freeze,window-animation,menu-animation,shadow,fade,opacity,clone"
 
 typedef gint (*WaitVideoSyncFunc) (gint, gint, guint*);
 typedef gint (*GetVideoSyncFunc) (guint*);

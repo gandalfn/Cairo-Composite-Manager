@@ -1,3 +1,9 @@
+Overview of Changes in Cairo Composite Manager 0.4.1
+====================================
+* Fix perf xorg memory calculation
+* Fix xdbe property
+* Disable by default decoration plugin
+
 Overview of Changes in Cairo Composite Manager 0.4.0
 ====================================
 * Avoid damage overflow

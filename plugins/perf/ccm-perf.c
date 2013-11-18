@@ -305,12 +305,8 @@ ccm_perf_get_mem_info (CCMPerf * self)
         self->priv->mem_size += maps[cpt].private_dirty;
     }
 
-    wnck_xid_read_resource_usage (gdk_display_get_default (),
-                                  _ccm_screen_get_selection_owner (self->priv->screen),
-                                  &xresources);
-    self->priv->mem_xorg = xresources.total_bytes_estimate;
     wnck_pid_read_resource_usage (gdk_display_get_default (), pid, &xresources);
-    self->priv->mem_xorg += xresources.total_bytes_estimate;
+    self->priv->mem_xorg = xresources.total_bytes_estimate;
 
     g_free (maps);
 }
