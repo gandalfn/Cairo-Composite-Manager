@@ -123,7 +123,7 @@ ccm_pixmap_finalize (GObject * object)
 
     if (CCM_IS_DISPLAY (display) &&  G_OBJECT (display)->ref_count && self->priv->damage)
     {
-        ccm_display_unregister_damage (display, self->priv->damage, CCM_DRAWABLE (self));
+        ccm_display_unregister_damage (display, self->priv->damage);
         self->priv->damage = None;
     }
     self->priv->freeze = FALSE;
@@ -213,8 +213,7 @@ ccm_pixmap_on_damage (CCMPixmap * self, Damage damage)
             XDamageSubtract (CCM_DISPLAY_XDISPLAY (display), self->priv->damage,
                              None, self->priv->region);
             rects = XFixesFetchRegion (CCM_DISPLAY_XDISPLAY (display),
-                                       self->priv->region,
-                                       &nb_rects);
+                                       self->priv->region, &nb_rects);
             if (rects)
             {
                 CCMRegion *damaged = ccm_region_new ();
@@ -222,9 +221,8 @@ ccm_pixmap_on_damage (CCMPixmap * self, Damage damage)
                 for (cpt = 0; cpt < nb_rects; ++cpt)
                 {
                     ccm_region_union_with_xrect (damaged, &rects[cpt]);
-                    ccm_debug ("PIXMAP DAMAGE %i,%i,%i,%i", rects[cpt].x,
-                               rects[cpt].y, rects[cpt].width,
-                               rects[cpt].height);
+                    ccm_debug ("PIXMAP DAMAGE %i,%i,%i,%i", rects[cpt].x, rects[cpt].y,
+                                                            rects[cpt].width, rects[cpt].height);
                 }
                 XFree (rects);
 

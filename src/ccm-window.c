@@ -703,29 +703,16 @@ ccm_window_get_property_async (CCMWindow * self, Atom property_atom,
 
     if (self->priv->child != None)
     {
-        property = ccm_property_async_new (display, self->priv->child,
-                                           property_atom,
-                                           req_type, length);
-        g_signal_connect_swapped (property, "reply",
-                                  G_CALLBACK (ccm_window_on_get_property_async),
-                                  self);
-        g_signal_connect_swapped (property, "error",
-                                  G_CALLBACK
-                                  (ccm_window_on_property_async_error), self);
-        self->priv->properties_pending =
-            g_slist_prepend (self->priv->properties_pending, property);
+        property = ccm_property_async_new (display, self->priv->child, property_atom, req_type, length);
+        g_signal_connect_swapped (property, "reply", G_CALLBACK (ccm_window_on_get_property_async), self);
+        g_signal_connect_swapped (property, "error", G_CALLBACK (ccm_window_on_property_async_error), self);
+        self->priv->properties_pending = g_slist_prepend (self->priv->properties_pending, property);
     }
 
-    property = ccm_property_async_new (display, CCM_WINDOW_XWINDOW (self),
-                                       property_atom, req_type, length);
-    g_signal_connect_swapped (property, "reply",
-                              G_CALLBACK (ccm_window_on_get_property_async),
-                              self);
-    g_signal_connect_swapped (property, "error",
-                              G_CALLBACK (ccm_window_on_property_async_error),
-                              self);
-    self->priv->properties_pending =
-        g_slist_prepend (self->priv->properties_pending, property);
+    property = ccm_property_async_new (display, CCM_WINDOW_XWINDOW (self), property_atom, req_type, length);
+    g_signal_connect_swapped (property, "reply", G_CALLBACK (ccm_window_on_get_property_async), self);
+    g_signal_connect_swapped (property, "error", G_CALLBACK (ccm_window_on_property_async_error), self);
+    self->priv->properties_pending = g_slist_prepend (self->priv->properties_pending, property);
 }
 
 static gchar *
@@ -738,9 +725,7 @@ ccm_window_get_utf8_property (CCMWindow * self, Atom atom)
     guint32 *data = NULL;
     guint n_items;
 
-    data = ccm_window_get_property (self, atom,
-                                    CCM_WINDOW_GET_CLASS (self)->utf8_string_atom,
-                                    &n_items);
+    data = ccm_window_get_property (self, atom, CCM_WINDOW_GET_CLASS (self)->utf8_string_atom, &n_items);
 
     if (!data)
         return NULL;
@@ -768,9 +753,7 @@ ccm_window_get_child_utf8_property (CCMWindow * self, Atom atom)
     guint32 *data = NULL;
     guint n_items;
 
-    data = ccm_window_get_child_property (self, atom,
-                                          CCM_WINDOW_GET_CLASS (self)->utf8_string_atom,
-                                          &n_items);
+    data = ccm_window_get_child_property (self, atom, CCM_WINDOW_GET_CLASS (self)->utf8_string_atom, &n_items);
 
     if (!data)
         return NULL;
@@ -825,9 +808,7 @@ ccm_window_get_text_property (CCMWindow * self, Atom atom)
     gchar *retval = NULL;
 
     text.nitems = 0;
-    if (XGetTextProperty (CCM_DISPLAY_XDISPLAY (display),
-                          CCM_WINDOW_XWINDOW (self), &text,
-                          atom))
+    if (XGetTextProperty (CCM_DISPLAY_XDISPLAY (display), CCM_WINDOW_XWINDOW (self), &text, atom))
     {
         retval = text_property_to_utf8 (&text);
 
@@ -848,8 +829,7 @@ ccm_window_get_child_text_property (CCMWindow * self, Atom atom)
     gchar *retval = NULL;
 
     text.nitems = 0;
-    if (XGetTextProperty (CCM_DISPLAY_XDISPLAY (display),
-                          self->priv->child, &text, atom))
+    if (XGetTextProperty (CCM_DISPLAY_XDISPLAY (display), self->priv->child, &text, atom))
     {
         retval = text_property_to_utf8 (&text);
 
@@ -870,8 +850,7 @@ ccm_window_get_plugins (CCMWindow * self)
     GSList *item;
 
     if (!CCM_WINDOW_GET_CLASS (self)->plugins)
-        g_object_get (G_OBJECT (screen), "window_plugins",
-                      &CCM_WINDOW_GET_CLASS (self)->plugins, NULL);
+        g_object_get (G_OBJECT (screen), "window_plugins", &CCM_WINDOW_GET_CLASS (self)->plugins, NULL);
 
     if (self->priv->plugin && CCM_IS_PLUGIN (self->priv->plugin))
         g_object_unref (self->priv->plugin);
@@ -908,10 +887,8 @@ ccm_window_query_child (CCMWindow * self)
 
     self->priv->child = None;
 
-    if (!self->priv->override_redirect &&
-        self->priv->hint_type != CCM_WINDOW_TYPE_DESKTOP &&
-        XQueryTree (CCM_DISPLAY_XDISPLAY (display), CCM_WINDOW_XWINDOW (self),
-                    &w, &p, &windows, &n_windows) &&
+    if (!self->priv->override_redirect && self->priv->hint_type != CCM_WINDOW_TYPE_DESKTOP &&
+        XQueryTree (CCM_DISPLAY_XDISPLAY (display), CCM_WINDOW_XWINDOW (self), &w, &p, &windows, &n_windows) &&
         n_windows > 0)
     {
         CCMWindow *root = ccm_screen_get_root_window (screen);
@@ -958,8 +935,7 @@ ccm_window_get_attribs (CCMWindow * self)
     CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
     XWindowAttributes attribs;
 
-    if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY (display),
-                               CCM_WINDOW_XWINDOW (self), &attribs))
+    if (!XGetWindowAttributes (CCM_DISPLAY_XDISPLAY (display), CCM_WINDOW_XWINDOW (self), &attribs))
     {
         g_signal_emit (self, signals[ERROR], 0);
         return FALSE;

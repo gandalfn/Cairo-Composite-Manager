@@ -158,12 +158,11 @@ gint                    ccm_display_pop_error       (CCMDisplay* self);
 gboolean                ccm_display_report_device_event (CCMDisplay* self,
                                                          CCMScreen* screen,
                                                          gboolean report);
-guint32                  ccm_display_register_damage   (CCMDisplay* self,
-                                                        CCMDrawable* drawable,
-                                                        CCMDamageCallbackFunc func);
+guint32                 ccm_display_register_damage   (CCMDisplay* self,
+                                                       CCMDrawable* drawable,
+                                                       CCMDamageCallbackFunc func);
 void                    ccm_display_unregister_damage (CCMDisplay* self,
-                                                       guint32 damage,
-                                                       CCMDrawable* drawable);
+                                                       guint32 damage);
 /******************************************************************************/
 
 /********************************** Screen************************************/
