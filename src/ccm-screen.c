@@ -1244,27 +1244,22 @@ ccm_screen_set_selection_owner (CCMScreen * self)
 
     if (self->priv->selection_owner == None)
     {
-        gchar *cm_atom_name = g_strdup_printf ("_NET_WM_CM_S%i",
-                                               self->priv->number);
-        Atom cm_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                                    cm_atom_name, 0);
+        gchar *cm_atom_name = g_strdup_printf ("_NET_WM_CM_S%i", self->priv->number);
+        Atom cm_atom = XInternAtom (CCM_DISPLAY_XDISPLAY (self->priv->display), cm_atom_name, 0);
         CCMWindow *root = ccm_screen_get_root_window (self);
 
         g_free (cm_atom_name);
 
-        if (XGetSelectionOwner (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                                cm_atom) != None)
+        if (XGetSelectionOwner (CCM_DISPLAY_XDISPLAY (self->priv->display), cm_atom) != None)
         {
-            g_critical
-                ("\nScreen %d already has a composite manager running, \n"
-                 "try to stop it before run cairo-compmgr", self->priv->number);
+            g_critical ("\nScreen %d already has a composite manager running, \n"
+                        "try to stop it before run cairo-compmgr", self->priv->number);
             return FALSE;
         }
 
-        self->priv->selection_owner =
-            XCreateSimpleWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                                 CCM_WINDOW_XWINDOW (root), -100, -100, 10, 10,
-                                 0, None, None);
+        self->priv->selection_owner = XCreateSimpleWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
+                                                           CCM_WINDOW_XWINDOW (root), 0, 0, 1, 1,
+                                                           0, None, None);
 
         Xutf8SetWMProperties (CCM_DISPLAY_XDISPLAY (self->priv->display),
                               self->priv->selection_owner, "cairo-compmgr",
@@ -1275,8 +1270,7 @@ ccm_screen_set_selection_owner (CCMScreen * self)
 
         XClientMessageEvent event;
         event.type = ClientMessage;
-        event.window = RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                                   self->priv->number);
+        event.window = RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->number);
         event.message_type = cm_atom;
         event.format = 32;
         event.data.l[0] = CurrentTime;
@@ -1285,8 +1279,7 @@ ccm_screen_set_selection_owner (CCMScreen * self)
         event.data.l[3] = 0;
         event.data.l[4] = 0;
         XSendEvent(CCM_DISPLAY_XDISPLAY (self->priv->display),
-                   RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display),
-                               self->priv->number),
+                   RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->number),
                    False, StructureNotifyMask, (XEvent*)&event);
     }
 
@@ -1898,7 +1891,6 @@ ccm_screen_paint (CCMScreen * self, int num_frame, CCMTimeline * timeline)
         }
         g_object_unref (iter);
         ccm_set_clear (self->priv->damages);
-
 
         if (!self->priv->ctx)
         {
@@ -2736,11 +2728,12 @@ _ccm_screen_query_geometry (CCMScreen* self)
 
             if (self->priv->geometry != NULL)
             {
-                g_object_unref (self->priv->geometry);
+                ccm_region_destroy (self->priv->geometry);
+                self->priv->geometry = NULL;
             }
             if (self->priv->primary_geometry != NULL)
             {
-                g_object_unref (self->priv->primary_geometry);
+                ccm_region_destroy (self->priv->primary_geometry);
                 self->priv->primary_geometry = NULL;
             }
             self->priv->geometry = ccm_region_new ();

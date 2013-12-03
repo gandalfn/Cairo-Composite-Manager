@@ -828,8 +828,6 @@ ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageC
                                    XDamageReportDeltaRectangles);
     if (damage)
     {
-        GSList* item;
-
         callback = ccm_damage_callback_new ();
         XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), damage, None, None);
         callback->damage = damage;
