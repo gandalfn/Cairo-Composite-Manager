@@ -1,3 +1,7 @@
+Overview of Changes in Cairo Composite Manager 0.4.2
+====================================
+* Redirect window in automatic mode
+
 Overview of Changes in Cairo Composite Manager 0.4.1
 ====================================
 * Fix perf xorg memory calculation
