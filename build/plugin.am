@@ -22,7 +22,7 @@ VALAFLAGS += \
     --pkg=gtk+-2.0
 endif
 
-PLUGIN_LDFLAGS = -module -avoid-version -no-undefined
+PLUGIN_LDFLAGS = -Wl,--as-needed -module -avoid-version -no-undefined
 PLUGIN_LIBADD = $(CAIRO_COMPMGR_LIBS) ${top_builddir}/lib/libcairo_compmgr.la
 
 plugin_in_files = $(PLUGIN).plugin.desktop.in

@@ -89,7 +89,7 @@ libcairo_compmgr_la_SOURCES +=  \
     ccm-config-entry-shortcut.c
 endif
 
-libcairo_compmgr_la_LDFLAGS = -version-info @LIBS_VERSION@
+libcairo_compmgr_la_LDFLAGS = -Wl,--as-needed -version-info @LIBS_VERSION@
 
 libcairo_compmgr_la_LIBADD = \
     $(CAIRO_COMPMGR_LIBS) \

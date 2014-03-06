@@ -136,6 +136,7 @@ typedef struct
     Damage                damage;
     CCMDamageCallbackFunc func;
     CCMDrawable*          drawable;
+    CCMDrawable*          data;
 } CCMDamageCallback;
 
 static int
@@ -586,7 +587,7 @@ ccm_display_process_events (CCMWatch* watch)
                                                            (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
             if (callback)
             {
-                g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage, callback->drawable);
+                g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage, callback->data);
             }
         }
         else
@@ -806,7 +807,7 @@ ccm_display_get_default()
 }
 
 guint32
-ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageCallbackFunc func)
+ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageCallbackFunc func, CCMDrawable* data)
 {
     CCMSetIterator* iter = ccm_set_iterator (self->priv->registered_damage);
     CCMDamageCallback* callback = NULL;
@@ -833,6 +834,7 @@ ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageC
         callback->damage = damage;
         callback->func = func;
         callback->drawable = drawable;
+        callback->data = data;
 
         ccm_set_insert (self->priv->registered_damage, callback);
         ccm_damage_callback_unref (callback);
@@ -870,6 +872,6 @@ ccm_display_process_damage (CCMDisplay* self, guint32 damage)
                                                    (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
     if (callback)
     {
-        callback->func (callback->drawable, callback->damage);
+        callback->func (callback->drawable, callback->damage, callback->data);
     }
 }

@@ -130,7 +130,7 @@ cairo_compmgr_SOURCES += \
     ccm-window-xrender.c
 endif
 
-cairo_compmgr_LDFLAGS = -rdynamic
+cairo_compmgr_LDFLAGS = -rdynamic -Wl,--as-needed
 
 cairo_compmgr_LDADD = $(CAIRO_COMPMGR_LIBS) -lm $(EDEBUG_LIBS) ../lib/libcairo_compmgr.la
 

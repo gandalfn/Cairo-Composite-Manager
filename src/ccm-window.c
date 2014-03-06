@@ -2595,7 +2595,7 @@ ccm_window_redirect (CCMWindow * self)
     XCompositeRedirectWindow (CCM_DISPLAY_XDISPLAY
                               (ccm_drawable_get_display (CCM_DRAWABLE (self))),
                               CCM_WINDOW_XWINDOW (self),
-                              CompositeRedirectAutomatic);
+                              CompositeRedirectManual);
 }
 
 void
@@ -2607,7 +2607,7 @@ ccm_window_redirect_subwindows (CCMWindow * self)
                                   (ccm_drawable_get_display
                                    (CCM_DRAWABLE (self))),
                                   CCM_WINDOW_XWINDOW (self),
-                                  CompositeRedirectAutomatic);
+                                  CompositeRedirectManual);
 }
 
 void
@@ -2619,7 +2619,7 @@ ccm_window_unredirect (CCMWindow * self)
                                 (ccm_drawable_get_display
                                  (CCM_DRAWABLE (self))),
                                 CCM_WINDOW_XWINDOW (self),
-                                CompositeRedirectAutomatic);
+                                CompositeRedirectManual);
 }
 
 void
@@ -2631,7 +2631,7 @@ ccm_window_unredirect_subwindows (CCMWindow * self)
                                     (ccm_drawable_get_display
                                      (CCM_DRAWABLE (self))),
                                     CCM_WINDOW_XWINDOW (self),
-                                    CompositeRedirectAutomatic);
+                                    CompositeRedirectManual);
 }
 
 G_GNUC_PURE CCMPixmap *

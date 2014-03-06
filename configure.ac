@@ -85,13 +85,14 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         ice,
         sm,
         xrandr,
+        gio-2.0,
         gmodule-2.0,
         gdk-2.0,
         cairo >= $CAIRO_REQUIRED,
         pixman-1 >= $PIXMAN_REQUIRED,
         libvala-0.20 >= $VALA_REQUIRED])
-CAIRO_COMPMGR_CFLAGS="-O3 -flto -DG_DISABLE_ASSERT -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS $CAIRO_COMPMGR_CFLAGS"
-CAIRO_COMPMGR_LIBS="-O3 -flto $CAIRO_COMPMGR_LIBS"
+CAIRO_COMPMGR_CFLAGS="-O3 -DG_DISABLE_ASSERT -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS $CAIRO_COMPMGR_CFLAGS"
+CAIRO_COMPMGR_LIBS="-O3 $CAIRO_COMPMGR_LIBS -lm"
 
 dnl ***************************************************************************
 dnl check for vsync

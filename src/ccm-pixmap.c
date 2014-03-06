@@ -56,7 +56,7 @@ struct _CCMPixmapPrivate
 
 static void ccm_pixmap_bind (CCMPixmap * self);
 static void ccm_pixmap_release (CCMPixmap * self);
-static void ccm_pixmap_on_damage (CCMPixmap * self, Damage damage);
+static void ccm_pixmap_on_damage (CCMDrawable* drawable, Damage damage, CCMPixmap * self);
 
 static void
 ccm_pixmap_set_property (GObject * object, guint prop_id, const GValue * value,
@@ -193,7 +193,7 @@ ccm_pixmap_release (CCMPixmap * self)
 }
 
 static void
-ccm_pixmap_on_damage (CCMPixmap * self, Damage damage)
+ccm_pixmap_on_damage (CCMDrawable* drawable, Damage damage, CCMPixmap * self)
 {
     g_return_if_fail (self != NULL);
 
@@ -235,15 +235,15 @@ ccm_pixmap_on_damage (CCMPixmap * self, Damage damage)
 }
 
 static void
-ccm_pixmap_register_damage (CCMPixmap * self)
+ccm_pixmap_register_damage (CCMPixmap * self, CCMDrawable* drawable)
 {
     g_return_if_fail (self != NULL);
 
-    CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
+    CCMDisplay *display = ccm_drawable_get_display (drawable);
 
-    self->priv->damage = (Damage)ccm_display_register_damage (display,
-                                                              CCM_DRAWABLE (self),
-                                                              (CCMDamageCallbackFunc)ccm_pixmap_on_damage);
+    self->priv->damage = (Damage)ccm_display_register_damage (display, drawable,
+                                                              (CCMDamageCallbackFunc)ccm_pixmap_on_damage,
+                                                              CCM_DRAWABLE (self));
 }
 
 /**
@@ -278,7 +278,7 @@ ccm_pixmap_new (CCMDrawable * drawable, Pixmap xpixmap)
         g_object_unref (self);
         return NULL;
     }
-    ccm_pixmap_register_damage (self);
+    ccm_pixmap_register_damage (self, drawable);
     if (!self->priv->damage)
     {
         g_object_unref (self);
@@ -320,7 +320,7 @@ ccm_pixmap_new_from_visual (CCMScreen * screen, Visual * visual, Pixmap xpixmap)
         g_object_unref (self);
         return NULL;
     }
-    ccm_pixmap_register_damage (self);
+    ccm_pixmap_register_damage (self, CCM_DRAWABLE (self));
     if (!self->priv->damage)
     {
         g_object_unref (self);
@@ -359,7 +359,7 @@ ccm_pixmap_image_new (CCMDrawable * drawable, Pixmap xpixmap)
                          "visual", visual, NULL);
 
     ccm_drawable_query_geometry (CCM_DRAWABLE (self));
-    ccm_pixmap_register_damage (self);
+    ccm_pixmap_register_damage (self, CCM_DRAWABLE (self));
     if (!self->priv->damage)
     {
         g_object_unref (self);

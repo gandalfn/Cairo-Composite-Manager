@@ -28,6 +28,7 @@
 #include <strings.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "ccm.h"
 #include "ccm-debug.h"
@@ -1254,6 +1255,7 @@ ccm_screen_set_selection_owner (CCMScreen * self)
         {
             g_critical ("\nScreen %d already has a composite manager running, \n"
                         "try to stop it before run cairo-compmgr", self->priv->number);
+            exit(1);
             return FALSE;
         }
 
