@@ -2179,10 +2179,7 @@ ccm_screen_on_damage_event (CCMScreen * self, guint32 damage, CCMDrawable* drawa
 static void
 ccm_screen_on_damage_destroy (CCMScreen * self, guint32 damage, CCMDrawable* drawable)
 {
-    if (ccm_drawable_get_screen (drawable) == self)
-    {
-        ccm_set_remove (self->priv->damages, GINT_TO_POINTER((gint)damage));
-    }
+    ccm_set_remove (self->priv->damages, GINT_TO_POINTER((gint)damage));
 }
 
 static void

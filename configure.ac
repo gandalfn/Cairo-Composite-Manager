@@ -134,7 +134,7 @@ AC_CHECK_FUNCS(backtrace_symbols)
 
 AC_ARG_ENABLE(edebug,
   [  --disable-edebug        Disable enhanced debug message],
-  [edebug=$enableval], [edebug=yes])
+  [edebug=$enableval], [edebug=no])
 
 if test x"$edebug" = xyes; then
     AC_CHECK_LIB(bfd, main, [BFD_LIBS="-lbfd"], [])

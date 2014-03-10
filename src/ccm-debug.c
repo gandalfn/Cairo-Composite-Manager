@@ -2,17 +2,17 @@
 /*
  * ccm-debug.c
  * Copyright (C) Nicolas Bruguier 2007-2011 <gandalfn@club-internet.fr>
- * 
+ *
  * cairo-compmgr is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * cairo-compmgr is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -50,13 +50,14 @@
 #define true 1
 #define false 0
 
-#define _GNU_SOURCE
+#include <libiberty/libiberty.h>
+
+#define __USE_GNU
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <execinfo.h>
 #include <bfd.h>
-#include <libiberty.h>
 #include <dlfcn.h>
 #include <link.h>
 #endif /* HAVE_EDEBUG */
@@ -112,7 +113,7 @@ static int found;
 /* Look for an address in a section.  This is called via
  bfd_map_over_sections.  */
 
-static void 
+static void
 find_address_in_section(bfd *abfd, asection *section, void *data __attribute__ ((__unused__)) )
 {
     bfd_vma vma;
@@ -136,7 +137,7 @@ find_address_in_section(bfd *abfd, asection *section, void *data __attribute__ (
                                   &filename, &functionname, &line);
 }
 
-static char** 
+static char**
 translate_addresses_buf(bfd * abfd, bfd_vma *addr, int naddr)
 {
     int naddr_orig = naddr;
@@ -150,15 +151,15 @@ translate_addresses_buf(bfd * abfd, bfd_vma *addr, int naddr)
     /* iterate over the formating twice.
      * the first time we count how much space we need
      * the second time we do the actual printing */
-    for (state=Count; state<=Print; state++) 
+    for (state=Count; state<=Print; state++)
     {
-        if (state == Print) 
+        if (state == Print)
         {
             ret_buf = malloc(total + sizeof(char*)*naddr);
             buf = (char*)(ret_buf + naddr);
             len = total;
         }
-        while (naddr) 
+        while (naddr)
         {
             if (state == Print)
                 ret_buf[naddr-1] = buf;
@@ -168,18 +169,18 @@ translate_addresses_buf(bfd * abfd, bfd_vma *addr, int naddr)
             bfd_map_over_sections(abfd, find_address_in_section,
                                   (PTR) NULL);
 
-            if (!found) 
+            if (!found)
             {
                 total += snprintf(buf, len, "[0x%llx] \?\?() \?\?:0",(long long unsigned int) addr[naddr-1]) + 1;
-            } 
-            else 
+            }
+            else
             {
                 const char *name;
 
                 name = functionname;
                 if (name == NULL || *name == '\0')
                     name = "??";
-                if (filename != NULL) 
+                if (filename != NULL)
                 {
                     char *h;
 
@@ -191,7 +192,7 @@ translate_addresses_buf(bfd * abfd, bfd_vma *addr, int naddr)
                                   line, name) + 1;
 
             }
-            if (state == Print) 
+            if (state == Print)
             {
                 /* set buf just past the end of string */
                 buf = buf + total + 1;
@@ -219,10 +220,10 @@ process_file(const char *file_name, bfd_vma *addr, int naddr)
     if (bfd_check_format(abfd, bfd_archive))
         fatal("%s: can not get addresses from archive", file_name);
 
-    if (!bfd_check_format_matches(abfd, bfd_object, &matching)) 
+    if (!bfd_check_format_matches(abfd, bfd_object, &matching))
     {
         bfd_nonfatal(bfd_get_filename(abfd));
-        if (bfd_get_error() == bfd_error_file_ambiguously_recognized) 
+        if (bfd_get_error() == bfd_error_file_ambiguously_recognized)
         {
             list_matching_formats(matching);
             free(matching);
@@ -234,7 +235,7 @@ process_file(const char *file_name, bfd_vma *addr, int naddr)
 
     ret_buf = translate_addresses_buf(abfd, addr, naddr);
 
-    if (syms != NULL) 
+    if (syms != NULL)
     {
         free(syms);
         syms = NULL;
@@ -246,7 +247,7 @@ process_file(const char *file_name, bfd_vma *addr, int naddr)
 
 #define MAX_DEPTH 16
 
-struct file_match 
+struct file_match
 {
     const char *file;
     void *address;
@@ -254,7 +255,7 @@ struct file_match
     void *hdr;
 };
 
-static int 
+static int
 find_matching_file(struct dl_phdr_info *info,
                    size_t size, void *data)
 {
@@ -264,12 +265,12 @@ find_matching_file(struct dl_phdr_info *info,
     const ElfW(Phdr) *phdr;
     ElfW(Addr) load_base = info->dlpi_addr;
     phdr = info->dlpi_phdr;
-    for (n = info->dlpi_phnum; --n >= 0; phdr++) 
+    for (n = info->dlpi_phnum; --n >= 0; phdr++)
     {
-        if (phdr->p_type == PT_LOAD) 
+        if (phdr->p_type == PT_LOAD)
         {
             ElfW(Addr) vaddr = phdr->p_vaddr + load_base;
-            if (match->address >= (void*)vaddr && match->address < (void*)(vaddr + phdr->p_memsz)) 
+            if (match->address >= (void*)vaddr && match->address < (void*)(vaddr + phdr->p_memsz))
             {
                 /* we found a match */
                 match->file = info->dlpi_name;
