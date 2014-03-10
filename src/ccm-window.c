@@ -1427,7 +1427,6 @@ impl_ccm_window_get_pixmap (CCMWindowPlugin * plugin, CCMWindow * self)
     ccm_display_grab (display);
     xpixmap = XCompositeNameWindowPixmap (CCM_DISPLAY_XDISPLAY (display),
                                           CCM_WINDOW_XWINDOW (self));
-    ccm_display_ungrab (display);
     if (xpixmap)
     {
         if (self->priv->use_pixmap_image)
@@ -1439,6 +1438,7 @@ impl_ccm_window_get_pixmap (CCMWindowPlugin * plugin, CCMWindow * self)
             pixmap = ccm_pixmap_new (CCM_DRAWABLE (self), xpixmap);
         }
     }
+    ccm_display_ungrab (display);
 
     return pixmap;
 }

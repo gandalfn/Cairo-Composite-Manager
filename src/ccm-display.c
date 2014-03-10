@@ -137,7 +137,6 @@ typedef struct
     XserverRegion         region;
     CCMDamageCallbackFunc func;
     CCMDrawable*          drawable;
-    CCMDrawable*          data;
 } CCMDamageCallback;
 
 static int
@@ -592,7 +591,7 @@ ccm_display_process_events (CCMWatch* watch)
                                                                (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
                 if (callback)
                 {
-                    g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage, callback->data);
+                    g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage, callback->drawable);
                 }
             }
         }
@@ -813,11 +812,11 @@ ccm_display_get_default()
 }
 
 guint32
-ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageCallbackFunc func, CCMDrawable* data)
+ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageCallbackFunc func)
 {
     Damage damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (self),
                                    ccm_drawable_get_xid (drawable),
-                                   XDamageReportDeltaRectangles);
+                                   XDamageReportNonEmpty);
     if (damage)
     {
         CCMDamageCallback* callback = ccm_damage_callback_new ();
@@ -825,7 +824,6 @@ ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageC
         callback->damage = damage;
         callback->func = func;
         callback->drawable = drawable;
-        callback->data = data;
 
         ccm_set_insert (self->priv->registered_damage, callback);
         ccm_damage_callback_unref (callback);
@@ -837,7 +835,7 @@ ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageC
 }
 
 void
-ccm_display_unregister_damage (CCMDisplay* self, guint32 damage, CCMDrawable* drawable)
+ccm_display_unregister_damage (CCMDisplay* self, guint32 damage)
 {
     CCMDamageCallback* callback;
 
@@ -846,7 +844,7 @@ ccm_display_unregister_damage (CCMDisplay* self, guint32 damage, CCMDrawable* dr
                                                    GINT_TO_POINTER (damage),
                                                    (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
 
-    if (callback && callback->drawable == drawable)
+    if (callback)
     {
         ccm_set_remove (self->priv->registered_damage, callback);
     }
@@ -879,7 +877,7 @@ ccm_display_process_damage (CCMDisplay* self, guint32 damage)
             }
             XFree (rects);
 
-            callback->func (callback->drawable, damaged, callback->data);
+            callback->func (callback->drawable, damaged);
 
             ccm_region_destroy (damaged);
         }

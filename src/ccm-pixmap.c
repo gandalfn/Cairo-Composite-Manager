@@ -45,7 +45,6 @@ struct _CCMPixmapPrivate
     gboolean foreign;
 
     Damage damage;
-    CCMDrawable* drawable;
 
     XserverRegion region;
 
@@ -57,7 +56,7 @@ struct _CCMPixmapPrivate
 
 static void ccm_pixmap_bind (CCMPixmap * self);
 static void ccm_pixmap_release (CCMPixmap * self);
-static void ccm_pixmap_on_damage (CCMDrawable* drawable, CCMRegion* damaged, CCMPixmap * self);
+static void ccm_pixmap_on_damage (CCMPixmap* self, CCMRegion* damaged);
 
 static void
 ccm_pixmap_set_property (GObject * object, guint prop_id, const GValue * value,
@@ -111,7 +110,6 @@ ccm_pixmap_init (CCMPixmap * self)
 
     self->priv->foreign = FALSE;
     self->priv->damage = 0;
-    self->priv->drawable = NULL;
     self->priv->freeze = FALSE;
 }
 
@@ -125,9 +123,8 @@ ccm_pixmap_finalize (GObject * object)
 
     if (CCM_IS_DISPLAY (display) &&  G_OBJECT (display)->ref_count && self->priv->damage)
     {
-        ccm_display_unregister_damage (display, self->priv->damage, self->priv->drawable);
+        ccm_display_unregister_damage (display, self->priv->damage);
         self->priv->damage = None;
-        self->priv->drawable = NULL;
     }
     self->priv->freeze = FALSE;
 
@@ -196,7 +193,7 @@ ccm_pixmap_release (CCMPixmap * self)
 }
 
 static void
-ccm_pixmap_on_damage (CCMDrawable* drawable, CCMRegion* damaged, CCMPixmap * self)
+ccm_pixmap_on_damage (CCMPixmap* self, CCMRegion* damaged)
 {
     g_return_if_fail (self != NULL);
 
@@ -214,9 +211,8 @@ ccm_pixmap_register_damage (CCMPixmap * self)
 
     CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self));
 
-    self->priv->damage = (Damage)ccm_display_register_damage (display, self->priv->drawable,
-                                                              (CCMDamageCallbackFunc)ccm_pixmap_on_damage,
-                                                              CCM_DRAWABLE (self));
+    self->priv->damage = (Damage)ccm_display_register_damage (display, CCM_DRAWABLE (self),
+                                                              (CCMDamageCallbackFunc)ccm_pixmap_on_damage);
 }
 
 /**
@@ -244,8 +240,6 @@ ccm_pixmap_new (CCMDrawable * drawable, Pixmap xpixmap)
                          "screen", screen,
                          "drawable", xpixmap,
                          "visual", visual, NULL);
-
-    self->priv->drawable = drawable;
 
     ccm_drawable_query_geometry (CCM_DRAWABLE (self));
     if (!ccm_drawable_get_device_geometry (CCM_DRAWABLE (self)))
@@ -288,8 +282,6 @@ ccm_pixmap_new_from_visual (CCMScreen * screen, Visual * visual, Pixmap xpixmap)
                          "screen", screen,
                          "drawable", xpixmap,
                          "visual", visual, NULL);
-
-    self->priv->drawable = CCM_DRAWABLE (self);
 
     ccm_drawable_query_geometry (CCM_DRAWABLE (self));
     if (!ccm_drawable_get_device_geometry (CCM_DRAWABLE (self)))
@@ -334,8 +326,6 @@ ccm_pixmap_image_new (CCMDrawable * drawable, Pixmap xpixmap)
                          "screen", screen,
                          "drawable", xpixmap,
                          "visual", visual, NULL);
-
-    self->priv->drawable = CCM_DRAWABLE (self);
 
     ccm_drawable_query_geometry (CCM_DRAWABLE (self));
     ccm_pixmap_register_damage (self);

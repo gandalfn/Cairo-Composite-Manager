@@ -141,7 +141,7 @@ gboolean      ccm_region_is_shaped        (CCMRegion* self);
 /******************************************************************************/
 
 /********************************** Display***********************************/
-typedef void (*CCMDamageCallbackFunc) (CCMDrawable* drawable, CCMRegion* damaged, CCMDrawable* pixmap);
+typedef void (*CCMDamageCallbackFunc) (CCMDrawable* drawable, CCMRegion* damaged);
 
 G_GNUC_PURE CCMDisplay* ccm_display_get_default     ();
 CCMDisplay*             ccm_display_new             (gchar* display);
@@ -160,11 +160,9 @@ gboolean                ccm_display_report_device_event (CCMDisplay* self,
                                                          gboolean report);
 guint32                 ccm_display_register_damage   (CCMDisplay* self,
                                                        CCMDrawable* drawable,
-                                                       CCMDamageCallbackFunc func,
-                                                       CCMDrawable* data);
+                                                       CCMDamageCallbackFunc func);
 void                    ccm_display_unregister_damage (CCMDisplay* self,
-                                                       guint32 damage,
-                                                       CCMDrawable* drawable);
+                                                       guint32 damage);
 /******************************************************************************/
 
 /********************************** Screen************************************/
