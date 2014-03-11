@@ -118,7 +118,7 @@ ccm_window_xrender_create_frontbuffer (CCMWindowXRender * self)
                                                             geometry.height);
     }
 
-    return self->priv->front != NULL;
+    return ccm_display_use_dbe (display) || self->priv->front != NULL;
 }
 
 static gboolean

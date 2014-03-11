@@ -814,22 +814,37 @@ ccm_display_get_default()
 guint32
 ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageCallbackFunc func)
 {
-    Damage damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (self),
-                                   ccm_drawable_get_xid (drawable),
-                                   XDamageReportNonEmpty);
-    if (damage)
+    Damage damage = None;
+    CCMDamageCallback* callback = NULL;
+    CCMSetIterator* iter = ccm_set_iterator (self->priv->registered_damage);
+    while (ccm_set_iterator_next (iter) && callback == NULL)
     {
-        CCMDamageCallback* callback = ccm_damage_callback_new ();
-        XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), damage, None, None);
-        callback->damage = damage;
-        callback->func = func;
-        callback->drawable = drawable;
+        callback = (CCMDamageCallback*)ccm_set_iterator_get (iter);
+        if (callback->drawable != drawable) callback = NULL;
+    }
+    g_object_unref (iter);
 
-        ccm_set_insert (self->priv->registered_damage, callback);
-        ccm_damage_callback_unref (callback);
+    if (callback == NULL)
+    {
+        damage = XDamageCreate (CCM_DISPLAY_XDISPLAY (self),
+                                ccm_drawable_get_xid (drawable),
+                                XDamageReportNonEmpty);
+        if (damage)
+        {
+            callback = ccm_damage_callback_new ();
+            XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), damage, None, None);
+            callback->damage = damage;
+            callback->func = func;
+            callback->drawable = drawable;
+
+            ccm_set_insert (self->priv->registered_damage, callback);
+            ccm_damage_callback_unref (callback);
+        }
     }
     else
-        damage = None;
+    {
+        damage = callback->damage;
+    }
 
     return (guint32)damage;
 }

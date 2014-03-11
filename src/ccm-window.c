@@ -2658,7 +2658,7 @@ ccm_window_get_pixmap (CCMWindow * self)
         }
     }
 
-    return self->priv->pixmap ? g_object_ref (self->priv->pixmap) : NULL;
+    return self->priv->pixmap;
 }
 
 CCMPixmap *
@@ -2731,11 +2731,9 @@ ccm_window_paint (CCMWindow * self, cairo_t * context)
                 ret = ccm_window_plugin_paint (self->priv->plugin, self, context, surface);
                 cairo_surface_destroy (surface);
                 cairo_restore (context);
-                g_object_unref (pixmap);
             }
             else
             {
-                g_object_unref (self->priv->pixmap);
                 g_object_unref (self->priv->pixmap);
                 self->priv->pixmap = NULL;
                 g_signal_emit (self, signals[ERROR], 0);
