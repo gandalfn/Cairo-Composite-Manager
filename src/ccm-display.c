@@ -49,18 +49,21 @@ enum
     PROP_USE_XSHM,
     PROP_USE_XDBE,
     PROP_USE_RANDR,
-    PROP_USE_GLX
+    PROP_USE_GLX,
+    PROP_FORCE_CHECK_DAMAGE
 };
 
 enum
 {
+    CCM_DISPLAY_OPTION_FORCE_CHECK_DAMAGE,
     CCM_DISPLAY_OPTION_USE_XSHM,
     CCM_DISPLAY_OPTION_USE_XDBE,
-    CCM_DISPLAY_UNMANAGED_SCREEN,
+    CCM_DISPLAY_OPTION_UNMANAGED_SCREEN,
     CCM_DISPLAY_OPTION_N
 };
 
 static gchar *CCMDisplayOptions[CCM_DISPLAY_OPTION_N] = {
+    "force_check_damage",
     "use_xshm",
     "use_xdbe",
     "unmanaged_screen"
@@ -69,8 +72,6 @@ static gchar *CCMDisplayOptions[CCM_DISPLAY_OPTION_N] = {
 enum
 {
     EVENT,
-    DAMAGE_EVENT,
-    DAMAGE_DESTROY,
     N_SIGNALS
 };
 
@@ -111,6 +112,7 @@ struct _CCMDisplayPrivate
     CCMExtension     glx;
 
     CCMSet*          registered_damage;
+    CCMSet*          damaged;
 
     GSList*          pointers;
     int              type_button_press;
@@ -120,6 +122,7 @@ struct _CCMDisplayPrivate
 
     gboolean         use_shm;
     gboolean         use_dbe;
+    gboolean         force_check_damage;
     CCMConfig*       options[CCM_DISPLAY_OPTION_N];
 };
 
@@ -137,6 +140,7 @@ typedef struct
     XserverRegion         region;
     CCMDamageCallbackFunc func;
     CCMDrawable*          drawable;
+    int                   screen;
 } CCMDamageCallback;
 
 static int
@@ -175,7 +179,6 @@ ccm_damage_callback_unref (CCMDamageCallback* self)
     {
         XFixesDestroyRegion (CCM_DISPLAY_XDISPLAY (CCMDefaultDisplay), self->region);
         XDamageDestroy (CCM_DISPLAY_XDISPLAY (CCMDefaultDisplay), self->damage);
-        g_signal_emit (CCMDefaultDisplay, signals[DAMAGE_DESTROY], 0, self->damage, self->drawable);
         g_slice_free (CCMDamageCallback, self);
     }
 }
@@ -231,6 +234,11 @@ ccm_display_get_property (GObject * object, guint prop_id, GValue * value,
                 g_value_set_boolean (value, priv->glx.available);
             }
             break;
+        case PROP_FORCE_CHECK_DAMAGE:
+            {
+                g_value_set_boolean (value, priv->force_check_damage);
+            }
+            break;
         default:
             break;
     }
@@ -247,6 +255,7 @@ ccm_display_init (CCMDisplay * self)
     self->priv->screens = NULL;
     self->priv->use_shm = FALSE;
     self->priv->use_dbe = FALSE;
+    self->priv->force_check_damage = FALSE;
     self->priv->pointers = NULL;
     self->priv->type_button_press = 0;
     self->priv->type_button_release = 0;
@@ -258,6 +267,8 @@ ccm_display_init (CCMDisplay * self)
                                                  (GBoxedCopyFunc)ccm_damage_callback_ref,
                                                  (GDestroyNotify)ccm_damage_callback_unref,
                                                  (CCMSetCompareFunc)ccm_damage_callback_compare);
+    self->priv->damaged = ccm_set_new (G_TYPE_POINTER, NULL, NULL,
+                                       (CCMSetCompareFunc)ccm_damage_callback_compare);
 }
 
 static void
@@ -292,6 +303,12 @@ ccm_display_finalize (GObject * object)
 
     for (cpt = 0; cpt < CCM_DISPLAY_OPTION_N; ++cpt)
         g_object_unref (self->priv->options[cpt]);
+
+    if (self->priv->registered_damage)
+        g_object_unref (self->priv->registered_damage);
+
+    if (self->priv->damaged)
+        g_object_unref (self->priv->damaged);
 
     G_OBJECT_CLASS (ccm_display_parent_class)->finalize (object);
 }
@@ -341,23 +358,16 @@ ccm_display_class_init (CCMDisplayClass * klass)
                                                            TRUE,
                                                            G_PARAM_READABLE));
 
-    signals[EVENT] =
-        g_signal_new ("event", G_OBJECT_CLASS_TYPE (object_class),
-                      G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                      g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1,
-                      G_TYPE_POINTER);
+    g_object_class_install_property (object_class, PROP_FORCE_CHECK_DAMAGE,
+                                     g_param_spec_boolean ("force_check_damage",
+                                                           "ForceCheckDamage",
+                                                           "Force check damage on each redraw", FALSE,
+                                                           G_PARAM_READWRITE));
 
-    signals[DAMAGE_EVENT] =
-        g_signal_new ("damage-event", G_OBJECT_CLASS_TYPE (object_class),
-                      G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                      g_cclosure_marshal_VOID__UINT_POINTER, G_TYPE_NONE, 2,
-                      G_TYPE_INT, G_TYPE_POINTER);
-
-    signals[DAMAGE_DESTROY] =
-        g_signal_new ("damage-destroy", G_OBJECT_CLASS_TYPE (object_class),
-                      G_SIGNAL_RUN_LAST, 0, NULL, NULL,
-                      g_cclosure_marshal_VOID__UINT_POINTER, G_TYPE_NONE, 2,
-                      G_TYPE_INT, G_TYPE_POINTER);
+    signals[EVENT] = g_signal_new ("event", G_OBJECT_CLASS_TYPE (object_class),
+                                   G_SIGNAL_RUN_LAST, 0, NULL, NULL,
+                                   g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1,
+                                   G_TYPE_POINTER);
 }
 
 static void
@@ -371,6 +381,8 @@ ccm_display_load_config (CCMDisplay * self)
     {
         self->priv->options[cpt] = ccm_config_new (-1, NULL, CCMDisplayOptions[cpt]);
     }
+    self->priv->force_check_damage = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_FORCE_CHECK_DAMAGE],
+                                                             NULL);
     self->priv->use_shm = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XSHM], NULL) &&
                                                   self->priv->shm.available;
     self->priv->use_dbe = ccm_config_get_boolean (self->priv->options[CCM_DISPLAY_OPTION_USE_XDBE], NULL) &&
@@ -406,8 +418,7 @@ ccm_display_init_composite (CCMDisplay * self)
     {
         self->priv->composite.available = TRUE;
         ccm_debug ("COMPOSITE EVENT BASE: %i", self->priv->composite.event_base);
-        ccm_debug ("COMPOSITE ERROR BASE: %i",
-                   self->priv->composite.error_base);
+        ccm_debug ("COMPOSITE ERROR BASE: %i", self->priv->composite.error_base);
         return TRUE;
     }
 
@@ -572,27 +583,24 @@ ccm_display_process_events (CCMWatch* watch)
     CCMDisplay* self = CCM_DISPLAY (watch);
     XEvent xevent;
 
-    while (XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAfterReading))
+    while (XEventsQueued (CCM_DISPLAY_XDISPLAY (self), QueuedAlready))
     {
         XNextEvent (CCM_DISPLAY_XDISPLAY (self), &xevent);
         ccm_debug ("EVENT %i", xevent.type);
 
-        if (xevent.type == self->priv->damage.event_base + XDamageNotify)
+        if (!self->priv->force_check_damage && xevent.type == self->priv->damage.event_base + XDamageNotify)
         {
             XDamageNotifyEvent* event_damage = (XDamageNotifyEvent *)&xevent;
 
-            if (!event_damage->more)
-            {
-                CCMDamageCallback* callback;
+            CCMDamageCallback* callback;
 
-                callback = (CCMDamageCallback*)ccm_set_search (self->priv->registered_damage,
-                                                               G_TYPE_UINT, NULL, NULL,
-                                                               GINT_TO_POINTER (event_damage->damage),
-                                                               (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
-                if (callback)
-                {
-                    g_signal_emit (self, signals[DAMAGE_EVENT], 0, event_damage->damage, callback->drawable);
-                }
+            callback = (CCMDamageCallback*)ccm_set_search (self->priv->registered_damage,
+                                                           G_TYPE_UINT, NULL, NULL,
+                                                           GINT_TO_POINTER (event_damage->damage),
+                                                           (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
+            if (callback)
+            {
+                ccm_set_insert (self->priv->damaged, callback);
             }
         }
         else
@@ -683,8 +691,7 @@ ccm_display_new (gchar * display)
     self->priv->nb_screens = ScreenCount (self->priv->xdisplay);
     self->priv->screens = g_slice_alloc0 (sizeof (CCMScreen *) * (self->priv->nb_screens + 1));
 
-    unmanaged = ccm_config_get_integer_list (self->priv->options[CCM_DISPLAY_UNMANAGED_SCREEN],
-                                             NULL);
+    unmanaged = ccm_config_get_integer_list (self->priv->options[CCM_DISPLAY_OPTION_UNMANAGED_SCREEN], NULL);
 
     for (cpt = 0; cpt < self->priv->nb_screens; ++cpt)
     {
@@ -831,11 +838,14 @@ ccm_display_register_damage (CCMDisplay* self, CCMDrawable* drawable, CCMDamageC
                                 XDamageReportNonEmpty);
         if (damage)
         {
+            CCMScreen* screen = ccm_drawable_get_screen (drawable);
+
             callback = ccm_damage_callback_new ();
             XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), damage, None, None);
             callback->damage = damage;
             callback->func = func;
             callback->drawable = drawable;
+            callback->screen = ccm_screen_get_number (screen);
 
             ccm_set_insert (self->priv->registered_damage, callback);
             ccm_damage_callback_unref (callback);
@@ -866,35 +876,47 @@ ccm_display_unregister_damage (CCMDisplay* self, guint32 damage)
 }
 
 void
-ccm_display_process_damage (CCMDisplay* self, guint32 damage)
+ccm_display_process_damage (CCMDisplay* self, int screen)
 {
-    CCMDamageCallback* callback;
+    CCMSetIterator* iter;
+    if (self->priv->force_check_damage)
+        iter = ccm_set_iterator (self->priv->registered_damage);
+    else
+        iter = ccm_set_iterator (self->priv->damaged);
 
-    callback = (CCMDamageCallback*)ccm_set_search (self->priv->registered_damage,
-                                                   G_TYPE_UINT, NULL, NULL,
-                                                   GINT_TO_POINTER (damage),
-                                                   (CCMSetValueCompareFunc)ccm_damage_callback_compare_with_damage);
-    if (callback)
+    while (ccm_set_iterator_next (iter))
     {
-        XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), callback->damage, None, callback->region);
-        gint nb_rects, cpt;
-        XRectangle* rects = XFixesFetchRegion (CCM_DISPLAY_XDISPLAY (self), callback->region, &nb_rects);
-
-        if (rects)
+        CCMDamageCallback* callback = (CCMDamageCallback*)ccm_set_iterator_get (iter);
+        if (callback->screen == screen)
         {
-            CCMRegion *damaged = ccm_region_new ();
+            XDamageSubtract (CCM_DISPLAY_XDISPLAY (self), callback->damage, None, callback->region);
+            gint nb_rects;
+            XRectangle* rects = XFixesFetchRegion (CCM_DISPLAY_XDISPLAY (self), callback->region, &nb_rects);
 
-            for (cpt = 0; cpt < nb_rects; ++cpt)
+            if (rects)
             {
-                ccm_region_union_with_xrect (damaged, &rects[cpt]);
-                ccm_debug ("DRAWABLE DAMAGE %i,%i,%i,%i", rects[cpt].x, rects[cpt].y,
-                                                          rects[cpt].width, rects[cpt].height);
+                gint cpt;
+                CCMRegion *damaged = ccm_region_new ();
+
+                for (cpt = 0; cpt < nb_rects; ++cpt)
+                {
+                    ccm_region_union_with_xrect (damaged, &rects[cpt]);
+                    ccm_debug ("DRAWABLE DAMAGE %i,%i,%i,%i", rects[cpt].x, rects[cpt].y,
+                                                              rects[cpt].width, rects[cpt].height);
+                }
+                XFree (rects);
+
+                if (!ccm_region_empty (damaged))
+                {
+                    callback->func (callback->drawable, damaged);
+                }
+
+                ccm_region_destroy (damaged);
             }
-            XFree (rects);
-
-            callback->func (callback->drawable, damaged);
-
-            ccm_region_destroy (damaged);
         }
     }
+    g_object_unref (iter);
+
+    if (!self->priv->force_check_damage)
+        ccm_set_clear (self->priv->damaged);
 }

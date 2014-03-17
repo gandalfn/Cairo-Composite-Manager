@@ -52,7 +52,7 @@ struct _CCMDisplay
 
 GType ccm_display_get_type (void) G_GNUC_CONST;
 
-void ccm_display_process_damage (CCMDisplay* self, guint32 damage);
+void ccm_display_process_damage (CCMDisplay* self, int screen);
 G_GNUC_PURE gboolean ccm_display_use_dbe (CCMDisplay* self);
 
 G_END_DECLS

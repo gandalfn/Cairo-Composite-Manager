@@ -3,14 +3,19 @@ Type=bool
 Default=true
 _Description=Enable Cairo Composite Manager.
 
+[force_check_damage]
+Type=bool
+Default=false
+_Description=Force check damage on each redraw
+
 [use_xshm]
 Type=bool
-Default=true
+Default=false
 _Description=Use xshm
 
 [use_xdbe]
 Type=bool
-Default=false
+Default=true
 _Description=Use dbe
 
 [unmanaged_screen]

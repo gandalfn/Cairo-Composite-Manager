@@ -2029,7 +2029,7 @@ ccm_window_new (CCMScreen * screen, Window xwindow)
         XShapeSelectInput (CCM_DISPLAY_XDISPLAY (display),
                            CCM_WINDOW_XWINDOW (self), ShapeNotifyMask);
 
-        ccm_display_sync (display);
+        ccm_display_flush (display);
     }
 
     return self;
@@ -2089,7 +2089,7 @@ ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow)
         XShapeSelectInput (CCM_DISPLAY_XDISPLAY (display),
                            CCM_WINDOW_XWINDOW (self), ShapeNotifyMask);
 
-        ccm_display_sync (display);
+        ccm_display_flush (display);
     }
 
     return self;
