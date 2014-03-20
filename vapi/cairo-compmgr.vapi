@@ -270,8 +270,10 @@ namespace CCM
         public unowned CCM.Region get_geometry ();
         public unowned CCM.Region get_primary_geometry ();
 
-        public bool add_window (CCM.Window window);
-        public void remove_window (CCM.Window window);
+        [CCode (cname = "ccm_screen_add_window")]
+        public bool screen_add_window (CCM.Window window);
+        [CCode (cname = "ccm_screen_remove_window")]
+        public void screen_remove_window (CCM.Window window);
         public unowned CCM.Window? find_window (X.Window xwindow);
         public unowned CCM.Window? find_window_or_child (X.Window xwindow);
         public unowned CCM.Window? find_window_at_pos(int x, int y);
@@ -481,7 +483,8 @@ namespace CCM
         public void query_frame_extends ();
         public void query_hint_type ();
         public void query_mwm_hints ();
-        public void query_opacity (bool deleted);
+        [CCode (cname = "ccm_window_query_opacity")]
+        public void window_query_opacity (bool deleted);
         public void query_state ();
         public void query_transient_for ();
         public void query_wm_hints ();
@@ -491,7 +494,8 @@ namespace CCM
         public void set_alpha ();
         public void set_opacity (float opacity);
         public void set_opaque ();
-        public void set_opaque_region (CCM.Region region);
+        [CCode (cname = "ccm_window_set_opaque_region")]
+        public void window_set_opaque_region (CCM.Region region);
         public bool set_state (X.Atom state_atom);
         public bool skip_pager ();
         public bool skip_taskbar ();

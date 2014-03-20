@@ -5,7 +5,7 @@ _Description=Enable Cairo Composite Manager.
 
 [force_check_damage]
 Type=bool
-Default=false
+Default=true
 _Description=Force check damage on each redraw
 
 [use_xshm]

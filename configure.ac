@@ -1,6 +1,6 @@
 m4_define(ccm_version_major, 0)
 m4_define(ccm_version_minor, 4)
-m4_define(ccm_version_micro, 2)
+m4_define(ccm_version_micro, 3)
 AC_INIT([cairo-compmgr], [ccm_version_major.ccm_version_minor.ccm_version_micro], [gandalfn@club-internet.fr], [cairo-compmgr])
 AC_PREREQ(2.63)
 
@@ -48,7 +48,7 @@ CAIRO_XLIB_REQUIRED=1.8.0
 CAIRO_XLIB_XRENDER_REQUIRED=1.8.0
 GOBJECT_INTROSPECTION_REQUIRED=0.6.2
 GLADEUI_REQUIRED=3.6.7
-VALA_REQUIRED=0.20.0
+VALA_REQUIRED=0.22.0
 
 dnl ****************************************************************************
 dnl Check for build
@@ -90,7 +90,7 @@ PKG_CHECK_MODULES(CAIRO_COMPMGR,
         gdk-2.0,
         cairo >= $CAIRO_REQUIRED,
         pixman-1 >= $PIXMAN_REQUIRED,
-        libvala-0.20 >= $VALA_REQUIRED])
+        libvala-0.22 >= $VALA_REQUIRED])
 CAIRO_COMPMGR_CFLAGS="-O3 -DG_DISABLE_ASSERT -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS $CAIRO_COMPMGR_CFLAGS"
 CAIRO_COMPMGR_LIBS="-O3 $CAIRO_COMPMGR_LIBS -lm"
 

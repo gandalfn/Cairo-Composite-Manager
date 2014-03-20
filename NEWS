@@ -1,3 +1,7 @@
+Overview of Changes in Cairo Composite Manager 0.4.3
+====================================
+* Fix and optimize damage events
+
 Overview of Changes in Cairo Composite Manager 0.4.2
 ====================================
 * Redirect window in automatic mode
