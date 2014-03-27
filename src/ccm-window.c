@@ -193,7 +193,7 @@ ccm_window_set_gobject_property (GObject * object, guint prop_id,
             priv->child = (Window) g_value_get_pointer (value);
             break;
         case PROP_PIXMAP:
-            if (priv->pixmap) g_object_unref (priv->pixmap);
+            if (priv->pixmap && G_OBJECT(priv->pixmap)->ref_count) g_object_unref (priv->pixmap);
             priv->pixmap = (CCMPixmap*)g_value_get_pointer (value);
             break;
         case PROP_IMAGE:
@@ -253,6 +253,9 @@ ccm_window_get_gobject_property (GObject * object, guint prop_id,
     {
         case PROP_CHILD:
             g_value_set_pointer (value, (gpointer) priv->child);
+            break;
+        case PROP_PIXMAP:
+            g_value_set_pointer (value, (gpointer) priv->pixmap);
             break;
         case PROP_NO_UNDAMAGE_SIBLING:
             g_value_set_boolean (value, priv->no_undamage_sibling);
@@ -450,7 +453,7 @@ ccm_window_class_init (CCMWindowClass * klass)
     g_object_class_install_property (object_class, PROP_PIXMAP,
                                      g_param_spec_pointer ("pixmap", "Pixmap",
                                                            "Pixmap of window",
-                                                           G_PARAM_WRITABLE));
+                                                           G_PARAM_READWRITE));
 
     /**
      * CCMWindow:no_undamage_sibling:
@@ -2029,7 +2032,7 @@ ccm_window_new (CCMScreen * screen, Window xwindow)
         XShapeSelectInput (CCM_DISPLAY_XDISPLAY (display),
                            CCM_WINDOW_XWINDOW (self), ShapeNotifyMask);
 
-        ccm_display_flush (display);
+        ccm_display_sync (display);
     }
 
     return self;
@@ -2089,7 +2092,7 @@ ccm_window_new_unmanaged (CCMScreen * screen, Window xwindow)
         XShapeSelectInput (CCM_DISPLAY_XDISPLAY (display),
                            CCM_WINDOW_XWINDOW (self), ShapeNotifyMask);
 
-        ccm_display_flush (display);
+        ccm_display_sync (display);
     }
 
     return self;

@@ -35,8 +35,8 @@ namespace CCM
         const int cParamPrecision = 7;
 
         // properties
-        private Cairo.Surface m_Surface;
         private Cairo.Context m_Context;
+        private Cairo.Surface m_Surface;
 
         // accessors
         /**
@@ -271,11 +271,11 @@ namespace CCM
         {
             context.save ();
 
-            m_Context.set_source_rgba (0, 0, 0, 0);
-            m_Context.set_operator (Cairo.Operator.SOURCE);
-            m_Context.paint ();
+            context.set_source_rgba (0, 0, 0, 0);
+            context.set_operator (Cairo.Operator.SOURCE);
+            context.paint ();
 
-            m_Context.restore ();
+            context.restore ();
         }
 
         /**
@@ -507,32 +507,13 @@ namespace CCM
 
             uint8 *pixels = original.get_data ();
 
-            try
-            {
-                // Process Rows
-                exponential_blur_rows (pixels, width, height, height / 2, height, 0, width, alpha);
+            // Process Rows
+            exponential_blur_rows (pixels, width, height, height / 2, height, 0, width, alpha);
+            exponential_blur_rows (pixels, width, height, 0, height / 2, 0, width, alpha);
 
-                var th = new Thread<void*>.try (null, () => {
-                    exponential_blur_rows (pixels, width, height, 0, height / 2, 0, width, alpha);
-                    return null;
-                });
-
-                th.join ();
-
-                // Process Columns
-                exponential_blur_columns (pixels, width, height, width / 2, width, 0, height, alpha);
-
-                var th2 = new Thread<void*>.try (null, () => {
-                    exponential_blur_columns (pixels, width, height, 0, width / 2, 0, height, alpha);
-                    return null;
-                });
-
-                th2.join ();
-            }
-            catch (Error err)
-            {
-                warning (err.message);
-            }
+            // Process Columns
+            exponential_blur_columns (pixels, width, height, width / 2, width, 0, height, alpha);
+            exponential_blur_columns (pixels, width, height, 0, width / 2, 0, height, alpha);
 
             original.mark_dirty ();
 

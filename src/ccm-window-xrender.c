@@ -210,7 +210,7 @@ ccm_window_xrender_flush (CCMDrawable * drawable)
             cairo_destroy(ctx);
         }
 
-        ccm_display_flush(display);
+        ccm_display_sync(display);
     }
 }
 
@@ -259,7 +259,7 @@ ccm_window_xrender_flush_region (CCMDrawable * drawable, CCMRegion * region)
             cairo_destroy(ctx);
         }
 
-        ccm_display_flush(display);
+        ccm_display_sync(display);
     }
 }
 
