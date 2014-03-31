@@ -56,7 +56,7 @@
 #include <stdlib.h>
 #include <execinfo.h>
 #include <bfd.h>
-#include <libiberty.h>
+#include <libiberty/libiberty.h>
 #include <dlfcn.h>
 #include <link.h>
 #endif /* HAVE_EDEBUG */
