@@ -119,22 +119,19 @@ ccm_freeze_options_finalize (CCMFreezeOptions* self)
 static void
 ccm_freeze_options_changed (CCMFreezeOptions* self, CCMConfig* config)
 {
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
-                                                 CCM_FREEZE_DELAY))
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), CCM_FREEZE_DELAY))
     {
         self->delay = ccm_config_get_integer (config, NULL);
         if (!self->delay) self->delay = 3;
     }
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
-                                                 CCM_FREEZE_DURATION))
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), CCM_FREEZE_DURATION))
     {
         self->duration = ccm_config_get_float (config, NULL);
         if (!self->duration) self->duration = 0.3f;
     }
 
-    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self),
-                                                 CCM_FREEZE_COLOR))
+    if (config == ccm_plugin_options_get_config (CCM_PLUGIN_OPTIONS(self), CCM_FREEZE_COLOR))
     {
         if (self->color) g_free (self->color);
 
@@ -236,20 +233,17 @@ ccm_freeze_on_event (CCMFreeze * self, XEvent * event, CCMDisplay * display)
 
             if (window)
             {
-                CCMFreeze* freeze = CCM_FREEZE(_ccm_window_get_plugin(window,
-                                                                      CCM_TYPE_FREEZE));
+                CCMFreeze* freeze = CCM_FREEZE(_ccm_window_get_plugin(window, CCM_TYPE_FREEZE));
 
                 if (freeze->priv->last_ping)
                 {
-                    ccm_debug_window (window, "PONG 0x%x",
-                                      client_message_event->window);
+                    ccm_debug_window (window, "PONG 0x%x", client_message_event->window);
                     if (!freeze->priv->alive)
                         ccm_drawable_damage (CCM_DRAWABLE (window));
                     freeze->priv->alive = TRUE;
                     freeze->priv->last_ping = 0;
                     freeze->priv->opacity = 0.0f;
-                    if (freeze->priv->timeline &&
-                        ccm_timeline_get_is_playing (freeze->priv->timeline))
+                    if (freeze->priv->timeline && ccm_timeline_get_is_playing (freeze->priv->timeline))
                         ccm_timeline_stop (freeze->priv->timeline);
                 }
             }
@@ -269,10 +263,9 @@ ccm_freeze_get_pid (CCMFreeze * self)
 
     if (!child)
     {
-        data =
-            ccm_window_get_property (self->priv->window,
-                                     CCM_WINDOW_GET_CLASS (self->priv->window)->pid_atom,
-                                     XA_CARDINAL, &n_items);
+        data = ccm_window_get_property (self->priv->window,
+                                        CCM_WINDOW_GET_CLASS (self->priv->window)->pid_atom,
+                                        XA_CARDINAL, &n_items);
     }
     else
     {
@@ -297,7 +290,7 @@ ccm_freeze_ping (CCMFreeze * self)
 {
     g_return_val_if_fail (CCM_IS_FREEZE (self), FALSE);
 
-    if (self->priv->window && ccm_window_is_viewable (self->priv->window))
+    if (self->priv->id_ping && self->priv->window && ccm_window_is_viewable (self->priv->window))
     {
         CCMWindowType type = ccm_window_get_hint_type (self->priv->window);
         const gchar* name = ccm_window_get_name(self->priv->window);
@@ -307,24 +300,23 @@ ccm_freeze_ping (CCMFreeze * self)
 
         if ((name && !g_ascii_strcasecmp(name, "mplayer")) ||
             !self->priv->pid || ccm_window_is_input_only (self->priv->window)
-            || !ccm_window_is_viewable (self->priv->window)
-            || !ccm_window_is_decorated (self->priv->window)
-            || (type != CCM_WINDOW_TYPE_NORMAL && type != CCM_WINDOW_TYPE_DIALOG))
+                             || !ccm_window_is_viewable (self->priv->window)
+                             || !ccm_window_is_decorated (self->priv->window)
+                             || (type != CCM_WINDOW_TYPE_NORMAL && type != CCM_WINDOW_TYPE_DIALOG))
         {
             if (!self->priv->alive)
                 ccm_drawable_damage (CCM_DRAWABLE (self->priv->window));
 
             self->priv->alive = TRUE;
-            if (self->priv->timeline
-                && ccm_timeline_get_is_playing (self->priv->timeline))
+            if (self->priv->timeline && ccm_timeline_get_is_playing (self->priv->timeline))
                 ccm_timeline_stop (self->priv->timeline);
+            self->priv->id_ping = 0;
             return FALSE;
         }
 
         ccm_debug_window (self->priv->window, "PING");
         XEvent event;
-        CCMDisplay *display =
-            ccm_drawable_get_display (CCM_DRAWABLE (self->priv->window));
+        CCMDisplay *display = ccm_drawable_get_display (CCM_DRAWABLE (self->priv->window));
         Window window = None;
 
         g_return_val_if_fail (CCM_IS_DISPLAY (display), FALSE);
@@ -339,10 +331,7 @@ ccm_freeze_ping (CCMFreeze * self)
             self->priv->alive = FALSE;
             if (!self->priv->timeline)
             {
-                self->priv->timeline =
-                    ccm_timeline_new_for_duration ((guint)
-                                                   (ccm_freeze_get_option
-                                                    (self)->duration * 1000.0));
+                self->priv->timeline = ccm_timeline_new_for_duration ((guint)(ccm_freeze_get_option(self)->duration * 1000.0));
 
                 g_signal_connect_swapped (self->priv->timeline, "new-frame",
                                           G_CALLBACK (ccm_freeze_on_new_frame),
@@ -359,8 +348,7 @@ ccm_freeze_ping (CCMFreeze * self)
             self->priv->alive = TRUE;
             self->priv->opacity = 0.0f;
 
-            if (self->priv->timeline
-                && ccm_timeline_get_is_playing (self->priv->timeline))
+            if (self->priv->timeline && ccm_timeline_get_is_playing (self->priv->timeline))
                 ccm_timeline_stop (self->priv->timeline);
         }
 
@@ -379,7 +367,7 @@ ccm_freeze_ping (CCMFreeze * self)
     }
 
 
-    return TRUE;
+    return self->priv->id_ping != 0;
 }
 
 static void
@@ -503,7 +491,7 @@ ccm_freeze_window_map (CCMWindowPlugin * plugin, CCMWindow * window)
     CCMFreeze *self = CCM_FREEZE (plugin);
 
     if (!self->priv->id_ping)
-        self->priv->id_ping = g_timeout_add_seconds_full (G_PRIORITY_LOW,
+        self->priv->id_ping = g_timeout_add_seconds_full (G_PRIORITY_HIGH,
                                                           ccm_freeze_get_option (self)->delay,
                                                           (GSourceFunc) ccm_freeze_ping, self,
                                                           NULL);

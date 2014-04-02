@@ -1,3 +1,11 @@
+Overview of Changes in Cairo Composite Manager 0.4.5
+====================================
+* Fix freeze plugin
+
+Overview of Changes in Cairo Composite Manager 0.4.4
+====================================
+* Fix sync on window creation
+
 Overview of Changes in Cairo Composite Manager 0.4.3
 ====================================
 * Fix and optimize damage events
