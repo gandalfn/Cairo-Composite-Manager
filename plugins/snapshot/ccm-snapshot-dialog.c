@@ -22,8 +22,6 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
 
-#include "ccm-debug.h"
-#include "ccm-cairo-utils.h"
 #include "ccm-snapshot-dialog.h"
 
 G_DEFINE_TYPE (CCMSnapshotDialog, ccm_snapshot_dialog, G_TYPE_OBJECT);
@@ -84,6 +82,8 @@ ccm_snapshot_dialog_on_close (CCMSnapshotDialog * self, GtkWidget * widget)
     self->priv->surface = NULL;
     g_object_unref (self);
     gtk_widget_destroy (widget);
+
+    gtk_main_quit ();
 }
 
 static void
@@ -94,10 +94,8 @@ ccm_snapshot_dialog_on_response (CCMSnapshotDialog * self, int response,
 
     if (response == GTK_RESPONSE_OK)
     {
-        GtkWidget *path = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
-                                                              "path"));
-        GtkWidget *name = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
-                                                              "name"));
+        GtkWidget *path = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "path"));
+        GtkWidget *name = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "name"));
 
         gchar *dir = gtk_file_chooser_get_current_folder (GTK_FILE_CHOOSER (path));
         const gchar *file = gtk_entry_get_text (GTK_ENTRY (name));
@@ -116,6 +114,7 @@ ccm_snapshot_dialog_on_response (CCMSnapshotDialog * self, int response,
     self->priv->surface = NULL;
     g_object_unref (self);
     gtk_widget_destroy (widget);
+    gtk_main_quit ();
 }
 
 static void
@@ -123,9 +122,15 @@ ccm_snapshot_dialog_on_realize (CCMSnapshotDialog * self, GtkWidget * widget)
 {
     GtkWidget *snapshot, *table;
     int width, height;
+    GdkScreen* screen = gtk_widget_get_screen (widget);
+    int primary = gdk_screen_get_primary_monitor (screen);
+    GdkRectangle area;
+    GdkWindow* window = gtk_widget_get_window (widget);
+    
+    gdk_screen_get_monitor_geometry (screen, primary, &area);
 
-    width = cairo_image_surface_get_width (self->priv->surface);
-    height = cairo_image_surface_get_height (self->priv->surface);
+    width = cairo_xlib_surface_get_width (self->priv->surface);
+    height = cairo_xlib_surface_get_height (self->priv->surface);
 
     snapshot = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "snapshot_image"));
     table = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "table"));
@@ -137,6 +142,9 @@ ccm_snapshot_dialog_on_realize (CCMSnapshotDialog * self, GtkWidget * widget)
         gtk_widget_set_size_request (snapshot,
                                      table->allocation.width * width / height,
                                      table->allocation.width);
+
+    gdk_drawable_get_size (GDK_DRAWABLE(window), &width, &height);
+    gdk_window_move (window, area.x + (area.width - width) / 2.0, area.y + (area.height - height) / 2.0);
 }
 
 static void
@@ -145,15 +153,15 @@ ccm_snapshot_dialog_paint_snapshot (CCMSnapshotDialog * self, cairo_t * ctx)
     GtkWidget *snapshot;
     int width, height;
 
-    width = cairo_image_surface_get_width (self->priv->surface);
-    height = cairo_image_surface_get_height (self->priv->surface);
+    width = cairo_xlib_surface_get_width (self->priv->surface);
+    height = cairo_xlib_surface_get_height (self->priv->surface);
 
     snapshot = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "snapshot_image"));
     cairo_save (ctx);
     cairo_set_operator (ctx, CAIRO_OPERATOR_OVER);
     cairo_translate (ctx, snapshot->allocation.x, snapshot->allocation.y);
     cairo_scale (ctx, (double) snapshot->allocation.width / (double) width,
-                 (double) snapshot->allocation.height / (double) height);
+                      (double) snapshot->allocation.height / (double) height);
     gdk_cairo_set_source_color (ctx, &snapshot->style->bg[GTK_STATE_NORMAL]);
     cairo_rectangle (ctx, 0, 0, width, height);
     cairo_fill (ctx);
@@ -168,8 +176,7 @@ ccm_snapshot_dialog_on_expose_event (GtkWidget * widget,
                                      CCMSnapshotDialog * self)
 {
     cairo_t *ctx = gdk_cairo_create (widget->window);
-    GtkWidget *child = GTK_WIDGET (gtk_builder_get_object (self->priv->builder,
-                                                           "dialog-vbox"));
+    GtkWidget *child = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "dialog-vbox"));
 
     gdk_cairo_region (ctx, event->region);
     cairo_clip (ctx);
@@ -183,10 +190,9 @@ ccm_snapshot_dialog_on_expose_event (GtkWidget * widget,
 }
 
 CCMSnapshotDialog *
-ccm_snapshot_dialog_new (cairo_surface_t * surface, CCMScreen * screen)
+ccm_snapshot_dialog_new (cairo_surface_t * surface, int screen)
 {
     g_return_val_if_fail (surface != NULL, NULL);
-    g_return_val_if_fail (screen != NULL, NULL);
 
     CCMSnapshotDialog *self = g_object_new (CCM_TYPE_SNAPSHOT_DIALOG, NULL);
     GtkWidget *dialog, *name, *path;
@@ -194,13 +200,12 @@ ccm_snapshot_dialog_new (cairo_surface_t * surface, CCMScreen * screen)
     int width, height;
     gchar *str;
     GdkDisplay *display = gdk_display_get_default ();
-    GdkScreen *gdk_screen = gdk_display_get_screen (display,
-                                                    ccm_screen_get_number
-                                                    (screen));
+    GdkScreen *gdk_screen = gdk_display_get_screen (display, screen);
+    GError* err = NULL;
 
     self->priv->surface = surface;
-    width = cairo_image_surface_get_width (surface);
-    height = cairo_image_surface_get_height (surface);
+    width = cairo_xlib_surface_get_width (surface);
+    height = cairo_xlib_surface_get_height (surface);
 
     self->priv->builder = gtk_builder_new ();
     if (self->priv->builder == NULL)
@@ -210,17 +215,14 @@ ccm_snapshot_dialog_new (cairo_surface_t * surface, CCMScreen * screen)
         return NULL;
     }
 
-    if (!gtk_builder_add_from_file
-        (self->priv->builder, UI_DIR "/ccm-snapshot.ui", NULL))
+    if (!gtk_builder_add_from_file (self->priv->builder, UI_DIR "/ccm-snapshot-dialog.ui", &err))
     {
-        g_warning ("Error on open snapshot dialog %s",
-                   UI_DIR "/ccm-snapshot.ui");
+        g_warning ("Error on open snapshot dialog %s: %s", UI_DIR "/ccm-snapshot-dialog.ui", err->message);
         g_object_unref (self);
         return NULL;
     }
 
-    dialog =
-        GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "dialog"));
+    dialog = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "dialog"));
     if (!dialog)
     {
         g_warning ("Error on get snapshot dialog widget");
@@ -230,18 +232,12 @@ ccm_snapshot_dialog_new (cairo_surface_t * surface, CCMScreen * screen)
     colormap = gdk_screen_get_rgba_colormap (gdk_screen);
     gtk_widget_set_colormap (dialog, colormap);
     gtk_window_set_screen (GTK_WINDOW (dialog), gdk_screen);
+    
 
-    g_signal_connect_swapped (dialog, "close",
-                              G_CALLBACK (ccm_snapshot_dialog_on_close), self);
-    g_signal_connect_swapped (dialog, "response",
-                              G_CALLBACK (ccm_snapshot_dialog_on_response),
-                              self);
-    g_signal_connect_swapped (dialog, "realize",
-                              G_CALLBACK (ccm_snapshot_dialog_on_realize),
-                              self);
-    g_signal_connect_after (dialog, "expose-event",
-                            G_CALLBACK (ccm_snapshot_dialog_on_expose_event),
-                            self);
+    g_signal_connect_swapped (dialog, "close", G_CALLBACK (ccm_snapshot_dialog_on_close), self);
+    g_signal_connect_swapped (dialog, "response", G_CALLBACK (ccm_snapshot_dialog_on_response), self);
+    g_signal_connect_swapped (dialog, "realize", G_CALLBACK (ccm_snapshot_dialog_on_realize), self);
+    g_signal_connect_after (dialog, "expose-event", G_CALLBACK (ccm_snapshot_dialog_on_expose_event), self);
 
     name = GTK_WIDGET (gtk_builder_get_object (self->priv->builder, "name"));
     if (!name)

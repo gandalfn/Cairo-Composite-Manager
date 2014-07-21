@@ -1,6 +1,6 @@
 m4_define(ccm_version_major, 0)
 m4_define(ccm_version_minor, 4)
-m4_define(ccm_version_micro, 5)
+m4_define(ccm_version_micro, 6)
 AC_INIT([cairo-compmgr], [ccm_version_major.ccm_version_minor.ccm_version_micro], [gandalfn@club-internet.fr], [cairo-compmgr])
 AC_PREREQ(2.63)
 
@@ -125,6 +125,20 @@ fi
 AM_CONDITIONAL(HAVE_GTK, [test x$gtk = xyes])
 AC_SUBST(CAIRO_COMPMGR_CFLAGS)
 AC_SUBST(CAIRO_COMPMGR_LIBS)
+
+dnl ****************************************************************************
+dnl Check for snapshot ui packages
+dnl ****************************************************************************
+AC_ARG_ENABLE(snapshot-plugin,
+  [  --enable-snapshot-plugin        Enable snapshot plugin],
+  [snapshotplugin=$enableval], [snapshotplugin=no])
+
+if [ test x$snapshotplugin = xyes ]; then
+    PKG_CHECK_MODULES(CCM_SNAPSHOT_UI, [gtk+-2.0 >= $GTK_REQUIRED])
+    AC_SUBST(CCM_SNAPSHOT_UI_CFLAGS)
+    AC_SUBST(CCM_SNAPSHOT_UI_LIBS)
+fi
+AM_CONDITIONAL(ENABLE_SNAPSHOT_PLUGIN, [test x$snapshotplugin = xyes])
 
 dnl ***************************************************************************
 dnl check for debug
@@ -396,9 +410,15 @@ else
 fi
 
 if [ test x$cudaperf = xyes ]; then
-        echo "Building CUDA perf: .......................  YES"
+        echo "Building CUDA perf: .........................YES"
 else
-        echo "Building CUDA perf: .......................  NO"
+        echo "Building CUDA perf: .........................NO"
+fi
+
+if [ test x$snapshotplugin = xyes ]; then
+        echo "Building snapshot plugin: ...................YES"
+else
+        echo "Building snapshot plugin: ...................NO"
 fi
 
 if [ test x$statsplugin = xyes ]; then
@@ -408,9 +428,9 @@ else
 fi
 
 if [ test x$nvmlstats = xyes ]; then
-        echo "Building NVML stats: ......................  YES"
+        echo "Building NVML stats: ........................YES"
 else
-        echo "Building NVML stats: ......................  NO"
+        echo "Building NVML stats: ........................NO"
 fi
 
 if [ test x$xrenderbackend = xyes ]; then

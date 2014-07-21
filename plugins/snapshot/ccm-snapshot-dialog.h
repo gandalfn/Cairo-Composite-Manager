@@ -52,8 +52,7 @@ struct _CCMSnapshotDialog
 
 GType ccm_snapshot_dialog_get_type (void) G_GNUC_CONST;
 
-CCMSnapshotDialog* ccm_snapshot_dialog_new (cairo_surface_t *surface, 
-                                            CCMScreen *screen);
+CCMSnapshotDialog* ccm_snapshot_dialog_new (cairo_surface_t *surface, int screen);
 
 G_END_DECLS
 #endif                          /* _CCM_SNAPSHOT_DIALOG_H_ */

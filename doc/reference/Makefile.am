@@ -148,7 +148,7 @@ FIXXREF_OPTIONS=
 
 include $(top_srcdir)/build/gtk-doc.am
 
+CLEANFILES += cairo-compmgr-scan.c
+
 # Version information for marking the documentation
 EXTRA_DIST += version.xml.in
-
-

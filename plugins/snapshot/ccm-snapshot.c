@@ -23,15 +23,18 @@
 #include "ccm-config.h"
 #include "ccm-display.h"
 #include "ccm-screen.h"
+#include "ccm-pixmap.h"
 #include "ccm-window.h"
 #include "ccm-snapshot.h"
 #include "ccm-snapshot-dialog.h"
 #include "ccm-keybind.h"
 #include "ccm-debug.h"
 #include "ccm-marshallers.h"
+#if HAVE_GTK
 #include "ccm-preferences-page-plugin.h"
 #include "ccm-config-color-button.h"
 #include "ccm-config-entry-shortcut.h"
+#endif
 #include "ccm.h"
 
 enum
@@ -62,18 +65,24 @@ typedef struct
 } CCMSnapshotOptions;
 
 static void ccm_snapshot_screen_iface_init (CCMScreenPluginClass * iface);
-static void
-ccm_snapshot_preferences_page_iface_init (CCMPreferencesPagePluginClass *
-                                          iface);
+
+#if HAVE_GTK
+static void ccm_snapshot_preferences_page_iface_init (CCMPreferencesPagePluginClass *iface);
+#endif
+
 static void ccm_snapshot_on_option_changed (CCMPlugin * plugin, int index);
 
 CCM_DEFINE_PLUGIN_WITH_OPTIONS (CCMSnapshot, ccm_snapshot, CCM_TYPE_PLUGIN,
                                 CCM_IMPLEMENT_INTERFACE (ccm_snapshot,
                                                          CCM_TYPE_SCREEN_PLUGIN,
                                                          ccm_snapshot_screen_iface_init);
+#if HAVE_GTK
+
                                 CCM_IMPLEMENT_INTERFACE (ccm_snapshot,
                                                          CCM_TYPE_PREFERENCES_PAGE_PLUGIN,
-                                                         ccm_snapshot_preferences_page_iface_init))
+                                                         ccm_snapshot_preferences_page_iface_init)
+#endif
+                              )
 struct _CCMSnapshotPrivate
 {
     CCMScreen* screen;
@@ -85,7 +94,9 @@ struct _CCMSnapshotPrivate
     cairo_rectangle_t area;
     CCMWindow* selected;
 
+#if HAVE_GTK
     GtkBuilder* builder;
+#endif
 };
 
 #define CCM_SNAPSHOT_GET_PRIVATE(o)  \
@@ -186,7 +197,9 @@ ccm_snapshot_init (CCMSnapshot * self)
     self->priv->selected = NULL;
     self->priv->area_keybind = NULL;
     self->priv->window_keybind = NULL;
+#if HAVE_GTK
     self->priv->builder = NULL;
+#endif
 }
 
 static void
@@ -204,9 +217,11 @@ ccm_snapshot_finalize (GObject * object)
         g_object_unref (self->priv->window_keybind);
     self->priv->window_keybind = NULL;
 
+#if HAVE_GTK
     if (self->priv->builder)
         g_object_unref (self->priv->builder);
     self->priv->builder = NULL;
+#endif
 
     G_OBJECT_CLASS (ccm_snapshot_parent_class)->finalize (object);
 }
@@ -219,6 +234,36 @@ ccm_snapshot_class_init (CCMSnapshotClass * klass)
     g_type_class_add_private (klass, sizeof (CCMSnapshotPrivate));
 
     object_class->finalize = ccm_snapshot_finalize;
+}
+
+static void
+ccm_pixmap_on_dialog_closed (GPid pid, gint status, gpointer data)
+{
+    g_object_unref (G_OBJECT (data));
+}
+
+static void
+ccm_snapshot_launch_dialog (CCMSnapshot* self, CCMPixmap* pixmap)
+{
+    gint argc;
+    gchar** argv;
+    gchar* cmd = g_strdup_printf ("ccm-snapshot --xid=%i --screen=%i", CCM_PIXMAP_XPIXMAP (pixmap), ccm_screen_get_number (self->priv->screen));
+
+    if (g_shell_parse_argv (cmd, &argc, &argv, NULL))
+    {
+        GPid pid;
+
+        if (g_spawn_async (g_get_home_dir (), argv, NULL,
+                           G_SPAWN_STDOUT_TO_DEV_NULL |
+                           G_SPAWN_STDERR_TO_DEV_NULL |
+                           G_SPAWN_DO_NOT_REAP_CHILD  |
+                           G_SPAWN_SEARCH_PATH, NULL, NULL, &pid, NULL))
+        {
+            g_child_watch_add (pid, ccm_pixmap_on_dialog_closed, pixmap);
+        }
+
+        g_strfreev (argv);
+    }
 }
 
 static void
@@ -282,7 +327,7 @@ ccm_snapshot_on_area_key_release (CCMSnapshot * self)
     gdouble x1, y1, x2, y2;
     CCMWindow *overlay = ccm_screen_get_overlay_window (self->priv->screen);
     cairo_surface_t *src = ccm_drawable_get_surface (CCM_DRAWABLE (overlay));
-    cairo_surface_t *dst;
+    CCMPixmap* dst;
     cairo_t *ctx;
     CCMRegion *damage;
 
@@ -305,6 +350,7 @@ ccm_snapshot_on_area_key_release (CCMSnapshot * self)
 
     if (self->priv->area.width > 10 && self->priv->area.height > 10)
     {
+        CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
         damage = ccm_region_rectangle (&self->priv->area);
         ccm_region_offset (damage, -4, -4);
         ccm_region_resize (damage, self->priv->area.width + 8,
@@ -316,14 +362,13 @@ ccm_snapshot_on_area_key_release (CCMSnapshot * self)
                    self->priv->area.y, self->priv->area.width,
                    self->priv->area.height);
 
-        dst = cairo_image_surface_create (ccm_drawable_get_format (CCM_DRAWABLE (overlay)),
-                                          self->priv->area.width, self->priv->area.height);
-        ctx = cairo_create (dst);
+        dst = ccm_window_create_pixmap (root, self->priv->area.width, self->priv->area.height, ccm_drawable_get_depth (CCM_DRAWABLE (root)));
+        ctx = ccm_drawable_create_context (CCM_DRAWABLE (dst));
         cairo_set_source_surface (ctx, src, -self->priv->area.x, -self->priv->area.y);
         cairo_paint (ctx);
         cairo_destroy (ctx);
 
-        ccm_snapshot_dialog_new (dst, self->priv->screen);
+        ccm_snapshot_launch_dialog (self, dst);
     }
     if (src) cairo_surface_destroy (src);
 
@@ -364,8 +409,9 @@ ccm_snapshot_on_window_key_release (CCMSnapshot * self)
         ccm_drawable_damage (CCM_DRAWABLE (self->priv->selected));
         if (pixmap)
         {
+            CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
+            CCMPixmap* dst;
             cairo_surface_t *src = ccm_drawable_get_surface (CCM_DRAWABLE (pixmap));
-            cairo_surface_t *dst;
             cairo_t *ctx;
             const cairo_rectangle_t *area;
             cairo_rectangle_t clipbox;
@@ -375,16 +421,15 @@ ccm_snapshot_on_window_key_release (CCMSnapshot * self)
             ccm_drawable_get_device_geometry_clipbox (CCM_DRAWABLE
                                                       (self->priv->selected),
                                                       &clipbox);
+            dst = ccm_window_create_pixmap (root, area->width, area->height, ccm_drawable_get_depth (CCM_DRAWABLE (root)));
+            ctx = ccm_drawable_create_context (CCM_DRAWABLE (dst));
 
-            dst = cairo_image_surface_create (ccm_drawable_get_format (CCM_DRAWABLE (self->priv->selected)),
-                                              area->width, area->height);
-            ctx = cairo_create (dst);
             cairo_set_source_surface (ctx, src, clipbox.x - area->x,
                                       clipbox.y - area->y);
             cairo_paint (ctx);
             cairo_destroy (ctx);
 
-            ccm_snapshot_dialog_new (dst, self->priv->screen);
+            ccm_snapshot_launch_dialog (self, dst);
 
             cairo_surface_destroy (src);
             g_object_unref (pixmap);
@@ -399,7 +444,7 @@ ccm_snapshot_on_screen_key_release (CCMSnapshot * self)
 {
     CCMWindow *overlay = ccm_screen_get_overlay_window (self->priv->screen);
     cairo_surface_t *src = ccm_drawable_get_surface (CCM_DRAWABLE (overlay));
-    cairo_surface_t *dst;
+    CCMPixmap *dst;
     cairo_t *ctx;
     cairo_rectangle_t clipbox;
 
@@ -409,13 +454,13 @@ ccm_snapshot_on_screen_key_release (CCMSnapshot * self)
 
     if (src && ccm_drawable_get_geometry_clipbox (CCM_DRAWABLE (overlay), &clipbox))
     {
+        CCMWindow* root = ccm_screen_get_root_window (self->priv->screen);
         cairo_rectangle_t *rects = NULL;
         gint cpt, nb_rects;
         CCMRegion* screen_geometry = ccm_screen_get_geometry (self->priv->screen);
 
-        dst = cairo_image_surface_create (ccm_drawable_get_format (CCM_DRAWABLE (overlay)),
-                                          clipbox.width, clipbox.height);
-        ctx = cairo_create (dst);
+        dst = ccm_window_create_pixmap (root, clipbox.width, clipbox.height, ccm_drawable_get_depth (CCM_DRAWABLE (root)));
+        ctx = ccm_drawable_create_context (CCM_DRAWABLE (dst));
         cairo_set_operator (ctx, CAIRO_OPERATOR_CLEAR);
         cairo_paint (ctx);
         cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
@@ -431,7 +476,7 @@ ccm_snapshot_on_screen_key_release (CCMSnapshot * self)
         cairo_paint (ctx);
         cairo_destroy (ctx);
 
-        ccm_snapshot_dialog_new (dst, self->priv->screen);
+        ccm_snapshot_launch_dialog (self, dst);
     }
 
     if (src) cairo_surface_destroy (src);
@@ -589,6 +634,7 @@ ccm_snapshot_screen_paint (CCMScreenPlugin * plugin, CCMScreen * screen,
     return ret;
 }
 
+#if HAVE_GTK
 static void
 ccm_snapshot_preferences_page_init_utilities_section (CCMPreferencesPagePlugin *
                                                       plugin,
@@ -655,6 +701,7 @@ ccm_snapshot_preferences_page_init_utilities_section (CCMPreferencesPagePlugin *
         (CCM_PREFERENCES_PAGE_PLUGIN_PARENT (plugin), preferences,
          utilities_section);
 }
+#endif
 
 static void
 ccm_snapshot_screen_iface_init (CCMScreenPluginClass * iface)
@@ -666,6 +713,7 @@ ccm_snapshot_screen_iface_init (CCMScreenPluginClass * iface)
     iface->damage = NULL;
 }
 
+#if HAVE_GTK
 static void
 ccm_snapshot_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
 {
@@ -676,3 +724,4 @@ ccm_snapshot_preferences_page_iface_init (CCMPreferencesPagePluginClass * iface)
     iface->init_accessibility_section = NULL;
     iface->init_utilities_section = ccm_snapshot_preferences_page_init_utilities_section;
 }
+#endif

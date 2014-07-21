@@ -10,9 +10,5 @@ SUBDIRS = \
     decoration \
     vala-test \
     clone \
-    stats
-
-if HAVE_GTK
-SUBDIRS += \
-	snapshot
-endif
+    stats \
+    snapshot
