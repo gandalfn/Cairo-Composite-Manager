@@ -1276,7 +1276,7 @@ ccm_screen_set_selection_owner (CCMScreen * self)
         event.data.l[4] = 0;
         XSendEvent(CCM_DISPLAY_XDISPLAY (self->priv->display),
                    RootWindow (CCM_DISPLAY_XDISPLAY (self->priv->display), self->priv->number),
-                   False, StructureNotifyMask, (XEvent*)&event);
+                   False, NoEventMask, (XEvent*)&event);
     }
 
     return TRUE;
@@ -2524,11 +2524,9 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
             {
                 XClientMessageEvent *client_event = (XClientMessageEvent *)event;
 
-                ccm_debug_atom (self->priv->display, client_event->message_type,
-                                "CLIENT MESSAGE");
+                ccm_debug_atom (self->priv->display, client_event->message_type, "CLIENT MESSAGE");
 
-                if (client_event->window == self->priv->selection_owner &&
-                    client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->ccm_atom)
+                if (client_event->message_type == CCM_WINDOW_GET_CLASS (self->priv->root)->ccm_atom)
                 {
                     if (CCM_WINDOW_XWINDOW (self->priv->root) == client_event->data.l[1])
                     {
@@ -2845,8 +2843,11 @@ ccm_screen_get_root_window (CCMScreen * self)
         self->priv->root = ccm_window_new_unmanaged (self, root);
         XSelectInput (CCM_DISPLAY_XDISPLAY (ccm_screen_get_display (self)),
                       root,
-                      ExposureMask | PropertyChangeMask | StructureNotifyMask |
-                      SubstructureNotifyMask | SubstructureRedirectMask);
+                      ExposureMask             |
+                      PropertyChangeMask       |
+                      StructureNotifyMask      |
+                      SubstructureNotifyMask   |
+                      SubstructureRedirectMask);
     }
 
     return self->priv->root;

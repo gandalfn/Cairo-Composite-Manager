@@ -27,10 +27,9 @@ public abstract class CCM.Watch : GLib.Object
     private bool
     on_source_prepare (out int inTimeout)
     {
-        process_watch ();
         inTimeout = -1;
 
-        return false;
+        return check ();
     }
 
     private bool
@@ -38,15 +37,10 @@ public abstract class CCM.Watch : GLib.Object
     {
         bool ret = false;
 
-        if ((m_Fd.revents & IOCondition.NVAL) == IOCondition.NVAL)
+        if  ((m_Fd.revents & IOCondition.IN) == IOCondition.IN ||
+             (m_Fd.revents & IOCondition.PRI) == IOCondition.PRI)
         {
-            m_Source = null;
-        }
-        else if ((m_Fd.revents & IOCondition.IN) == IOCondition.IN ||
-                 (m_Fd.revents & IOCondition.PRI) == IOCondition.PRI)
-        {
-            process_watch ();
-            ret = true;
+            ret = check ();
         }
 
         return ret;
@@ -55,14 +49,13 @@ public abstract class CCM.Watch : GLib.Object
     private bool
     on_source_dispatch(SourceFunc inCallback)
     {
-        if ((m_Fd.revents & IOCondition.IN) == IOCondition.IN ||
-            (m_Fd.revents & IOCondition.PRI) == IOCondition.PRI)
-        {
-            process_watch ();
-        }
+        process_watch ();
 
         return true;
     }
+
+    public abstract bool
+    check ();
 
     public abstract void
     process_watch ();
@@ -80,6 +73,5 @@ public abstract class CCM.Watch : GLib.Object
         m_Fd.events = IOCondition.IN | IOCondition.PRI;
         m_Source = new Source.from_pollfd (funcs, m_Fd, this);
         m_Source.attach (inContext);
-        m_Source.unref ();
     }
 }

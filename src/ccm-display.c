@@ -129,6 +129,7 @@ struct _CCMDisplayPrivate
 static gint CCMLastXError = 0;
 static CCMDisplay* CCMDefaultDisplay = NULL;
 
+static gboolean ccm_display_check_events (CCMWatch* watch);
 static void ccm_display_process_events (CCMWatch* watch);
 
 #define CCM_DISPLAY_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_DISPLAY, CCMDisplayPrivate))
@@ -320,6 +321,7 @@ ccm_display_class_init (CCMDisplayClass * klass)
 
     g_type_class_add_private (klass, sizeof (CCMDisplayPrivate));
 
+    CCM_WATCH_CLASS (klass)->check = ccm_display_check_events;
     CCM_WATCH_CLASS (klass)->process_watch = ccm_display_process_events;
     object_class->get_property = ccm_display_get_property;
     object_class->set_property = ccm_display_set_property;
@@ -575,6 +577,16 @@ ccm_display_error_handler (Display * dpy, XErrorEvent * evt)
     return 0;
 }
 
+static gboolean
+ccm_display_check_events (CCMWatch* watch)
+{
+    g_return_if_fail (watch != NULL);
+
+    CCMDisplay* self = CCM_DISPLAY (watch);
+
+    return XPending (CCM_DISPLAY_XDISPLAY (self));
+}
+
 static void
 ccm_display_process_events (CCMWatch* watch)
 {
@@ -626,7 +638,7 @@ ccm_display_new (gchar * display)
         gdk_display_manager_set_default_display (manager, gdk_display);
     }
 
-    xdisplay = gdk_x11_display_get_xdisplay (gdk_display);
+    xdisplay = XOpenDisplay (display);
     if (!xdisplay)
     {
         g_warning ("Unable to open display %s", display);
@@ -634,6 +646,10 @@ ccm_display_new (gchar * display)
     }
 
     self = g_object_new (CCM_TYPE_DISPLAY, "xdisplay", xdisplay, NULL);
+
+    ccm_watch_watch (CCM_WATCH (self), ConnectionNumber (CCM_DISPLAY_XDISPLAY (self)), NULL);
+
+    XSetErrorHandler (ccm_display_error_handler);
 
     ccm_display_init_dbe(self);
     if (!ccm_display_init_shape (self))
@@ -686,8 +702,6 @@ ccm_display_new (gchar * display)
 
     ccm_display_load_config (self);
 
-    XSetErrorHandler (ccm_display_error_handler);
-
     self->priv->nb_screens = ScreenCount (self->priv->xdisplay);
     self->priv->screens = g_slice_alloc0 (sizeof (CCMScreen *) * (self->priv->nb_screens + 1));
 
@@ -714,8 +728,6 @@ ccm_display_new (gchar * display)
             self->priv->screens[cpt] = ccm_screen_new (self, cpt);
     }
     g_slist_free (unmanaged);
-
-    ccm_watch_watch (CCM_WATCH (self), ConnectionNumber (CCM_DISPLAY_XDISPLAY (self)), NULL);
 
     return self;
 }
