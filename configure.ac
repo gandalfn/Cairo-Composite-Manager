@@ -1,6 +1,6 @@
 m4_define(ccm_version_major, 0)
 m4_define(ccm_version_minor, 4)
-m4_define(ccm_version_micro, 6)
+m4_define(ccm_version_micro, 7)
 AC_INIT([cairo-compmgr], [ccm_version_major.ccm_version_minor.ccm_version_micro], [gandalfn@club-internet.fr], [cairo-compmgr])
 AC_PREREQ(2.63)
 
