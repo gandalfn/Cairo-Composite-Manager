@@ -21,7 +21,6 @@ using GLib;
 using Cairo;
 using CCM;
 using X;
-using Vala;
 
 namespace CCM
 {

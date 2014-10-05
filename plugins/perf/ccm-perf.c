@@ -484,6 +484,7 @@ ccm_perf_screen_iface_init (CCMScreenPluginClass * iface)
 {
     iface->load_options = ccm_perf_screen_load_options;
     iface->paint = ccm_perf_screen_paint;
+    iface->property_changed = NULL;
     iface->add_window = NULL;
     iface->remove_window = NULL;
     iface->damage = NULL;

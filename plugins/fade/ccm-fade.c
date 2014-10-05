@@ -631,6 +631,7 @@ ccm_fade_screen_iface_init (CCMScreenPluginClass * iface)
 {
     iface->load_options = ccm_fade_screen_load_options;
     iface->paint = NULL;
+    iface->property_changed = NULL;
     iface->add_window = NULL;
     iface->remove_window = NULL;
     iface->damage = NULL;

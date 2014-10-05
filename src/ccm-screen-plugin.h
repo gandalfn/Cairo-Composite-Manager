@@ -63,36 +63,43 @@ struct _CCMScreenPluginClass
 
     gboolean is_screen;
 
-    void     (*load_options)   (CCMScreenPlugin * self, CCMScreen * screen);
-    gboolean (*paint)          (CCMScreenPlugin * self, CCMScreen * screen,
-                                cairo_t * ctx);
-    gboolean (*add_window)     (CCMScreenPlugin * self, CCMScreen * screen,
-                                CCMWindow * window);
-    void     (*remove_window)  (CCMScreenPlugin * self, CCMScreen * screen,
-                                CCMWindow * window);
-    void     (*damage)         (CCMScreenPlugin * self, CCMScreen * screen,
-                                CCMRegion * area, CCMWindow * window);
+    void     (*load_options)     (CCMScreenPlugin * self, CCMScreen * screen);
+    void     (*property_changed) (CCMScreenPlugin * self, CCMScreen * screen,
+                                  CCMWindow* window, Atom atom, gboolean deleted);
+    gboolean (*paint)            (CCMScreenPlugin * self, CCMScreen * screen,
+                                  cairo_t * ctx);
+    gboolean (*add_window)       (CCMScreenPlugin * self, CCMScreen * screen,
+                                  CCMWindow * window);
+    void     (*remove_window)    (CCMScreenPlugin * self, CCMScreen * screen,
+                                  CCMWindow * window);
+    void     (*damage)           (CCMScreenPlugin * self, CCMScreen * screen,
+                                  CCMRegion * area, CCMWindow * window);
 };
 
 GType ccm_screen_plugin_get_type (void) G_GNUC_CONST;
 
-CCMScreenPlugin* _ccm_screen_plugin_get_root     (CCMScreenPlugin* self);
+CCMScreenPlugin* _ccm_screen_plugin_get_root        (CCMScreenPlugin* self);
 
-void             ccm_screen_plugin_load_options  (CCMScreenPlugin* self,
-                                                  CCMScreen* screen);
-gboolean         ccm_screen_plugin_paint         (CCMScreenPlugin* self,
-                                                  CCMScreen* screen,
-                                                  cairo_t* ctx);
-gboolean         ccm_screen_plugin_add_window    (CCMScreenPlugin* self,
-                                                  CCMScreen* screen,
-                                                  CCMWindow* window);
-void             ccm_screen_plugin_remove_window (CCMScreenPlugin* self,
-                                                  CCMScreen* screen,
-                                                  CCMWindow* window);
-void             ccm_screen_plugin_damage        (CCMScreenPlugin* self,
-                                                  CCMScreen* screen,
-                                                  CCMRegion* area,
-                                                  CCMWindow* window);
+void             ccm_screen_plugin_load_options     (CCMScreenPlugin* self,
+                                                     CCMScreen* screen);
+void             ccm_screen_plugin_property_changed (CCMScreenPlugin* self,
+                                                     CCMScreen* screen,
+                                                     CCMWindow* window,
+                                                     Atom atom,
+                                                     gboolean deleted);
+gboolean         ccm_screen_plugin_paint            (CCMScreenPlugin* self,
+                                                     CCMScreen* screen,
+                                                     cairo_t* ctx);
+gboolean         ccm_screen_plugin_add_window       (CCMScreenPlugin* self,
+                                                     CCMScreen* screen,
+                                                     CCMWindow* window);
+void             ccm_screen_plugin_remove_window    (CCMScreenPlugin* self,
+                                                     CCMScreen* screen,
+                                                     CCMWindow* window);
+void             ccm_screen_plugin_damage           (CCMScreenPlugin* self,
+                                                     CCMScreen* screen,
+                                                     CCMRegion* area,
+                                                     CCMWindow* window);
 
 G_END_DECLS
 

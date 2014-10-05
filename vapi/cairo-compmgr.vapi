@@ -237,6 +237,8 @@ namespace CCM
         [CCode (cname = "ccm_screen_plugin_load_options", vfunc_name = "load_options")]
         protected virtual void screen_load_options (CCM.Screen screen);
 
+        protected virtual void property_changed (CCM.Screen screen, CCM.Window window, X.Atom atom, bool deleted);
+
         protected virtual bool add_window (CCM.Screen screen, CCM.Window window);
         protected virtual void remove_window (CCM.Screen screen, CCM.Window window);
 

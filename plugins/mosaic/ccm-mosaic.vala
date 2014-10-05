@@ -19,7 +19,6 @@
 
 using GLib;
 using Cairo;
-using Vala;
 using Math;
 using Config;
 using CCM;
@@ -197,7 +196,7 @@ namespace CCM
         CCM.Keybind             keybind_left = null;
         CCM.Keybind             keybind_right = null;
         CCM.Keybind             keybind_return = null;
-        ArrayList <MosaicArea>  areas;
+        MosaicArea[]            areas;
         bool                    mouse_over = false;
         Timeline                timeline;
         double                  progress;
@@ -316,23 +315,25 @@ namespace CCM
 
         ////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////
-        void
+        bool
         create_areas()
         {
             // Create or clear old areas
-            if (areas == null)
-                areas = new ArrayList <MosaicArea>();
-            else
-                areas.clear();
+            areas = {};
 
             // Count windows
             int nb_windows = 0;
             foreach (CCM.Window window in screen.get_windows())
             {
-                if (window.is_decorated() && window.is_managed() &&
+                if (window.is_managed() &&
                     window.is_viewable() &&
                     window.get_hint_type() == CCM.WindowType.NORMAL)
                     nb_windows++;
+            }
+
+            if (nb_windows <= 1)
+            {
+                return false;
             }
 
             // Count lines
@@ -367,7 +368,7 @@ namespace CCM
             height = ((int)geometry.height - (lines + 1) * spacing) / lines;
             for (int i = 0; i < lines; ++i)
             {
-                int n = int.min(nb_windows - areas.size, (int)ceilf((float)nb_windows / lines));
+                int n = int.min(nb_windows - areas.length, (int)ceilf((float)nb_windows / lines));
                 x = spacing;
                 width = ((int)geometry.width - (n + 1) * spacing) / n;
                 for (int j = 0; j < n; ++j)
@@ -377,7 +378,7 @@ namespace CCM
                     area.geometry.y = y;
                     area.geometry.width = width;
                     area.geometry.height = height;
-                    areas.add(area);
+                    areas += area;
                     x += width + spacing;
                 }
                 y += height + spacing;
@@ -386,10 +387,12 @@ namespace CCM
             // Place window in areas
             foreach (CCM.Window window in screen.get_windows())
             {
-                if (window.is_decorated() && window.is_managed() &&
+                if (window.is_managed() &&
                     window.is_viewable() && window.get_hint_type() == CCM.WindowType.NORMAL)
                     find_area(window);
             }
+
+            return true;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -399,8 +402,8 @@ namespace CCM
         {
             foreach (MosaicArea area in areas)
             {
-                Cairo.Rectangle win_area;
-                if (area.window.get_device_geometry_clipbox(out win_area))
+                Cairo.Rectangle win_area = Cairo.Rectangle ();
+                if (area.window != null && area.window.get_device_geometry_clipbox(out win_area))
                 {
                     double progress = timeline.progress;
 
@@ -442,8 +445,8 @@ namespace CCM
                     if (area.window is CCM.Window)
                     {
                         // Apply final transformation to window
-                        Cairo.Rectangle win_area;
-                        if (area.window.get_device_geometry_clipbox(out win_area))
+                        Cairo.Rectangle win_area = Cairo.Rectangle ();
+                        if (area.window != null && area.window.get_device_geometry_clipbox(out win_area))
                         {
                             // Calculate window scale
                             double scale = double.min(area.geometry.width / win_area.width,
@@ -518,7 +521,7 @@ namespace CCM
                         switch_keep_above(area.window, false);
                     }
                 }
-                areas.clear();
+                areas = {};
             }
             screen.damage_all();
         }
@@ -530,8 +533,8 @@ namespace CCM
         {
             if (area != null && area.window is CCM.Window)
             {
-                Cairo.Rectangle win_area;
-                if (area.window.get_device_geometry_clipbox(out win_area))
+                Cairo.Rectangle win_area = Cairo.Rectangle ();
+                if (area.window != null && area.window.get_device_geometry_clipbox(out win_area))
                 {
                     double progress = timeline.progress;
                     double spacing = ((MosaicOptions) get_option ()).spacing;
@@ -624,7 +627,7 @@ namespace CCM
                         break;
                     }
                 }
-                if (!found_next && areas [0] != null)
+                if (!found_next && areas.length > 0 && areas [0] != null)
                 {
                     MosaicArea area = areas [0];
 
@@ -673,9 +676,9 @@ namespace CCM
                     }
                     area_prev = area;
                 }
-                if (area_prev == null && areas [areas.size - 1] != null)
+                if (area_prev == null && areas.length > 0 && areas [areas.length - 1] != null)
                 {
-                    MosaicArea area = areas [areas.size - 1];
+                    MosaicArea area = areas [areas.length - 1];
 
                     // Start enter window
                     area.plugin.timeline.direction = CCM.TimelineDirection.FORWARD;
@@ -699,7 +702,10 @@ namespace CCM
                 {
                     if (area.plugin.mouse_over)
                     {
-                        area.window.activate(X.CURRENT_TIME);
+                        if (screen.get_active_window () == area.window)
+                            on_window_activate_notify (area.window);
+                        else
+                            area.window.activate(X.CURRENT_TIME);
                     }
                 }
             }
@@ -720,7 +726,12 @@ namespace CCM
             }
             if (enabled)
             {
-                create_areas();
+                if (!create_areas())
+                {
+                    screen.redirect_input = false;
+                    enabled = false;
+                    return;
+                }
                 keybind_left = new CCM.Keybind (screen,
                                                 ((MosaicOptions) get_option ()).shortcut_left,
                                                 true);

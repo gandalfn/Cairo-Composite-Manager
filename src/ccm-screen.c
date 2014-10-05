@@ -174,13 +174,15 @@ struct _CCMScreenPrivate
 #define CCM_SCREEN_GET_PRIVATE(o)  \
    (G_TYPE_INSTANCE_GET_PRIVATE ((o), CCM_TYPE_SCREEN, CCMScreenPrivate))
 
-static gboolean impl_ccm_screen_paint           (CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx);
-static gboolean impl_ccm_screen_add_window      (CCMScreenPlugin* plugin, CCMScreen* self, CCMWindow* window);
-static void     impl_ccm_screen_remove_window   (CCMScreenPlugin* plugin, CCMScreen* self, CCMWindow* window);
-static void     impl_ccm_screen_damage          (CCMScreenPlugin* plugin, CCMScreen* self, CCMRegion* area, CCMWindow* window);
+static void     impl_ccm_screen_property_changed (CCMScreenPlugin* plugin, CCMScreen* self, CCMWindow* window, Atom atom, gboolean deleted);
+static gboolean impl_ccm_screen_paint            (CCMScreenPlugin* plugin, CCMScreen* self, cairo_t* ctx);
+static gboolean impl_ccm_screen_add_window       (CCMScreenPlugin* plugin, CCMScreen* self, CCMWindow* window);
+static void     impl_ccm_screen_remove_window    (CCMScreenPlugin* plugin, CCMScreen* self, CCMWindow* window);
+static void     impl_ccm_screen_damage           (CCMScreenPlugin* plugin, CCMScreen* self, CCMRegion* area, CCMWindow* window);
 
-static void     ccm_screen_on_window_damaged    (CCMScreen* self, CCMRegion* area, CCMWindow* window);
-static void     ccm_screen_on_option_changed    (CCMScreen* self, CCMConfig* config);
+static void     ccm_screen_on_window_damaged     (CCMScreen* self, CCMRegion* area, CCMWindow* window);
+static void     ccm_screen_on_option_changed     (CCMScreen* self, CCMConfig* config);
+static void     ccm_screen_add_check_pending     (CCMScreen * self);
 
 static int
 _direct_compare (int inA, int inB)
@@ -477,6 +479,7 @@ ccm_screen_iface_init (CCMScreenPluginClass * iface)
 {
     iface->is_screen = TRUE;
     iface->load_options = NULL;
+    iface->property_changed = impl_ccm_screen_property_changed;
     iface->paint = impl_ccm_screen_paint;
     iface->add_window = impl_ccm_screen_add_window;
     iface->remove_window = impl_ccm_screen_remove_window;
@@ -1624,6 +1627,93 @@ ccm_screen_restack (CCMScreen * self, CCMWindow * window, CCMWindow * sibling)
     ccm_drawable_damage (CCM_DRAWABLE (window));
 }
 
+static void
+impl_ccm_screen_property_changed (CCMScreenPlugin * plugin, CCMScreen * self, CCMWindow* window, Atom atom, gboolean deleted)
+{
+    g_return_val_if_fail (plugin != NULL, FALSE);
+    g_return_val_if_fail (self != NULL, FALSE);
+
+    if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom)
+    {
+        guint32 *data;
+        guint n_items;
+        Window active;
+
+        ccm_screen_add_check_pending (self);
+        data = ccm_window_get_property (self->priv->root,
+                                        CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom,
+                                        XA_WINDOW, &n_items);
+        if (data)
+        {
+            active = (Window)*data;
+            if (active)
+                self->priv->active = ccm_screen_find_window_or_child (self, (Window)*data);
+            else
+                self->priv->active = NULL;
+            g_free (data);
+            if (self->priv->active)
+                g_signal_emit (self, signals[ACTIVATE_WINDOW_NOTIFY], 0, self->priv->active);
+        }
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom)
+    {
+        if (self->priv->background)
+            g_object_unref (self->priv->background);
+        self->priv->background = NULL;
+        ccm_screen_damage (self);
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->client_stacking_list_atom ||
+             atom == CCM_WINDOW_GET_CLASS (self->priv->root)->client_list_atom)
+    {
+        ccm_screen_add_check_pending (self);
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->transient_for_atom)
+    {
+        if (window)
+            ccm_window_query_transient_for (window);
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
+    {
+        if (window)
+            ccm_window_query_opacity (window, deleted);
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
+    {
+        if (window)
+            ccm_window_query_hint_type (window);
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->mwm_hints_atom)
+    {
+        if (window)
+            ccm_window_query_mwm_hints (window);
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
+    {
+        if (window)
+            ccm_window_query_state (window);
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->frame_extends_atom)
+    {
+        if (window)
+            ccm_window_query_frame_extends (window);
+    }
+    else if (atom == CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom)
+    {
+        guint n_items;
+        guint32 *desktop = NULL;
+
+        desktop = ccm_window_get_property (self->priv->root,
+                                           CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom,
+                                           XA_CARDINAL, &n_items);
+        if (desktop)
+        {
+            g_signal_emit (self, signals[DESKTOP_CHANGED], 0,
+                           *desktop + 1);
+            g_free (desktop);
+        }
+    }
+}
+
 static gboolean
 impl_ccm_screen_paint (CCMScreenPlugin * plugin, CCMScreen * self, cairo_t * ctx)
 {
@@ -2411,97 +2501,17 @@ ccm_screen_on_event (CCMScreen * self, XEvent * event)
         case PropertyNotify:
             {
                 XPropertyEvent *property_event = (XPropertyEvent *) event;
-                CCMWindow *window;
+                CCMWindow *window = self->priv->root;
 
-                ccm_debug_atom (self->priv->display, property_event->atom,
-                                "PROPERTY_NOTIFY");
+                if (CCM_WINDOW_XWINDOW (self->priv->root) != property_event->window)
+                {
+                    window = ccm_screen_find_window_or_child (self, property_event->window);
+                }
 
-                if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom)
-                {
-                    guint32 *data;
-                    guint n_items;
-                    Window active;
+                ccm_debug_atom (self->priv->display, property_event->atom, "PROPERTY_NOTIFY");
 
-                    ccm_screen_add_check_pending (self);
-                    data =
-                        ccm_window_get_property (self->priv->root,
-                                                 CCM_WINDOW_GET_CLASS (self->priv->root)->active_atom,
-                                                 XA_WINDOW, &n_items);
-                    if (data)
-                    {
-                        active = (Window)*data;
-                        if (active)
-                            self->priv->active = ccm_screen_find_window_or_child (self, (Window)*data);
-                        else
-                            self->priv->active = NULL;
-                        g_free (data);
-                        if (self->priv->active)
-                            g_signal_emit (self, signals[ACTIVATE_WINDOW_NOTIFY], 0, self->priv->active);
-                    }
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->root_pixmap_atom)
-                {
-                    if (self->priv->background)
-                        g_object_unref (self->priv->background);
-                    self->priv->background = NULL;
-                    ccm_screen_damage (self);
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->client_stacking_list_atom ||
-                         property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->client_list_atom)
-                {
-                    ccm_screen_add_check_pending (self);
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->transient_for_atom)
-                {
-                    window = ccm_screen_find_window_or_child (self, property_event->window);
-                    if (window)
-                        ccm_window_query_transient_for (window);
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->opacity_atom)
-                {
-                    window = ccm_screen_find_window_or_child (self, property_event->window);
-                    if (window)
-                        ccm_window_query_opacity (window, property_event->state == PropertyDelete);
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->type_atom)
-                {
-                    window = ccm_screen_find_window_or_child (self, property_event->window);
-                    if (window)
-                        ccm_window_query_hint_type (window);
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->mwm_hints_atom)
-                {
-                    window = ccm_screen_find_window_or_child (self, property_event->window);
-                    if (window)
-                        ccm_window_query_mwm_hints (window);
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->state_atom)
-                {
-                    window = ccm_screen_find_window_or_child (self, property_event->window);
-                    if (window)
-                        ccm_window_query_state (window);
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->frame_extends_atom)
-                {
-                    window = ccm_screen_find_window_or_child (self, property_event->window);
-                    if (window)
-                        ccm_window_query_frame_extends (window);
-                }
-                else if (property_event->atom == CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom)
-                {
-                    guint n_items;
-                    guint32 *desktop = NULL;
-
-                    desktop = ccm_window_get_property (self->priv->root,
-                                                       CCM_WINDOW_GET_CLASS (self->priv->root)->current_desktop_atom,
-                                                       XA_CARDINAL, &n_items);
-                    if (desktop)
-                    {
-                        g_signal_emit (self, signals[DESKTOP_CHANGED], 0,
-                                       *desktop + 1);
-                        g_free (desktop);
-                    }
-                }
+                ccm_screen_plugin_property_changed (self->priv->plugin, self, window, property_event->atom,
+                                                    property_event->state == PropertyDelete);
             }
             break;
         case Expose:

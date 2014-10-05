@@ -87,6 +87,30 @@ ccm_screen_plugin_load_options (CCMScreenPlugin * self, CCMScreen * screen)
     }
 }
 
+void
+ccm_screen_plugin_property_changed (CCMScreenPlugin* self, CCMScreen* screen,
+                                    CCMWindow* window, Atom atom, gboolean deleted)
+{
+    g_return_if_fail (CCM_IS_SCREEN_PLUGIN (self));
+    g_return_if_fail (screen != NULL);
+
+    CCMScreenPlugin *plugin;
+    CCMScreenPluginClass *plugin_class;
+
+    for (plugin = self; plugin_class = CCM_SCREEN_PLUGIN_GET_INTERFACE (plugin), !plugin_class->is_screen;
+         plugin = CCM_SCREEN_PLUGIN_PARENT (plugin))
+    {
+        if (plugin_class->property_changed)
+            break;
+    }
+
+    if (plugin_class->property_changed)
+    {
+        if (!_ccm_plugin_method_locked ((GObject *) plugin, plugin_class->property_changed))
+            plugin_class->property_changed (plugin, screen, window, atom, deleted);
+    }
+}
+
 gboolean
 ccm_screen_plugin_paint (CCMScreenPlugin * self, CCMScreen * screen,
                          cairo_t * ctx)

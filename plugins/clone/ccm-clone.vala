@@ -21,7 +21,6 @@ using GLib;
 using Cairo;
 using CCM;
 using X;
-using Vala;
 
 namespace CCM
 {
@@ -92,15 +91,15 @@ namespace CCM
         class X.Atom scale_quality_atom;
 
         weak CCM.Screen screen;
-        ArrayList < Output > screen_outputs = null;
-        ArrayList < Output > window_outputs = null;
+        GLib.List < Output > screen_outputs = null;
+        GLib.List < Output > window_outputs = null;
 
         void
         add_screen_output (Output output)
         {
             if (screen_outputs == null)
-                screen_outputs = new ArrayList < Output > ();
-            screen_outputs.add (output);
+                screen_outputs = new GLib.List < Output > ();
+            screen_outputs.append (output);
 
             foreach (CCM.Window window in screen.get_windows ())
             {
@@ -109,9 +108,9 @@ namespace CCM
                     var clone = (Clone) window.get_plugin (typeof (Clone));
 
                     if (clone.screen_outputs == null)
-                        clone.screen_outputs = new ArrayList < Output > ();
+                        clone.screen_outputs = new GLib.List < Output > ();
 
-                    clone.screen_outputs.add (output);
+                    clone.screen_outputs.append (output);
                 }
             }
         }
@@ -155,7 +154,7 @@ namespace CCM
                 }
                 else
                 {
-                    clone.window_outputs = new ArrayList < Output > ();
+                    clone.window_outputs = new GLib.List < Output > ();
                 }
 
                 if (!found)
@@ -163,7 +162,7 @@ namespace CCM
                     try
                     {
                         Output output = new Output (window.get_screen (), client, window, xpixmap, depth);
-                        clone.window_outputs.add (output);
+                        clone.window_outputs.append (output);
                         client.no_undamage_sibling = true;
                         window.damage ();
                     }
@@ -419,8 +418,8 @@ namespace CCM
         bool
         window_paint (CCM.Window window, Cairo.Context context, Cairo.Surface surface)
         {
-            if (((window_outputs != null && window_outputs.size > 0) ||
-                 (screen_outputs != null && screen_outputs.size > 0)))
+            if (((window_outputs != null && window_outputs.length () > 0) ||
+                 (screen_outputs != null && screen_outputs.length () > 0)))
             {
                 unowned Cairo.Rectangle? area = window.get_area ();
                 Cairo.Rectangle geometry = Cairo.Rectangle ();
@@ -544,4 +543,3 @@ ccm_clone_get_plugin_type (TypeModule module)
 {
     return typeof (Clone);
 }
-

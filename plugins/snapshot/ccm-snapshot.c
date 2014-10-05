@@ -708,6 +708,7 @@ ccm_snapshot_screen_iface_init (CCMScreenPluginClass * iface)
 {
     iface->load_options = ccm_snapshot_screen_load_options;
     iface->paint = ccm_snapshot_screen_paint;
+    iface->property_changed = NULL;
     iface->add_window = NULL;
     iface->remove_window = NULL;
     iface->damage = NULL;
